@@ -50,6 +50,6 @@ commit;
 
 -- Create user and grant permissions
 -- drop user 'test1'@'localhost';
-create user 'test1'@'localhost' identified by 'test1_pwd';
-grant all on test1_db.* to 'test1'@'localhost';
+-- create user 'test1'@'localhost' identified by 'test1_pwd';
+-- grant all on test1_db.* to 'test1'@'localhost';
 
