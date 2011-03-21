@@ -25,8 +25,9 @@ yborminclude_HEADERS = \
 	MapperSession.h \
 	MetaDataSingleton.h \
 	XMLMetaDataConfig.h \
-	XMLNode.h \
-	DbpoolSession.h
+	XMLNode.h
+
+#	DbpoolSession.h
 
 libyborm_la_SOURCES = \
 	$(yborminclude_HEADERS) \
@@ -42,8 +43,9 @@ libyborm_la_SOURCES = \
 	tiodbc.cpp \
 	MapperSession.cpp \
 	XMLMetaDataConfig.cpp \
-	XMLNode.cpp \
-	DbpoolSession.cpp
+	XMLNode.cpp
+
+#	DbpoolSession.cpp
 
 libyborm_la_LDFLAGS = -version-info 0:0:0
 
@@ -52,8 +54,10 @@ check_PROGRAMS = unit_tests
 
 unit_tests_LDADD = libyborm.la test/libormtest.la \
 	$(top_builddir)/lib/util/libybutil.la \
-	$(top_builddir)/lib/test/libtestmain.la -lcppunit -ldl \
-	$(XML_LIBS) -lboost_date_time -lodbc -lmypp3
+	$(top_builddir)/lib/test/libtestmain.la -lcppunit \
+	$(XML_LIBS) -lboost_thread -lboost_date_time -lodbc
+
+#	-ldl -lmypp3
 
 unit_tests_SOURCES =
 

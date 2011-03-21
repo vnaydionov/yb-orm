@@ -10,6 +10,7 @@ orm_domain_generator_LDFLAGS = $(all_libraries) \
 	$(XML_LIBS) \
 	$(top_builddir)/lib/util/libybutil.la \
 	$(top_builddir)/lib/orm/libyborm.la \
-	-lboost_date_time -lboost_thread \
-	-lodbc \
-	-lmypp3 -ldl
+	-lboost_thread -lboost_date_time -lodbc
+
+#	-lmypp3 -ldl
+
