@@ -1,0 +1,21 @@
+AC_INIT(configure.in)
+
+AC_CONFIG_HEADERS(config.h)
+AM_INIT_AUTOMAKE(yborm, 0.1)
+
+AC_LANG_CPLUSPLUS
+AC_PROG_CXX
+AM_PROG_LIBTOOL
+
+AM_PATH_XML2
+CPPFLAGS="$CPPFLAGS $XML_CPPFLAGS"
+
+AC_OUTPUT(Makefile
+	lib/Makefile
+	lib/test/Makefile
+	lib/util/Makefile
+	lib/util/test/Makefile
+	lib/orm/Makefile
+	lib/orm/test/Makefile
+	src/Makefile)
+
