@@ -61,15 +61,15 @@ unit_tests_LDADD = libyborm.la test/libormtest.la \
 
 unit_tests_SOURCES =
 
-#export YBORM_DBTYPE=MYSQL
-#export YBORM_DB=test1_db
-#export YBORM_USER=test1
-#export YBORM_PASSWD=test1_pwd
+export YBORM_DBTYPE=MYSQL
+export YBORM_DB=test1_db
+export YBORM_USER=test1
+export YBORM_PASSWD=test1_pwd
 
-export YBORM_DBTYPE=ORACLE
-export YBORM_DB=test1_db_ora
-export YBORM_USER=bo
-export YBORM_PASSWD=balalancing
+#export YBORM_DBTYPE=ORACLE
+#export YBORM_DB=test1_db_ora
+#export YBORM_USER=bo
+#export YBORM_PASSWD=balalancing
 
 # Oracle specific
 export TWO_TASK=balance-dev.yandex.ru

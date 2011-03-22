@@ -71,7 +71,7 @@ struct PKIDRecord
     {}
 };
 
-}
+} // namespace ORMapper
 
 class PKIDValue
 {
@@ -86,11 +86,13 @@ public:
     PKIDValue(const ORMapper::TableMetaData &table, long long pkid);
     const ORMapper::TableMetaData &get_table() const;
     const std::pair<std::string, long long> &get_key() const { return key_; }
-    bool eq(const PKIDValue &x) const;
-    bool lt(const PKIDValue &x) const;
     bool is_temp() const;
     long long as_long_long() const;
     void sync(long long pkid) const;
+    bool eq(const PKIDValue &x) const;
+    bool lt(const PKIDValue &x) const;
+    bool operator == (const PKIDValue &x) const { return eq(x); }
+    bool operator < (const PKIDValue &x) const { return lt(x); }
 };
 
 class ValueData;

@@ -23,132 +23,76 @@ public:
     virtual ~ValueData() {}
 };
 
-class ValueDataLongLong : public ValueData
+template <typename T>
+string to_string(T x)
 {
-    long long x_;
+    return boost::lexical_cast<string>(x);
+}
+
+string to_string(decimal x)
+{
+    return x.str();
+}
+
+string to_string(const string &x)
+{
+    return x;
+}
+
+string to_string(boost::posix_time::ptime x)
+{
+    return boost::posix_time::to_iso_extended_string(x);
+}
+
+string to_string(PKIDValue x)
+{
+    return boost::lexical_cast<string>(x.as_long_long());
+}
+
+template <typename T>
+class ValueDataImpl: public ValueData
+{
+    T x_;
 public:
-    ValueDataLongLong(long long x = 0LL) : x_(x) {}
-    long long get() const { return x_; }
-    const string to_str() const { return boost::lexical_cast<string>(x_); }
+    ValueDataImpl(T x = T()): x_(x) {}
+    T get() const { return x_; }
+    const string to_str() const { return to_string(x_); }
     const string to_sql_str() const { return to_str(); }
-    bool eq(const ValueData &v) const
-    {
-        const ValueDataLongLong &d = dynamic_cast<const ValueDataLongLong &>(v);
-        return x_ == d.x_;
+    bool eq(const ValueData &v) const {
+        return x_ == dynamic_cast<const ValueDataImpl<T> &>(v).x_;
     }
-    bool lt(const ValueData &v) const
-    {
-        const ValueDataLongLong &d = dynamic_cast<const ValueDataLongLong &>(v);
-        return x_ < d.x_;
+    bool lt(const ValueData &v) const {
+        return x_ < dynamic_cast<const ValueDataImpl<T> &>(v).x_;
     }
 };
 
-class ValueDataString : public ValueData
+template <>
+const string ValueDataImpl<string>::to_sql_str() const
 {
-    string x_;
-public:
-    ValueDataString(const string &x = "") : x_(x) {}
-    const string to_str() const { return x_; }
-    const string to_sql_str() const
-    {
-        return quote(sql_string_escape(x_));
-    }
-    bool eq(const ValueData &v) const
-    {
-        const ValueDataString &d = dynamic_cast<const ValueDataString &>(v);
-        return x_ == d.x_;
-    }
-    bool lt(const ValueData &v) const
-    {
-        const ValueDataString &d = dynamic_cast<const ValueDataString &>(v);
-        return x_ < d.x_;
-    }
-};
+    return quote(sql_string_escape(x_));
+}
 
-class ValueDataDecimal : public ValueData
+template <>
+const string ValueDataImpl<boost::posix_time::ptime>::to_sql_str() const
 {
-    decimal x_;
-public:
-    ValueDataDecimal(const decimal &x = decimal()) : x_(x) {}
-    const decimal &get() const { return x_; }
-    const string to_str() const { return x_.str(); }
-    const string to_sql_str() const { return to_str(); }
-    bool eq(const ValueData &v) const
-    {
-        const ValueDataDecimal &d = dynamic_cast<const ValueDataDecimal &>(v);
-        return x_ == d.x_;
-    }
-    bool lt(const ValueData &v) const
-    {
-        const ValueDataDecimal &d = dynamic_cast<const ValueDataDecimal &>(v);
-        return x_ < d.x_;
-    }
-};
+    return "TO_DATE('" +
+        boost::posix_time::to_iso_extended_string(x_)
+        + "', 'YYYY-MM-DD\"T\"HH24:MI:SS')";
+}
 
-class ValueDataDateTime : public ValueData
+template <>
+const string ValueDataImpl<PKIDValue>::to_sql_str() const
 {
-    boost::posix_time::ptime x_;
-public:
-    ValueDataDateTime(const boost::posix_time::ptime &x =
-            boost::posix_time::not_a_date_time)
-        : x_(x) {}
-    const boost::posix_time::ptime &get() const { return x_; }
-    const string to_str() const
-    {
-        string t(boost::posix_time::to_iso_extended_string(x_));
-#if 0
-        size_t found = t.find('T');
-        if (found != string::npos)
-            t[found] = ' ';
-#endif
-        return t;
-    }
-    const string to_sql_str() const
-    {
-        return "TO_DATE('" +
-            boost::posix_time::to_iso_extended_string(x_)
-            + "', 'YYYY-MM-DD\"T\"HH24:MI:SS')";
-    }
-    bool eq(const ValueData &v) const
-    {
-        const ValueDataDateTime &d = dynamic_cast<const ValueDataDateTime &>(v);
-        return x_ == d.x_;
-    }
-    bool lt(const ValueData &v) const
-    {
-        const ValueDataDateTime &d = dynamic_cast<const ValueDataDateTime &>(v);
-        return x_ < d.x_;
-    }
-};
+    if (x_.is_temp())
+        return "NULL";
+    return boost::lexical_cast<string>(x_.as_long_long());
+}
 
-class ValueDataPKID : public ValueData
+template <>
+const string ValueDataImpl<PKIDValue>::to_str() const
 {
-    PKIDValue x_;
-public:
-    ValueDataPKID(const PKIDValue &x = PKIDValue())
-        : x_(x) {}
-    const PKIDValue &get() const { return x_; }
-    const string to_str() const
-    {
-        return to_sql_str();
-    }
-    const string to_sql_str() const
-    {
-        if (x_.is_temp())
-            return "NULL";
-        return boost::lexical_cast<string>(x_.as_long_long());
-    }
-    bool eq(const ValueData &v) const
-    {
-        const ValueDataPKID &d = dynamic_cast<const ValueDataPKID &>(v);
-        return x_.eq(d.x_);
-    }
-    bool lt(const ValueData &v) const
-    {
-        const ValueDataPKID &d = dynamic_cast<const ValueDataPKID &>(v);
-        return x_.lt(d.x_);
-    }
-};
+    return to_sql_str();
+}
 
 PKIDValue::PKIDValue()
     : table_(NULL)
@@ -208,8 +152,7 @@ void PKIDValue::sync(long long pkid) const
     if (!table_)
         throw PKIDInvalid();
     if (!is_temp())
-        throw PKIDAlreadySynced(table_->get_name(),
-                as_long_long());
+        throw PKIDAlreadySynced(table_->get_name(), as_long_long());
     temp_->pkid_ = pkid;
     temp_->is_temp_ = false;
 }
@@ -219,32 +162,32 @@ Value::Value()
 {}
 
 Value::Value(long long x)
-    : data_(new ValueDataLongLong(x))
+    : data_(new ValueDataImpl<long long>(x))
     , type_(LongLong)
 {}
 
 Value::Value(const char *x)
-    : data_(new ValueDataString(x))
+    : data_(new ValueDataImpl<string>(x))
     , type_(String)
 {}
 
 Value::Value(const string &x)
-    : data_(new ValueDataString(x))
+    : data_(new ValueDataImpl<string>(x))
     , type_(String)
 {}
 
 Value::Value(const decimal &x)
-    : data_(new ValueDataDecimal(x))
+    : data_(new ValueDataImpl<decimal>(x))
     , type_(Decimal)
 {}
 
 Value::Value(const boost::posix_time::ptime &x)
-    : data_(new ValueDataDateTime(x))
+    : data_(new ValueDataImpl<boost::posix_time::ptime>(x))
     , type_(DateTime)
 {}
 
 Value::Value(const PKIDValue &x)
-    : data_(new ValueDataPKID(x))
+    : data_(new ValueDataImpl<PKIDValue>(x))
     , type_(PKID)
 {}
 
@@ -265,8 +208,8 @@ Value::as_long_long() const
             throw ValueBadCast(check_null().to_str(), "LongLong");
         }
     }
-    const ValueDataLongLong &d =
-        dynamic_cast<const ValueDataLongLong &>(check_null());
+    const ValueDataImpl<long long> &d =
+        dynamic_cast<const ValueDataImpl<long long> &>(check_null());
     return d.get();
 }
 
@@ -296,8 +239,8 @@ Value::as_decimal() const
             }
         }
     }
-    const ValueDataDecimal &d =
-        dynamic_cast<const ValueDataDecimal &>(check_null());
+    const ValueDataImpl<decimal> &d =
+        dynamic_cast<const ValueDataImpl<decimal> &>(check_null());
     return d.get();
 }
 
@@ -326,8 +269,8 @@ Value::as_date_time() const
             }
         }
     }
-    const ValueDataDateTime &d =
-        dynamic_cast<const ValueDataDateTime &>(check_null());
+    const ValueDataImpl<boost::posix_time::ptime> &d =
+        dynamic_cast<const ValueDataImpl<boost::posix_time::ptime> &>(check_null());
     return d.get();
 }
 
@@ -336,8 +279,8 @@ Value::as_pkid() const
 {
     if (type_ != PKID)
         throw ValueBadCast(check_null().to_str(), "PKID");
-    const ValueDataPKID &d =
-        dynamic_cast<const ValueDataPKID &>(check_null());
+    const ValueDataImpl<PKIDValue> &d =
+        dynamic_cast<const ValueDataImpl<PKIDValue> &>(check_null());
     return d.get();
 }
 
@@ -430,4 +373,3 @@ Value::get_type_name(int type)
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et
-
