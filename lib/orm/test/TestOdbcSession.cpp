@@ -47,24 +47,31 @@ class TestOdbcSession : public CppUnit::TestFixture
     CPPUNIT_TEST(test_force_select_for_update);
     CPPUNIT_TEST_SUITE_END();
 
+    string db_type_;
     long long record_id_;
 
-    long long get_next_test_id(Session &ses)
+    long long get_next_test_id(Session &ses, const string &seq_name)
     {
-        RowsPtr ptr = ses.select("MAX(ID) MAX_ID", "T_ORM_TEST", Filter());
-        CPPUNIT_ASSERT(1 == ptr->size() && 1 == (*ptr)[0].size());
-        Value x = (*ptr)[0]["MAX_ID"];
-        //cout << x.get_type() << "\n";
-        return x.is_null()? 1: x.as_long_long() + 1;
+        if (db_type_ == "MYSQL") {
+            RowsPtr ptr = ses.select("MAX(ID) MAX_ID", "T_ORM_TEST", Filter());
+            CPPUNIT_ASSERT(1 == ptr->size() && 1 == (*ptr)[0].size());
+            Value x = (*ptr)[0]["MAX_ID"];
+            return x.is_null()? 1: x.as_long_long() + 1;
+        }
+        else {
+            return ses.get_next_value(seq_name);
+        }
     }
 public:
+    void setUp()
+    {
+        db_type_ = xgetenv("YBORM_DBTYPE");
+    }
+
     void init_sql()
     {
-        {
-            OdbcSession ses;
-            //record_id_ = ses.get_next_value("S_ORM_ID");
-            record_id_ = get_next_test_id(ses);
-        }
+        OdbcSession ses;
+        record_id_ = get_next_test_id(ses, "S_ORM_TEST_ID");
         CPPUNIT_ASSERT(record_id_ > 0);
         ostringstream sql;
         sql << "INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)";
@@ -75,7 +82,7 @@ public:
         params.push_back(Value(decimal("1.2")));
         OdbcDriver drv;
         drv.open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
-        drv.exec_direct("DELETE FROM T_ORM_TEST");
+        drv.exec_direct("DELETE FROM T_ORM_TEST WHERE 1=1");
         drv.prepare(sql.str());
         drv.exec(params);
         drv.commit();
@@ -85,7 +92,7 @@ public:
     {
         OdbcDriver drv;
         drv.open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
-        //drv.exec_direct("DELETE FROM T_ORM_TEST");
+        drv.exec_direct("DELETE FROM T_ORM_TEST");
         drv.commit();
     }
 
@@ -335,8 +342,7 @@ public:
         OdbcSession ses(Session::MANUAL);
         CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
         Rows rows;
-        //long long id = ses.get_next_value("S_ORM_ID");
-        long long id = get_next_test_id(ses);
+        long long id = get_next_test_id(ses, "S_ORM_TEST_ID");
         Row row;
         row.insert(make_pair(string("ID"), Value(id)));
         row.insert(make_pair(string("A"), Value("inserted")));
@@ -355,13 +361,11 @@ public:
 
     void test_update_sql()
     {
-        try {
         init_sql();
         OdbcSession ses(Session::MANUAL);
         CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
         Rows rows;
-        //long long id = ses.get_next_value("S_ORM_ID");
-        long long id = get_next_test_id(ses);
+        long long id = get_next_test_id(ses, "S_ORM_TEST_ID");
         Row row;
         row["A"] = Value("updated");
         row["C"] = Value(decimal("1.3"));
@@ -378,11 +382,6 @@ public:
         CPPUNIT_ASSERT_EQUAL(decimal("1.3"), (ptr->begin())->find("C")->second.as_decimal());
         ses.commit();
         finish_sql();
-        }
-        catch (std::exception &e) {
-            cout << "error: " << e.what() << "\n";
-            throw;
-        }
     }
     
     void test_insert_ro_mode()

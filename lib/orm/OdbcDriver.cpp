@@ -7,7 +7,10 @@
 #include <tiodbc.hpp>
 #include <util/str_utils.hpp>
 
+//#define DUMP_ODBC
+#ifdef DUMP_ODBC
 #include <iostream>
+#endif
 
 using namespace std;
 using Yb::StrUtils::str_to_upper;
@@ -57,10 +60,30 @@ public:
             int col_count = stmt_.count_columns();
             Row row;
             for (int i = 0; i < col_count; ++i) {
-                string name = str_to_upper(stmt_.field_name(i + 1));
-                string val = stmt_.field(i + 1).as_string();
-                row[name] = val.empty()? Value(): Value(val);
-                //cout << stmt_.field_name(i + 1) << "=\"" << val << "\"\n";
+                tiodbc::field_impl f = stmt_.field(i + 1);
+                string name = str_to_upper(f.get_name());
+                Value v;
+                if (f.get_type() == SQL_DATE ||
+                        f.get_type() == SQL_TIMESTAMP)
+                {
+                    TIMESTAMP_STRUCT ts = f.as_date_time();
+                    if (ts.year != 0) {
+                        v = Value(boost::posix_time::ptime(
+                                    boost::gregorian::date(
+                                        ts.year, ts.month, ts.day),
+                                    boost::posix_time::time_duration(
+                                        ts.hour, ts.minute, ts.second)));
+                    }
+                }
+                else {
+                    string val = f.as_string();
+                    v = val.empty()? Value(): Value(val);
+                }
+                row[name] = v;
+#ifdef DUMP_ODBC
+                cout << f.get_name()
+                    << "=" << v.sql_str() << "\n";
+#endif
             }
             rows->push_back(row);
         }
@@ -76,8 +99,27 @@ public:
     void exec(const Values &params)
     {
         for (int i = 0; i < params.size(); ++i) {
-            stmt_.param(i + 1).set_as_string(params[i].as_string());
-            //cout << "p[" << (i + 1) << "]=\"" << params[i].as_string() << "\"\n";
+            if (params[i].get_type() == Value::DateTime) {
+                TIMESTAMP_STRUCT ts;
+                memset(&ts, 0, sizeof(ts));
+                if (!params[i].is_null()) {
+                    boost::posix_time::ptime t = params[i].as_date_time();
+                    ts.year = t.date().year();
+                    ts.month = t.date().month();
+                    ts.day = t.date().day();
+                    ts.hour = t.time_of_day().hours();
+                    ts.minute = t.time_of_day().minutes();
+                    ts.second = t.time_of_day().seconds();
+                    ts.fraction = 0; // TODO
+                }
+                stmt_.param(i + 1).set_as_date_time(ts);
+            }
+            else
+                stmt_.param(i + 1).set_as_string(
+                        params[i].as_string());
+#ifdef DUMP_ODBC
+            cout << "p[" << (i + 1) << "]=\"" << params[i].as_string() << "\"\n";
+#endif
         }
         if (!stmt_.execute())
             throw DBError(stmt_.last_error());
@@ -114,7 +156,9 @@ OdbcDriver::rollback()
 void
 OdbcDriver::exec_direct(const string &sql)
 {
-    //cout << "exec_direct: " << sql << "\n";
+#ifdef DUMP_ODBC
+    cout << "exec_direct: " << sql << "\n";
+#endif
     impl_->exec_direct(sql);
 }
 
@@ -127,7 +171,9 @@ OdbcDriver::fetch_rows(int max_rows)
 void
 OdbcDriver::prepare(const string &sql)
 {
-    //cout << "prepare: " << sql << "\n";
+#ifdef DUMP_ODBC
+    cout << "prepare: " << sql << "\n";
+#endif
     impl_->prepare(sql);
 }
 

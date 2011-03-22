@@ -12,10 +12,13 @@
 
 using namespace std;
 using namespace Yb::ORMapper;
+using namespace Yb::SQL;
 using namespace Yb;
 using Yb::StrUtils::xgetenv;
 
 #define TEST_TBL1 "T_ORM_TEST"
+#define NUM_STMT 4
+
 //typedef Yb::SQL::DBPoolSession MySession;
 typedef Yb::SQL::OdbcSession MySession;
 
@@ -31,11 +34,25 @@ class TestIntegrMapper : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE_END();
 
     TableMetaDataRegistry r_;
+    string db_type_;
     const TableMetaDataRegistry &get_r() const { return r_; }
 
+    long long get_next_test_id(Session &ses, const string &seq_name)
+    {
+        if (db_type_ == "MYSQL") {
+            RowsPtr ptr = ses.select("MAX(ID) MAX_ID", "T_ORM_TEST", Filter());
+            CPPUNIT_ASSERT(1 == ptr->size() && 1 == (*ptr)[0].size());
+            Value x = (*ptr)[0]["MAX_ID"];
+            return x.is_null()? 1: x.as_long_long() + 1;
+        }
+        else {
+            return ses.get_next_value(seq_name);
+        }
+    }
 public:
     void setUp()
     {
+        db_type_ = xgetenv("YBORM_DBTYPE");
         /*
         CREATE TABLE T_ORM_TEST (
             ID  NUMBER          NOT NULL,
@@ -43,29 +60,36 @@ public:
             B   DATE            DEFAULT SYSDATE,
             C   NUMBER,
             PRIMARY KEY(ID));
-        CREATE SEQUENCE S_ORM_ID START WITH 100;
+        CREATE SEQUENCE S_ORM_TEST_ID START WITH 100;
         */
-        static const char *st[] = {
-            "DELETE FROM " TEST_TBL1,
-#if 0 // for Oracle
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
-                "'abc', TO_DATE('1981-05-30', 'YYYY-MM-DD'), 3.14)",
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
-                "'xyz', TO_DATE('2006-11-22 09:54:00', 'YYYY-MM-DD HH24:MI:SS'), -0.5)",
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
-                "'@#$', TO_DATE('2006-11-22', 'YYYY-MM-DD'), 0.01)"
-#else
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
-                "'abc', '1981-05-30', 3.14)",
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
-                "'xyz', '2006-11-22 09:54:00', -0.5)",
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
-                "'@#$', '2006-11-22', 0.01)"
-#endif
-        };
+        const char **st;
+        if (db_type_ == "ORACLE") {
+            static const char *st_data[NUM_STMT] = {
+                "DELETE FROM " TEST_TBL1,
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
+                    "'abc', TO_DATE('1981-05-30', 'YYYY-MM-DD'), 3.14)",
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
+                    "'xyz', TO_DATE('2006-11-22 09:54:00', 'YYYY-MM-DD HH24:MI:SS'), -0.5)",
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
+                    "'@#$', TO_DATE('2006-11-22', 'YYYY-MM-DD'), 0.01)"
+            };
+            st = st_data;
+        }
+        else {
+            static const char *st_data[NUM_STMT] = {
+                "DELETE FROM " TEST_TBL1,
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
+                    "'abc', '1981-05-30', 3.14)",
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
+                    "'xyz', '2006-11-22 09:54:00', -0.5)",
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
+                    "'@#$', '2006-11-22', 0.01)"
+            };
+            st = st_data;
+        }
         SQL::OdbcDriver drv;
         drv.open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
-        for (size_t i = 0; i < sizeof(st)/sizeof(const char *); ++i)
+        for (size_t i = 0; i < NUM_STMT; ++i)
             drv.exec_direct(st[i]);
         drv.commit();
 
@@ -76,11 +100,10 @@ public:
         t.set_column(ColumnMetaData("B", Value::DateTime, 0,
                     ColumnMetaData::RO));
         t.set_column(ColumnMetaData("C", Value::Decimal, 0, 0));
-#if 0
-        t.set_seq_name("S_ORM_ID");
-#else
-        t.set_autoinc(true);
-#endif
+        if (db_type_ == "MYSQL")
+            t.set_autoinc(true);
+        else
+            t.set_seq_name("S_ORM_TEST_ID");
         TableMetaDataRegistry r;
         r.set_table(t);
         r_ = r;
@@ -169,13 +192,7 @@ public:
             SqlDataSource ds(get_r(), ses);
             TableMapper mapper(get_r(), ds);
             RowData d(get_r(), TEST_TBL1);
-            SQL::RowsPtr res(ses.select(SQL::StrList("MAX(ID) M_ID"),
-                    SQL::StrList(TEST_TBL1)));
-#if 0
-            id = ds.get_next_id("S_ORM_ID");
-#else
-            id = (*res)[0]["M_ID"].as_long_long() + 1;
-#endif
+            id = get_next_test_id(ses, "S_ORM_TEST_ID");
             d.set("ID", id);
             d.set("A", Value(string("...")));
             d.set("C", decimal("-.001"));

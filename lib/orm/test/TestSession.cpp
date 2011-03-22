@@ -52,7 +52,7 @@ public:
     {
         {
             DBPoolSession ses;
-            record_id_ = ses.get_next_value("S_ORM_ID");
+            record_id_ = ses.get_next_value("S_ORM_TEST_ID");
         }
         CPPUNIT_ASSERT(record_id_ > 0);
         ostringstream sql;
@@ -279,7 +279,7 @@ public:
         DBPoolSession ses(Session::MANUAL);
         CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
         Rows rows;
-        long long id = ses.get_next_value("S_ORM_ID");
+        long long id = ses.get_next_value("S_ORM_TEST_ID");
         Row row;
         row.insert(make_pair(string("ID"), Value(id)));
         row.insert(make_pair(string("A"), Value("inserted")));
@@ -302,7 +302,7 @@ public:
         DBPoolSession ses(Session::MANUAL);
         CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
         Rows rows;
-        long long id = ses.get_next_value("S_ORM_ID");
+        long long id = ses.get_next_value("S_ORM_TEST_ID");
         Row row;
         row["A"] = Value("updated");
         row["C"] = Value(decimal("1.3"));

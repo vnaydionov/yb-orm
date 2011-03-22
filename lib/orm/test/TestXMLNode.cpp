@@ -12,6 +12,7 @@
 #include "orm/OdbcDriver.h"
 
 #define TEST_TBL1 "T_ORM_TEST"
+#define NUM_STMT 4
 
 using namespace std;
 using namespace Yb::ORMapper;
@@ -68,6 +69,7 @@ class TestXMLNode : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE_END();
 
     TableMetaDataRegistry r_;
+    string db_type_;
 
     void init_singleton_registry()
     {
@@ -83,14 +85,14 @@ class TestXMLNode : public CppUnit::TestFixture
         TableMetaDataRegistry &r = theMetaData::instance();
 //      if(r.size() == 0) {
             TableMetaData t("T_ORM_TEST", "orm-test");
-            t.set_seq_name("S_ORM_ID");
+            t.set_seq_name("S_ORM_TEST_ID");
             t.set_column(ColumnMetaData("ID", Value::LongLong, 0, ColumnMetaData::PK | ColumnMetaData::RO));
             t.set_column(ColumnMetaData("A", Value::String, 50, 0));
             t.set_column(ColumnMetaData("B", Value::DateTime, 0, 0));
             t.set_column(ColumnMetaData("C", Value::Decimal, 0, 0));
             r.set_table(t);
             TableMetaData t2("T_ORM_XML", "orm-xml");
-            t2.set_seq_name("S_ORM_ID");
+            t2.set_seq_name("S_ORM_TEST_ID");
             t2.set_column(ColumnMetaData("ID", Value::LongLong, 0, ColumnMetaData::PK | ColumnMetaData::RO));
             t2.set_column(ColumnMetaData("ORM_TEST_ID", Value::LongLong, 0, 0, "T_ORM_TEST", "ID"));
             t2.set_column(ColumnMetaData("B", Value::Decimal, 0, 0));
@@ -101,6 +103,8 @@ class TestXMLNode : public CppUnit::TestFixture
 public:
     void setUp()
     {
+        db_type_ = xgetenv("YBORM_DBTYPE");
+
         TableMetaData t("A");
         t.set_column(ColumnMetaData("X", Value::LongLong, 0, ColumnMetaData::PK | ColumnMetaData::RO));
         t.set_column(ColumnMetaData("Y", Value::String, 0, 0));
@@ -117,28 +121,35 @@ public:
         r.set_table(t3);
         r_ = r;
 
-        static const char *st[] = {
-            "DELETE FROM " TEST_TBL1,
-#if 0
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
-                "'abc', TO_DATE('1981-05-30', 'YYYY-MM-DD'), 3.14)",
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
-                "'xyz', TO_DATE('2006-11-22 09:54:00', 'YYYY-MM-DD HH24:MI:SS'), -0.5)",
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
-                "'@#$', TO_DATE('2006-11-22', 'YYYY-MM-DD'), 0.01)"
-#else
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
-                "'abc', '1981-05-30', 3.14)",
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
-                "'xyz', '2006-11-22 09:54:00', -0.5)",
-            "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
-                "'@#$', '2006-11-22', 0.01)"
-#endif
-        };
+        const char **st;
+        if (db_type_ == "ORACLE") {
+            static const char *st_data[NUM_STMT] = {
+                "DELETE FROM " TEST_TBL1,
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "                              
+                    "'abc', TO_DATE('1981-05-30', 'YYYY-MM-DD'), 3.14)",                         
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
+                    "'xyz', TO_DATE('2006-11-22 09:54:00', 'YYYY-MM-DD HH24:MI:SS'), -0.5)",     
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
+                    "'@#$', TO_DATE('2006-11-22', 'YYYY-MM-DD'), 0.01)"    
+            };
+            st = st_data;
+        }
+        else {
+            static const char *st_data[NUM_STMT] = {
+                "DELETE FROM " TEST_TBL1,
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "                              
+                    "'abc', '1981-05-30', 3.14)",
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "                              
+                    "'xyz', '2006-11-22 09:54:00', -0.5)",
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "                              
+                    "'@#$', '2006-11-22', 0.01)"
+            };
+            st = st_data;
+        }
         Yb::SQL::OdbcDriver drv;
         drv.open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"),
                 xgetenv("YBORM_PASSWD"));
-        for (size_t i = 0; i < sizeof(st)/sizeof(const char *); ++i)
+        for (size_t i = 0; i < NUM_STMT; ++i)
             drv.exec_direct(st[i]);
         drv.commit();
     }

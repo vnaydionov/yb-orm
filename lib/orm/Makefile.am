@@ -61,15 +61,29 @@ unit_tests_LDADD = libyborm.la test/libormtest.la \
 
 unit_tests_SOURCES =
 
-export YBORM_DB=test1_db
-export YBORM_USER=test1
-export YBORM_PASSWD=test1_pwd
+#export YBORM_DBTYPE=MYSQL
+#export YBORM_DB=test1_db
+#export YBORM_USER=test1
+#export YBORM_PASSWD=test1_pwd
+
+export YBORM_DBTYPE=ORACLE
+export YBORM_DB=test1_db_ora
+export YBORM_USER=bo
+export YBORM_PASSWD=balalancing
+
+# Oracle specific
+export TWO_TASK=balance-dev.yandex.ru
+export ORACLE_HOME=/opt/oracle/instantclient_10_2
+export LD_LIBRARY_PATH=/opt/oracle/instantclient_10_2
+export NLS_NUMERIC_CHARACTERS=. 
+export NLS_SORT=RUSSIAN
+export NLS_LANG=AMERICAN_CIS.UTF8
 
 # for DBPool
-export YBORM_DRIVER=mysql
-export YBORM_HOST=localhost
-export YBORM_PORT=3306
-export YBORM_TIMEOUT=10
-export DB_POOL_SIZE=3
+#export YBORM_DRIVER=mysql
+#export YBORM_HOST=localhost
+#export YBORM_PORT=3306
+#export YBORM_TIMEOUT=10
+#export DB_POOL_SIZE=3
 
 TESTS = unit_tests

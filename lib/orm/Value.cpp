@@ -95,7 +95,13 @@ public:
     const boost::posix_time::ptime &get() const { return x_; }
     const string to_str() const
     {
-        return boost::posix_time::to_iso_extended_string(x_);
+        string t(boost::posix_time::to_iso_extended_string(x_));
+#if 0
+        size_t found = t.find('T');
+        if (found != string::npos)
+            t[found] = ' ';
+#endif
+        return t;
     }
     const string to_sql_str() const
     {

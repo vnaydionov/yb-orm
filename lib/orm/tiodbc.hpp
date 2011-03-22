@@ -261,9 +261,12 @@ namespace tiodbc
 	private:
 		HSTMT stmt_h;			//!< Handle of statement that field exists
 		int col_num;			//!< Collumn number that field exists.
+		std::string name;
+		int type;
 		
 		// Not direct contructable
-		field_impl(HSTMT _stmt, int _col_num);
+		field_impl(HSTMT _stmt, int _col_num,
+				const std::string _name, int _type);
 
 	public:
 	
@@ -299,6 +302,15 @@ namespace tiodbc
 
 		//! Get field as float
 		float as_float() const;
+
+		//! Get field as DateTime
+		const TIMESTAMP_STRUCT as_date_time() const;
+
+		//! Get field data type
+		int get_type() const { return type; }
+
+		//! Get fiield name
+		const std::string & get_name() const { return name; }
 
 		//! @}
 	}; // !field_impl
@@ -349,6 +361,10 @@ namespace tiodbc
 
 		//! Set parameter as unsigned long
 		const unsigned long & set_as_unsigned_long(const unsigned long & _value);
+
+		//! Set parameter as DateTime
+		const TIMESTAMP_STRUCT & set_as_date_time(
+				const TIMESTAMP_STRUCT & _value);
 
 		//! @}
 	};	// !param_impl
@@ -645,8 +661,6 @@ namespace tiodbc
         @ref example_4
 		*/
 		const field_impl field(int _num) const;
-
-		const std::string field_name(int _num) const;
 
 		//! Count columns of the result set
 		/**

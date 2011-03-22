@@ -221,9 +221,12 @@ namespace tiodbc
 	//! @endcond
 
 	// Not direct contructable
-	field_impl::field_impl(HSTMT _stmt, int _col_num)
-		:stmt_h(_stmt),
-		col_num(_col_num)
+	field_impl::field_impl(HSTMT _stmt, int _col_num,
+			const std::string _name, int _type)
+		: stmt_h(_stmt)
+		, col_num(_col_num)
+		, name(_name)
+		, type(_type)
 	{}
 
 	//! Destructor
@@ -300,26 +303,40 @@ namespace tiodbc
 	{	return __get_data<unsigned short>(stmt_h, col_num, SQL_C_USHORT, 0);
 	}
 
+	// Get field as DateTime
+	const TIMESTAMP_STRUCT field_impl::as_date_time() const
+	{
+		TIMESTAMP_STRUCT ts;
+		std::memset(&ts, 0, sizeof(ts));
+		SQLINTEGER sz_needed = 0;
+		RETCODE rc = SQLGetData(stmt_h, col_num, SQL_C_TIMESTAMP,
+				&ts, sizeof(ts), &sz_needed);
+		if (!TIODBC_SUCCESS_CODE(rc) || sz_needed == SQL_NULL_DATA)
+			std::memset(&ts, 0, sizeof(ts));
+		return ts;
+	}
+
 	///////////////////////////////////////////////////////////////////////////////////
 	// PARAM IMPLEMENTATION
 	///////////////////////////////////////////////////////////////////////////////////
 
 	//! @cond INTERNAL_FUNCTIONS
 	template <class T>
-	const T & __bind_param(HSTMT _stmt, int _parnum, SQLSMALLINT _ctype, SQLSMALLINT _sqltype, void * dst_buf, const T & _value)
+	const T & __bind_param(HSTMT _stmt, int _parnum, SQLSMALLINT _ctype, SQLSMALLINT _sqltype, void * dst_buf, const T & _value, bool is_null)
 	{
 		// Save buffer internally
 		std::memcpy(dst_buf, &_value, sizeof(_value));
 
+		const int odbc_date_prec = 23, odbc_date_scale=0;
 		// Bind on internal buffer		
-		SQLINTEGER StrLenOrInPoint = 0;
+		SQLINTEGER StrLenOrInPoint = is_null? SQL_NULL_DATA: 0;
 		SQLBindParameter(_stmt,
 			_parnum,
 			SQL_PARAM_INPUT,
 			_ctype,
 			_sqltype,
-			0,
-			0,
+			_sqltype == SQL_TYPE_TIMESTAMP? odbc_date_prec: 0,
+			_sqltype == SQL_TYPE_TIMESTAMP? odbc_date_scale: 0,
 			(SQLPOINTER *)dst_buf,
 			0,
 			&StrLenOrInPoint
@@ -378,11 +395,19 @@ namespace tiodbc
 
 	// Set as string
 	const long & param_impl::set_as_long(const long & _value)
-	{	return __bind_param(stmt_h, par_num, SQL_C_SLONG, SQL_INTEGER, _int_buffer, _value);	}
+	{	return __bind_param(stmt_h, par_num, SQL_C_SLONG, SQL_INTEGER, _int_buffer, _value, false);	}
 
 	// Set parameter as usigned long
 	const unsigned long & param_impl::set_as_unsigned_long(const unsigned long & _value)
-	{	return __bind_param(stmt_h, par_num, SQL_C_ULONG, SQL_INTEGER, _int_buffer, _value);	}
+	{	return __bind_param(stmt_h, par_num, SQL_C_ULONG, SQL_INTEGER, _int_buffer, _value, false);	}
+
+	// Set parameter as DateTime
+	const TIMESTAMP_STRUCT & param_impl::set_as_date_time(
+			const TIMESTAMP_STRUCT & _value)
+	{
+		return __bind_param(stmt_h, par_num, SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP,
+				_int_buffer, _value, _value.year == 0);	
+	}
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// STATEMENT IMPLEMENTATION
@@ -494,7 +519,7 @@ namespace tiodbc
 
 		// Execute directly statement
 		rc = SQLExecDirect(stmt_h, (SQLTCHAR *)_query.c_str(), SQL_NTS);
-		if (!TIODBC_SUCCESS_CODE(rc))
+		if (!TIODBC_SUCCESS_CODE(rc) && rc != SQL_NO_DATA)
 			return false;
 		b_col_info_needed = true;
 		return true;
@@ -524,8 +549,12 @@ namespace tiodbc
 		for (int i = 0; i < ncols; ++i) {
 			col_descr col_info;
 			rc = SQLDescribeCol(stmt_h, i + 1,
-					col_info.name, sizeof(col_info.name), &col_info.name_len,
-					&col_info.type, &col_info.col_size, &col_info.decimal_digits,
+					col_info.name,
+					sizeof(col_info.name),
+					&col_info.name_len,
+					&col_info.type,
+					&col_info.col_size,
+					&col_info.decimal_digits,
 					&col_info.nullable);
 			if (!TIODBC_SUCCESS_CODE(rc))
 				return false;
@@ -555,12 +584,8 @@ namespace tiodbc
 	// Get a field by column number (1-based)
 	const field_impl statement::field(int _num) const
 	{	
-		return field_impl(stmt_h, _num);
-	}
-
-	const std::string statement::field_name(int _num) const
-	{
-		return (const char *)(m_cols[_num - 1].name);
+		return field_impl(stmt_h, _num,
+				(char *)m_cols[_num - 1].name, m_cols[_num - 1].type);
 	}
 
 	// Count columns of the result
