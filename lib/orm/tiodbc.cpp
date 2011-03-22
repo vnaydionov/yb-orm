@@ -1,6 +1,34 @@
+/***************************************************************************
+
+    This file is part of project: TinyODBC
+    TinyODBC is hosted under: http://code.google.com/p/tiodbc/
+
+    Copyright (c) 2008-2011 SqUe <squarious _at_ gmail _dot_ com>
+
+    The MIT Licence
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    THE SOFTWARE.
+*****************************************************************************/
+
 #include "tiodbc.hpp"
-#include <memory>
 #include <cstring>
+#include <memory>
 
 // Macro for easy return code check
 #define TIODBC_SUCCESS_CODE(rc) \
@@ -9,15 +37,16 @@
 namespace tiodbc
 {
 	// Current version
-	unsigned short version_major()		{	return 0;	}
-	unsigned short version_minor()		{	return 1;	}
+	unsigned short version_major()		{	return 1;	}
+	unsigned short version_minor()		{	return 0;	}
 	unsigned short version_revision()	{	return 0;	}
 
 	//! @cond INTERNAL_FUNCTIONS
 
 	// Get an error of an ODBC handle
 	bool __get_error(SQLSMALLINT _handle_type, SQLHANDLE _handle, _tstring & _error_desc, _tstring & _status_code)
-	{	TCHAR status_code[256];
+	{
+		TCHAR status_code[256];
 		TCHAR error_message[256];
 		SQLINTEGER i_native_error;
 		SQLSMALLINT total_bytes;
@@ -113,8 +142,9 @@ namespace tiodbc
 
 	// open a connection with a data_source
 	bool connection::connect(const _tstring & _dsn,	const _tstring & _user, const _tstring & _pass,
-				 int _timeout, bool _autocommit)
-	{	RETCODE rc;
+			int _timeout, bool _autocommit)
+	{
+		RETCODE rc;
 		
 		// Close if already open
 		disconnect();
@@ -156,7 +186,9 @@ namespace tiodbc
 
 	// Check if it is open
 	bool connection::connected() const
-	{	return b_connected;		}
+	{
+		return b_connected;
+	}
 
 	// Close connection
 	void connection::disconnect()
@@ -184,7 +216,8 @@ namespace tiodbc
 
 	// Get last error description
 	_tstring connection::last_error()
-	{	_tstring error, state;
+	{
+		_tstring error, state;
 		
 		// Get error message
 		__get_error(SQL_HANDLE_DBC, conn_h, error, state);
@@ -194,7 +227,8 @@ namespace tiodbc
 
 	// Get last error code
 	_tstring connection::last_error_status_code()
-	{	_tstring error, state;
+	{
+		_tstring error, state;
 		
 		__get_error(SQL_HANDLE_DBC, conn_h, error, state);
 
@@ -209,7 +243,8 @@ namespace tiodbc
 
 	template<class T>
 	T __get_data(HSTMT _stmt, int _col, SQLSMALLINT _ttype, T error_value)
-	{	T tmp_storage;
+	{
+		T tmp_storage;
 		SQLINTEGER cb_needed;
 		RETCODE rc;
 		rc = SQLGetData(_stmt, _col, _ttype, &tmp_storage, sizeof(tmp_storage), &cb_needed);
@@ -242,14 +277,16 @@ namespace tiodbc
 
 	// Copy operator
 	field_impl & field_impl::operator=(const field_impl & r)
-	{	stmt_h = r.stmt_h;
+	{
+		stmt_h = r.stmt_h;
 		col_num = r.col_num;
 		return *this;
 	}
 
 	// Get field as string
 	_tstring field_impl::as_string() const
-	{	SQLINTEGER sz_needed = 0;
+	{
+		SQLINTEGER sz_needed = 0;
 		TCHAR small_buff[256];
 		RETCODE rc;
 				
@@ -275,32 +312,38 @@ namespace tiodbc
 
 	// Get field as long
 	long field_impl::as_long() const
-	{	return __get_data<long>(stmt_h, col_num, SQL_C_SLONG, 0);
+	{
+		return __get_data<long>(stmt_h, col_num, SQL_C_SLONG, 0);
 	}
 
 	// Get field as unsigned long
 	unsigned long field_impl::as_unsigned_long() const
-	{	return __get_data<unsigned long>(stmt_h, col_num, SQL_C_ULONG, 0);
+	{
+		return __get_data<unsigned long>(stmt_h, col_num, SQL_C_ULONG, 0);
 	}
 
 	// Get field as double
 	double field_impl::as_double() const
-	{	return __get_data<double>(stmt_h, col_num, SQL_C_DOUBLE, 0);
+	{
+		return __get_data<double>(stmt_h, col_num, SQL_C_DOUBLE, 0);
 	}
 
 	// Get field as float
 	float field_impl::as_float() const
-	{	return __get_data<float>(stmt_h, col_num, SQL_C_FLOAT, 0);
+	{
+		return __get_data<float>(stmt_h, col_num, SQL_C_FLOAT, 0);
 	}
 
 	// Get field as short
 	short field_impl::as_short() const
-	{	return __get_data<short>(stmt_h, col_num, SQL_C_SSHORT, 0);
+	{
+		return __get_data<short>(stmt_h, col_num, SQL_C_SSHORT, 0);
 	}
 
 	// Get field as unsigned short
 	unsigned short field_impl::as_unsigned_short() const
-	{	return __get_data<unsigned short>(stmt_h, col_num, SQL_C_USHORT, 0);
+	{
+		return __get_data<unsigned short>(stmt_h, col_num, SQL_C_USHORT, 0);
 	}
 
 	// Get field as DateTime
@@ -351,8 +394,7 @@ namespace tiodbc
 	param_impl::param_impl(HSTMT _stmt, int _par_num)
 		:stmt_h(_stmt),
 		par_num(_par_num)
-	{
-	}
+	{}
 
 	// Copy constructor
 	param_impl::param_impl(const param_impl & r)
@@ -374,7 +416,8 @@ namespace tiodbc
 
 	// Set as string
 	const _tstring & param_impl::set_as_string(const _tstring & _str)
-	{	// Save buffer internally
+	{
+		// Save buffer internally
 		_int_string = _str;
 
 		// Bind on internal buffer		
@@ -393,20 +436,26 @@ namespace tiodbc
 		return _int_string;
 	}
 
-	// Set as string
+	// Set as long
 	const long & param_impl::set_as_long(const long & _value)
-	{	return __bind_param(stmt_h, par_num, SQL_C_SLONG, SQL_INTEGER, _int_buffer, _value, false);	}
+	{
+		return __bind_param(stmt_h, par_num, SQL_C_SLONG, SQL_INTEGER,
+				_int_buffer, _value, false);
+	}
 
 	// Set parameter as usigned long
 	const unsigned long & param_impl::set_as_unsigned_long(const unsigned long & _value)
-	{	return __bind_param(stmt_h, par_num, SQL_C_ULONG, SQL_INTEGER, _int_buffer, _value, false);	}
+	{
+		return __bind_param(stmt_h, par_num, SQL_C_ULONG, SQL_INTEGER,
+				_int_buffer, _value, false);
+	}
 
 	// Set parameter as DateTime
 	const TIMESTAMP_STRUCT & param_impl::set_as_date_time(
 			const TIMESTAMP_STRUCT & _value)
 	{
 		return __bind_param(stmt_h, par_num, SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP,
-				_int_buffer, _value, _value.year == 0);	
+				_int_buffer, _value, _value.year == 0);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////
@@ -432,19 +481,22 @@ namespace tiodbc
 
 	// Destructor
 	statement::~statement()
-	{	close();	}
+	{
+		close();
+	}
 
 	// Used to create a statement (used automatically by the other functions)
 	bool statement::open(connection & _conn)
-	{	RETCODE rc;
-		
+	{
+		RETCODE rc;
 		// close previous one
 		close();
 
 		// Allocate statement
 		rc = SQLAllocHandle(SQL_HANDLE_STMT, _conn.native_dbc_handle(), &stmt_h);
 		if (!TIODBC_SUCCESS_CODE(rc))
-		{	stmt_h = NULL;
+		{
+			stmt_h = NULL;
 			b_open = false;
 			return false;
 		}
@@ -455,7 +507,9 @@ namespace tiodbc
 
 	// Check if it is an open statement
 	bool statement::is_open() const
-	{	return b_open;	}
+	{
+		return b_open;
+	}
 
 	// Close statement
 	void statement::close()
@@ -480,15 +534,16 @@ namespace tiodbc
 
 	// Free results (aka SQLCloseCursor)
 	void statement::free_results()
-	{	// Close cursor if we have an open connection
+	{
+		// Close cursor if we have an open connection
 		if (is_open())
 			SQLCloseCursor(stmt_h);
 	}
 
 	// Prepare statement
 	bool statement::prepare(connection & _conn, const _tstring & _stmt)
-	{	RETCODE rc;
-
+	{
+		RETCODE rc;
 		// Close previous
 		close();
 
@@ -508,8 +563,8 @@ namespace tiodbc
 
 	// Execute direct a query
 	bool statement::execute_direct(connection & _conn, const _tstring & _query)
-	{	RETCODE rc;
-
+	{
+		RETCODE rc;
 		// Close previous
 		close();
 
@@ -527,7 +582,8 @@ namespace tiodbc
 
 	// Execute statement
 	bool statement::execute()
-	{	RETCODE rc;
+	{
+		RETCODE rc;
 		if (!is_open())
 			return false;
 
@@ -590,7 +646,8 @@ namespace tiodbc
 
 	// Count columns of the result
 	int statement::count_columns() const
-	{	SQLSMALLINT _total_cols;
+	{
+		SQLSMALLINT _total_cols;
 		RETCODE rc;
 
 		if (!is_open())
@@ -604,7 +661,8 @@ namespace tiodbc
 
 	// Get last error description
 	_tstring statement::last_error()
-	{	_tstring error, state;
+	{
+		_tstring error, state;
 		
 		// Get error message
 		__get_error(SQL_HANDLE_STMT, stmt_h, error, state);
@@ -614,7 +672,8 @@ namespace tiodbc
 
 	// Get last error code
 	_tstring statement::last_error_status_code()
-	{	_tstring error, state;
+	{
+		_tstring error, state;
 		
 		__get_error(SQL_HANDLE_STMT, stmt_h, error, state);
 
@@ -623,7 +682,8 @@ namespace tiodbc
 
 	// Handle a parameter
 	param_impl & statement::param(int _num)
-	{	// Add a new if there isn't one
+	{
+		// Add a new if there isn't one
 		if (0 == m_params.count(_num))
 			m_params[_num] = new param_impl(stmt_h, _num);
 		
@@ -632,11 +692,12 @@ namespace tiodbc
 
 	// Reset parameters (unbind all parameters
 	void statement::reset_parameters()
-	{	if (!is_open())
+	{
+		if (!is_open())
 			return;
 
 		SQLFreeStmt(stmt_h, SQL_RESET_PARAMS);
 	}
 
-};	// !namespace tiodbc
+}	// !namespace tiodbc
 // vim:ts=4:sts=4:sw=4:noet:
