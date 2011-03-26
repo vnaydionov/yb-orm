@@ -11,6 +11,10 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <util/decimal.h>
 
+#ifdef __WIN32__
+struct tm *localtime_r(const time_t *clock, struct tm *result);
+#endif
+
 namespace Yb {
 
 class ValueIsNull : public std::logic_error

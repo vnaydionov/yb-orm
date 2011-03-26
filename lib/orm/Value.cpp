@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iomanip>
 #include <boost/lexical_cast.hpp>
+#include <boost/thread/mutex.hpp>
 #include <util/str_utils.hpp>
 #include "Value.h"
 #include "MetaData.h"
@@ -10,6 +11,18 @@
 
 using namespace std;
 using namespace Yb::StrUtils;
+
+#ifdef __WIN32__
+struct tm *localtime_r(const time_t *clock, struct tm *result)
+{ 
+    if (!clock || !result)
+        return NULL;
+    static boost::mutex m;
+    boost::mutex::scoped_lock lock(m);
+    memcpy(result, localtime(clock), sizeof(*result)); 
+    return result; 
+}
+#endif
 
 namespace Yb {
 

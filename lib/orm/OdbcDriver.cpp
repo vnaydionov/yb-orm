@@ -1,10 +1,8 @@
 
 #include "OdbcDriver.h"
 #include <time.h>
-#include <sql.h>
-#include <sqlext.h>
-#include <boost/lexical_cast.hpp>
 #include <tiodbc.hpp>
+#include <boost/lexical_cast.hpp>
 #include <util/str_utils.hpp>
 
 //#define DUMP_ODBC
