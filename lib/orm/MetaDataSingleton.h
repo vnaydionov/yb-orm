@@ -1,13 +1,12 @@
-
-#ifndef YB__CORE__METADATA_SINGLETON__INCLUDED
-#define YB__CORE__METADATA_SINGLETON__INCLUDED
+#ifndef YB__ORM__META_DATA_SINGLETON__INCLUDED
+#define YB__ORM__META_DATA_SINGLETON__INCLUDED
 
 #include <util/Singleton.h>
-#include "orm/MetaData.h"
+#include "MetaData.h"
 
-typedef Yb::SingletonHolder<Yb::ORMapper::TableMetaDataRegistry> theMetaData;
+namespace Yb {
+typedef SingletonHolder<TableMetaDataRegistry> theMetaData;
+}
 
-// vim:ts=4:sts=4:sw=4:et
-
-#endif // YB__CORE__METADATA_SINGLETON__INCLUDED
-
+// vim:ts=4:sts=4:sw=4:et:
+#endif // YB__ORM__META_DATA_SINGLETON__INCLUDED

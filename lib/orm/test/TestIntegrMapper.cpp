@@ -1,7 +1,5 @@
-
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-
 #include "util/str_utils.hpp"
 #include "orm/Mapper.h"
 #include "orm/SqlDataSource.h"
@@ -11,16 +9,14 @@
 #include "orm/OdbcDriver.h"
 
 using namespace std;
-using namespace Yb::ORMapper;
-using namespace Yb::SQL;
 using namespace Yb;
 using Yb::StrUtils::xgetenv;
 
 #define TEST_TBL1 "T_ORM_TEST"
 #define NUM_STMT 4
 
-//typedef Yb::SQL::DBPoolSession MySession;
-typedef Yb::SQL::OdbcSession MySession;
+//typedef DBPoolSession MySession;
+typedef OdbcSession MySession;
 
 class TestIntegrMapper : public CppUnit::TestFixture
 {
@@ -87,7 +83,7 @@ public:
             };
             st = st_data;
         }
-        SQL::OdbcDriver drv;
+        OdbcDriver drv;
         drv.open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
         for (size_t i = 0; i < NUM_STMT; ++i)
             drv.exec_direct(st[i]);
@@ -142,7 +138,7 @@ public:
         SqlDataSource ds(get_r(), ses);
         TableMapper mapper(get_r(), ds);
         LoadedRows rows = mapper.load_collection(TEST_TBL1,
-                SQL::Filter("ID < 10"));
+                Filter("ID < 10"));
         CPPUNIT_ASSERT(rows.get() && rows->size() == 3);
         std::vector<RowData * > ::const_iterator it = rows->begin(), end = rows->end();
         for (; it != end; ++it) {
@@ -159,7 +155,7 @@ public:
     {
         long long id;
         {
-            MySession ses(Yb::SQL::Session::MANUAL);
+            MySession ses(Session::MANUAL);
             SqlDataSource ds(get_r(), ses);
             TableMapper mapper(get_r(), ds);
             RowData *d = mapper.create(TEST_TBL1);
@@ -188,7 +184,7 @@ public:
     {
         long long id;
         {
-            MySession ses(Yb::SQL::Session::MANUAL);
+            MySession ses(Session::MANUAL);
             SqlDataSource ds(get_r(), ses);
             TableMapper mapper(get_r(), ds);
             RowData d(get_r(), TEST_TBL1);
@@ -221,7 +217,7 @@ public:
         RowData key2(get_r(), TEST_TBL1);
         key2.set("ID", 1);
         {
-            MySession ses(Yb::SQL::Session::MANUAL);
+            MySession ses(Session::MANUAL);
             SqlDataSource ds(get_r(), ses);
             TableMapper mapper(get_r(), ds);
             RowData *d = mapper.find(key1);
@@ -252,6 +248,4 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestIntegrMapper);
 
-// vim:ts=4:sts=4:sw=4:et
-
-
+// vim:ts=4:sts=4:sw=4:et:

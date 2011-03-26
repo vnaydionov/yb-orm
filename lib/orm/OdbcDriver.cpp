@@ -1,4 +1,3 @@
-
 #include "OdbcDriver.h"
 #include <time.h>
 #include <tiodbc.hpp>
@@ -14,7 +13,6 @@ using namespace std;
 using Yb::StrUtils::str_to_upper;
 
 namespace Yb {
-namespace SQL {
 
 class OdbcDriverImpl
 {
@@ -181,8 +179,6 @@ OdbcDriver::exec(const Values &params)
     impl_->exec(params);
 }
 
-} // namespace SQL
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

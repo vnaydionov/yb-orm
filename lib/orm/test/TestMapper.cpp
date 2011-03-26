@@ -1,15 +1,11 @@
-
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-
 #include "orm/Mapper.h"
 
 using namespace std;
-using namespace Yb::ORMapper;
-using Yb::Value;
-using Yb::PKIDValue;
+using namespace Yb;
 
-class MockDataSource : public Yb::ORMapper::DataSource
+class MockDataSource : public DataSource
 {
     const TableMetaDataRegistry &reg_;
     size_t select_cnt_, update_cnt_, insert_cnt_, delete_cnt_;
@@ -33,8 +29,8 @@ public:
         return p;
     }
     RowDataVectorPtr select_rows(
-            const string &table_name, const Yb::SQL::Filter &filter, 
-            const Yb::SQL::StrList &order_by = Yb::SQL::StrList(), int max = -1,
+            const string &table_name, const Filter &filter, 
+            const StrList &order_by = StrList(), int max = -1,
             const string &table_alias = "")
     {
         RowDataVectorPtr vp(new RowDataVector());
@@ -290,7 +286,7 @@ public:
         RowData *d = mapper.find(key);
         CPPUNIT_ASSERT(d->is_ghost());
         LoadedRows rows = mapper.load_collection("B",
-                Yb::SQL::filter_eq("U", Value(1)));
+                filter_eq("U", Value(1)));
         CPPUNIT_ASSERT_EQUAL(2U, rows->size());
         CPPUNIT_ASSERT(!(*rows)[0]->is_ghost());
         CPPUNIT_ASSERT(!(*rows)[0]->get("U").is_null());
@@ -361,5 +357,4 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestTableMapper);
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

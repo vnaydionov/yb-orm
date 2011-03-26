@@ -1,15 +1,11 @@
-
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-
 #include "util/str_utils.hpp"
 #include "util/decimal.h"
 #include "orm/OdbcSession.h"
 
 using namespace std;
-using namespace Yb::SQL;
-using Yb::Value;
-using Yb::Values;
+using namespace Yb;
 using Yb::StrUtils::xgetenv;
 
 class TestOdbcSession : public CppUnit::TestFixture
@@ -23,27 +19,27 @@ class TestOdbcSession : public CppUnit::TestFixture
     CPPUNIT_TEST(test_select_groupby);
     CPPUNIT_TEST(test_select_having);
     CPPUNIT_TEST(test_select_orderby);
-    CPPUNIT_TEST_EXCEPTION(test_select_having_wo_groupby, Yb::SQL::BadSQLOperation);
+    CPPUNIT_TEST_EXCEPTION(test_select_having_wo_groupby, BadSQLOperation);
     CPPUNIT_TEST(test_insert_simple);
     CPPUNIT_TEST(test_insert_exclude);
-    CPPUNIT_TEST_EXCEPTION(test_insert_empty_row, Yb::SQL::BadSQLOperation);
+    CPPUNIT_TEST_EXCEPTION(test_insert_empty_row, BadSQLOperation);
     CPPUNIT_TEST(test_update_where);
     CPPUNIT_TEST(test_update_combo);
-    CPPUNIT_TEST_EXCEPTION(test_update_empty_row, Yb::SQL::BadSQLOperation);
-    CPPUNIT_TEST_EXCEPTION(test_update_wo_clause, Yb::SQL::BadSQLOperation);
+    CPPUNIT_TEST_EXCEPTION(test_update_empty_row, BadSQLOperation);
+    CPPUNIT_TEST_EXCEPTION(test_update_wo_clause, BadSQLOperation);
     CPPUNIT_TEST(test_delete);
-    CPPUNIT_TEST_EXCEPTION(test_delete_wo_clause, Yb::SQL::BadSQLOperation);
+    CPPUNIT_TEST_EXCEPTION(test_delete_wo_clause, BadSQLOperation);
     // Real DB tests
     CPPUNIT_TEST(test_insert_sql);
     CPPUNIT_TEST(test_update_sql);
     CPPUNIT_TEST(test_select_sql);
     CPPUNIT_TEST(test_select_sql_max_rows);
-    CPPUNIT_TEST_EXCEPTION(test_insert_ro_mode, Yb::SQL::BadOperationInMode);
-    CPPUNIT_TEST_EXCEPTION(test_update_ro_mode, Yb::SQL::BadOperationInMode);
-    CPPUNIT_TEST_EXCEPTION(test_selforupdate_ro_mode, Yb::SQL::BadOperationInMode);
-    CPPUNIT_TEST_EXCEPTION(test_commit_ro_mode, Yb::SQL::BadOperationInMode);
-    CPPUNIT_TEST_EXCEPTION(test_delete_ro_mode, Yb::SQL::BadOperationInMode);
-    CPPUNIT_TEST_EXCEPTION(test_execpoc_ro_mode, Yb::SQL::BadOperationInMode);
+    CPPUNIT_TEST_EXCEPTION(test_insert_ro_mode, BadOperationInMode);
+    CPPUNIT_TEST_EXCEPTION(test_update_ro_mode, BadOperationInMode);
+    CPPUNIT_TEST_EXCEPTION(test_selforupdate_ro_mode, BadOperationInMode);
+    CPPUNIT_TEST_EXCEPTION(test_commit_ro_mode, BadOperationInMode);
+    CPPUNIT_TEST_EXCEPTION(test_delete_ro_mode, BadOperationInMode);
+    CPPUNIT_TEST_EXCEPTION(test_execpoc_ro_mode, BadOperationInMode);
     CPPUNIT_TEST(test_force_select_for_update);
     CPPUNIT_TEST_SUITE_END();
 
@@ -431,5 +427,4 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestOdbcSession);
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

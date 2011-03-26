@@ -1,4 +1,3 @@
-
 #include <time.h>
 #include <sstream>
 #include <stdexcept>
@@ -13,7 +12,6 @@
 using namespace std;
 
 namespace Yb {
-namespace SQL {
 
 static string cfg(const string &name, bool required = true)
 {
@@ -124,13 +122,13 @@ DBPoolSession::on_select(const StrList &what,
     }
 }
 
-const std::vector<long long>
+const vector<long long>
 DBPoolSession::on_insert(const string &table_name,
         const Rows &rows, const FieldSet &exclude_fields,
         bool collect_new_ids)
 {
     try {
-        std::vector<long long> ids;
+        vector<long long> ids;
         Rows::const_iterator it = rows.begin(), end = rows.end();
         for(; it != end; ++it) {
             string sql;
@@ -334,8 +332,6 @@ DBPoolSession::do_gen_sql_delete(string &sql, const string &table,
     sql = sql_query.str();
 }
 
-} // namespace SQL
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

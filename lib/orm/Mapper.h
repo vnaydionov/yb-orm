@@ -1,4 +1,3 @@
-
 #ifndef YB__ORM__MAPPER__INCLUDED
 #define YB__ORM__MAPPER__INCLUDED
 
@@ -12,7 +11,6 @@
 class TestTableMapper;
 
 namespace Yb {
-namespace ORMapper {
 
 class Mapper
 {
@@ -20,8 +18,8 @@ public:
     virtual ~Mapper();
     virtual RowData *find(const RowData &key) = 0;
     virtual LoadedRows load_collection(
-            const std::string &table_name, const SQL::Filter &filter, 
-            const SQL::StrList &order_by = SQL::StrList(), int max = -1,
+            const std::string &table_name, const Filter &filter, 
+            const StrList &order_by = StrList(), int max = -1,
             const std::string &table_alias = "") = 0;
     virtual RowData *create(const std::string &table_name) = 0;
     virtual RowData *register_as_new(const RowData &row) = 0;
@@ -37,8 +35,8 @@ public:
     TableMapper(const TableMetaDataRegistry &reg, DataSource &ds);
     RowData *find(const RowData &key);
     LoadedRows load_collection(
-            const std::string &table_name, const SQL::Filter &filter, 
-            const SQL::StrList &order_by = SQL::StrList(), int max = -1,
+            const std::string &table_name, const Filter &filter, 
+            const StrList &order_by = StrList(), int max = -1,
             const std::string &table_alias = "");
     RowData *create(const std::string &table_name);
     RowData *register_as_new(const RowData &row);
@@ -61,11 +59,7 @@ private:
     std::vector<boost::shared_ptr<PKIDRecord> > new_ids_;
 };
 
-} // namespace ORMapper
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:
 #endif // YB__ORM__MAPPER__INCLUDED
-
-

@@ -1,6 +1,5 @@
-
-#ifndef YB__CORE__MAPPER_SESSION__INCLUDED
-#define YB__CORE__MAPPER_SESSION__INCLUDED
+#ifndef YB__ORM__MAPPER_SESSION__INCLUDED
+#define YB__ORM__MAPPER_SESSION__INCLUDED
 
 #include "Mapper.h"
 #include "SqlDataSource.h"
@@ -9,38 +8,38 @@
 namespace Yb {
 
 class MapperSession
-    : public ::Yb::SQL::Session
-    , public ::Yb::ORMapper::Mapper
+    : public Session
+    , public Mapper
 {
-    SQL::OdbcSession session_;
-    ORMapper::SqlDataSource ds_;
-    ORMapper::TableMapper mapper_;
+    OdbcSession session_;
+    SqlDataSource ds_;
+    TableMapper mapper_;
 public:
     MapperSession(bool read_only = true);
     // mapper interface methods
-    ORMapper::RowData *find(const ORMapper::RowData &key);
-    ORMapper::LoadedRows load_collection(
-            const std::string &table_name, const SQL::Filter &filter, 
-	    const SQL::StrList &order_by = SQL::StrList(), int max = -1,
+    RowData *find(const RowData &key);
+    LoadedRows load_collection(
+            const std::string &table_name, const Filter &filter, 
+	    const StrList &order_by = StrList(), int max = -1,
         const std::string &table_alias = "");
-    ORMapper::RowData *create(const std::string &table_name);
-    ORMapper::RowData *register_as_new(const ORMapper::RowData &row);
+    RowData *create(const std::string &table_name);
+    RowData *register_as_new(const RowData &row);
     void flush();
-    const ORMapper::TableMetaDataRegistry &get_meta_data_registry();
+    const TableMetaDataRegistry &get_meta_data_registry();
 private:
     // session policy methods
-    SQL::RowsPtr on_select(const SQL::StrList &what,
-            const SQL::StrList &from, const SQL::Filter &where,
-            const SQL::StrList &group_by, const SQL::Filter &having,
-            const SQL::StrList &order_by, int max_rows,
+    RowsPtr on_select(const StrList &what,
+            const StrList &from, const Filter &where,
+            const StrList &group_by, const Filter &having,
+            const StrList &order_by, int max_rows,
             bool for_update);
     const std::vector<long long> on_insert(const std::string &table_name,
-            const SQL::Rows &rows, const SQL::FieldSet &exclude_fields,
+            const Rows &rows, const FieldSet &exclude_fields,
             bool collect_new_ids);
     void on_update(const std::string &table_name,
-            const SQL::Rows &rows, const SQL::FieldSet &key_fields,
-            const SQL::FieldSet &exclude_fields, const SQL::Filter &where);
-    void on_delete(const std::string &table_name, const SQL::Filter &where);
+            const Rows &rows, const FieldSet &key_fields,
+            const FieldSet &exclude_fields, const Filter &where);
+    void on_delete(const std::string &table_name, const Filter &where);
     void on_exec_proc(const std::string &proc_code);
     void on_commit();
     void on_rollback();
@@ -48,7 +47,5 @@ private:
 
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
-#endif // YB__CORE__MAPPER_SESSION__INCLUDED
-
+// vim:ts=4:sts=4:sw=4:et:
+#endif // YB__ORM__MAPPER_SESSION__INCLUDED

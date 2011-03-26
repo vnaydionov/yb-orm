@@ -1,4 +1,3 @@
-
 #ifndef YB__ORM__ODBC_DRIVER__INCLUDED
 #define YB__ORM__ODBC_DRIVER__INCLUDED
 
@@ -8,7 +7,6 @@
 #include "Session.h"
 
 namespace Yb {
-namespace SQL {
 
 class OdbcDriverImpl;
 
@@ -27,9 +25,7 @@ public:
     void exec(const Values &params);
 };
 
-} // namespace SQL
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:
 #endif // YB__ORM__ODBC_DRIVER__INCLUDED

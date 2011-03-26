@@ -1,4 +1,3 @@
-
 #ifndef YB__ORM__ROW_DATA__INCLUDED
 #define YB__ORM__ROW_DATA__INCLUDED
 
@@ -15,7 +14,6 @@
 class TestRowData;
 
 namespace Yb {
-namespace ORMapper {
 
 class RowData;
 typedef std::auto_ptr<RowData> RowDataPtr;
@@ -65,7 +63,7 @@ class DataSource
 public:
     virtual RowDataPtr select_row(const RowData &key) = 0;
     virtual RowDataVectorPtr select_rows(
-            const std::string &table_name, const SQL::Filter &filter, const SQL::StrList &order_by = SQL::StrList(),
+            const std::string &table_name, const Filter &filter, const StrList &order_by = StrList(),
             int max = -1, const std::string &table_alias = "") = 0;
     virtual void insert_rows(const std::string &table_name,
             const RowDataVector &rows) = 0;
@@ -97,7 +95,7 @@ public:
     RowData(const TableMetaDataRegistry &reg, const std::string &table_name);
     const TableMetaData &get_table() const;
     const Value &get(const std::string &column_name) const;
-    const PKIDValue &get_id() const;
+    const PKIDValue get_id() const;
     void set(const std::string &column_name, const Value &value);
     void set_pk(long long pk);
     void set_new_pk(boost::shared_ptr<PKIDRecord> new_pk);
@@ -132,7 +130,7 @@ public:
     bool operator()(const RowData &x, const RowData &y) const { return x.lt(y, true); }
 };
 
-class FilterBackendByKey : public SQL::FilterBackend
+class FilterBackendByKey : public FilterBackend
 {
     RowData key_;
 public:
@@ -145,7 +143,7 @@ public:
     const RowData &get_key_data() const { return key_; }
 };
 
-class FilterByKey : public SQL::Filter
+class FilterByKey : public Filter
 {
 public:
     FilterByKey(const RowData &key)
@@ -157,11 +155,7 @@ typedef std::map<RowData, boost::shared_ptr<RowData>,
         RowData_key_less> RowSet;
 typedef std::auto_ptr<std::vector<RowData * > > LoadedRows;
 
-} // namespace ORMapper
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:
 #endif // YB__ORM__ROW_DATA__INCLUDED
-
-

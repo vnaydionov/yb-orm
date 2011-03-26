@@ -1,6 +1,5 @@
-
-#ifndef YB__DOMAIN_FACTORY__INCLUDED
-#define YB__DOMAIN_FACTORY__INCLUDED
+#ifndef YB__ORM__DOMAIN_FACTORY__INCLUDED
+#define YB__ORM__DOMAIN_FACTORY__INCLUDED
 
 #include <map>
 #include <stdexcept>
@@ -9,9 +8,7 @@
 
 namespace Yb {
 
-namespace  ORMapper {
-
-typedef boost::shared_ptr<Domain::AutoXMLizable> AutoXMLizablePtr;
+typedef boost::shared_ptr<AutoXMLizable> AutoXMLizablePtr;
 
 class NoCreator: public std::logic_error
 {
@@ -25,16 +22,16 @@ public:
 class ICreator
 {
 public:
-    virtual AutoXMLizablePtr create(ORMapper::Mapper &mapper, long long id) const = 0;  
+    virtual AutoXMLizablePtr create(Mapper &mapper, long long id) const = 0;  
 };
 
 template <typename T>
 class DomainCreator: public ICreator
 {
 public:
-    virtual AutoXMLizablePtr create(ORMapper::Mapper &mapper, long long id) const
+    virtual AutoXMLizablePtr create(Mapper &mapper, long long id) const
     {
-        return boost::shared_ptr<Domain::AutoXMLizable>(new T(mapper, id));
+        return boost::shared_ptr<AutoXMLizable>(new T(mapper, id));
     }
 };
 
@@ -50,7 +47,7 @@ public:
         creator_map_.insert(Map::value_type(name, creator));
     }
     
-    AutoXMLizablePtr create_object(ORMapper::Mapper &mapper, 
+    AutoXMLizablePtr create_object(Mapper &mapper, 
             const std::string &entity_name, long long id) const
     {
         Map::const_iterator it = creator_map_.find(entity_name);
@@ -62,10 +59,7 @@ private:
     Map creator_map_;
 };
     
-} // namespace ORMapper
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
-#endif // YB__SESSION__INCLUDED
-
+// vim:ts=4:sts=4:sw=4:et:
+#endif // YB__ORM__DOMAIN_FACTORY__INCLUDED

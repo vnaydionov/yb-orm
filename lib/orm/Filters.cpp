@@ -1,10 +1,8 @@
-
 #include "Filters.h"
 
 using namespace std;
 
 namespace Yb {
-namespace SQL {
 
 FilterBackend::~FilterBackend()
 {}
@@ -105,6 +103,6 @@ FilterBackendOr::do_collect_params_and_build_sql(Values &seq) const
     return "(" + p1 + ") OR (" + p2 + ")";
 }
 
-} // namespace SQL
 } // namespace Yb
 
+// vim:ts=4:sts=4:sw=4:et:

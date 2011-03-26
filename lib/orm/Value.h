@@ -1,4 +1,3 @@
-
 #ifndef YB__ORM__VALUE__INCLUDED
 #define YB__ORM__VALUE__INCLUDED
 
@@ -58,16 +57,14 @@ public:
     {}
 };
 
-namespace ORMapper {
-
 class TableMetaData;
 
 struct PKIDRecord
 {
-    const ORMapper::TableMetaData *table_;
+    const TableMetaData *table_;
     long long pkid_;
     bool is_temp_;
-    PKIDRecord(const ORMapper::TableMetaData *table,
+    PKIDRecord(const TableMetaData *table,
             long long pkid, bool is_temp)
         : table_(table)
         , pkid_(pkid)
@@ -75,20 +72,18 @@ struct PKIDRecord
     {}
 };
 
-} // namespace ORMapper
-
 class PKIDValue
 {
-    const ORMapper::TableMetaData *table_;
+    const TableMetaData *table_;
     std::pair<std::string, long long> key_;
     mutable long long pkid_;
-    mutable boost::shared_ptr<ORMapper::PKIDRecord> temp_;
+    mutable boost::shared_ptr<PKIDRecord> temp_;
 public:
     PKIDValue();
-    PKIDValue(const ORMapper::TableMetaData &table,
-            boost::shared_ptr<ORMapper::PKIDRecord> temp);
-    PKIDValue(const ORMapper::TableMetaData &table, long long pkid);
-    const ORMapper::TableMetaData &get_table() const;
+    PKIDValue(const TableMetaData &table,
+            boost::shared_ptr<PKIDRecord> temp);
+    PKIDValue(const TableMetaData &table, long long pkid);
+    const TableMetaData &get_table() const;
     const std::pair<std::string, long long> &get_key() const { return key_; }
     bool is_temp() const;
     long long as_long_long() const;
@@ -143,7 +138,5 @@ typedef std::vector<Value> Values;
 
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:
 #endif // YB__ORM__VALUE__INCLUDED
-

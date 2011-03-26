@@ -27,7 +27,7 @@ yborminclude_HEADERS = \
 	XMLMetaDataConfig.h \
 	XMLNode.h
 
-#	DbpoolSession.h
+	DbpoolSession.h
 
 libyborm_la_SOURCES = \
 	$(yborminclude_HEADERS) \
@@ -45,7 +45,7 @@ libyborm_la_SOURCES = \
 	XMLMetaDataConfig.cpp \
 	XMLNode.cpp
 
-#	DbpoolSession.cpp
+	DbpoolSession.cpp
 
 libyborm_la_LDFLAGS = -version-info 0:0:0
 

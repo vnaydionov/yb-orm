@@ -1,4 +1,3 @@
-
 #include <sstream>
 #include <util/str_utils.hpp>
 #include "MetaData.h"
@@ -8,7 +7,6 @@ using namespace std;
 using namespace Yb::StrUtils;
 
 namespace Yb {
-namespace ORMapper {
 
 MetaDataError::MetaDataError(const string &msg)
     : logic_error(msg)
@@ -82,7 +80,7 @@ TableMetaData::TableMetaData(const string &name, const string &xml_name)
     , depth_(0)
 {}
 
-const std::string 
+const string 
 TableMetaData::get_unique_pk() const
 {
     Map::const_iterator it = cols_.begin(), end = cols_.end();
@@ -281,8 +279,6 @@ TableMetaDataRegistry::traverse_children(const StrMap &parent_child, map<string,
     }
 }
 
-} // namespace ORMapper
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

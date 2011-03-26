@@ -1,13 +1,11 @@
-
 #include "XMLNode.h"
 #include "DomainFactorySingleton.h"
 
 using namespace std;
 
 namespace Yb {
-namespace ORMapper {
 
-void XMLNode::init_by_row_data(const RowData &data, const std::string &alt_name)
+void XMLNode::init_by_row_data(const RowData &data, const string &alt_name)
 {
     const TableMetaData &table = data.get_table();
     name_ = alt_name.empty()? table.get_xml_name(): alt_name;
@@ -79,7 +77,7 @@ deep_xmlize(Mapper &mapper, const RowData &d, int depth)
         TableMetaData::Map::const_iterator it = table.begin(), end = table.end();
         for (; it != end; ++it)
             if (it->second.has_fk() && !d.get(it->second.get_name()).is_null()) {
-                boost::shared_ptr<Domain::AutoXMLizable> domain_obj = 
+                boost::shared_ptr<AutoXMLizable> domain_obj = 
                     theDomainFactory::instance().create_object(mapper, it->second.get_fk_table_name(), 
                         d.get(it->second.get_name()).as_long_long()); 
                 XMLNode ref_node(domain_obj->auto_xmlize((depth == -1 ) ? -1: depth - 1));
@@ -90,10 +88,10 @@ deep_xmlize(Mapper &mapper, const RowData &d, int depth)
 }
 
 const XMLNode
-xmlize_row(const SQL::Row &row, const string &entry_name)
+xmlize_row(const Row &row, const string &entry_name)
 {
     XMLNode entry(entry_name, "");
-    SQL::Row::const_iterator it = row.begin(), end = row.end();
+    Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it)
         entry.add_node(XMLNode(mk_xml_name(it->first, ""),
                     it->second.nvl("").as_string()));
@@ -101,17 +99,15 @@ xmlize_row(const SQL::Row &row, const string &entry_name)
 }
 
 const XMLNode
-xmlize_rows(const SQL::Rows &rows, const string &entries_name, const string &entry_name)
+xmlize_rows(const Rows &rows, const string &entries_name, const string &entry_name)
 {
     XMLNode entries(entries_name, "");
-    SQL::Rows::const_iterator it = rows.begin(), end = rows.end();
+    Rows::const_iterator it = rows.begin(), end = rows.end();
     for (; it != end; ++it)
         entries.add_node(xmlize_row(*it, entry_name));
     return entries;
 }
 
-} // namespace ORMapper
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

@@ -1,6 +1,5 @@
-
-#ifndef YB__DBPOOL_SESSION__INCLUDED
-#define YB__DBPOOL_SESSION__INCLUDED
+#ifndef YB__ORM__DBPOOL_SESSION__INCLUDED
+#define YB__ORM__DBPOOL_SESSION__INCLUDED
 
 #include "Value.h"
 #include "Session.h"
@@ -8,7 +7,6 @@
 class TestSession;
 
 namespace Yb {
-namespace SQL {
 
 class DBPoolSession : public Session
 {
@@ -51,9 +49,7 @@ private:
     
 };
 
-} // namespace SQL
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
-#endif // YB__DBPOOL_SESSION__INCLUDED
+// vim:ts=4:sts=4:sw=4:et:
+#endif // YB__ORM__DBPOOL_SESSION__INCLUDED

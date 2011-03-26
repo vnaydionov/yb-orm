@@ -1,4 +1,3 @@
-
 #ifndef YB__ORM__ODBC_SESSION__INCLUDED
 #define YB__ORM__ODBC_SESSION__INCLUDED
 
@@ -13,7 +12,6 @@
 class TestOdbcSession;
 
 namespace Yb {
-namespace SQL {
 
 typedef std::map<std::string, int> ParamNums;
 
@@ -59,9 +57,7 @@ private:
             const std::string &table, const Filter &where) const;
 };
 
-} // namespace SQL
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:
 #endif // YB__ORM__ODBC_SESSION__INCLUDED

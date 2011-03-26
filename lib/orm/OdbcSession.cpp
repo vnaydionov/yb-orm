@@ -1,18 +1,16 @@
-
 #include <sstream>
 #include <util/str_utils.hpp>
 #include "OdbcSession.h"
 
 using namespace std;
+using namespace Yb::StrUtils;
 
 namespace Yb {
-namespace SQL {
 
 OdbcSession::OdbcSession(mode work_mode)
-    : SQL::Session(work_mode)
+    : Session(work_mode)
     , drv_(new OdbcDriver())
 {
-    using namespace Yb::StrUtils;
     drv_->open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
 }
 
@@ -37,12 +35,12 @@ OdbcSession::on_select(const StrList &what,
     return drv_->fetch_rows(max_rows);
 }
 
-const std::vector<long long>
+const vector<long long>
 OdbcSession::on_insert(const string &table_name,
         const Rows &rows, const FieldSet &exclude_fields,
         bool collect_new_ids)
 {
-    std::vector<long long> ids;
+    vector<long long> ids;
     if (!rows.size())
         return ids;
     string sql;
@@ -258,8 +256,6 @@ OdbcSession::do_gen_sql_delete(string &sql, Values &params,
     sql = sql_query.str();
 }
 
-} // namespace SQL
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

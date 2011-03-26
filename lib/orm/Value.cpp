@@ -1,4 +1,3 @@
-
 #include <time.h>
 #include <sstream>
 #include <iomanip>
@@ -113,21 +112,21 @@ PKIDValue::PKIDValue()
     , pkid_(0)
 {}
 
-PKIDValue::PKIDValue(const ORMapper::TableMetaData &table,
-        boost::shared_ptr<ORMapper::PKIDRecord> temp)
+PKIDValue::PKIDValue(const TableMetaData &table,
+        boost::shared_ptr<PKIDRecord> temp)
     : table_(&table)
     , key_(pair<string, long long>("-" + table.get_name(), temp->pkid_))
     , pkid_(0)
     , temp_(temp)
 {}
 
-PKIDValue::PKIDValue(const ORMapper::TableMetaData &table, long long pkid)
+PKIDValue::PKIDValue(const TableMetaData &table, long long pkid)
     : table_(&table)
     , key_(pair<string, long long>("+" + table.get_name(), pkid))
     , pkid_(pkid)
 {}
 
-const ORMapper::TableMetaData &PKIDValue::get_table() const
+const TableMetaData &PKIDValue::get_table() const
 {
     if (!table_)
         throw PKIDInvalid();
@@ -385,4 +384,4 @@ Value::get_type_name(int type)
 
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
+// vim:ts=4:sts=4:sw=4:et:

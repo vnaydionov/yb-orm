@@ -1,12 +1,9 @@
-
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-
 #include "orm/XMLMetaDataConfig.h"
 #include "orm/Value.h"
 
 using namespace std;
-using namespace Yb::ORMapper;
 using namespace Yb;
 
 class TestXMLConfig : public CppUnit::TestFixture
@@ -178,4 +175,4 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestXMLConfig);
 
-// vim:ts=4:sts=4:sw=4:et
+// vim:ts=4:sts=4:sw=4:et:

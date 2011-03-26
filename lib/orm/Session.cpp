@@ -1,11 +1,9 @@
-
 #include "Session.h"
 
 using namespace std;
 
 namespace Yb {
-namespace SQL {
-    
+
 DBError::DBError(const string &msg)
     : logic_error(msg)
 {}
@@ -14,7 +12,7 @@ GenericDBError::GenericDBError(const string &err)
     : DBError("Database error, details: " + err)
 {}
 
-NoDataFound::NoDataFound(const std::string &msg)
+NoDataFound::NoDataFound(const string &msg)
     : DBError("Data wasn't found, details: " + msg)
 {}
 
@@ -50,7 +48,7 @@ Session::select(const StrList &what,
     return rows;
 }
 
-const std::vector<long long>
+const vector<long long>
 Session::insert(const string &table_name,
         const Rows &rows, const FieldSet &exclude_fields,
         bool collect_new_ids)
@@ -152,8 +150,6 @@ Session::fix_dt_hook(const boost::posix_time::ptime &t)
     return t;
 }
 
-} // namespace SQL
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

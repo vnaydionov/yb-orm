@@ -1,15 +1,11 @@
-
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-
 #include "orm/SqlDataSource.h"
 
 using namespace std;
-using namespace Yb::SQL;
-using namespace Yb::ORMapper;
-using Yb::Value;
+using namespace Yb;
 
-class MockSqlSession : public Yb::SQL::Session
+class MockSqlSession : public Session
 {
 public:
     size_t select_cnt_, insert_cnt_, update_cnt_, delete_cnt_;
@@ -280,5 +276,4 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestSqlDataSource);
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

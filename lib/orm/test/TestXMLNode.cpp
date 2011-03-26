@@ -1,7 +1,5 @@
-
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-
 #include "util/str_utils.hpp"
 #include "orm/XMLNode.h"
 #include "orm/MapperSession.h"
@@ -15,16 +13,15 @@
 #define NUM_STMT 4
 
 using namespace std;
-using namespace Yb::ORMapper;
 using namespace Yb;
 using namespace Yb::StrUtils;
 
-class OrmTestDomainSimple: public Domain::AutoXMLizable
+class OrmTestDomainSimple: public AutoXMLizable
 {
-    ORMapper::Mapper *mapper_;
-    Domain::StrongObject obj_;
+    Mapper *mapper_;
+    StrongObject obj_;
 public:
-    OrmTestDomainSimple(ORMapper::Mapper &mapper, long long id)
+    OrmTestDomainSimple(Mapper &mapper, long long id)
         :mapper_(&mapper)
         ,obj_(mapper, "T_ORM_TEST", id)
     {}
@@ -41,12 +38,12 @@ public:
             B   NUMBER,
             PRIMARY KEY(ID));
 */
-class OrmXMLDomainSimple: public Domain::AutoXMLizable
+class OrmXMLDomainSimple: public AutoXMLizable
 {
-    ORMapper::Mapper *mapper_;
-    Domain::StrongObject obj_;
+    Mapper *mapper_;
+    StrongObject obj_;
 public:
-    OrmXMLDomainSimple(ORMapper::Mapper &mapper, long long id)
+    OrmXMLDomainSimple(Mapper &mapper, long long id)
         :mapper_(&mapper)
         ,obj_(mapper, "T_ORM_XML", id)
     {}
@@ -77,9 +74,9 @@ class TestXMLNode : public CppUnit::TestFixture
         if (!registered) {
             registered = true;
             theDomainFactory::instance().register_creator("T_ORM_XML",
-                ORMapper::CreatorPtr(new ORMapper::DomainCreator<OrmXMLDomainSimple>()));
+                CreatorPtr(new DomainCreator<OrmXMLDomainSimple>()));
             theDomainFactory::instance().register_creator("T_ORM_TEST",
-                ORMapper::CreatorPtr(new ORMapper::DomainCreator<OrmTestDomainSimple>()));
+                CreatorPtr(new DomainCreator<OrmTestDomainSimple>()));
         }
 
         TableMetaDataRegistry &r = theMetaData::instance();
@@ -146,7 +143,7 @@ public:
             };
             st = st_data;
         }
-        Yb::SQL::OdbcDriver drv;
+        OdbcDriver drv;
         drv.open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"),
                 xgetenv("YBORM_PASSWD"));
         for (size_t i = 0; i < NUM_STMT; ++i)
@@ -246,4 +243,4 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestXMLNode);
 
-// vim:ts=4:sts=4:sw=4:et
+// vim:ts=4:sts=4:sw=4:et:

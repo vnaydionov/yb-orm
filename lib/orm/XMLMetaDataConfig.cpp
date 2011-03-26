@@ -1,20 +1,17 @@
 #include <fstream>
 #include <util/xmlnode.h>
 #include <util/str_utils.hpp>
-
-#include "orm/XMLMetaDataConfig.h"
-#include "orm/Value.h"
+#include "Value.h"
+#include "XMLMetaDataConfig.h"
 
 using namespace std;
-using namespace Yb::ORMapper;
 using namespace Xml;
 
 class TestXMLConfig;
 
-namespace Yb
-{
+namespace Yb {
 
-bool load_xml_file(const std::string &name, std::string &where)
+bool load_xml_file(const string &name, string &where)
 {
     ifstream tfile(name.c_str());
     if (!tfile)
@@ -165,7 +162,7 @@ ColumnMetaData XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
     }    
    
     if (node.HasNotEmptyAttr("default")) {
-       std::string value = node.GetAttr("default");
+       string value = node.GetAttr("default");
         switch (col_type) {
             case Value::Decimal:
             case Value::LongLong:
@@ -176,7 +173,7 @@ ColumnMetaData XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
                 }
                 break;
             case Value::DateTime:
-                if (Yb::StrUtils::str_to_lower(node.GetAttr("default")) != std::string("sysdate"))
+                if (Yb::StrUtils::str_to_lower(node.GetAttr("default")) != string("sysdate"))
                     throw ParseError(string("Wrong default value for datetime element '")+ name + "'");
                 default_val = Value("sysdate");
                 break;
@@ -222,5 +219,4 @@ void XMLMetaDataConfig::get_foreign_key_data(xmlNodePtr p_node, string &fk_table
 
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

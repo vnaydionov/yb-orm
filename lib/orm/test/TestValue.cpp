@@ -1,9 +1,7 @@
-
 #include <time.h>
 #include <boost/lexical_cast.hpp>
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-
 #include <orm/Value.h>
 
 using namespace std;
@@ -145,5 +143,4 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestValue);
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

@@ -1,10 +1,8 @@
-
 #include "Mapper.h"
 
 using namespace std;
 
 namespace Yb {
-namespace ORMapper {
 
 Mapper::~Mapper()
 {}
@@ -33,7 +31,7 @@ TableMapper::find(const RowData &key)
 
 LoadedRows
 TableMapper::load_collection(
-        const string &table_name, const SQL::Filter &filter, const SQL::StrList &order_by,
+        const string &table_name, const Filter &filter, const StrList &order_by,
         int max, const string &table_alias)
 {
     RowDataVectorPtr vp = ds_.select_rows(table_name, filter, order_by, max, table_alias);
@@ -114,7 +112,7 @@ TableMapper::flush_new()
     for (; it != end; ++it)
         insert_new_to_table(*it);
     mark_new_as_ghost();
-    std::vector<boost::shared_ptr<PKIDRecord> > new_ids0;
+    vector<boost::shared_ptr<PKIDRecord> > new_ids0;
     new_ids_.swap(new_ids0);
 }
 
@@ -195,8 +193,6 @@ TableMapper::create_temp_pkid(const TableMetaData &table)
     return new_ids_[new_ids_.size() - 1];
 }
 
-} // namespace ORMapper
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

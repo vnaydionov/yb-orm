@@ -1,13 +1,10 @@
-
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-
 #include "orm/MetaData.h"
 #include "orm/Value.h"
 
 using namespace std;
-using namespace Yb::ORMapper;
-using Yb::Value;
+using namespace Yb;
 
 class TestMetaData : public CppUnit::TestFixture
 {
@@ -344,6 +341,4 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestMetaData);
 
-// vim:ts=4:sts=4:sw=4:et
-
-
+// vim:ts=4:sts=4:sw=4:et:

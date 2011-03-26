@@ -1,13 +1,9 @@
-
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-
 #include "orm/RowData.h"
 
 using namespace std;
-using namespace Yb::ORMapper;
-using Yb::Value;
-using Yb::PKIDValue;
+using namespace Yb;
 
 class TestRowData : public CppUnit::TestFixture
 {
@@ -21,8 +17,8 @@ class TestRowData : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_row_data_no_table3, RowNotLinkedToTable);
     CPPUNIT_TEST_EXCEPTION(test_row_data_try_ro, ReadOnlyColumn);
     CPPUNIT_TEST(test_filter_by_key);
-    CPPUNIT_TEST_EXCEPTION(test_init_row_wrong_val, Yb::ORMapper::BadTypeCast);
-    CPPUNIT_TEST_EXCEPTION(test_init_row_long_string, Yb::ORMapper::StringTooLong);
+    CPPUNIT_TEST_EXCEPTION(test_init_row_wrong_val, BadTypeCast);
+    CPPUNIT_TEST_EXCEPTION(test_init_row_long_string, StringTooLong);
     CPPUNIT_TEST(test_set_value_type);
     CPPUNIT_TEST_EXCEPTION(test_bad_type_cast_long_long, BadTypeCast);
     CPPUNIT_TEST_EXCEPTION(test_bad_type_cast_decimal, BadTypeCast);
@@ -247,6 +243,4 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestRowData);
 
-// vim:ts=4:sts=4:sw=4:et
-
-
+// vim:ts=4:sts=4:sw=4:et:

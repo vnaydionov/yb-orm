@@ -1,13 +1,12 @@
+#ifndef YB__ORM__XML_NODE__INCLUDED
+#define YB__ORM__XML_NODE__INCLUDED
 
-#ifndef YB__XMLNODE__INCLUDED
-#define YB__XMLNODE__INCLUDED
-
+#include <vector>
 #include <util/xml_writer.h>
 #include "Mapper.h"
 #include "Session.h"
 
 namespace Yb {
-namespace ORMapper {
 
 class XMLNode
 {
@@ -47,14 +46,11 @@ private:
  */
 const XMLNode deep_xmlize(Mapper &mapper, const RowData &d, int depth = 0);
 
-const XMLNode xmlize_row(const SQL::Row &row, const std::string &entry_name);
-const XMLNode xmlize_rows(const SQL::Rows &rows,
+const XMLNode xmlize_row(const Row &row, const std::string &entry_name);
+const XMLNode xmlize_rows(const Rows &rows,
         const std::string &entries_name, const std::string &entry_name);
 
-} // namespace ORMapper
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:
 #endif // YB__XMLNODE__INCLUDED
-

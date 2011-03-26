@@ -1,12 +1,9 @@
-
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-
 #include "orm/Session.h"
 
 using namespace std;
-using namespace Yb::SQL;
-using Yb::Value;
+using namespace Yb;
 
 class TestFilters : public CppUnit::TestFixture
 {
@@ -45,5 +42,4 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestFilters);
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

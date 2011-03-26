@@ -1,13 +1,11 @@
-
-#ifndef YB__ORM__SQL_FILTERS__INCLUDED
-#define YB__ORM__SQL_FILTERS__INCLUDED
+#ifndef YB__ORM__FILTERS__INCLUDED
+#define YB__ORM__FILTERS__INCLUDED
 
 #include <string>
 #include <boost/shared_ptr.hpp>
 #include "Value.h"
 
 namespace Yb {
-namespace SQL {
 
 class FilterBackend
 {
@@ -82,10 +80,7 @@ inline const Filter operator || (const Filter &a, const Filter &b)
     return Filter(new FilterBackendOr(a, b));
 }
 
-} // namespace SQL
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
-#endif // YB__ORM__SQL_FILTERS__INCLUDED
-
+// vim:ts=4:sts=4:sw=4:et:
+#endif // YB__ORM__FILTERS__INCLUDED

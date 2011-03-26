@@ -1,4 +1,3 @@
-
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 #include "RowData.h"
@@ -7,7 +6,6 @@
 using namespace std;
 
 namespace Yb {
-namespace ORMapper {
 
 ORMError::ORMError(const string &msg)
     : logic_error(msg)
@@ -76,7 +74,7 @@ RowData::get(const string &column_name) const
     return values_[c.get_name()].value;
 }
 
-const PKIDValue &
+const PKIDValue
 RowData::get_id() const
 {
     const TableMetaData &table = get_table();
@@ -228,8 +226,6 @@ FilterBackendByKey::do_collect_params_and_build_sql(Values &seq) const
     return sql.str();
 }
 
-} // namespace ORMapper
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

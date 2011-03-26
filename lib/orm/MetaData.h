@@ -1,6 +1,5 @@
-
-#ifndef YB__ORM__METADATA__INCLUDED
-#define YB__ORM__METADATA__INCLUDED
+#ifndef YB__ORM__META_DATA__INCLUDED
+#define YB__ORM__META_DATA__INCLUDED
 
 #include <string>
 #include <map>
@@ -12,7 +11,6 @@
 class TestMetaData;
 
 namespace Yb {
-namespace ORMapper {
 
 class MetaDataError : public std::logic_error
 {
@@ -177,10 +175,7 @@ private:
 
 const std::string mk_xml_name(const std::string &name, const std::string &xml_name);
 
-} // namespace ORMapper
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
-#endif // YB__ORM__METADATA__INCLUDED
-
+// vim:ts=4:sts=4:sw=4:et:
+#endif // YB__ORM__META_DATA__INCLUDED

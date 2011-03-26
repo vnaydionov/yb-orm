@@ -1,4 +1,3 @@
-
 #ifndef YB__ORM__SESSION__INCLUDED
 #define YB__ORM__SESSION__INCLUDED
 
@@ -15,7 +14,6 @@ class TestSession;
 class TestOdbcSession;
 
 namespace Yb {
-namespace SQL {
 
 typedef std::vector<std::string> FieldList;
 typedef std::set<std::string> FieldSet;
@@ -131,9 +129,9 @@ public:
     long long get_next_value(const std::string &seq_name);
 
     /* Use cases:
-    SQL::Session db;
-    int count = db.select1("count(1)", "t_manager", SQL::FilterEq("hidden", Value(1))).asInt();
-    RowPtr row = db.select_row("v_ui_contract", SQL::FilterEq("contract_id", Value(contract_id)));
+    Yb::Session db;
+    int count = db.select1("count(1)", "t_manager", Yb::FilterEq("hidden", Yb::Value(1))).as_long_long();
+    Yb::RowPtr row = db.select_row("v_ui_contract", Yb::FilterEq("contract_id", Yb::Value(contract_id)));
     */
 
     bool is_touched() const { return touched_; }
@@ -163,10 +161,7 @@ private:
     mode mode_;
 };
 
-} // namespace SQL
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:
 #endif // YB__ORM__SESSION__INCLUDED
-

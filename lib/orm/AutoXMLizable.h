@@ -1,22 +1,18 @@
-#ifndef YB__AUTOXMLIZABLE__INCLUDED
-#define YB__AUTOXMLIZABLE__INCLUDED
+#ifndef YB__ORM__AUTO_XMLIZABLE__INCLUDED
+#define YB__ORM__AUTO_XMLIZABLE__INCLUDED
 
-#include "orm/XMLNode.h"
+#include "XMLNode.h"
 
 namespace Yb {
-namespace Domain {
 
 class AutoXMLizable {
 public:
-    virtual const ORMapper::XMLNode auto_xmlize(int deep) const = 0;
+    virtual const XMLNode auto_xmlize(int deep) const = 0;
     virtual ~AutoXMLizable()
     {}
 };
 
-} // namespace SQL
 } // namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
-#endif // YB__SESSION__INCLUDED
-
+// vim:ts=4:sts=4:sw=4:et:
+#endif // YB__ORM__AUTO_XMLIZABLE__INCLUDED
