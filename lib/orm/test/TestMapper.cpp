@@ -155,7 +155,7 @@ public:
         key.set("X", Value(1));
         RowData *d = mapper.find(key);
         CPPUNIT_ASSERT(d != NULL);
-        CPPUNIT_ASSERT_EQUAL(1LL, d->get("X").as_long_long());
+        CPPUNIT_ASSERT_EQUAL(1, (int)d->get("X").as_long_long());
         CPPUNIT_ASSERT_EQUAL(string("#"), d->get("Y").as_string());
     }
 
@@ -170,12 +170,12 @@ public:
         CPPUNIT_ASSERT(d->is_ghost());
         d->get("X");
         CPPUNIT_ASSERT(d->is_ghost());
-        CPPUNIT_ASSERT_EQUAL(0U, ds.get_select_cnt());
+        CPPUNIT_ASSERT_EQUAL(0, (int)ds.get_select_cnt());
         d->get("Y");
         CPPUNIT_ASSERT(!d->is_ghost());
-        CPPUNIT_ASSERT_EQUAL(1U, ds.get_select_cnt());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_select_cnt());
         mapper.find(key);
-        CPPUNIT_ASSERT_EQUAL(1U, ds.get_select_cnt());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_select_cnt());
     }
 
     void test_dirty()
@@ -189,11 +189,11 @@ public:
         CPPUNIT_ASSERT(!d->is_dirty());
         d->set("Y", Value("abc"));
         CPPUNIT_ASSERT(d->is_dirty());
-        CPPUNIT_ASSERT_EQUAL(0U, ds.get_update_cnt());
+        CPPUNIT_ASSERT_EQUAL(0, (int)ds.get_update_cnt());
         mapper.flush();
         CPPUNIT_ASSERT(!d->is_dirty());
         CPPUNIT_ASSERT_EQUAL(string("abc"), d->get("Y").as_string());
-        CPPUNIT_ASSERT_EQUAL(1U, ds.get_update_cnt());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_update_cnt());
     }
 
     void test_new()
@@ -210,10 +210,10 @@ public:
         CPPUNIT_ASSERT(d->get("Y").is_null());
         d->set("Y", Value("xyz"));
         CPPUNIT_ASSERT(d->is_new());
-        CPPUNIT_ASSERT_EQUAL(0U, ds.get_insert_cnt());
+        CPPUNIT_ASSERT_EQUAL(0, (int)ds.get_insert_cnt());
         mapper.flush();
         CPPUNIT_ASSERT(!d->is_new());
-        CPPUNIT_ASSERT_EQUAL(1U, ds.get_insert_cnt());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_insert_cnt());
         CPPUNIT_ASSERT_EQUAL(false, id.as_pkid().is_temp());
         CPPUNIT_ASSERT(d->get("X").as_long_long() > 0);
     }
@@ -265,9 +265,9 @@ public:
         key.set("X", Value(1));
         RowData *d = mapper.find(key);
         d->set_deleted();
-        CPPUNIT_ASSERT_EQUAL(0U, ds.get_delete_cnt());
+        CPPUNIT_ASSERT_EQUAL(0, (int)ds.get_delete_cnt());
         mapper.flush();
-        CPPUNIT_ASSERT_EQUAL(1U, ds.get_delete_cnt());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_delete_cnt());
         d = mapper.find(key);
         d->load();
     }
@@ -287,13 +287,13 @@ public:
         CPPUNIT_ASSERT(d->is_ghost());
         LoadedRows rows = mapper.load_collection("B",
                 filter_eq("U", Value(1)));
-        CPPUNIT_ASSERT_EQUAL(2U, rows->size());
+        CPPUNIT_ASSERT_EQUAL(2, (int)rows->size());
         CPPUNIT_ASSERT(!(*rows)[0]->is_ghost());
         CPPUNIT_ASSERT(!(*rows)[0]->get("U").is_null());
-        CPPUNIT_ASSERT_EQUAL(1LL, (*rows)[0]->get("U").as_long_long());
+        CPPUNIT_ASSERT_EQUAL(1, (int)(*rows)[0]->get("U").as_long_long());
         CPPUNIT_ASSERT(!(*rows)[1]->is_ghost());
         CPPUNIT_ASSERT(!(*rows)[1]->get("U").is_null());
-        CPPUNIT_ASSERT_EQUAL(1LL, (*rows)[1]->get("U").as_long_long());
+        CPPUNIT_ASSERT_EQUAL(1, (int)(*rows)[1]->get("U").as_long_long());
     }
 
     void test_insert_order()
@@ -331,11 +331,11 @@ public:
         mapper.create("A");
         mapper.create("A");
         mapper.create("B");
-        CPPUNIT_ASSERT_EQUAL(4U, mapper.rows_.size());
+        CPPUNIT_ASSERT_EQUAL(4, (int)mapper.rows_.size());
 
         set<string> tables;
         mapper.get_unique_tables_for_insert(tables);
-        CPPUNIT_ASSERT_EQUAL(3U, tables.size());
+        CPPUNIT_ASSERT_EQUAL(3, (int)tables.size());
         {
             set<string>::const_iterator it = tables.begin();
             CPPUNIT_ASSERT_EQUAL(string("A"), *it++);
@@ -345,7 +345,7 @@ public:
 
         list<string> s_tables;
         mapper.sort_tables(tables, s_tables);
-        CPPUNIT_ASSERT_EQUAL(3U, s_tables.size());
+        CPPUNIT_ASSERT_EQUAL(3, (int)s_tables.size());
         {
             list<string>::const_iterator it = s_tables.begin();
             CPPUNIT_ASSERT_EQUAL(string("A"), *it++);

@@ -58,11 +58,12 @@ class TestOdbcSession : public CppUnit::TestFixture
             return ses.get_next_value(seq_name);
         }
     }
+
 public:
-    void setUp()
-    {
-        db_type_ = xgetenv("YBORM_DBTYPE");
-    }
+    TestOdbcSession()
+        : db_type_(xgetenv("YBORM_DBTYPE"))
+        , record_id_(0)
+    {}
 
     void init_sql()
     {
@@ -78,7 +79,7 @@ public:
         params.push_back(Value(decimal("1.2")));
         OdbcDriver drv;
         drv.open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
-        drv.exec_direct("DELETE FROM T_ORM_TEST WHERE 1=1");
+        drv.exec_direct("DELETE FROM T_ORM_TEST");
         drv.prepare(sql.str());
         drv.exec(params);
         drv.commit();
@@ -138,8 +139,8 @@ public:
                 filter_eq("ID", Value(1)),
                 StrList(), Filter(), StrList(), false);
         CPPUNIT_ASSERT_EQUAL(string("SELECT * FROM T WHERE ID = ?"), sql);
-        CPPUNIT_ASSERT_EQUAL(1U, params.size());
-        CPPUNIT_ASSERT_EQUAL(1LL, params[0].as_long_long());
+        CPPUNIT_ASSERT_EQUAL(1, (int)params.size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)params[0].as_long_long());
     }
 
     void test_select_groupby()
@@ -192,9 +193,9 @@ public:
         ParamNums param_nums;
         ses.do_gen_sql_insert(sql, params, param_nums, "T", row, FieldSet());
         CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (A, ID) VALUES (?, ?)"), sql);
-        CPPUNIT_ASSERT_EQUAL(2U, params.size());
+        CPPUNIT_ASSERT_EQUAL(2, (int)params.size());
         CPPUNIT_ASSERT_EQUAL(string("a"), params[0].as_string());
-        CPPUNIT_ASSERT_EQUAL(1LL, params[1].as_long_long());
+        CPPUNIT_ASSERT_EQUAL(1, (int)params[1].as_long_long());
     }
 
     void test_insert_exclude()
@@ -315,7 +316,7 @@ public:
         init_sql();
         RowsPtr ptr = ses.select("*", "T_ORM_TEST", filter_eq("ID", Value(record_id_)));
         CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
-        CPPUNIT_ASSERT_EQUAL(1U, ptr->size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("item"), (ptr->begin())->find("A")->second.as_string());
         CPPUNIT_ASSERT_EQUAL(decimal("1.2"), (ptr->begin())->find("C")->second.as_decimal());
         finish_sql();
@@ -329,7 +330,7 @@ public:
         RowsPtr ptr = ses.select("*", "T_ORM_TEST", filter_eq("ID", Value(record_id_)),
                 StrList(), Filter(), StrList(), 0);
         CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
-        CPPUNIT_ASSERT_EQUAL(0U, ptr->size());
+        CPPUNIT_ASSERT_EQUAL(0, (int)ptr->size());
         finish_sql();
     }
 
@@ -348,7 +349,7 @@ public:
         ses.insert("T_ORM_TEST", rows);
         CPPUNIT_ASSERT_EQUAL(true, ses.touched_);
         RowsPtr ptr = ses.select("*", "T_ORM_TEST", filter_eq("ID", Value(id)));
-        CPPUNIT_ASSERT_EQUAL(1U, ptr->size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("inserted"), (ptr->begin())->find("A")->second.as_string());
         CPPUNIT_ASSERT(decimal("1.1") == (ptr->begin())->find("C")->second.as_decimal());
         ses.commit();
@@ -373,7 +374,7 @@ public:
         ses.update("T_ORM_TEST", rows, key, exclude);
         CPPUNIT_ASSERT_EQUAL(true, ses.touched_);
         RowsPtr ptr = ses.select("*", "T_ORM_TEST", filter_eq("ID", Value(record_id_)));
-        CPPUNIT_ASSERT_EQUAL(1U, ptr->size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("updated"), (ptr->begin())->find("A")->second.as_string());
         CPPUNIT_ASSERT_EQUAL(decimal("1.3"), (ptr->begin())->find("C")->second.as_decimal());
         ses.commit();

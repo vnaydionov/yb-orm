@@ -245,7 +245,7 @@ namespace tiodbc
 	T __get_data(HSTMT _stmt, int _col, SQLSMALLINT _ttype, T error_value)
 	{
 		T tmp_storage;
-		SQLINTEGER cb_needed;
+		SQLLEN cb_needed;
 		RETCODE rc;
 		rc = SQLGetData(_stmt, _col, _ttype, &tmp_storage, sizeof(tmp_storage), &cb_needed);
 		if (!TIODBC_SUCCESS_CODE(rc))
@@ -286,7 +286,7 @@ namespace tiodbc
 	// Get field as string
 	_tstring field_impl::as_string() const
 	{
-		SQLINTEGER sz_needed = 0;
+		SQLLEN sz_needed = 0;
 		TCHAR small_buff[256];
 		RETCODE rc;
 				
@@ -351,7 +351,7 @@ namespace tiodbc
 	{
 		TIMESTAMP_STRUCT ts;
 		std::memset(&ts, 0, sizeof(ts));
-		SQLINTEGER sz_needed = 0;
+		SQLLEN sz_needed = 0;
 		RETCODE rc = SQLGetData(stmt_h, col_num, SQL_C_TIMESTAMP,
 				&ts, sizeof(ts), &sz_needed);
 		if (!TIODBC_SUCCESS_CODE(rc) || sz_needed == SQL_NULL_DATA)
@@ -372,7 +372,7 @@ namespace tiodbc
 
 		const int odbc_date_prec = 23, odbc_date_scale=0;
 		// Bind on internal buffer		
-		SQLINTEGER StrLenOrInPoint = is_null? SQL_NULL_DATA: 0;
+		SQLLEN StrLenOrInPoint = is_null? SQL_NULL_DATA: 0;
 		SQLBindParameter(_stmt,
 			_parnum,
 			SQL_PARAM_INPUT,

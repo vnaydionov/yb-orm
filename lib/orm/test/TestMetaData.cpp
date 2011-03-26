@@ -39,7 +39,7 @@ public:
         ColumnMetaData c("x", Value::LongLong, 0, ColumnMetaData::PK | ColumnMetaData::RO);
         CPPUNIT_ASSERT_EQUAL(string("X"), c.get_name());
         CPPUNIT_ASSERT_EQUAL((int)Value::LongLong, c.get_type());
-        CPPUNIT_ASSERT_EQUAL(0U, c.get_size());
+        CPPUNIT_ASSERT_EQUAL(0, (int)c.get_size());
         CPPUNIT_ASSERT_EQUAL((int)(ColumnMetaData::PK | ColumnMetaData::RO), c.get_flags());
         CPPUNIT_ASSERT(c.is_pk() && c.is_ro());
         ColumnMetaData d("y", Value::LongLong, 0, ColumnMetaData::PK);
@@ -82,12 +82,12 @@ public:
     {
         TableMetaData t("a");
         CPPUNIT_ASSERT(t.begin() == t.end());
-        CPPUNIT_ASSERT_EQUAL(0U, t.size());
+        CPPUNIT_ASSERT_EQUAL(0, (int)t.size());
         t.set_column(ColumnMetaData("x", Value::LongLong, 0, 0));
-        CPPUNIT_ASSERT_EQUAL(1U, t.size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)t.size());
         CPPUNIT_ASSERT_EQUAL(string("X"), t.begin()->second.get_name());
         t.set_column(ColumnMetaData("Y", Value::LongLong, 0, 0));
-        CPPUNIT_ASSERT_EQUAL(2U, t.size());
+        CPPUNIT_ASSERT_EQUAL(2, (int)t.size());
         CPPUNIT_ASSERT_EQUAL(string("Y"), t.get_column("y").get_name());
     }
 
@@ -156,10 +156,10 @@ public:
         TableMetaData t("A");
         t.set_column(ColumnMetaData("X", Value::LongLong, 0, 0));
         TableMetaDataRegistry tmd_reg;
-        CPPUNIT_ASSERT_EQUAL(0U, tmd_reg.size());
+        CPPUNIT_ASSERT_EQUAL(0, (int)tmd_reg.size());
         CPPUNIT_ASSERT(tmd_reg.begin() == tmd_reg.end());
         tmd_reg.set_table(t);
-        CPPUNIT_ASSERT_EQUAL(1U, tmd_reg.size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)tmd_reg.size());
         const TableMetaData &d1 = tmd_reg.begin()->second;
         const TableMetaData &d2 = tmd_reg.get_table("a");
         CPPUNIT_ASSERT_EQUAL(d1.get_name(), d2.get_name());
@@ -207,11 +207,11 @@ public:
             r.set_table(t);
         }
 
-        CPPUNIT_ASSERT_EQUAL(3U, r.size());
+        CPPUNIT_ASSERT_EQUAL(3, (int)r.size());
 
         set<string> tables;
         r.fill_unique_tables(tables);
-        CPPUNIT_ASSERT_EQUAL(3U, tables.size());
+        CPPUNIT_ASSERT_EQUAL(3, (int)tables.size());
         {
             set<string>::const_iterator it = tables.begin();
             CPPUNIT_ASSERT_EQUAL(string("A"), *it++);
@@ -221,7 +221,7 @@ public:
 
         TableMetaDataRegistry::StrMap tree_map;
         r.fill_map_tree_by_meta(tables, tree_map);
-        CPPUNIT_ASSERT_EQUAL(4U, tree_map.size());
+        CPPUNIT_ASSERT_EQUAL(4, (int)tree_map.size());
         {
             TableMetaDataRegistry::StrMap::const_iterator it = tree_map.begin();
             CPPUNIT_ASSERT_EQUAL(string(""), it->first);
@@ -239,14 +239,14 @@ public:
 
         map<string, int> depths;
         r.zero_depths(tables, depths);
-        CPPUNIT_ASSERT_EQUAL(3U, depths.size());
+        CPPUNIT_ASSERT_EQUAL(3, (int)depths.size());
         CPPUNIT_ASSERT_EQUAL(0, depths["A"]);
         CPPUNIT_ASSERT_EQUAL(0, depths["B"]);
         CPPUNIT_ASSERT_EQUAL(0, depths["C"]);
-        CPPUNIT_ASSERT_EQUAL(3U, depths.size());
+        CPPUNIT_ASSERT_EQUAL(3, (int)depths.size());
 
         r.traverse_children(tree_map, depths);
-        CPPUNIT_ASSERT_EQUAL(3U, depths.size());
+        CPPUNIT_ASSERT_EQUAL(3, (int)depths.size());
         CPPUNIT_ASSERT_EQUAL(1, depths["A"]);
         CPPUNIT_ASSERT_EQUAL(3, depths["B"]);
         CPPUNIT_ASSERT_EQUAL(2, depths["C"]);

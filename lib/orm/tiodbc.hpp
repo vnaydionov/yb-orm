@@ -344,7 +344,7 @@ namespace tiodbc
 		int par_num;			//!< Order number of the parameter
 		_tstring _int_string;	//!< Internal string buffer
 		char _int_buffer[64];	//!< Internal buffer for small built-in types (64byte ... quite large)
-		SQLINTEGER _int_SLOIP;	//!< Internal Str Length Or Indicator Pointer
+		SQLLEN _int_SLOIP;	//!< Internal Str Length Or Indicator Pointer
 		
 		// Not direct constructible
 		param_impl(HSTMT _stmt, int _par_num);
@@ -410,7 +410,7 @@ namespace tiodbc
 		{
 			SQLCHAR name[256];
 			SQLSMALLINT name_len, type, decimal_digits, nullable;
-			SQLUINTEGER col_size;
+			SQLULEN col_size;
 		};
 		std::vector<col_descr> m_cols;
 

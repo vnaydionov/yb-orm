@@ -39,14 +39,14 @@ public:
         XMLMetaDataConfig cfg(xml);
         TableMetaDataRegistry reg;
         cfg.parse(reg);
-        CPPUNIT_ASSERT_EQUAL(2U, reg.size());
+        CPPUNIT_ASSERT_EQUAL(2, (int)reg.size());
         const TableMetaData &t = reg.get_table("A");
-        CPPUNIT_ASSERT_EQUAL(1U, t.size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)t.size());
         CPPUNIT_ASSERT_EQUAL(std::string("AA"), t.begin()->second.get_name());
-        CPPUNIT_ASSERT_EQUAL(10U, t.begin()->second.get_size());
+        CPPUNIT_ASSERT_EQUAL(10, (int)t.begin()->second.get_size());
         CPPUNIT_ASSERT_EQUAL((int)Value::String, t.begin()->second.get_type());
         const TableMetaData &t2 = reg.get_table("B");
-        CPPUNIT_ASSERT_EQUAL(1U, t2.size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)t2.size());
         CPPUNIT_ASSERT_EQUAL(std::string("BA"), t2.begin()->second.get_name());
         CPPUNIT_ASSERT_EQUAL((int)Value::LongLong, t2.begin()->second.get_type());
     }
@@ -75,10 +75,10 @@ public:
         cfg.parse_table(node.get(), t);
         CPPUNIT_ASSERT_EQUAL(std::string("A"), t.get_name());
         CPPUNIT_ASSERT_EQUAL(std::string("S"), t.get_seq_name());
-        CPPUNIT_ASSERT_EQUAL(2U, t.size());
+        CPPUNIT_ASSERT_EQUAL(2, (int)t.size());
         TableMetaData::Map::const_iterator it = t.begin();
         CPPUNIT_ASSERT_EQUAL(string("ASTR"), it->second.get_name());
-        CPPUNIT_ASSERT_EQUAL(10U, it->second.get_size());
+        CPPUNIT_ASSERT_EQUAL(10, (int)it->second.get_size());
         CPPUNIT_ASSERT_EQUAL((int)Value::String, it->second.get_type());
         ++it;
         CPPUNIT_ASSERT_EQUAL(string("B_ID"), it->second.get_name());

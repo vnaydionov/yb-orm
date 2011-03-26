@@ -127,9 +127,9 @@ public:
         SqlDataSource ds(get_r(), ses);
         RowData key(get_r(), "A");
         key.set("X", Value(1));
-        CPPUNIT_ASSERT_EQUAL(0U, ses.select_cnt_);
+        CPPUNIT_ASSERT_EQUAL(0, (int)ses.select_cnt_);
         RowDataPtr d = ds.select_row(key);
-        CPPUNIT_ASSERT_EQUAL(1U, ses.select_cnt_);
+        CPPUNIT_ASSERT_EQUAL(1, (int)ses.select_cnt_);
         CPPUNIT_ASSERT(d.get());
         CPPUNIT_ASSERT_EQUAL(string("A"), d->get_table().get_name());
         CPPUNIT_ASSERT_EQUAL(string("#"), d->get("Y").as_string());
@@ -189,7 +189,7 @@ public:
         v.push_back(y);
         RowsPtr rows = SqlDataSource::row_data_vector2sql_rows(x.get_table(), v);
         CPPUNIT_ASSERT(rows.get());
-        CPPUNIT_ASSERT_EQUAL(2U, rows->size());
+        CPPUNIT_ASSERT_EQUAL(2, (int)rows->size());
         CPPUNIT_ASSERT(Value(2) == (*rows)[0]["X"]);
         CPPUNIT_ASSERT(Value("$") == (*rows)[1]["Y"]);
     }
@@ -223,16 +223,16 @@ public:
         y.set("X", Value(4));
         y.set("Y", Value("$"));
         v.push_back(y);
-        CPPUNIT_ASSERT_EQUAL(0U, ses.insert_cnt_);
+        CPPUNIT_ASSERT_EQUAL(0, (int)ses.insert_cnt_);
         ds.insert_rows("A", v);
-        CPPUNIT_ASSERT_EQUAL(2U, ses.insert_cnt_);
-        CPPUNIT_ASSERT_EQUAL(2U, ses.stored_.size());
+        CPPUNIT_ASSERT_EQUAL(2, (int)ses.insert_cnt_);
+        CPPUNIT_ASSERT_EQUAL(2, (int)ses.stored_.size());
         Row row;
         row["X"] = Value(4);
         row["Y"] = Value("$");
         row["Z"] = Value();
         CPPUNIT_ASSERT(row == ses.stored_[1]);
-        CPPUNIT_ASSERT_EQUAL(1U, ses.excluded_.size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ses.excluded_.size());
         CPPUNIT_ASSERT_EQUAL(string("Z"), *ses.excluded_.begin());
     }
 
@@ -249,18 +249,18 @@ public:
         y.set("X", Value(4));
         y.set("Y", Value("$"));
         v.push_back(y);
-        CPPUNIT_ASSERT_EQUAL(0U, ses.update_cnt_);
+        CPPUNIT_ASSERT_EQUAL(0, (int)ses.update_cnt_);
         ds.update_rows("A", v);
-        CPPUNIT_ASSERT_EQUAL(2U, ses.update_cnt_);
-        CPPUNIT_ASSERT_EQUAL(2U, ses.stored_.size());
+        CPPUNIT_ASSERT_EQUAL(2, (int)ses.update_cnt_);
+        CPPUNIT_ASSERT_EQUAL(2, (int)ses.stored_.size());
         Row row;
         row["X"] = Value(4);
         row["Y"] = Value("$");
         row["Z"] = Value();
         CPPUNIT_ASSERT(row == ses.stored_[1]);
-        CPPUNIT_ASSERT_EQUAL(1U, ses.excluded_.size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ses.excluded_.size());
         CPPUNIT_ASSERT_EQUAL(string("Z"), *ses.excluded_.begin());
-        CPPUNIT_ASSERT_EQUAL(1U, ses.keys_.size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ses.keys_.size());
         CPPUNIT_ASSERT_EQUAL(string("X"), *ses.keys_.begin());
     }
 
