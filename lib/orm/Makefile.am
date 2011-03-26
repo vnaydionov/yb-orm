@@ -4,7 +4,7 @@ ybormincludedir=$(ybincludedir)/orm
 
 SUBDIRS = test
 
-AM_CXXFLAGS = -I $(top_srcdir)/lib -I/usr/local/include/dbpool3
+AM_CXXFLAGS = -I $(top_srcdir)/lib
 
 lib_LTLIBRARIES = libyborm.la
 
@@ -27,8 +27,6 @@ yborminclude_HEADERS = \
 	XMLMetaDataConfig.h \
 	XMLNode.h
 
-	DbpoolSession.h
-
 libyborm_la_SOURCES = \
 	$(yborminclude_HEADERS) \
 	Filters.cpp \
@@ -45,8 +43,6 @@ libyborm_la_SOURCES = \
 	XMLMetaDataConfig.cpp \
 	XMLNode.cpp
 
-	DbpoolSession.cpp
-
 libyborm_la_LDFLAGS = -version-info 0:0:0
 
 
@@ -56,8 +52,6 @@ unit_tests_LDADD = libyborm.la test/libormtest.la \
 	$(top_builddir)/lib/util/libybutil.la \
 	$(top_builddir)/lib/test/libtestmain.la -lcppunit \
 	$(XML_LIBS) -lboost_thread -lboost_date_time -lodbc
-
-#	-ldl -lmypp3
 
 unit_tests_SOURCES =
 
@@ -78,12 +72,5 @@ export LD_LIBRARY_PATH=/opt/oracle/instantclient_10_2
 export NLS_NUMERIC_CHARACTERS=. 
 export NLS_SORT=RUSSIAN
 export NLS_LANG=AMERICAN_CIS.UTF8
-
-# for DBPool
-#export YBORM_DRIVER=mysql
-#export YBORM_HOST=localhost
-#export YBORM_PORT=3306
-#export YBORM_TIMEOUT=10
-#export DB_POOL_SIZE=3
 
 TESTS = unit_tests

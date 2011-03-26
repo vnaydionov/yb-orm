@@ -3,7 +3,6 @@
 #include "util/str_utils.hpp"
 #include "orm/Mapper.h"
 #include "orm/SqlDataSource.h"
-//#include "orm/DbpoolSession.h"
 #include "orm/OdbcSession.h"
 #include "orm/XMLNode.h"
 #include "orm/OdbcDriver.h"
@@ -15,7 +14,6 @@ using Yb::StrUtils::xgetenv;
 #define TEST_TBL1 "T_ORM_TEST"
 #define NUM_STMT 4
 
-//typedef DBPoolSession MySession;
 typedef OdbcSession MySession;
 
 class TestIntegrMapper : public CppUnit::TestFixture

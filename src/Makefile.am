@@ -7,10 +7,8 @@ INCLUDES= $(all_includes) \
 
 # the library search path.
 orm_domain_generator_LDFLAGS = $(all_libraries) \
-	$(XML_LIBS) \
 	$(top_builddir)/lib/util/libybutil.la \
 	$(top_builddir)/lib/orm/libyborm.la \
+	$(XML_LIBS) \
 	-lboost_thread -lboost_date_time -lodbc
-
-#	-lmypp3 -ldl
 

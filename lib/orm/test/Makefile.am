@@ -17,4 +17,3 @@ libormtest_la_SOURCES = \
 	TestIntegrMapper.cpp \
 	TestXMLNode.cpp
 
-#	TestSession.cpp
