@@ -2,7 +2,7 @@
 #include <map>
 #include <fstream>
 #include <util/str_utils.hpp>
-//#include <yb/logger/logger.hpp>
+//#include <util/logger.hpp>
 #include "orm/MetaData.h"
 #include "orm/Value.h"
 #include "orm/XMLMetaDataConfig.h"
@@ -10,9 +10,9 @@
 //#define ORM_LOG(x) LOG(LogLevel::INFO, "ORM Domain generator: " << x)
 #define ORM_LOG(x) std::cout << "ORM Domain generator: " << x << "\n";
 
-using namespace Yb::StrUtils;
-using namespace Yb::ORMapper;
 using namespace std;
+using namespace Yb::StrUtils;
+
 namespace Yb {
 
 class OrmDomainGenerator
@@ -44,77 +44,76 @@ private:
     void write_header(const TableMetaData &t, std::ostream &str)
     {
         init_weak(t);
-        string name = "__ORM_DOMAIN__" + str_to_upper(t.get_name().substr(2)) + "_H_";
+        string name = "ORM_DOMAIN__" + str_to_upper(t.get_name().substr(2)) + "__INCLUDED";
         str << "#ifndef " << name << "\n"
             << "#define " << name << "\n\n";
         if(!mem_weak)
-            str << "#include \"utils/Exceptions.h\"\n";
+            str << "#include \"orm/RowData.h\"\n";
         str << "#include \"orm/DataObj.h\"\n"
-            << "#include \"domain2/AutoXMLizable.h\"\n";
+            << "#include \"orm/AutoXMLizable.h\"\n";
         write_include_dependencies(t, str);
-        str << "\nnamespace Yb {\n"
-            << "namespace Domain {\n\n";
+        str << "\nnamespace Domain {\n\n";
         if (!mem_weak) {
-            str << "class " << get_file_class_name(t.get_name()) << "NotFoundByID: public NotFound\n"
+            str << "class " << get_file_class_name(t.get_name()) << "NotFoundByID: public Yb::ObjectNotFoundByKey\n"
                 << "{\n"
                 << "public:\n"
                 << "\t" << get_file_class_name(t.get_name()) << "NotFoundByID(long long id)\n"
-                << "\t\t:NotFound(" << t.get_name().substr(2, t.get_name().size()-2) << "_NOT_FOUND" ", \""
-                << get_file_class_name(t.get_name()) << " with ID = $OBJECT_ID$ not found\", id)\n"
+                << "\t\t: ObjectNotFoundByKey(\"" << get_file_class_name(t.get_name()) << " with ID = \" +\n"
+                << "\t\t\tboost::lexical_cast<std::string>(id) + \" not found\")\n"
                 << "\t{}\n"
                 << "};\n\n";
         }
-        str << "class " << get_file_class_name(t.get_name()) << ": public AutoXMLizable\n"
+        str << "class " << get_file_class_name(t.get_name()) << ": public Yb::AutoXMLizable\n"
             << "{\n"
-            << "\tORMapper::Mapper *mapper_;\n";
+            << "\tYb::Mapper *mapper_;\n";
         write_members(t, str);
 
         str << "public:\n"
             << "\t// static method 'find'\n"
             << "\ttypedef std::vector<" << get_file_class_name(t.get_name()) << "> List;\n"
             << "\ttypedef std::auto_ptr<List> ListPtr;\n"
-            << "\tstatic ListPtr find(ORMapper::Mapper &mapper,\n"
-            << "\t\t\tconst SQL::Filter &filter, const SQL::StrList order_by = \"\", int max_n = -1);\n";
+            << "\tstatic ListPtr find(Yb::Mapper &mapper,\n"
+            << "\t\t\tconst Yb::Filter &filter, const Yb::StrList order_by = \"\", int max_n = -1);\n";
 
         str << "\t// constructors\n"
             << "\t" << get_file_class_name(t.get_name()) << "()\n"
-            << "\t\t:mapper_(NULL)\n"
+            << "\t\t: mapper_(NULL)\n"
             << "\t{}\n";
-        str << "\t" << get_file_class_name(t.get_name()) << "(ORMapper::Mapper &mapper, const ORMapper::RowData &key)\n"
-            << "\t\t:mapper_(&mapper)\n"
-            << "\t\t," << get_member_name(t.get_name()) << "(mapper, key)\n"
+        str << "\t" << get_file_class_name(t.get_name()) << "(Yb::Mapper &mapper, const Yb::RowData &key)\n"
+            << "\t\t: mapper_(&mapper)\n"
+            << "\t\t, " << get_member_name(t.get_name()) << "(mapper, key)\n"
             << "\t" << "{}\n";
         try {
             std::string mega_key = reg_.get_table(t.get_name()).get_unique_pk();
-            str << "\t" << get_file_class_name(t.get_name()) << "(ORMapper::Mapper &mapper, long long id)\n"
-                << "\t\t:mapper_(&mapper)\n"
-                << "\t\t," << get_member_name(t.get_name()) << "(mapper, \"" << t.get_name() << "\", id)\n"
+            str << "\t" << get_file_class_name(t.get_name()) << "(Yb::Mapper &mapper, long long id)\n"
+                << "\t\t: mapper_(&mapper)\n"
+                << "\t\t, " << get_member_name(t.get_name()) << "(mapper, \"" << t.get_name() << "\", id)\n"
                 << "\t{}\n";
         }
         catch (const AmbiguousPK &) {}
-        str << "\t" << get_file_class_name(t.get_name()) << "(ORMapper::Mapper &mapper);\n\n";
+        str << "\t" << get_file_class_name(t.get_name()) << "(Yb::Mapper &mapper);\n\n";
         
-        str << "\tvoid set(const std::string &field, const Value &val) {\n"
+        str << "\tvoid set(const std::string &field, const Yb::Value &val) {\n"
             << "\t\t" << get_member_name(t.get_name()) << ".set(field, val);\n"
             << "\t}\n";
 
         if (mem_weak) {
-            str << "\tconst Value get(const std::string &field) const {\n"
+            str << "\tconst Yb::Value get(const std::string &field) const {\n"
                 << "\t\treturn " << get_member_name(t.get_name()) << ".get(field);\n"
                 << "\t}\n";
         }
         else {
-            str << "\tconst Value get(const std::string &field) const {\n"
+            str << "\tconst Yb::Value get(const std::string &field) const {\n"
                 << "\t\ttry {\n"
                 << "\t\t\treturn " << get_member_name(t.get_name()) << ".get(field);\n"
                 << "\t\t}\n"
-                << "\t\tcatch (const ORMapper::ObjectNotFoundByKey &) {\n"
+                << "\t\tcatch (const Yb::ObjectNotFoundByKey &) {\n"
                 << "\t\t\tthrow " << get_file_class_name(t.get_name()) << "NotFoundByID("
                 << get_member_name(t.get_name()) << ".get(\"ID\").as_long_long());\n"
                 << "\t\t}\n"
                 << "\t}\n";
         }
-        str << "\tconst ORMapper::XMLNode auto_xmlize(int deep = 0) const\n"
+        str << "\tconst Yb::XMLNode auto_xmlize(int deep = 0) const\n"
             << "\t{\n"
             << "\t\treturn " << get_member_name(t.get_name()) << ".auto_xmlize(*mapper_, deep);\n"
             << "\t}\n";
@@ -125,36 +124,34 @@ private:
         TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
             if (it->second.has_fk())
-                str << "#include \"domain2/" << get_file_class_name(it->second.get_fk_table_name()) << ".h\"\n";
+                str << "#include \"domain/" << get_file_class_name(it->second.get_fk_table_name()) << ".h\"\n";
     }
 
     void write_members(const TableMetaData &t, std::ostream &str)
     {
-        str << (mem_weak ? "\tWeakObject " : "\tStrongObject ") << get_member_name(t.get_name()) << ";\n";
+        str << (mem_weak ? "\tYb::WeakObject " : "\tYb::StrongObject ") << get_member_name(t.get_name()) << ";\n";
     }
 
     void write_footer(std::ostream &str)
     {
         str << "};\n\n"
-            << "} // namespace Domain\n"
-            << "} // namespace Yb\n\n"
-            << "// vim:ts=4:sts=4:sw=4:et\n"
+            << "} // namespace Domain\n\n"
+            << "// vim:ts=4:sts=4:sw=4:et:\n"
             << "#endif\n";
     }
 
     void write_cpp_data(const TableMetaData &t, std::ostream &str)
     {
-        str << "#include \"domain2/" << get_file_class_name(t.get_name()) << ".h\"\n"
+        str << "#include \"domain/" << get_file_class_name(t.get_name()) << ".h\"\n"
             << "#include \"orm/DomainFactorySingleton.h\"\n\n"
-            << "namespace Yb {\n"
             << "namespace Domain {\n\n";
 
 // Constructor for creating new objects
 
         str << get_file_class_name(t.get_name()) << "::" 
-            << get_file_class_name(t.get_name()) << "(ORMapper::Mapper &mapper)\n"
-            << "\t:mapper_(&mapper)\n"
-            << "\t," << get_member_name(t.get_name()) << "(mapper, \"" << t.get_name() << "\")\n";
+            << get_file_class_name(t.get_name()) << "(Yb::Mapper &mapper)\n"
+            << "\t: mapper_(&mapper)\n"
+            << "\t, " << get_member_name(t.get_name()) << "(mapper, \"" << t.get_name() << "\")\n";
         
         if(mem_weak) {
             str << "{}\n";
@@ -169,15 +166,15 @@ private:
                     switch (it->second.get_type()) {
                         case Value::LongLong:
                             str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->first << "\", Value(" << def_val.as_string() << "LL));\n"; 
+                                << ".set(\"" << it->first << "\", Yb::Value(" << def_val.as_string() << "LL));\n"; 
                             break;
                         case Value::Decimal:
                             str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->first << "\", Value(decimal(" << def_val.as_string() << ")));\n"; 
+                                << ".set(\"" << it->first << "\", Yb::Value(decimal(" << def_val.as_string() << ")));\n"; 
                             break;
                         case Value::DateTime:
                             str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->first << "\", Value(boost::posix_time::second_clock::local_time()));\n"; 
+                                << ".set(\"" << it->first << "\", Yb::Value(boost::posix_time::second_clock::local_time()));\n"; 
                             break;
                     }
                 }
@@ -185,16 +182,16 @@ private:
             str << "}\n";
         }
 
-        str << get_file_class_name(t.get_name()) << "::ListPtr\n"
-            << get_file_class_name(t.get_name()) << "::find(ORMapper::Mapper &mapper,\n"
-            << "\t\tconst SQL::Filter &filter, const SQL::StrList order_by, int max_n)\n"
+        str << "\n" << get_file_class_name(t.get_name()) << "::ListPtr\n"
+            << get_file_class_name(t.get_name()) << "::find(Yb::Mapper &mapper,\n"
+            << "\t\tconst Yb::Filter &filter, const Yb::StrList order_by, int max_n)\n"
             << "{\n"
             << "\t" << get_file_class_name(t.get_name()) << "::ListPtr lst(new "
             << get_file_class_name(t.get_name()) << "::List());\n"
-            << "\tORMapper::LoadedRows rows = mapper.load_collection(\""
+            << "\tYb::LoadedRows rows = mapper.load_collection(\""
             << t.get_name() << "\", filter, order_by, max_n);\n"
             << "\tif (rows.get()) {\n"
-            << "\t\tstd::vector<ORMapper::RowData * > ::const_iterator it = rows->begin(), end = rows->end();\n"
+            << "\t\tstd::vector<Yb::RowData * > ::const_iterator it = rows->begin(), end = rows->end();\n"
             << "\t\tfor (; it != end; ++it)\n"
             << "\t\t\tlst->push_back(" << get_file_class_name(t.get_name()) << "(mapper, **it));\n"
             << "\t}\n"
@@ -202,14 +199,13 @@ private:
             << "}\n\n"
             << "struct "<< get_file_class_name(t.get_name()) << "Registrator\n{\n"
             << "\t" << get_file_class_name(t.get_name()) << "Registrator()\n\t{\n"
-            << "\t\ttheDomainFactory::Instance().register_creator(\"" << t.get_name() << "\",\n"
-            << "\t\t\tORMapper::CreatorPtr(new ORMapper::DomainCreator<" << get_file_class_name(t.get_name()) << ">()));\n"
+            << "\t\tYb::theDomainFactory::instance().register_creator(\"" << t.get_name() << "\",\n"
+            << "\t\t\tYb::CreatorPtr(new Yb::DomainCreator<" << get_file_class_name(t.get_name()) << ">()));\n"
             << "\t}\n"
             << "};\n\n"
             << "static " << get_file_class_name(t.get_name()) << "Registrator " << get_member_name(t.get_name()) << "registrator;\n\n"
-            << "} // end namespace Domain\n"
-            << "} // end namespace Yb\n\n"
-            << "// vim:ts=4:sts=4:sw=4:et\n";
+            << "} // end namespace Domain\n\n"
+            << "// vim:ts=4:sts=4:sw=4:et:\n";
     }
 
     void expand_tabs_to_stream(const std::string &in, std::ostream &out)
@@ -245,11 +241,13 @@ private:
         expand_tabs_to_stream(cpp.str(), cpp_file);
     }
 
-    void write_is_nulls(const TableMetaData &t, std::ostream &str) {
+    void write_is_nulls(const TableMetaData &t, std::ostream &str)
+    {
+        string pk_name = t.find_synth_pk();
         str << "\t// on null checkers\n";
         TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
-            if (!it->second.has_fk()) {
+            if (!it->second.has_fk() && it->first != pk_name) {
                 str << "\tbool is_" << str_to_lower(it->second.get_name()) << "_null() const {\n"
                     << "\t\treturn " << "get(\"" << it->second.get_name() << "\")" << ".is_null();\n"
                     << "\t}\n";
@@ -257,6 +255,7 @@ private:
     }
     void write_getters(const TableMetaData &t, std::ostream &str)
     {
+        string pk_name = t.find_synth_pk();
         str << "\t// getters\n";
         TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
@@ -264,15 +263,16 @@ private:
                 if (it->second.get_type() == Value::String) {
                     str << "\t" << type_by_handle(it->second.get_type())
                         << " get_" << str_to_lower(it->second.get_name()) << "() const {\n"
-                        << "\t\tValue v(" << "get(\"" << it->second.get_name() << "\"));\n"
+                        << "\t\tYb::Value v(" << "get(\"" << it->second.get_name() << "\"));\n"
                         << "\t\treturn v.is_null()? std::string(): v.as_string();\n"
                         << "\t}\n";
                 } 
                 else {
-                    str << "\t" << type_by_handle(it->second.get_type())
+                    int type = it->first == pk_name? Value::PKID: it->second.get_type();
+                    str << "\t" << type_by_handle(type)
                         << " get_" << str_to_lower(it->second.get_name()) << "() const {\n"
                         << "\t\treturn " << "get(\"" << it->second.get_name() << "\")"
-                        << "." << value_type_by_handle(it->second.get_type()) << ";\n"
+                        << "." << value_type_by_handle(type) << ";\n"
                         << "\t}\n";
                 }
             }
@@ -288,7 +288,7 @@ private:
                     << "(" << type_by_handle(it->second.get_type())
                     << (it->second.get_type() == Value::String ? " &" : " ")
                     << str_to_lower(it->second.get_name()) << "__) {\n"
-                    << "\t\tset(\"" << it->second.get_name() << "\", Value("
+                    << "\t\tset(\"" << it->second.get_name() << "\", Yb::Value("
                     << str_to_lower(it->second.get_name()) << "__));\n"
                     << "\t}\n";
             }
@@ -305,6 +305,8 @@ private:
                 return "const std::string";
             case Value::Decimal:
                 return "decimal";
+            case Value::PKID:
+                return "const Yb::PKIDValue";
             default:
                 throw std::runtime_error("Unknown type while parsing metadata");
         }
@@ -321,6 +323,8 @@ private:
                 return "as_string()";
             case Value::Decimal:
                 return "as_decimal()";
+            case Value::PKID:
+                return "as_pkid()";
             default:
                 throw std::runtime_error("Unknown type while parsing metadata");
         }
@@ -372,13 +376,13 @@ private:
 
                     str << "\tvoid reset_" << name << "() {\n"
                         << "\t\tset(\""
-                        << it->second.get_name() << "\", Value());\n"
+                        << it->second.get_name() << "\", Yb::Value());\n"
                         << "\t}\n";
                 }
                 str << "\tvoid set_" << name << "(const "
                     << get_file_class_name(it->second.get_fk_table_name())
                     << " &" << name << ") {\n"
-                    << "\t\tset(\"" << it->second.get_name() << "\", Value("
+                    << "\t\tset(\"" << it->second.get_name() << "\", Yb::Value("
                     << name << ".get_" << fk_name << "()));\n"
                     << "\t}\n";
 
