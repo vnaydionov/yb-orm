@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scheme>
+	<table name="T_CLIENT" sequence="S_CLIENT_ID" xml-name="client">
+		<columns>
+			<column name="ID" type="longlong">
+				<primarykey/>
+				<readonly/>
+			</column>
+			<column name="DT" type="datetime"/>
+			<column name="NAME" type="string">
+				<size>100</size>
+			</column>
+			<column name="EMAIL" type="string">
+				<size>100</size>
+			</column>
+			<column name="PHONE" type="string">
+				<size>50</size>
+			</column>
+			<column name="URL" type="string">
+				<size>200</size>
+			</column>
+			<column name="IS_AGENCY" type="longlong" default="0"/>
+		</columns>
+	</table>
+	<table name="T_ORDER" sequence="S_ORDER_ID" xml-name="order">
+		<columns>
+			<column name="ID" type="longlong">
+				<primarykey/>
+				<readonly/>
+			</column>
+			<column name="DT" type="datetime" default="sysdate">
+				<readonly/>
+			</column>
+			<column name="RECEIPT_SUM" type="decimal" default="0"/>
+			<column name="RECEIPT_DT" type="datetime"/>
+			<column name="CLIENT_ID" type="longlong">
+				<foreign-key table="T_CLIENT" field="ID"/>
+			</column>
+			<column name="TOTAL_SUM" nullable="1" type="decimal"/>
+		</columns>
+	</table>
+	<table name="T_ORDER_ITEM" sequence="S_ORDER_ITEM_ID" xml-name="order-item">
+		<columns>
+			<column name="ID" type="longlong">
+				<primarykey/>
+				<readonly/>
+			</column>
+			<column name="ORDER_ID" type="longlong">
+				<foreign-key table="T_ORDER" field="ID"/>
+			</column>
+			<column name="PRODUCT_ID" type="longlong">
+				<foreign-key table="T_PRODUCT" field="ID"/>
+			</column>
+			<column name="QUANTITY" type="decimal"/>
+			<column name="ORDER_SUM" type="decimal"/>
+			<column name="DISCOUNT_PCT" type="decimal" default="0"/>
+		</columns>
+	</table>
+	<table name="T_PRODUCT" xml-name="product">
+		<columns>
+			<column name="ID" type="longlong">
+				<primarykey/>
+				<readonly/>
+			</column>
+			<column name="DT" type="datetime"/>
+			<column name="PRODUCT_GROUP_ID" type="longlong">
+				<foreign-key table="T_PRODUCT_GROUP" field="ID"/>
+			</column>
+			<column name="NAME" type="string">
+				<size>100</size>
+			</column>
+			<column name="FULLNAME" type="string">
+				<size>500</size>
+			</column>
+			<column name="PRICE" type="decimal"/>
+			<column name="UNIT_ID" type="longlong">
+				<foreign-key table="T_PRODUCT_UNIT" field="ID"/>
+			</column>
+		</columns>
+	</table>
+	<table name="T_PRODUCT_UNIT" xml-name="product-unit">
+		<columns>
+			<column name="ID" type="longlong">
+				<primarykey/>
+				<readonly/>
+			</column>
+			<column name="NAME" type="string">
+				<size>100</size>
+			</column>
+		</columns>
+	</table>
+	<table name="T_PRODUCT_GROUP" xml-name="product-group">
+		<columns>
+			<column name="ID" type="longlong">
+				<primarykey/>
+				<readonly/>
+			</column>
+			<column name="PARENT_ID" nullable="1" type="longlong">
+				<!--
+				<foreign-key table="T_PRODUCT_GROUP" field="ID"/>
+				-->
+			</column>
+			<column name="NAME" type="string">
+				<size>100</size>
+			</column>
+		</columns>
+	</table>
+</scheme>
+<!-- vim:ts=4:sts=4:sw=4:noet:
+-->
