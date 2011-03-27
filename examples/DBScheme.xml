@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<scheme>
+<scheme dbtype="MYSQL">
 	<table name="T_CLIENT" sequence="S_CLIENT_ID" xml-name="client">
 		<columns>
 			<column name="ID" type="longint">
@@ -19,7 +19,56 @@
 			<column name="URL" type="string">
 				<size>200</size>
 			</column>
-			<column name="IS_AGENCY" type="longint" default="0"/>
+			<column name="IS_AGENCY" type="longint" nullable="0" default="0"/>
+		</columns>
+	</table>
+	<table name="T_PRODUCT_UNIT" sequence="S_PRODUCT_UNIT_ID" xml-name="product-unit">
+		<columns>
+			<column name="ID" type="longint">
+				<primarykey/>
+				<readonly/>
+			</column>
+			<column name="NAME" type="string">
+				<size>100</size>
+			</column>
+		</columns>
+	</table>
+	<table name="T_PRODUCT_GROUP" sequence="S_PRODUCT_GROUP_ID" xml-name="product-group">
+		<columns>
+			<column name="ID" type="longint">
+				<primarykey/>
+				<readonly/>
+			</column>
+			<column name="PARENT_ID" nullable="1" type="longint">
+				<!--
+				<foreign-key table="T_PRODUCT_GROUP" field="ID"/>
+				-->
+			</column>
+			<column name="NAME" type="string">
+				<size>100</size>
+			</column>
+		</columns>
+	</table>
+	<table name="T_PRODUCT" sequence="S_PRODUCT_ID" xml-name="product">
+		<columns>
+			<column name="ID" type="longint">
+				<primarykey/>
+				<readonly/>
+			</column>
+			<column name="DT" type="datetime"/>
+			<column name="PRODUCT_GROUP_ID" type="longint">
+				<foreign-key table="T_PRODUCT_GROUP" field="ID"/>
+			</column>
+			<column name="NAME" type="string">
+				<size>100</size>
+			</column>
+			<column name="FULLNAME" type="string">
+				<size>500</size>
+			</column>
+			<column name="PRICE" type="decimal"/>
+			<column name="UNIT_ID" type="longint">
+				<foreign-key table="T_PRODUCT_UNIT" field="ID"/>
+			</column>
 		</columns>
 	</table>
 	<table name="T_ORDER" sequence="S_ORDER_ID" xml-name="order">
@@ -54,55 +103,6 @@
 			<column name="QUANTITY" type="decimal"/>
 			<column name="ORDER_SUM" type="decimal"/>
 			<column name="DISCOUNT_PCT" type="decimal" default="0"/>
-		</columns>
-	</table>
-	<table name="T_PRODUCT" xml-name="product">
-		<columns>
-			<column name="ID" type="longint">
-				<primarykey/>
-				<readonly/>
-			</column>
-			<column name="DT" type="datetime"/>
-			<column name="PRODUCT_GROUP_ID" type="longint">
-				<foreign-key table="T_PRODUCT_GROUP" field="ID"/>
-			</column>
-			<column name="NAME" type="string">
-				<size>100</size>
-			</column>
-			<column name="FULLNAME" type="string">
-				<size>500</size>
-			</column>
-			<column name="PRICE" type="decimal"/>
-			<column name="UNIT_ID" type="longint">
-				<foreign-key table="T_PRODUCT_UNIT" field="ID"/>
-			</column>
-		</columns>
-	</table>
-	<table name="T_PRODUCT_UNIT" xml-name="product-unit">
-		<columns>
-			<column name="ID" type="longint">
-				<primarykey/>
-				<readonly/>
-			</column>
-			<column name="NAME" type="string">
-				<size>100</size>
-			</column>
-		</columns>
-	</table>
-	<table name="T_PRODUCT_GROUP" xml-name="product-group">
-		<columns>
-			<column name="ID" type="longint">
-				<primarykey/>
-				<readonly/>
-			</column>
-			<column name="PARENT_ID" nullable="1" type="longint">
-				<!--
-				<foreign-key table="T_PRODUCT_GROUP" field="ID"/>
-				-->
-			</column>
-			<column name="NAME" type="string">
-				<size>100</size>
-			</column>
 		</columns>
 	</table>
 </scheme>

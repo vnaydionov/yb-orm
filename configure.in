@@ -17,5 +17,7 @@ AC_OUTPUT(Makefile
 	lib/util/test/Makefile
 	lib/orm/Makefile
 	lib/orm/test/Makefile
-	src/Makefile)
+	src/Makefile
+        examples/Makefile
+        examples/domain/Makefile)
 

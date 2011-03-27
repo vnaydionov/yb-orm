@@ -152,6 +152,22 @@ TableMetaData::get_synth_pk() const
     return pk_name;
 }
 
+const string
+TableMetaData::get_seq_name() const
+{
+    if (!db_type_.compare("MYSQL"))
+        return string();
+    return seq_name_;
+}
+
+bool
+TableMetaData::get_autoinc() const
+{
+    if (!db_type_.compare("MYSQL"))
+        return autoinc_ || !seq_name_.empty();
+    return autoinc_;
+}
+
 void
 TableMetaDataRegistry::set_table(const TableMetaData &table_meta_data)
 {

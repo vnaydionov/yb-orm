@@ -95,23 +95,22 @@ public:
             if (params[i].get_type() == Value::DATETIME) {
                 TIMESTAMP_STRUCT ts;
                 memset(&ts, 0, sizeof(ts));
-                if (!params[i].is_null()) {
-                    DateTime t = params[i].as_date_time();
-                    ts.year = t.date().year();
-                    ts.month = t.date().month();
-                    ts.day = t.date().day();
-                    ts.hour = t.time_of_day().hours();
-                    ts.minute = t.time_of_day().minutes();
-                    ts.second = t.time_of_day().seconds();
-                    ts.fraction = 0; // TODO
-                }
+                DateTime t = params[i].as_date_time();
+                ts.year = t.date().year();
+                ts.month = t.date().month();
+                ts.day = t.date().day();
+                ts.hour = t.time_of_day().hours();
+                ts.minute = t.time_of_day().minutes();
+                ts.second = t.time_of_day().seconds();
+                ts.fraction = 0; // TODO
                 stmt_.param(i + 1).set_as_date_time(ts);
             }
             else
                 stmt_.param(i + 1).set_as_string(
+                        params[i].is_null()? string():
                         params[i].as_string());
 #ifdef DUMP_ODBC
-            cout << "p[" << (i + 1) << "]=\"" << params[i].as_string() << "\"\n";
+            cout << "p[" << (i + 1) << "]=\"" << params[i].sql_str() << "\"\n";
 #endif
         }
         if (!stmt_.execute())

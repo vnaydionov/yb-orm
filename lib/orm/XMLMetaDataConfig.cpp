@@ -39,12 +39,16 @@ void XMLMetaDataConfig::parse(TableMetaDataRegistry &reg)
                 (const char *)node_.get()->name + 
                 "' found during parse of root element, 'scheme' expected");
 
+    if(Xml::HasAttr(node_.get(), "dbtype"))
+        reg.set_db_type(Xml::GetAttr(node_.get(), "dbtype"));
+
     for(xmlNodePtr child = node_.get()->children; child; child = child->next) {
         if(child->type != XML_ELEMENT_NODE)
             continue;
         if(string((const char *)child->name) != "table")
             throw ParseError(string("Unknown element '") + (const char *)child->name + "' found during parse of element 'scheme'");
         TableMetaData t;
+        t.set_db_type(reg.get_db_type());
         parse_table(child, t);
         reg.set_table(t);
     }
@@ -55,6 +59,7 @@ void XMLMetaDataConfig::parse_table(xmlNodePtr p_node, TableMetaData &table_meta
     string sequence_name;
     string name;
     string xml_name;
+    bool autoinc = false;
 
     Node node(p_node, false);
 
@@ -63,6 +68,9 @@ void XMLMetaDataConfig::parse_table(xmlNodePtr p_node, TableMetaData &table_meta
 
     if(node.HasNotEmptyAttr("sequence"))
         sequence_name = node.GetAttr("sequence");
+
+    if(node.HasAttr("autoinc"))
+        autoinc = true;
 
     name = node.GetAttr("name");
 
@@ -76,6 +84,7 @@ void XMLMetaDataConfig::parse_table(xmlNodePtr p_node, TableMetaData &table_meta
     table_meta.set_name (name);
     table_meta.set_xml_name(xml_name);
     table_meta.set_seq_name(sequence_name);
+    table_meta.set_autoinc(autoinc);
     for(xmlNodePtr child = node.get()->children; child; child = child->next) {
         if(child->type != XML_ELEMENT_NODE)
             continue;

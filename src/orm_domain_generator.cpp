@@ -174,7 +174,7 @@ private:
                             break;
                         case Value::DATETIME:
                             str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->first << "\", Yb::Value(Yb::now());\n"; 
+                                << ".set(\"" << it->first << "\", Yb::Value(Yb::now()));\n"; 
                             break;
                     }
                 }
