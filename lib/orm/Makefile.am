@@ -51,7 +51,9 @@ check_PROGRAMS = unit_tests
 unit_tests_LDADD = libyborm.la test/libormtest.la \
 	$(top_builddir)/lib/util/libybutil.la \
 	$(top_builddir)/lib/test/libtestmain.la -lcppunit \
-	$(XML_LIBS) -lboost_thread -lboost_date_time -lodbc
+	$(XML_LIBS) \
+	-lboost_thread -lboost_date_time \
+	-lodbc
 
 unit_tests_SOURCES =
 

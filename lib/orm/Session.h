@@ -10,7 +10,6 @@
 #include "Value.h"
 #include "Filters.h"
 
-class TestSession;
 class TestOdbcSession;
 
 namespace Yb {
@@ -94,7 +93,6 @@ typedef std::auto_ptr<Rows> RowsPtr;
 
 class Session : private boost::noncopyable
 {
-    friend class ::TestSession;
     friend class ::TestOdbcSession;
 
 public:
