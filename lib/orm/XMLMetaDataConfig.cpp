@@ -109,14 +109,14 @@ bool XMLMetaDataConfig::get_value_of(xmlNodePtr p_node, const string &field, T &
 }
 int XMLMetaDataConfig::string_type_to_int(const string &type, const string &field_name)
 {
-    if(Yb::StrUtils::str_to_lower(type) == string("longlong"))
-        return Value::LongLong;
+    if(Yb::StrUtils::str_to_lower(type) == string("longint"))
+        return Value::LONGINT;
     else if(Yb::StrUtils::str_to_lower(type) == string("string"))
-        return Value::String;
+        return Value::STRING;
     else if(Yb::StrUtils::str_to_lower(type) == "decimal")
-        return Value::Decimal;
+        return Value::DECIMAL;
     else if(Yb::StrUtils::str_to_lower(type) == "datetime")
-        return Value::DateTime;
+        return Value::DATETIME;
     else
         throw WrongColumnType(type, field_name);
 }
@@ -156,7 +156,7 @@ ColumnMetaData XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
     }
 
     if (node.HasAttr("nullable")) {
-        if (col_type == Value::String)
+        if (col_type == Value::STRING)
             throw InvalidCombination("nullable attribute cannot be used for strings");
         flags |= ColumnMetaData::NULLABLE;
     }    
@@ -164,15 +164,15 @@ ColumnMetaData XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
     if (node.HasNotEmptyAttr("default")) {
        string value = node.GetAttr("default");
         switch (col_type) {
-            case Value::Decimal:
-            case Value::LongLong:
+            case Value::DECIMAL:
+            case Value::LONGINT:
                 try {
-                    default_val = Value(boost::lexical_cast<long long>(value));
+                    default_val = Value(boost::lexical_cast<LongInt>(value));
                 } catch(const boost::bad_lexical_cast &) {
                         throw ParseError(string("Wrong default value '") + value + "' for integer element '" + name + "'");
                 }
                 break;
-            case Value::DateTime:
+            case Value::DATETIME:
                 if (Yb::StrUtils::str_to_lower(node.GetAttr("default")) != string("sysdate"))
                     throw ParseError(string("Wrong default value for datetime element '")+ name + "'");
                 default_val = Value("sysdate");
@@ -196,7 +196,7 @@ ColumnMetaData XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
         }
     }
 
-    if((size > 0) && (col_type != Value::String))
+    if((size > 0) && (col_type != Value::STRING))
         throw InvalidCombination("Size musn't me used for not a string type");
     ColumnMetaData result(name, col_type, size, flags, fk_table, fk_field, xml_name);               
     result.set_default_value(default_val);

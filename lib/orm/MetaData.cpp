@@ -131,7 +131,7 @@ TableMetaData::find_synth_pk() const
     for (; it != e; ++it) {
         if (it->second.is_pk()) {
             if (!pk_name.empty() ||
-                    it->second.get_type() != Value::LongLong)
+                    it->second.get_type() != Value::LONGINT)
             {
                 return string();
             }

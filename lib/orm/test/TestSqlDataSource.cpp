@@ -11,7 +11,7 @@ public:
     size_t select_cnt_, insert_cnt_, update_cnt_, delete_cnt_;
     Rows stored_;
     FieldSet excluded_, keys_;
-    long long seq_;
+    LongInt seq_;
 
     MockSqlSession()
         : Session(MANUAL)
@@ -43,7 +43,7 @@ public:
         else {
             const FilterBackendByKey *by_key =
                 dynamic_cast<const FilterBackendByKey *>(where.get_backend());
-            if (by_key && by_key->get_key_data().get("X").as_long_long() == 1) {
+            if (by_key && by_key->get_key_data().get("X").as_longint() == 1) {
                 Row r;
                 r["X"] = Value("1");
                 r["Y"] = Value("#");
@@ -54,7 +54,7 @@ public:
         ++select_cnt_;
         return rows;
     }
-    const std::vector<long long>
+    const std::vector<LongInt>
         on_insert(const std::string &/* table_name */,
             const Rows &rows, const FieldSet &exclude_fields,
             bool collect_new_ids)
@@ -62,7 +62,7 @@ public:
         stored_ = rows;
         excluded_ = exclude_fields;
         insert_cnt_ += rows.size();
-        std::vector<long long> ids;
+        std::vector<LongInt> ids;
         return ids;
     }
     void on_update(const std::string &/* table_name */,
@@ -110,10 +110,10 @@ public:
     void setUp()
     {
         TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LongLong, 0,
+        t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
                     ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Y", Value::String, 0, 0));
-        t.set_column(ColumnMetaData("Z", Value::Decimal, 0,
+        t.set_column(ColumnMetaData("Y", Value::STRING, 0, 0));
+        t.set_column(ColumnMetaData("Z", Value::DECIMAL, 0,
                     ColumnMetaData::RO));
         t.set_seq_name("S_A_X");
         TableMetaDataRegistry r;
@@ -134,8 +134,8 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("A"), d->get_table().get_name());
         CPPUNIT_ASSERT_EQUAL(string("#"), d->get("Y").as_string());
         CPPUNIT_ASSERT(Value::PKID == d->get("X").get_type());
-        CPPUNIT_ASSERT(Value::String == d->get("Y").get_type());
-        CPPUNIT_ASSERT(Value::Decimal == d->get("Z").get_type());
+        CPPUNIT_ASSERT(Value::STRING == d->get("Y").get_type());
+        CPPUNIT_ASSERT(Value::DECIMAL == d->get("Z").get_type());
     }
 
     void test_object_not_found_by_key()
@@ -150,9 +150,9 @@ public:
     void test_field_not_found()
     {
         TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LongLong, 0,
+        t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
                     ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Q", Value::String, 0, 0));
+        t.set_column(ColumnMetaData("Q", Value::STRING, 0, 0));
         TableMetaDataRegistry r;
         r.set_table(t);
         MockSqlSession ses;
@@ -167,12 +167,12 @@ public:
         RowData x(get_r(), "A");
         x.set("X", Value(2));
         x.set("Y", Value("@"));
-        x.set("Z", Value(decimal("0.5")));
+        x.set("Z", Value(Decimal("0.5")));
         RowPtr row = SqlDataSource::row_data2sql_row(x);
         CPPUNIT_ASSERT(row.get());
         CPPUNIT_ASSERT(Value(2) == (*row)["X"]);
         CPPUNIT_ASSERT(Value("@") == (*row)["Y"]);
-        CPPUNIT_ASSERT(Value(decimal("0.5")) == (*row)["Z"]);
+        CPPUNIT_ASSERT(Value(Decimal("0.5")) == (*row)["Z"]);
     }
 
 #if 0
@@ -198,7 +198,7 @@ public:
     void test_row_data_vector2sql_rows_mixed()
     {
         TableMetaData t("B");
-        t.set_column(ColumnMetaData("Q", Value::LongLong, 0,
+        t.set_column(ColumnMetaData("Q", Value::LONGINT, 0,
                     ColumnMetaData::PK));
         r_.set_table(t);
         RowDataVector v;
@@ -268,8 +268,8 @@ public:
     {
         MockSqlSession ses;
         SqlDataSource ds(get_r(), ses);
-        long long x = ds.get_curr_id("S_A_X");
-        long long y = ds.get_next_id("S_A_X");
+        LongInt x = ds.get_curr_id("S_A_X");
+        LongInt y = ds.get_next_id("S_A_X");
         CPPUNIT_ASSERT_EQUAL(y, x + 1);
     }
 };

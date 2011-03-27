@@ -57,7 +57,7 @@ private:
             str << "class " << get_file_class_name(t.get_name()) << "NotFoundByID: public Yb::ObjectNotFoundByKey\n"
                 << "{\n"
                 << "public:\n"
-                << "\t" << get_file_class_name(t.get_name()) << "NotFoundByID(long long id)\n"
+                << "\t" << get_file_class_name(t.get_name()) << "NotFoundByID(Yb::LongInt id)\n"
                 << "\t\t: ObjectNotFoundByKey(\"" << get_file_class_name(t.get_name()) << " with ID = \" +\n"
                 << "\t\t\tboost::lexical_cast<std::string>(id) + \" not found\")\n"
                 << "\t{}\n"
@@ -85,7 +85,7 @@ private:
             << "\t" << "{}\n";
         try {
             std::string mega_key = reg_.get_table(t.get_name()).get_unique_pk();
-            str << "\t" << get_file_class_name(t.get_name()) << "(Yb::Mapper &mapper, long long id)\n"
+            str << "\t" << get_file_class_name(t.get_name()) << "(Yb::Mapper &mapper, Yb::LongInt id)\n"
                 << "\t\t: mapper_(&mapper)\n"
                 << "\t\t, " << get_member_name(t.get_name()) << "(mapper, \"" << t.get_name() << "\", id)\n"
                 << "\t{}\n";
@@ -109,7 +109,7 @@ private:
                 << "\t\t}\n"
                 << "\t\tcatch (const Yb::ObjectNotFoundByKey &) {\n"
                 << "\t\t\tthrow " << get_file_class_name(t.get_name()) << "NotFoundByID("
-                << get_member_name(t.get_name()) << ".get(\"ID\").as_long_long());\n"
+                << get_member_name(t.get_name()) << ".get(\"ID\").as_longint());\n"
                 << "\t\t}\n"
                 << "\t}\n";
         }
@@ -164,17 +164,17 @@ private:
                 Yb::Value def_val = it->second.get_default_value();
                 if (!def_val.is_null()) {
                     switch (it->second.get_type()) {
-                        case Value::LongLong:
+                        case Value::LONGINT:
                             str << "\t" << get_member_name(t.get_name()) 
                                 << ".set(\"" << it->first << "\", Yb::Value(" << def_val.as_string() << "LL));\n"; 
                             break;
-                        case Value::Decimal:
+                        case Value::DECIMAL:
                             str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->first << "\", Yb::Value(decimal(" << def_val.as_string() << ")));\n"; 
+                                << ".set(\"" << it->first << "\", Yb::Value(Yb::Decimal(" << def_val.as_string() << ")));\n"; 
                             break;
-                        case Value::DateTime:
+                        case Value::DATETIME:
                             str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->first << "\", Yb::Value(boost::posix_time::second_clock::local_time()));\n"; 
+                                << ".set(\"" << it->first << "\", Yb::Value(Yb::now());\n"; 
                             break;
                     }
                 }
@@ -260,7 +260,7 @@ private:
         TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
             if (!it->second.has_fk()) {
-                if (it->second.get_type() == Value::String) {
+                if (it->second.get_type() == Value::STRING) {
                     str << "\t" << type_by_handle(it->second.get_type())
                         << " get_" << str_to_lower(it->second.get_name()) << "() const {\n"
                         << "\t\tYb::Value v(" << "get(\"" << it->second.get_name() << "\"));\n"
@@ -286,7 +286,7 @@ private:
             if (!it->second.has_fk() && !it->second.is_ro()) {
                 str << "\tvoid set_" << str_to_lower(it->second.get_name())
                     << "(" << type_by_handle(it->second.get_type())
-                    << (it->second.get_type() == Value::String ? " &" : " ")
+                    << (it->second.get_type() == Value::STRING ? " &" : " ")
                     << str_to_lower(it->second.get_name()) << "__) {\n"
                     << "\t\tset(\"" << it->second.get_name() << "\", Yb::Value("
                     << str_to_lower(it->second.get_name()) << "__));\n"
@@ -297,14 +297,14 @@ private:
     string type_by_handle(int type)
     {
         switch (type) {
-            case Value::LongLong:
-                return "long long";
-            case Value::DateTime:
-                return "boost::posix_time::ptime";
-            case Value::String:
+            case Value::LONGINT:
+                return "Yb::LongInt";
+            case Value::DATETIME:
+                return "Yb::DateTime";
+            case Value::STRING:
                 return "const std::string";
-            case Value::Decimal:
-                return "decimal";
+            case Value::DECIMAL:
+                return "Yb::Decimal";
             case Value::PKID:
                 return "const Yb::PKIDValue";
             default:
@@ -315,13 +315,13 @@ private:
     string value_type_by_handle(int type)
     {
         switch (type) {
-            case Value::LongLong:
-                return "as_long_long()";
-            case Value::DateTime:
+            case Value::LONGINT:
+                return "as_longint()";
+            case Value::DATETIME:
                 return "as_date_time()";
-            case Value::String:
+            case Value::STRING:
                 return "as_string()";
-            case Value::Decimal:
+            case Value::DECIMAL:
                 return "as_decimal()";
             case Value::PKID:
                 return "as_pkid()";
@@ -389,7 +389,7 @@ private:
                 str << "\tconst " << get_file_class_name(it->second.get_fk_table_name())
                     <<  " get_" << name << "() const {\n"
                     << "\t\treturn " << get_file_class_name(it->second.get_fk_table_name())
-                    << "(*mapper_, get(\"" << it->second.get_name() << "\").as_long_long());\n"
+                    << "(*mapper_, get(\"" << it->second.get_name() << "\").as_longint());\n"
                     << "\t}\n";
             }
     }

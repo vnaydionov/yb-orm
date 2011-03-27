@@ -320,7 +320,7 @@ long Node::GetLongAttr(const string &name, long def) const
     return GetAttr(name, def);
 }
 
-long long Node::GetLongLongAttr(const string &name, long long def) const
+LongInt Node::GetLongLongAttr(const string &name, LongInt def) const
 {
     return GetAttr(name, def);
 }

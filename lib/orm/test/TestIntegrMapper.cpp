@@ -31,13 +31,13 @@ class TestIntegrMapper : public CppUnit::TestFixture
     string db_type_;
     const TableMetaDataRegistry &get_r() const { return r_; }
 
-    long long get_next_test_id(Session &ses, const string &seq_name)
+    LongInt get_next_test_id(Session &ses, const string &seq_name)
     {
         if (db_type_ == "MYSQL") {
             RowsPtr ptr = ses.select("MAX(ID) MAX_ID", "T_ORM_TEST", Filter());
             CPPUNIT_ASSERT(1 == ptr->size() && 1 == (*ptr)[0].size());
             Value x = (*ptr)[0]["MAX_ID"];
-            return x.is_null()? 1: x.as_long_long() + 1;
+            return x.is_null()? 1: x.as_longint() + 1;
         }
         else {
             return ses.get_next_value(seq_name);
@@ -88,12 +88,12 @@ public:
         drv.commit();
 
         TableMetaData t(TEST_TBL1, "test");
-        t.set_column(ColumnMetaData("ID", Value::LongLong, 0,
+        t.set_column(ColumnMetaData("ID", Value::LONGINT, 0,
                     ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("A", Value::String, 256, 0));
-        t.set_column(ColumnMetaData("B", Value::DateTime, 0,
+        t.set_column(ColumnMetaData("A", Value::STRING, 256, 0));
+        t.set_column(ColumnMetaData("B", Value::DATETIME, 0,
                     ColumnMetaData::RO));
-        t.set_column(ColumnMetaData("C", Value::Decimal, 0, 0));
+        t.set_column(ColumnMetaData("C", Value::DECIMAL, 0, 0));
         if (db_type_ == "MYSQL")
             t.set_autoinc(true);
         else
@@ -141,17 +141,17 @@ public:
         std::vector<RowData * > ::const_iterator it = rows->begin(), end = rows->end();
         for (; it != end; ++it) {
             CPPUNIT_ASSERT(!(*it)->is_ghost());
-            if ((*it)->get("ID").as_long_long() == 3) {
+            if ((*it)->get("ID").as_longint() == 3) {
                 CPPUNIT_ASSERT(Value("@#$") == (*it)->get("A"));
                 CPPUNIT_ASSERT(Value(Value("2006-11-22 00:00:00").as_date_time()) == (*it)->get("B"));
-                CPPUNIT_ASSERT(Value(decimal(".01")) == (*it)->get("C"));
+                CPPUNIT_ASSERT(Value(Decimal(".01")) == (*it)->get("C"));
             }
         }
     }
 
     void test_create()
     {
-        long long id;
+        LongInt id;
         {
             MySession ses(Session::MANUAL);
             SqlDataSource ds(get_r(), ses);
@@ -159,9 +159,9 @@ public:
             RowData *d = mapper.create(TEST_TBL1);
             CPPUNIT_ASSERT(d);
             d->set("A", "...");
-            d->set("C", decimal("-.001"));
+            d->set("C", Decimal("-.001"));
             mapper.flush();
-            id = d->get("ID").as_long_long();
+            id = d->get("ID").as_longint();
             ses.commit();
         }
         {
@@ -180,7 +180,7 @@ public:
 
     void test_register_as_new()
     {
-        long long id;
+        LongInt id;
         {
             MySession ses(Session::MANUAL);
             SqlDataSource ds(get_r(), ses);
@@ -189,7 +189,7 @@ public:
             id = get_next_test_id(ses, "S_ORM_TEST_ID");
             d.set("ID", id);
             d.set("A", Value(string("...")));
-            d.set("C", decimal("-.001"));
+            d.set("C", Decimal("-.001"));
             mapper.register_as_new(d);
             mapper.flush();
             ses.commit();
@@ -221,7 +221,7 @@ public:
             RowData *d = mapper.find(key1);
             CPPUNIT_ASSERT(d);
             d->set("A", Value(string("???")));
-            d->set("C", decimal(".001"));
+            d->set("C", Decimal(".001"));
             RowData *e = mapper.find(key2);
             CPPUNIT_ASSERT(e);
             e->set("A", "xxx");
@@ -235,7 +235,7 @@ public:
             RowData *d = mapper.find(key1);
             CPPUNIT_ASSERT(d);
             CPPUNIT_ASSERT(!d->get("B").is_null());
-            CPPUNIT_ASSERT(decimal("0.001") == d->get("C").as_decimal());
+            CPPUNIT_ASSERT(Decimal("0.001") == d->get("C").as_decimal());
             CPPUNIT_ASSERT_EQUAL(string("???"), d->get("A").as_string());
             RowData *e = mapper.find(key2);
             CPPUNIT_ASSERT(e);

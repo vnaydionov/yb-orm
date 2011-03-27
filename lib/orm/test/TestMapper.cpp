@@ -9,7 +9,7 @@ class MockDataSource : public DataSource
 {
     const TableMetaDataRegistry &reg_;
     size_t select_cnt_, update_cnt_, insert_cnt_, delete_cnt_;
-    long long seq_;
+    LongInt seq_;
 public:
     MockDataSource(const TableMetaDataRegistry &reg)
         : reg_(reg)
@@ -82,12 +82,12 @@ public:
         //
         ++delete_cnt_;
     }
-    long long get_curr_id(const string &seq_name)
+    LongInt get_curr_id(const string &seq_name)
     {
         CPPUNIT_ASSERT_EQUAL(string("S_A_X"), seq_name);
         return seq_;
     }
-    long long get_next_id(const string &seq_name)
+    LongInt get_next_id(const string &seq_name)
     {
         CPPUNIT_ASSERT_EQUAL(string("S_A_X"), seq_name);
         return ++seq_;
@@ -120,9 +120,9 @@ public:
     void setUp()
     {
         TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LongLong, 0,
+        t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
                     ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Y", Value::String, 0, 0));
+        t.set_column(ColumnMetaData("Y", Value::STRING, 0, 0));
         t.set_seq_name("S_A_X");
         TableMetaDataRegistry r;
         r.set_table(t);
@@ -155,7 +155,7 @@ public:
         key.set("X", Value(1));
         RowData *d = mapper.find(key);
         CPPUNIT_ASSERT(d != NULL);
-        CPPUNIT_ASSERT_EQUAL(1, (int)d->get("X").as_long_long());
+        CPPUNIT_ASSERT_EQUAL(1, (int)d->get("X").as_longint());
         CPPUNIT_ASSERT_EQUAL(string("#"), d->get("Y").as_string());
     }
 
@@ -204,7 +204,7 @@ public:
         CPPUNIT_ASSERT(d != NULL);
         CPPUNIT_ASSERT(d->is_new());
         Value id = d->get("X");
-        CPPUNIT_ASSERT_THROW(id.as_long_long(), Yb::ValueBadCast);
+        CPPUNIT_ASSERT_THROW(id.as_longint(), Yb::ValueBadCast);
         CPPUNIT_ASSERT(Value::PKID == id.get_type());
         CPPUNIT_ASSERT_EQUAL(true, id.as_pkid().is_temp());
         CPPUNIT_ASSERT(d->get("Y").is_null());
@@ -215,7 +215,7 @@ public:
         CPPUNIT_ASSERT(!d->is_new());
         CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_insert_cnt());
         CPPUNIT_ASSERT_EQUAL(false, id.as_pkid().is_temp());
-        CPPUNIT_ASSERT(d->get("X").as_long_long() > 0);
+        CPPUNIT_ASSERT(d->get("X").as_longint() > 0);
     }
 
     void test_new_and_existing()
@@ -227,7 +227,7 @@ public:
         //cout << "rows_.size()=" << mapper.rows_.size() << " item="
         //     << (int *)mapper.rows_.begin()->second.get() << "\n";
         mapper.flush();
-        long long id = d->get("X").as_long_long();
+        LongInt id = d->get("X").as_longint();
         //cout << "id=" << id << ", rows_.size()=" << mapper.rows_.size()
         //     << " item=" << (int *)mapper.rows_.begin()->second.get() << "\n";
         RowData key(get_r(), "A");
@@ -247,7 +247,7 @@ public:
     {
         MockDataSource ds(get_r());
         TableMapper mapper(get_r(), ds);
-        long long next_id = ds.get_curr_id("S_A_X") + 1;
+        LongInt next_id = ds.get_curr_id("S_A_X") + 1;
         RowData d(get_r(), "A");
         d.set("X", Value(next_id));
         d.set("Y", Value("abc"));
@@ -275,9 +275,9 @@ public:
     void test_load_collection()
     {
         TableMetaData t("B");
-        t.set_column(ColumnMetaData("X", Value::LongLong, 0,
+        t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
                     ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("U", Value::LongLong, 0, 0));
+        t.set_column(ColumnMetaData("U", Value::LONGINT, 0, 0));
         r_.set_table(t);
         MockDataSource ds(get_r());
         TableMapper mapper(get_r(), ds);
@@ -290,10 +290,10 @@ public:
         CPPUNIT_ASSERT_EQUAL(2, (int)rows->size());
         CPPUNIT_ASSERT(!(*rows)[0]->is_ghost());
         CPPUNIT_ASSERT(!(*rows)[0]->get("U").is_null());
-        CPPUNIT_ASSERT_EQUAL(1, (int)(*rows)[0]->get("U").as_long_long());
+        CPPUNIT_ASSERT_EQUAL(1, (int)(*rows)[0]->get("U").as_longint());
         CPPUNIT_ASSERT(!(*rows)[1]->is_ghost());
         CPPUNIT_ASSERT(!(*rows)[1]->get("U").is_null());
-        CPPUNIT_ASSERT_EQUAL(1, (int)(*rows)[1]->get("U").as_long_long());
+        CPPUNIT_ASSERT_EQUAL(1, (int)(*rows)[1]->get("U").as_longint());
     }
 
     void test_insert_order()
@@ -301,25 +301,25 @@ public:
         TableMetaDataRegistry r;
         {
             TableMetaData t("A");
-            t.set_column(ColumnMetaData("X", Value::LongLong, 0,
+            t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
                         ColumnMetaData::PK));
             t.set_seq_name("S_A_X");
             r.set_table(t);
         }
         {
             TableMetaData t("C");
-            t.set_column(ColumnMetaData("X", Value::LongLong, 0,
+            t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
                         ColumnMetaData::PK));
-            t.set_column(ColumnMetaData("AX", Value::LongLong, 0, 0, "A", "X"));
+            t.set_column(ColumnMetaData("AX", Value::LONGINT, 0, 0, "A", "X"));
             t.set_seq_name("S_A_X");
             r.set_table(t);
         }
         {
             TableMetaData t("B");
-            t.set_column(ColumnMetaData("X", Value::LongLong, 0,
+            t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
                         ColumnMetaData::PK));
-            t.set_column(ColumnMetaData("AX", Value::LongLong, 0, 0, "A", "X"));
-            t.set_column(ColumnMetaData("CX", Value::LongLong, 0, 0, "C", "X"));
+            t.set_column(ColumnMetaData("AX", Value::LONGINT, 0, 0, "A", "X"));
+            t.set_column(ColumnMetaData("CX", Value::LONGINT, 0, 0, "C", "X"));
             t.set_seq_name("S_A_X");
             r.set_table(t);
         }

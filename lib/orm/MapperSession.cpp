@@ -68,7 +68,7 @@ MapperSession::on_select(const StrList &what,
             group_by, having, order_by, max_rows, for_update);
 }
 
-const vector<long long>
+const vector<LongInt>
 MapperSession::on_insert(const string &table_name,
         const Rows &rows, const FieldSet &exclude_fields,
         bool collect_new_ids)

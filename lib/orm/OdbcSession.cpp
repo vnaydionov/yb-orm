@@ -35,12 +35,12 @@ OdbcSession::on_select(const StrList &what,
     return drv_->fetch_rows(max_rows);
 }
 
-const vector<long long>
+const vector<LongInt>
 OdbcSession::on_insert(const string &table_name,
         const Rows &rows, const FieldSet &exclude_fields,
         bool collect_new_ids)
 {
-    vector<long long> ids;
+    vector<LongInt> ids;
     if (!rows.size())
         return ids;
     string sql;
@@ -69,7 +69,7 @@ OdbcSession::on_insert(const string &table_name,
             drv_->exec(params);
             drv_->exec_direct("SELECT LAST_INSERT_ID() LID");
             RowsPtr id_rows = drv_->fetch_rows();
-            ids.push_back((*id_rows)[0]["LID"].as_long_long());
+            ids.push_back((*id_rows)[0]["LID"].as_longint());
         }
     }
     return ids;

@@ -93,7 +93,7 @@ RowData::get_typed_value(const ColumnMetaData &c, const Value &value)
         throw BadTypeCast(get_table().get_name(), c.get_name(),
                 value.as_string(), Value::get_type_name(c.get_type()));
     }
-    if (!x.is_null() && c.get_type() == Value::String &&
+    if (!x.is_null() && c.get_type() == Value::STRING &&
             c.get_size() > 0 && x.as_string().size() > c.get_size())
     {
         throw StringTooLong(get_table().get_name(), c.get_name(),
@@ -112,8 +112,8 @@ RowData::set(const string &column_name, const Value &value)
         Value old = values_[c.get_name()].value;
         if (!(old.get_type() == Value::PKID &&
                     (old.as_pkid().is_temp() ||
-                     old.as_pkid().as_long_long() ==
-                     value.as_long_long())))
+                     old.as_pkid().as_longint() ==
+                     value.as_longint())))
             throw ReadOnlyColumn(table.get_name(), c.get_name());
     }
     Value x(value);
@@ -127,11 +127,11 @@ RowData::set(const string &column_name, const Value &value)
             {
                 PKIDValue pkid = values_[c.get_name()].value.as_pkid();
                 if (pkid.is_temp())
-                    pkid.sync(x.as_long_long());
+                    pkid.sync(x.as_longint());
                 update_status = false;
             }
             else
-                x = Value(PKIDValue(table, x.as_long_long()));
+                x = Value(PKIDValue(table, x.as_longint()));
         }
     }
     values_[c.get_name()] = Entry(x);
@@ -140,7 +140,7 @@ RowData::set(const string &column_name, const Value &value)
 }
 
 void
-RowData::set_pk(long long pk)
+RowData::set_pk(LongInt pk)
 {
     const TableMetaData &table = get_table();
     string pk_name = table.get_synth_pk();

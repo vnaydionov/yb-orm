@@ -32,7 +32,7 @@ SqlDataSource::sql_row2row_data(const string &table_name, const Row &row)
         Row::const_iterator x = row.find(it->second.get_name());
         if (x == row.end())
             throw FieldNotFoundInFetchedRow(table_name, it->second.get_name());
-        Value v(!x->second.is_null() && it->second.get_type() == Value::DateTime ?
+        Value v(!x->second.is_null() && it->second.get_type() == Value::DATETIME ?
                 Value(session_.fix_dt_hook(x->second.as_date_time())) :
                 x->second);
         d.set(it->second.get_name(), v);
@@ -116,7 +116,7 @@ SqlDataSource::do_insert_rows(const string &table_name,
         if ((it->second.is_ro() && !it->second.is_pk()) ||
                 (it->first == pk_name && process_autoinc))
             excluded.insert(it->second.get_name());
-    vector<long long> new_ids = session_.insert(
+    vector<LongInt> new_ids = session_.insert(
             table_name, *sql_rows, excluded, process_autoinc);
     if (process_autoinc) {
         if (new_ids.size() != sql_rows->size())
@@ -160,13 +160,13 @@ SqlDataSource::delete_row(const RowData &row)
 {
 }
 
-long long
+LongInt
 SqlDataSource::get_curr_id(const string &seq_name)
 {
     return session_.get_curr_value(seq_name);
 }
 
-long long
+LongInt
 SqlDataSource::get_next_id(const string &seq_name)
 {
     return session_.get_next_value(seq_name);

@@ -63,7 +63,7 @@ class StrongObject : public DataObject
     RowData *d_;
     RowData *ptr() const { return d_; }
     static const RowData mk_key(Mapper &mapper,
-            const std::string &table_name, long long id)
+            const std::string &table_name, LongInt id)
     {
         RowData key(mapper.get_meta_data_registry(), table_name);
         const TableMetaData &table = key.get_table();
@@ -77,7 +77,7 @@ public:
     StrongObject(Mapper &mapper, const RowData &key)
         : d_(mapper.find(key))
     {}
-    StrongObject(Mapper &mapper, const std::string &table_name, long long id)
+    StrongObject(Mapper &mapper, const std::string &table_name, LongInt id)
         : d_(mapper.find(mk_key(mapper, table_name, id)))
     {}
     StrongObject(Mapper &mapper, const std::string &table_name)
@@ -97,7 +97,7 @@ class WeakObject : public DataObject
     Mapper *mapper_;
     RowData *ptr() const { return d_? d_: new_d_.get(); }
     static const RowData mk_key(Mapper &mapper,
-            const std::string &table_name, long long id)
+            const std::string &table_name, LongInt id)
     {
         RowData key(mapper.get_meta_data_registry(), table_name);
         const TableMetaData &table = key.get_table();
@@ -113,7 +113,7 @@ public:
         : d_(mapper.find(key))
         , mapper_(NULL)
     {}
-    WeakObject(Mapper &mapper, const std::string &table_name, long long id)
+    WeakObject(Mapper &mapper, const std::string &table_name, LongInt id)
         : d_(mapper.find(mk_key(mapper, table_name, id)))
         , mapper_(NULL)
     {}

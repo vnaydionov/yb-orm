@@ -21,7 +21,7 @@ class OrmTestDomainSimple: public AutoXMLizable
     Mapper *mapper_;
     StrongObject obj_;
 public:
-    OrmTestDomainSimple(Mapper &mapper, long long id)
+    OrmTestDomainSimple(Mapper &mapper, LongInt id)
         :mapper_(&mapper)
         ,obj_(mapper, "T_ORM_TEST", id)
     {}
@@ -43,7 +43,7 @@ class OrmXMLDomainSimple: public AutoXMLizable
     Mapper *mapper_;
     StrongObject obj_;
 public:
-    OrmXMLDomainSimple(Mapper &mapper, long long id)
+    OrmXMLDomainSimple(Mapper &mapper, LongInt id)
         :mapper_(&mapper)
         ,obj_(mapper, "T_ORM_XML", id)
     {}
@@ -83,16 +83,16 @@ class TestXMLNode : public CppUnit::TestFixture
 //      if(r.size() == 0) {
             TableMetaData t("T_ORM_TEST", "orm-test");
             t.set_seq_name("S_ORM_TEST_ID");
-            t.set_column(ColumnMetaData("ID", Value::LongLong, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("A", Value::String, 50, 0));
-            t.set_column(ColumnMetaData("B", Value::DateTime, 0, 0));
-            t.set_column(ColumnMetaData("C", Value::Decimal, 0, 0));
+            t.set_column(ColumnMetaData("ID", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
+            t.set_column(ColumnMetaData("A", Value::STRING, 50, 0));
+            t.set_column(ColumnMetaData("B", Value::DATETIME, 0, 0));
+            t.set_column(ColumnMetaData("C", Value::DECIMAL, 0, 0));
             r.set_table(t);
             TableMetaData t2("T_ORM_XML", "orm-xml");
             t2.set_seq_name("S_ORM_TEST_ID");
-            t2.set_column(ColumnMetaData("ID", Value::LongLong, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t2.set_column(ColumnMetaData("ORM_TEST_ID", Value::LongLong, 0, 0, "T_ORM_TEST", "ID"));
-            t2.set_column(ColumnMetaData("B", Value::Decimal, 0, 0));
+            t2.set_column(ColumnMetaData("ID", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
+            t2.set_column(ColumnMetaData("ORM_TEST_ID", Value::LONGINT, 0, 0, "T_ORM_TEST", "ID"));
+            t2.set_column(ColumnMetaData("B", Value::DECIMAL, 0, 0));
             r.set_table(t2);
 //      }
     }
@@ -103,18 +103,18 @@ public:
         db_type_ = xgetenv("YBORM_DBTYPE");
 
         TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LongLong, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-        t.set_column(ColumnMetaData("Y", Value::String, 0, 0));
-        t.set_column(ColumnMetaData("Z", Value::Decimal, 0, ColumnMetaData::RO));
+        t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
+        t.set_column(ColumnMetaData("Y", Value::STRING, 0, 0));
+        t.set_column(ColumnMetaData("Z", Value::DECIMAL, 0, ColumnMetaData::RO));
         TableMetaDataRegistry r;
         r.set_table(t);
         TableMetaData t2("XX");
-        t2.set_column(ColumnMetaData("XA", Value::LongLong, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-        t2.set_column(ColumnMetaData("XB", Value::String, 0, 0));
-        t2.set_column(ColumnMetaData("XC", Value::Decimal, 0, ColumnMetaData::RO));
+        t2.set_column(ColumnMetaData("XA", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
+        t2.set_column(ColumnMetaData("XB", Value::STRING, 0, 0));
+        t2.set_column(ColumnMetaData("XC", Value::DECIMAL, 0, ColumnMetaData::RO));
         r.set_table(t2);
         TableMetaData t3("N");
-        t3.set_column(ColumnMetaData("A", Value::LongLong, 0, ColumnMetaData::PK | ColumnMetaData::RO));
+        t3.set_column(ColumnMetaData("A", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
         r.set_table(t3);
         r_ = r;
 
@@ -156,7 +156,7 @@ public:
         RowData data(r_, "A");
         data.set("x", 10);
         data.set("y", "zzz");
-        data.set("z", decimal("1.20"));
+        data.set("z", Decimal("1.20"));
         XMLNode node(data);
         CPPUNIT_ASSERT_EQUAL(string("<a><x>10</x><y>zzz</y><z>1.2</z></a>\n"), node.get_xml());
     }
@@ -166,11 +166,11 @@ public:
         RowData data(r_, "A");
         data.set("x", 10);
         data.set("y", "zzz");
-        data.set("z", decimal(1.2));
+        data.set("z", Decimal(1.2));
         RowData datax(r_, "XX");
         datax.set("xa", 20);
         datax.set("xb", "aaa");
-        datax.set("xc", decimal("1.1"));
+        datax.set("xc", Decimal("1.1"));
         XMLNode node(data);
         node.replace_child_object_by_field("x", datax); 
         CPPUNIT_ASSERT_EQUAL(string(
@@ -183,11 +183,11 @@ public:
         RowData data(r_, "A");
         data.set("x", 10);
         data.set("y", "zzz");
-        data.set("z", decimal("1.2"));
+        data.set("z", Decimal("1.2"));
         RowData datax(r_, "XX");
         datax.set("xa", 20);
         datax.set("xb", "aaa");
-        datax.set("xc", decimal("1.1"));
+        datax.set("xc", Decimal("1.1"));
         XMLNode node(data);
         XMLNode child(datax);
         node.add_node(datax);

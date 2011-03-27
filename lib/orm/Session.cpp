@@ -48,7 +48,7 @@ Session::select(const StrList &what,
     return rows;
 }
 
-const vector<long long>
+const vector<LongInt>
 Session::insert(const string &table_name,
         const Rows &rows, const FieldSet &exclude_fields,
         bool collect_new_ids)
@@ -131,20 +131,20 @@ Session::select1(const string &what, const string &from, const Filter &where)
     return row->begin()->second;
 }
 
-long long
+LongInt
 Session::get_curr_value(const string &seq_name)
 {
-    return select1(seq_name + ".CURRVAL", "DUAL", Filter()).as_long_long();
+    return select1(seq_name + ".CURRVAL", "DUAL", Filter()).as_longint();
 }
 
-long long
+LongInt
 Session::get_next_value(const string &seq_name)
 {
-    return select1(seq_name + ".NEXTVAL", "DUAL", Filter()).as_long_long();
+    return select1(seq_name + ".NEXTVAL", "DUAL", Filter()).as_longint();
 }
 
-const boost::posix_time::ptime
-Session::fix_dt_hook(const boost::posix_time::ptime &t)
+const DateTime
+Session::fix_dt_hook(const DateTime &t)
 {
     // by default do nothing:
     return t;

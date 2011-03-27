@@ -21,7 +21,7 @@ class TestRowData : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_init_row_long_string, StringTooLong);
     CPPUNIT_TEST(test_set_value_type);
     CPPUNIT_TEST_EXCEPTION(test_bad_type_cast_long_long, BadTypeCast);
-    CPPUNIT_TEST_EXCEPTION(test_bad_type_cast_decimal, BadTypeCast);
+    CPPUNIT_TEST_EXCEPTION(test_bad_type_cast_Decimal, BadTypeCast);
     CPPUNIT_TEST_EXCEPTION(test_bad_type_cast_date_time, BadTypeCast);
     CPPUNIT_TEST(test_bad_type_cast_format);
     CPPUNIT_TEST_SUITE_END();
@@ -33,9 +33,9 @@ public:
     void setUp()
     {
         TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LongLong, 0,
+        t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
                     ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Y", Value::String, 4, 0));
+        t.set_column(ColumnMetaData("Y", Value::STRING, 4, 0));
         t.set_seq_name("S_A_X");
         TableMetaDataRegistry r;
         r.set_table(t);
@@ -49,7 +49,7 @@ public:
         CPPUNIT_ASSERT(d.get("X").is_null());
         d.set("x", Value("10"));
         d.set("y", Value("zzz"));
-        CPPUNIT_ASSERT_EQUAL(10LL, d.get("X").as_long_long());
+        CPPUNIT_ASSERT_EQUAL((LongInt)10, d.get("X").as_longint());
         CPPUNIT_ASSERT_EQUAL(string("zzz"), d.get("Y").as_string());
     }
 
@@ -73,8 +73,8 @@ public:
     void test_row_data_key_comp()
     {
         TableMetaData t("B");
-        t.set_column(ColumnMetaData("X", Value::LongLong, 0, ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Y", Value::String, 0, ColumnMetaData::PK));
+        t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK));
+        t.set_column(ColumnMetaData("Y", Value::STRING, 0, ColumnMetaData::PK));
         r_.set_table(t);
         //
         CPPUNIT_ASSERT(!RowData_key_less()(RowData(), RowData()));
@@ -113,8 +113,8 @@ public:
         d2.set_new();
         d2.set_pk(1);
         CPPUNIT_ASSERT(d2.is_new());
-        CPPUNIT_ASSERT_EQUAL(1LL, d1.get("X").as_long_long());
-        CPPUNIT_ASSERT_EQUAL(1LL, d2.get("X").as_long_long());
+        CPPUNIT_ASSERT_EQUAL((LongInt)1, d1.get("X").as_longint());
+        CPPUNIT_ASSERT_EQUAL((LongInt)1, d2.get("X").as_longint());
         CPPUNIT_ASSERT(d1 == d2);
         CPPUNIT_ASSERT(!RowData_key_less()(d1, d2));
         CPPUNIT_ASSERT(!RowData_key_less()(d2, d1));
@@ -157,7 +157,7 @@ public:
     void test_init_row_wrong_val()
     {
         RowData d(get_r(), "A");
-        d.set("X", decimal(1.2));
+        d.set("X", Decimal(1.2));
     }
 
     void test_init_row_long_string()
@@ -169,13 +169,13 @@ public:
     void test_set_value_type()
     {
         TableMetaData t("A");
-        ColumnMetaData cx("X", Value::LongLong, 0, 0);
+        ColumnMetaData cx("X", Value::LONGINT, 0, 0);
         t.set_column(cx);
-        ColumnMetaData cy("Y", Value::String, 0, 0);
+        ColumnMetaData cy("Y", Value::STRING, 0, 0);
         t.set_column(cy);
-        ColumnMetaData cz("Z", Value::Decimal, 0, 0);
+        ColumnMetaData cz("Z", Value::DECIMAL, 0, 0);
         t.set_column(cz);
-        ColumnMetaData cw("W", Value::DateTime, 0, 0);
+        ColumnMetaData cw("W", Value::DATETIME, 0, 0);
         t.set_column(cw);
         TableMetaDataRegistry r;
         r.set_table(t);
@@ -183,11 +183,9 @@ public:
         RowData d(r, "A");
         CPPUNIT_ASSERT(Value() == d.get_typed_value(cx, Value()));
         CPPUNIT_ASSERT(Value(12) == d.get_typed_value(cx, Value("12")));
-        CPPUNIT_ASSERT(Value(decimal("1.2")) == d.get_typed_value(cz, Value("1.20")));
+        CPPUNIT_ASSERT(Value(Decimal("1.2")) == d.get_typed_value(cz, Value("1.20")));
         CPPUNIT_ASSERT(Value("ab") == d.get_typed_value(cy, Value("ab")));
-        boost::posix_time::ptime a(
-                boost::gregorian::date(2006, 11, 16),
-                boost::posix_time::time_duration(15, 5, 10));
+        DateTime a(mk_datetime(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT(Value(a) == d.get_typed_value(cw, Value("2006-11-16T15:05:10")));
     }
 
@@ -197,10 +195,10 @@ public:
         d.get_typed_value(get_r().get_table("A").get_column("X"), Value("2.5"));
     }
 
-    void test_bad_type_cast_decimal()
+    void test_bad_type_cast_Decimal()
     {
         TableMetaData t("A");
-        ColumnMetaData cz("Z", Value::Decimal, 0, 0);
+        ColumnMetaData cz("Z", Value::DECIMAL, 0, 0);
         t.set_column(cz);
         TableMetaDataRegistry r;
         r.set_table(t);
@@ -212,7 +210,7 @@ public:
     void test_bad_type_cast_date_time()
     {
         TableMetaData t("A");
-        ColumnMetaData cw("W", Value::DateTime, 0, 0);
+        ColumnMetaData cw("W", Value::DATETIME, 0, 0);
         t.set_column(cw);
         TableMetaDataRegistry r;
         r.set_table(t);
@@ -225,8 +223,8 @@ public:
     {
         try {
             TableMetaData t("A");
-            t.set_column(ColumnMetaData("X", Value::LongLong, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("Y", Value::Decimal, 0, 0));
+            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
+            t.set_column(ColumnMetaData("Y", Value::DECIMAL, 0, 0));
             TableMetaDataRegistry r;
             r.set_table(t);
 

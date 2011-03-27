@@ -70,8 +70,8 @@ public:
     virtual void update_rows(const std::string &table_name,
             const RowDataVector &rows) = 0;
     virtual void delete_row(const RowData &row) = 0;
-    virtual long long get_curr_id(const std::string &seq_name) = 0;
-    virtual long long get_next_id(const std::string &seq_name) = 0;
+    virtual LongInt get_curr_id(const std::string &seq_name) = 0;
+    virtual LongInt get_next_id(const std::string &seq_name) = 0;
     virtual ~DataSource();
 };
 
@@ -97,7 +97,7 @@ public:
     const Value &get(const std::string &column_name) const;
     const PKIDValue get_id() const;
     void set(const std::string &column_name, const Value &value);
-    void set_pk(long long pk);
+    void set_pk(LongInt pk);
     void set_new_pk(boost::shared_ptr<PKIDRecord> new_pk);
     void set_data_source(DataSource *ds) { ds_ = ds; }
     bool is_new() const { return status_ == New; }

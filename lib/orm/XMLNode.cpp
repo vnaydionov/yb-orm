@@ -79,7 +79,7 @@ deep_xmlize(Mapper &mapper, const RowData &d, int depth)
             if (it->second.has_fk() && !d.get(it->second.get_name()).is_null()) {
                 boost::shared_ptr<AutoXMLizable> domain_obj = 
                     theDomainFactory::instance().create_object(mapper, it->second.get_fk_table_name(), 
-                        d.get(it->second.get_name()).as_long_long()); 
+                        d.get(it->second.get_name()).as_longint()); 
                 XMLNode ref_node(domain_obj->auto_xmlize((depth == -1 ) ? -1: depth - 1));
                 node.replace_child_object_by_field(it->second.get_xml_name(), ref_node);
             }

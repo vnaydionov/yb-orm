@@ -142,7 +142,7 @@ TableMapper::insert_new_to_table(const string &table_name)
     ds_.insert_rows(table_name, v);
     for (int j = 0; j < pkid_changed.size(); ++j) {
         PKIDValue pkid(table,
-                pkid_changed[j]->get(pk_name).as_pkid().as_long_long());
+                pkid_changed[j]->get(pk_name).as_pkid().as_longint());
         pkid_changed[j]->set(pk_name, pkid);
         rows_[*pkid_changed[j]] = pkid_changed[j];
     }

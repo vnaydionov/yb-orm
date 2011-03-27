@@ -55,7 +55,7 @@ private:
     DataSource &ds_;
     RowSet rows_;
     std::set<std::string> tables_for_insert_;
-    long long new_id_;
+    LongInt new_id_;
     std::vector<boost::shared_ptr<PKIDRecord> > new_ids_;
 };
 

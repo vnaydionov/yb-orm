@@ -33,7 +33,7 @@ private:
             const StrList &group_by, const Filter &having,
             const StrList &order_by, int max_rows,
             bool for_update);
-    const std::vector<long long> on_insert(const std::string &table_name,
+    const std::vector<LongInt> on_insert(const std::string &table_name,
             const Rows &rows, const FieldSet &exclude_fields,
             bool collect_new_ids);
     void on_update(const std::string &table_name,

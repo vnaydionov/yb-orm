@@ -33,7 +33,7 @@ public:
 	        "<column type=\"string\" name=\"AA\"><size>10</size></column>"
             "</columns></table>"
             "<table name=\"B\"><columns>"
-	        "<column type=\"longlong\" name=\"BA\"></column>"
+	        "<column type=\"longint\" name=\"BA\"></column>"
             "</columns></table>"
             "</scheme>";
         XMLMetaDataConfig cfg(xml);
@@ -44,11 +44,11 @@ public:
         CPPUNIT_ASSERT_EQUAL(1, (int)t.size());
         CPPUNIT_ASSERT_EQUAL(std::string("AA"), t.begin()->second.get_name());
         CPPUNIT_ASSERT_EQUAL(10, (int)t.begin()->second.get_size());
-        CPPUNIT_ASSERT_EQUAL((int)Value::String, t.begin()->second.get_type());
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, t.begin()->second.get_type());
         const TableMetaData &t2 = reg.get_table("B");
         CPPUNIT_ASSERT_EQUAL(1, (int)t2.size());
         CPPUNIT_ASSERT_EQUAL(std::string("BA"), t2.begin()->second.get_name());
-        CPPUNIT_ASSERT_EQUAL((int)Value::LongLong, t2.begin()->second.get_type());
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, t2.begin()->second.get_type());
     }
     
     void testWrongElementTable()
@@ -66,7 +66,7 @@ public:
         string xml = 
             "<table name=\"A\" sequence=\"S\"><columns>"
 	        "<column type=\"string\" name=\"ASTR\"><size>10</size></column>"
-	        "<column type=\"longlong\" name=\"B_ID\">"
+	        "<column type=\"longint\" name=\"B_ID\">"
 		    "<foreign-key table=\"T_B\" field=\"ID\"/></column>"
             "</columns></table>";
         Node node(Parse(xml));
@@ -79,12 +79,12 @@ public:
         TableMetaData::Map::const_iterator it = t.begin();
         CPPUNIT_ASSERT_EQUAL(string("ASTR"), it->second.get_name());
         CPPUNIT_ASSERT_EQUAL(10, (int)it->second.get_size());
-        CPPUNIT_ASSERT_EQUAL((int)Value::String, it->second.get_type());
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, it->second.get_type());
         ++it;
         CPPUNIT_ASSERT_EQUAL(string("B_ID"), it->second.get_name());
         CPPUNIT_ASSERT_EQUAL(string("ID"), it->second.get_fk_name());
         CPPUNIT_ASSERT_EQUAL(string("T_B"), it->second.get_fk_table_name());
-        CPPUNIT_ASSERT_EQUAL((int)Value::LongLong, it->second.get_type()); 
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, it->second.get_type()); 
     }
     
     void testGetWrongNodeValue()
@@ -96,10 +96,10 @@ public:
     void testStrTypeToInt()
     {
         string a;
-        CPPUNIT_ASSERT_EQUAL((int)Value::LongLong, XMLMetaDataConfig::string_type_to_int(std::string("longlong"),a));
-        CPPUNIT_ASSERT_EQUAL((int)Value::String, XMLMetaDataConfig::string_type_to_int(std::string("string"),a));
-        CPPUNIT_ASSERT_EQUAL((int)Value::Decimal, XMLMetaDataConfig::string_type_to_int(std::string("decimal"),a));
-        CPPUNIT_ASSERT_EQUAL((int)Value::DateTime, XMLMetaDataConfig::string_type_to_int(std::string("datetime"),a));
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, XMLMetaDataConfig::string_type_to_int(std::string("longint"),a));
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, XMLMetaDataConfig::string_type_to_int(std::string("string"),a));
+        CPPUNIT_ASSERT_EQUAL((int)Value::DECIMAL, XMLMetaDataConfig::string_type_to_int(std::string("decimal"),a));
+        CPPUNIT_ASSERT_EQUAL((int)Value::DATETIME, XMLMetaDataConfig::string_type_to_int(std::string("datetime"),a));
     }
     
     void testWrongColumnType()
@@ -110,7 +110,7 @@ public:
     
     void testParseColumn()
     {
-        string xml = "<column type=\"longlong\" name=\"ID\"><xml-name>i-d</xml-name>"
+        string xml = "<column type=\"longint\" name=\"ID\"><xml-name>i-d</xml-name>"
                      "<readonly/><primarykey/></column>";
         Node node(Parse(xml));
         xmlNodePtr p_node = node.get();
@@ -118,7 +118,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(std::string("ID"), col.get_name());
         CPPUNIT_ASSERT_EQUAL(true, col.is_pk());
         CPPUNIT_ASSERT_EQUAL(true, col.is_ro());
-        CPPUNIT_ASSERT_EQUAL((int)Value::LongLong, col.get_type());
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, col.get_type());
         CPPUNIT_ASSERT_EQUAL(std::string("i-d"), col.get_xml_name());
     }
 
@@ -134,7 +134,7 @@ public:
     
     void testInvalidCombination()
     {      
-        string xml = "<column type=\"longlong\" name=\"ID\"><size>10</size></column>";
+        string xml = "<column type=\"longint\" name=\"ID\"><size>10</size></column>";
         Node node(Parse(xml));
         ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(node.get());
     }
@@ -155,7 +155,7 @@ public:
     
     void testAbsentColumnName()
     {
-        string xml = "<column type=\"longlong\"></column>";
+        string xml = "<column type=\"longint\"></column>";
         Node node(Parse(xml));
         ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(node.get());
     }

@@ -25,6 +25,16 @@ struct tm *localtime_r(const time_t *clock, struct tm *result)
 
 namespace Yb {
 
+const DateTime mk_datetime(const string &s)
+{
+    string::size_type pos = s.find('T');
+    if (pos == string::npos)
+        return boost::posix_time::time_from_string(s);
+    string t(s);
+    t[pos] = ' ';
+    return boost::posix_time::time_from_string(t);
+}
+
 class ValueData
 {
 public:
@@ -34,32 +44,6 @@ public:
     virtual bool lt(const ValueData &v) const = 0;
     virtual ~ValueData() {}
 };
-
-template <typename T>
-string to_string(T x)
-{
-    return boost::lexical_cast<string>(x);
-}
-
-string to_string(decimal x)
-{
-    return x.str();
-}
-
-string to_string(const string &x)
-{
-    return x;
-}
-
-string to_string(boost::posix_time::ptime x)
-{
-    return boost::posix_time::to_iso_extended_string(x);
-}
-
-string to_string(PKIDValue x)
-{
-    return boost::lexical_cast<string>(x.as_long_long());
-}
 
 template <typename T>
 class ValueDataImpl: public ValueData
@@ -85,7 +69,7 @@ const string ValueDataImpl<string>::to_sql_str() const
 }
 
 template <>
-const string ValueDataImpl<boost::posix_time::ptime>::to_sql_str() const
+const string ValueDataImpl<DateTime>::to_sql_str() const
 {
     return "TO_DATE('" +
         boost::posix_time::to_iso_extended_string(x_)
@@ -97,7 +81,7 @@ const string ValueDataImpl<PKIDValue>::to_sql_str() const
 {
     if (x_.is_temp())
         return "NULL";
-    return boost::lexical_cast<string>(x_.as_long_long());
+    return boost::lexical_cast<string>(x_.as_longint());
 }
 
 template <>
@@ -108,21 +92,21 @@ const string ValueDataImpl<PKIDValue>::to_str() const
 
 PKIDValue::PKIDValue()
     : table_(NULL)
-    , key_(pair<string, long long>(string(), 0))
+    , key_(pair<string, LongInt>(string(), 0))
     , pkid_(0)
 {}
 
 PKIDValue::PKIDValue(const TableMetaData &table,
         boost::shared_ptr<PKIDRecord> temp)
     : table_(&table)
-    , key_(pair<string, long long>("-" + table.get_name(), temp->pkid_))
+    , key_(pair<string, LongInt>("-" + table.get_name(), temp->pkid_))
     , pkid_(0)
     , temp_(temp)
 {}
 
-PKIDValue::PKIDValue(const TableMetaData &table, long long pkid)
+PKIDValue::PKIDValue(const TableMetaData &table, LongInt pkid)
     : table_(&table)
-    , key_(pair<string, long long>("+" + table.get_name(), pkid))
+    , key_(pair<string, LongInt>("+" + table.get_name(), pkid))
     , pkid_(pkid)
 {}
 
@@ -148,7 +132,7 @@ bool PKIDValue::is_temp() const
     return temp_.get() && temp_->is_temp_;
 }
 
-long long PKIDValue::as_long_long() const
+LongInt PKIDValue::as_longint() const
 {
     if (!table_)
         throw PKIDInvalid();
@@ -159,43 +143,43 @@ long long PKIDValue::as_long_long() const
     return temp_->pkid_;
 }
 
-void PKIDValue::sync(long long pkid) const
+void PKIDValue::sync(LongInt pkid) const
 {
     if (!table_)
         throw PKIDInvalid();
     if (!is_temp())
-        throw PKIDAlreadySynced(table_->get_name(), as_long_long());
+        throw PKIDAlreadySynced(table_->get_name(), as_longint());
     temp_->pkid_ = pkid;
     temp_->is_temp_ = false;
 }
 
 Value::Value()
-    : type_(Invalid)
+    : type_(INVALID)
 {}
 
-Value::Value(long long x)
-    : data_(new ValueDataImpl<long long>(x))
-    , type_(LongLong)
+Value::Value(LongInt x)
+    : data_(new ValueDataImpl<LongInt>(x))
+    , type_(LONGINT)
 {}
 
 Value::Value(const char *x)
     : data_(new ValueDataImpl<string>(x))
-    , type_(String)
+    , type_(STRING)
 {}
 
 Value::Value(const string &x)
     : data_(new ValueDataImpl<string>(x))
-    , type_(String)
+    , type_(STRING)
 {}
 
-Value::Value(const decimal &x)
-    : data_(new ValueDataImpl<decimal>(x))
-    , type_(Decimal)
+Value::Value(const Decimal &x)
+    : data_(new ValueDataImpl<Decimal>(x))
+    , type_(DECIMAL)
 {}
 
-Value::Value(const boost::posix_time::ptime &x)
-    : data_(new ValueDataImpl<boost::posix_time::ptime>(x))
-    , type_(DateTime)
+Value::Value(const DateTime &x)
+    : data_(new ValueDataImpl<DateTime>(x))
+    , type_(DATETIME)
 {}
 
 Value::Value(const PKIDValue &x)
@@ -206,34 +190,34 @@ Value::Value(const PKIDValue &x)
 bool
 Value::is_null() const
 {
-    return type_ == Invalid;
+    return type_ == INVALID;
 }
 
-long long
-Value::as_long_long() const
+LongInt
+Value::as_longint() const
 {
-    if (type_ != LongLong) {
+    if (type_ != LONGINT) {
         try {
-            return boost::lexical_cast<long long>(check_null().to_str());
+            return boost::lexical_cast<LongInt>(check_null().to_str());
         }
         catch (const boost::bad_lexical_cast &) {
             throw ValueBadCast(check_null().to_str(), "LongLong");
         }
     }
-    const ValueDataImpl<long long> &d =
-        dynamic_cast<const ValueDataImpl<long long> &>(check_null());
+    const ValueDataImpl<LongInt> &d =
+        dynamic_cast<const ValueDataImpl<LongInt> &>(check_null());
     return d.get();
 }
 
-const decimal
+const Decimal
 Value::as_decimal() const
 {
-    if (type_ != Decimal) {
+    if (type_ != DECIMAL) {
         string s = check_null().to_str();
         try {
-            return decimal(s);
+            return Decimal(s);
         }
-        catch (const decimal::exception &) {
+        catch (const Decimal::exception &) {
             double f = 0.0;
             try {
                 f = boost::lexical_cast<double>(s);
@@ -244,30 +228,32 @@ Value::as_decimal() const
             ostringstream o;
             o << setprecision(10) << fixed << f;
             try {
-                return decimal(o.str());
+                return Decimal(o.str());
             }
-            catch (const decimal::exception &) {
+            catch (const Decimal::exception &) {
                 throw ValueBadCast(s, "Decimal");
             }
         }
     }
-    const ValueDataImpl<decimal> &d =
-        dynamic_cast<const ValueDataImpl<decimal> &>(check_null());
+    const ValueDataImpl<Decimal> &d =
+        dynamic_cast<const ValueDataImpl<Decimal> &>(check_null());
     return d.get();
 }
 
-const boost::posix_time::ptime
+const DateTime
 Value::as_date_time() const
 {
-    if (type_ != DateTime) {
+    if (type_ != DATETIME) {
         string s = check_null().to_str();
         try {
             time_t t = boost::lexical_cast<time_t>(s);
             tm stm;
             localtime_r(&t, &stm);
-            return boost::posix_time::ptime(
-                    boost::gregorian::date(stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday),
-                    boost::posix_time::time_duration(stm.tm_hour, stm.tm_min, stm.tm_sec));
+            return DateTime(
+                    boost::gregorian::date(
+                        stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday),
+                    boost::posix_time::time_duration(
+                        stm.tm_hour, stm.tm_min, stm.tm_sec));
         }
         catch (const boost::bad_lexical_cast &) {
             string::size_type pos = s.find("T");
@@ -281,8 +267,8 @@ Value::as_date_time() const
             }
         }
     }
-    const ValueDataImpl<boost::posix_time::ptime> &d =
-        dynamic_cast<const ValueDataImpl<boost::posix_time::ptime> &>(check_null());
+    const ValueDataImpl<DateTime> &d =
+        dynamic_cast<const ValueDataImpl<DateTime> &>(check_null());
     return d.get();
 }
 
@@ -321,11 +307,11 @@ Value::eq(const Value &x) const
         return data_->eq(*x.data_);
     }
     catch (const std::bad_cast &) {
-        if (get_type() == Decimal || x.get_type() == Decimal)
+        if (get_type() == DECIMAL || x.get_type() == DECIMAL)
             return as_decimal() == x.as_decimal();
-        if (get_type() == LongLong || x.get_type() == LongLong)
-            return as_long_long() == x.as_long_long();
-        if (get_type() == DateTime || x.get_type() == DateTime)
+        if (get_type() == LONGINT || x.get_type() == LONGINT)
+            return as_longint() == x.as_longint();
+        if (get_type() == DATETIME || x.get_type() == DATETIME)
             return as_date_time() == x.as_date_time();
         return as_string() == x.as_string();
     }
@@ -349,13 +335,13 @@ Value::get_typed_value(int type) const
     if (is_null())
         return *this;
     switch (type) {
-        case Value::LongLong:
-            return as_long_long();
-        case Value::Decimal:
+        case Value::LONGINT:
+            return as_longint();
+        case Value::DECIMAL:
             return as_decimal();
-        case Value::DateTime:
+        case Value::DATETIME:
             return as_date_time();
-        case Value::String:
+        case Value::STRING:
             return as_string();
         case Value::PKID:
             return as_pkid();
@@ -376,7 +362,7 @@ const char *
 Value::get_type_name(int type)
 {
     static const char *type_names[] =
-        { "Invalid", "LongLong", "String", "Decimal", "DateTime", "PKID" };
+        { "Invalid", "LongInt", "String", "Decimal", "DateTime", "PKID" };
     if (type < 0 || type >= sizeof(type_names)/sizeof(const char *))
         return "Unknown";
     return type_names[type];

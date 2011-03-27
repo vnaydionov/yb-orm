@@ -6,7 +6,11 @@
 #include <string>
 #include <iosfwd>
 
+#ifdef _MSC_VER
+typedef __int64 decimal_numerator;
+#else
 typedef long long decimal_numerator;
+#endif
 const decimal_numerator MAX_DECIMAL_NUMERATOR = 999999999999999999LL;
 const int MAX_DECIMAL_LENGTH = 18;
 

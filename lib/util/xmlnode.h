@@ -9,6 +9,12 @@
 
 namespace Xml {
 
+#ifdef _MSC_VER
+typedef __int64 LongInt;
+#else
+typedef long long LongInt;
+#endif
+
 xmlNodePtr NewNode(const std::string &name);
 xmlNodePtr AddNode(xmlNodePtr node, xmlNodePtr child);
 xmlNodePtr DupNode(xmlNodePtr node);
@@ -118,7 +124,7 @@ public:
     }
 
     long GetLongAttr(const std::string &name, long def = 0) const;
-    long long GetLongLongAttr(const std::string &name, long long def = 0) const;
+    LongInt GetLongLongAttr(const std::string &name, LongInt def = 0) const;
     bool GetBoolAttr(const std::string &name) const;
 
     void SetAttr(const std::string &name, const std::string &value);

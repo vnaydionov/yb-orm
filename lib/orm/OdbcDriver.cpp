@@ -64,11 +64,8 @@ public:
                 {
                     TIMESTAMP_STRUCT ts = f.as_date_time();
                     if (ts.year != 0) {
-                        v = Value(boost::posix_time::ptime(
-                                    boost::gregorian::date(
-                                        ts.year, ts.month, ts.day),
-                                    boost::posix_time::time_duration(
-                                        ts.hour, ts.minute, ts.second)));
+                        v = Value(mk_datetime(ts.year, ts.month, ts.day,
+                                    ts.hour, ts.minute, ts.second));
                     }
                 }
                 else {
@@ -95,11 +92,11 @@ public:
     void exec(const Values &params)
     {
         for (int i = 0; i < params.size(); ++i) {
-            if (params[i].get_type() == Value::DateTime) {
+            if (params[i].get_type() == Value::DATETIME) {
                 TIMESTAMP_STRUCT ts;
                 memset(&ts, 0, sizeof(ts));
                 if (!params[i].is_null()) {
-                    boost::posix_time::ptime t = params[i].as_date_time();
+                    DateTime t = params[i].as_date_time();
                     ts.year = t.date().year();
                     ts.month = t.date().month();
                     ts.day = t.date().day();

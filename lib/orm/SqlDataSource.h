@@ -33,8 +33,8 @@ public:
     void update_rows(const std::string &table_name,
             const RowDataVector &rows);
     void delete_row(const RowData &row);
-    long long get_curr_id(const std::string &seq_name);
-    long long get_next_id(const std::string &seq_name);
+    LongInt get_curr_id(const std::string &seq_name);
+    LongInt get_next_id(const std::string &seq_name);
 };
 
 } // namespace Yb

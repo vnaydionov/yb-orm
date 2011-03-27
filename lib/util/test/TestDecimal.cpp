@@ -54,7 +54,7 @@ public:
 		decimal m1(25);
 		decimal m2(10.20);
 		decimal m3("-10.00");
-		decimal m4(-3344LL, 2);
+		decimal m4((decimal_numerator)-3344, 2);
 		decimal m5(20, 1);
 
 		decimal m6("1000000.11");
@@ -69,32 +69,32 @@ public:
 		decimal x2("+00.999999999999999999 ");
 
 		CPPUNIT_ASSERT_EQUAL(false, m0.is_positive());
-		CPPUNIT_ASSERT_EQUAL(0LL, m0.ipart());
-		CPPUNIT_ASSERT_EQUAL(0LL, m0.fpart(2));
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)0, m0.ipart());
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)0, m0.fpart(2));
 		CPPUNIT_ASSERT_EQUAL(true, m1.is_positive());
-		CPPUNIT_ASSERT_EQUAL(25LL, m1.ipart());
-		CPPUNIT_ASSERT_EQUAL(0LL, m1.fpart(2));
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)25, m1.ipart());
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)0, m1.fpart(2));
 		CPPUNIT_ASSERT_EQUAL(true, m2.is_positive());
-		CPPUNIT_ASSERT_EQUAL(10LL, m2.ipart());
-		CPPUNIT_ASSERT_EQUAL(20LL, m2.fpart(2));
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)10, m2.ipart());
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)20, m2.fpart(2));
 		CPPUNIT_ASSERT_EQUAL(false, m3.is_positive());
-		CPPUNIT_ASSERT_EQUAL(10LL, m3.ipart());
-		CPPUNIT_ASSERT_EQUAL(0LL, m3.fpart(1));
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)10, m3.ipart());
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)0, m3.fpart(1));
 		CPPUNIT_ASSERT_EQUAL(false, m4.is_positive());
-		CPPUNIT_ASSERT_EQUAL(33LL, m4.ipart());
-		CPPUNIT_ASSERT_EQUAL(440LL, m4.fpart(3));
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)33, m4.ipart());
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)440, m4.fpart(3));
 		CPPUNIT_ASSERT_EQUAL(true, m5.is_positive());
-		CPPUNIT_ASSERT_EQUAL(2LL, m5.ipart());
-		CPPUNIT_ASSERT_EQUAL(0LL, m5.fpart(3));
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)2, m5.ipart());
+		CPPUNIT_ASSERT_EQUAL((decimal_numerator)0, m5.fpart(3));
 		CPPUNIT_ASSERT_EQUAL(999999999999999999LL, x1.ipart());
 		CPPUNIT_ASSERT_EQUAL(999999999999999999LL, x2.fpart(18));
 
-		CPPUNIT_ASSERT(decimal(100000011LL, 2) == m6);
+		CPPUNIT_ASSERT(decimal((decimal_numerator)100000011, 2) == m6);
 		CPPUNIT_ASSERT(decimal() == m7);
 		CPPUNIT_ASSERT(decimal() == m8);
-		CPPUNIT_ASSERT(decimal(75LL, 2) == m9);
-		CPPUNIT_ASSERT(decimal(15LL, 2) == m10);
-		CPPUNIT_ASSERT(decimal(-15LL, 2) == m11);
+		CPPUNIT_ASSERT(decimal((decimal_numerator)75, 2) == m9);
+		CPPUNIT_ASSERT(decimal((decimal_numerator)15, 2) == m10);
+		CPPUNIT_ASSERT(decimal((decimal_numerator)-15, 2) == m11);
 		CPPUNIT_ASSERT(decimal() == m12);
 	}
 

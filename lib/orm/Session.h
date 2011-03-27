@@ -106,7 +106,7 @@ public:
             const StrList &group_by = StrList(), const Filter &having = Filter(),
             const StrList &order_by = StrList(), int max_rows = -1,
             bool for_update = false);
-    const std::vector<long long> insert(const std::string &table_name,
+    const std::vector<LongInt> insert(const std::string &table_name,
             const Rows &rows, const FieldSet &exclude_fields = FieldSet(),
             bool collect_new_ids = false);
     void update(const std::string &table_name,
@@ -123,18 +123,18 @@ public:
     RowPtr select_row(const StrList &from, const Filter &where);
     const Value select1(const std::string &what,
             const std::string &from, const Filter &where);
-    long long get_curr_value(const std::string &seq_name);
-    long long get_next_value(const std::string &seq_name);
+    LongInt get_curr_value(const std::string &seq_name);
+    LongInt get_next_value(const std::string &seq_name);
 
     /* Use cases:
     Yb::Session db;
-    int count = db.select1("count(1)", "t_manager", Yb::FilterEq("hidden", Yb::Value(1))).as_long_long();
+    int count = db.select1("count(1)", "t_manager", Yb::FilterEq("hidden", Yb::Value(1))).as_longint();
     Yb::RowPtr row = db.select_row("v_ui_contract", Yb::FilterEq("contract_id", Yb::Value(contract_id)));
     */
 
     bool is_touched() const { return touched_; }
 
-    virtual const boost::posix_time::ptime fix_dt_hook(const boost::posix_time::ptime &t);
+    virtual const DateTime fix_dt_hook(const DateTime &t);
 
 private:
     virtual RowsPtr on_select(const StrList &what,
@@ -142,7 +142,7 @@ private:
             const StrList &group_by, const Filter &having,
             const StrList &order_by, int max_rows,
             bool for_update) = 0;
-    virtual const std::vector<long long> on_insert(
+    virtual const std::vector<LongInt> on_insert(
             const std::string &table_name,
             const Rows &rows, const FieldSet &exclude_fields,
             bool collect_new_ids) = 0;
