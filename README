@@ -29,13 +29,13 @@ Also I was inspired by the power of frameworks like
 Hibernate (http://www.hibernate.org/) for Java programming language and
 SQLAlchemy (http://www.sqlalchemy.org/) for Python.
 
-Project was once started as part of a billing system for online ads
+Project was once started as part of a billing system for on-line ads
 at Yandex company (http://www.yandex.com/).
 YB stands for Yandex.Balance, that was the name for the billing system.
 Today YB.ORM project is not affiliated with Yandex company.
 
 This piece of software is developed entirely in C++ and should be easily
-portable accross different platforms, although the development is done
+portable across different platforms, although the development is done
 primarily on GNU/Linux, using G++.  GNU Autotools are used as building system.
 
 The library aims to be database independent.  At the time of this writing 
@@ -50,8 +50,8 @@ To build the software, the following prerequisites should be met:
     cppunit >= 1.10.2
     xsltproc >= 1.1.24
     autotools >= 2.61, automake >= 1.10.1
-    (for GNU/Linux) unixODBC >= 2.2.11 (for Oracle ODBC drver to work
-                                        I used unixODBC = 2.3.0)
+    (for GNU/Linux) unixODBC >= 2.2.11 (for Oracle ODBC driver to work
+    	under GNU/Linux x86_64 I used unixODBC = 2.3.0)
 
 Older versions may or may not work.
 This software also imports some pieces of 
@@ -65,7 +65,7 @@ Assuming you've done "svn up", here are the steps to follow.
 1) Create database schema for running tests.
     Take a look at lib/orm/test/misc/test1_db*sql
     Edit, then apply using sqlplus(Oracle) or mysql commands.
-2) Setup an ODBC datasource.
+2) Setup an ODBC data source.
     Create or edit /etc/odbcinst.ini ~/.odbc.ini
     You can use this files as the base: lib/orm/test/misc/odbc*ini
 3) Build the library and run the tests.
@@ -93,7 +93,7 @@ main developer: Vaclav Naydionov <vaclav _at yandex _dot ru>
 contributor: Sergey Chmelev <halty _at yandex _dash team _dot ru>
 tiodbc code: SqUe <squarious _at_ gmail _dot_ com>
 
-Any feedback, patches or comments are wellcome.
+Any feedback, patches or comments are welcome.
 
 -- 
 Best regards!
