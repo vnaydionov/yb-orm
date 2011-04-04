@@ -272,8 +272,10 @@ namespace tiodbc
 		HSTMT stmt_h;			//!< Handle of statement that field exists
 		int col_num;			//!< Column number that field exists.
 		std::string name;		//!< Column name
-		int type;			//!< Column data type code
-		
+		int type;				//!< Column data type code
+		mutable int is_null_flag;	//!< Column is null (0=no, 1=yes, -1=unknown yet)
+		mutable _tstring str_buf;   //!< Column value buffer
+
 		// Not direct constructible
 		field_impl(HSTMT _stmt, int _col_num,
 				const std::string _name, int _type);
@@ -319,8 +321,11 @@ namespace tiodbc
 		//! Get field data type
 		int get_type() const { return type; }
 
-		//! Get fiield name
+		//! Get field name
 		const std::string & get_name() const { return name; }
+
+		//! Check if the field is null
+		bool is_null() const;
 
 		//! @}
 	}; // !field_impl
@@ -364,17 +369,23 @@ namespace tiodbc
 		//! @{
 
 		//! Set parameter as string
-		const _tstring & set_as_string(const _tstring & _str);
+		const _tstring & set_as_string(
+				const _tstring & _str, bool _is_null = false);
 		
 		//! Set parameter as long
-		const long & set_as_long(const long & _value);
+		const long & set_as_long(
+				const long & _value, bool _is_null = false);
 
 		//! Set parameter as unsigned long
-		const unsigned long & set_as_unsigned_long(const unsigned long & _value);
+		const unsigned long & set_as_unsigned_long(
+				const unsigned long & _value, bool _is_null = false);
 
 		//! Set parameter as DateTime
 		const TIMESTAMP_STRUCT & set_as_date_time(
-				const TIMESTAMP_STRUCT & _value);
+				const TIMESTAMP_STRUCT & _value, bool _is_null = false);
+
+		//! Set parameter as NULL
+		void set_as_null();
 
 		//! @}
 	};	// !param_impl

@@ -262,6 +262,7 @@ namespace tiodbc
 		, col_num(_col_num)
 		, name(_name)
 		, type(_type)
+		, is_null_flag(-1)
 	{}
 
 	//! Destructor
@@ -270,41 +271,55 @@ namespace tiodbc
 
 	// Copy constructor
 	field_impl::field_impl(const field_impl & r)
-		:stmt_h(r.stmt_h),
-		col_num(r.col_num)
-	{
-	}
+		: stmt_h(r.stmt_h)
+		, col_num(r.col_num)
+		, name(r.name)
+		, type(r.type)
+		, is_null_flag(r.is_null_flag)
+	{}
 
 	// Copy operator
 	field_impl & field_impl::operator=(const field_impl & r)
 	{
 		stmt_h = r.stmt_h;
 		col_num = r.col_num;
+		name = r.name;
+		type = r.type;
+		is_null_flag = r.is_null_flag;
 		return *this;
 	}
 
 	// Get field as string
 	_tstring field_impl::as_string() const
 	{
+		if (is_null_flag != -1)
+			return str_buf;
+
 		SQLLEN sz_needed = 0;
 		TCHAR small_buff[256];
 		RETCODE rc;
 				
 		// Try with small buffer
+		is_null_flag = 0;
 		rc = SQLGetData(stmt_h, col_num, SQL_C_TCHAR, small_buff, sizeof(small_buff), &sz_needed);
 		
 		if (TIODBC_SUCCESS_CODE(rc))
 		{
-			if (sz_needed == SQL_NULL_DATA)
+			if (sz_needed == SQL_NULL_DATA) {
+				is_null_flag = 1;
 				return _tstring();
-			return _tstring(small_buff);
+			}
+			str_buf = _tstring(small_buff);
+			return str_buf;
 		}
 		else if (sz_needed > 0)
-		{	// A bigger buffer is needed
+		{
+			// A bigger buffer is needed
 			SQLINTEGER sz_buff = sz_needed + 1;
 			std::auto_ptr<TCHAR> p_data(new TCHAR[sz_buff]);
 			SQLGetData(stmt_h, col_num, SQL_C_TCHAR, (SQLTCHAR *)p_data.get(), sz_buff, &sz_needed);
-			return _tstring(p_data.get());
+			str_buf = _tstring(p_data.get());
+			return str_buf;
 		}
 
 		return _tstring();	// Empty
@@ -352,11 +367,22 @@ namespace tiodbc
 		TIMESTAMP_STRUCT ts;
 		std::memset(&ts, 0, sizeof(ts));
 		SQLLEN sz_needed = 0;
+		is_null_flag = 0;
 		RETCODE rc = SQLGetData(stmt_h, col_num, SQL_C_TIMESTAMP,
 				&ts, sizeof(ts), &sz_needed);
-		if (!TIODBC_SUCCESS_CODE(rc) || sz_needed == SQL_NULL_DATA)
+		if (!TIODBC_SUCCESS_CODE(rc) || sz_needed == SQL_NULL_DATA) {
 			std::memset(&ts, 0, sizeof(ts));
+			if (sz_needed == SQL_NULL_DATA)
+				is_null_flag = 1;
+		}
 		return ts;
+	}
+
+	bool field_impl::is_null() const
+	{
+		if (is_null_flag == -1)
+			as_string();
+		return is_null_flag == 1;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////
@@ -365,14 +391,19 @@ namespace tiodbc
 
 	//! @cond INTERNAL_FUNCTIONS
 	template <class T>
-	const T & __bind_param(HSTMT _stmt, int _parnum, SQLSMALLINT _ctype, SQLSMALLINT _sqltype, void * dst_buf, const T & _value, bool is_null)
+	const T & __bind_param(HSTMT _stmt, int _parnum, SQLSMALLINT _ctype, SQLSMALLINT _sqltype, void * dst_buf, const T & _value, bool _is_null)
 	{
-		// Save buffer internally
-		std::memcpy(dst_buf, &_value, sizeof(_value));
-
+		if (_is_null) {
+			// Nullify buffer
+			std::memset(dst_buf, 0, sizeof(_value));
+		}
+		else {
+			// Save buffer internally
+			std::memcpy(dst_buf, &_value, sizeof(_value));
+		}
 		const int odbc_date_prec = 23, odbc_date_scale=0;
 		// Bind on internal buffer		
-		SQLLEN StrLenOrInPoint = is_null? SQL_NULL_DATA: 0;
+		SQLLEN StrLenOrInPoint = _is_null? SQL_NULL_DATA: 0;
 		SQLBindParameter(_stmt,
 			_parnum,
 			SQL_PARAM_INPUT,
@@ -382,8 +413,7 @@ namespace tiodbc
 			_sqltype == SQL_TYPE_TIMESTAMP? odbc_date_scale: 0,
 			(SQLPOINTER *)dst_buf,
 			0,
-			&StrLenOrInPoint
-			);
+			&StrLenOrInPoint);
 
 		return *(T *) dst_buf;
 	}
@@ -415,13 +445,19 @@ namespace tiodbc
 	}
 
 	// Set as string
-	const _tstring & param_impl::set_as_string(const _tstring & _str)
+	const _tstring & param_impl::set_as_string(
+			const _tstring & _str, bool _is_null)
 	{
-		// Save buffer internally
-		_int_string = _str;
-
+		if (_is_null) {
+			// Nullify buffer
+			_int_string = _tstring();
+		}
+		else {
+			// Save buffer internally
+			_int_string = _str;
+		}
 		// Bind on internal buffer		
-		_int_SLOIP = SQL_NTS;
+		_int_SLOIP = _is_null? SQL_NULL_DATA: SQL_NTS;
 		SQLBindParameter(stmt_h,
 			par_num,
 			SQL_PARAM_INPUT,
@@ -431,31 +467,40 @@ namespace tiodbc
 			0,
 			(SQLPOINTER *)_int_string.c_str(),
 			(SQLINTEGER)_int_string.size()+1,
-			&_int_SLOIP);;
+			&_int_SLOIP);
 
 		return _int_string;
 	}
 
 	// Set as long
-	const long & param_impl::set_as_long(const long & _value)
+	const long & param_impl::set_as_long(
+			const long & _value, bool _is_null)
 	{
 		return __bind_param(stmt_h, par_num, SQL_C_SLONG, SQL_INTEGER,
-				_int_buffer, _value, false);
+				_int_buffer, _value, _is_null);
 	}
 
 	// Set parameter as usigned long
-	const unsigned long & param_impl::set_as_unsigned_long(const unsigned long & _value)
+	const unsigned long & param_impl::set_as_unsigned_long(
+			const unsigned long & _value, bool _is_null)
 	{
 		return __bind_param(stmt_h, par_num, SQL_C_ULONG, SQL_INTEGER,
-				_int_buffer, _value, false);
+				_int_buffer, _value, _is_null);
 	}
 
 	// Set parameter as DateTime
 	const TIMESTAMP_STRUCT & param_impl::set_as_date_time(
-			const TIMESTAMP_STRUCT & _value)
+			const TIMESTAMP_STRUCT & _value, bool _is_null)
 	{
-		return __bind_param(stmt_h, par_num, SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP,
-				_int_buffer, _value, _value.year == 0);
+		return __bind_param(stmt_h, par_num, SQL_C_TYPE_TIMESTAMP,
+				SQL_TYPE_TIMESTAMP,
+				_int_buffer, _value, _value.year == 0 || _is_null);
+	}
+
+	// Set parameter as NULL
+	void param_impl::set_as_null()
+	{
+		set_as_string(_tstring(), true);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////

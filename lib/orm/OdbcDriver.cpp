@@ -60,17 +60,19 @@ public:
                 string name = str_to_upper(f.get_name());
                 Value v;
                 if (f.get_type() == SQL_DATE ||
-                        f.get_type() == SQL_TIMESTAMP)
+                        f.get_type() == SQL_TIMESTAMP ||
+                        f.get_type() == SQL_TYPE_TIMESTAMP)
                 {
                     TIMESTAMP_STRUCT ts = f.as_date_time();
-                    if (ts.year != 0) {
+                    if (ts.year != 0 || f.is_null() != 1) {
                         v = Value(mk_datetime(ts.year, ts.month, ts.day,
                                     ts.hour, ts.minute, ts.second));
                     }
                 }
                 else {
                     string val = f.as_string();
-                    v = val.empty()? Value(): Value(val);
+                    if (f.is_null() != 1)
+                        v = Value(val);
                 }
                 row[name] = v;
 #ifdef DUMP_ODBC
@@ -103,12 +105,16 @@ public:
                 ts.minute = t.time_of_day().minutes();
                 ts.second = t.time_of_day().seconds();
                 ts.fraction = 0; // TODO
-                stmt_.param(i + 1).set_as_date_time(ts);
+                stmt_.param(i + 1).set_as_date_time(
+                        ts,
+                        params[i].is_null());
             }
-            else
+            else {
                 stmt_.param(i + 1).set_as_string(
-                        params[i].is_null()? string():
-                        params[i].as_string());
+                        params[i].is_null()?
+                            string(): params[i].as_string(),
+                        params[i].is_null());
+            }
 #ifdef DUMP_ODBC
             cout << "p[" << (i + 1) << "]=\"" << params[i].sql_str() << "\"\n";
 #endif
