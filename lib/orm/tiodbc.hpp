@@ -31,7 +31,7 @@
 #define _TIODBC_HPP_DEFINED_
 
 // System headers
-#ifdef __WIN32__
+#if defined(__WIN32__) || defined(_WIN32)
 #include <windows.h>
 #endif
 #include <sql.h>

@@ -1,15 +1,15 @@
 bin_PROGRAMS = orm_domain_generator
 orm_domain_generator_SOURCES = orm_domain_generator.cpp
 
-# set the include path found by configure
-INCLUDES= $(all_includes) \
-	-I $(top_builddir)/lib
+AM_CXXFLAGS = \
+	-I $(top_srcdir)/lib \
+	$(BOOST_CPPFLAGS)
 
-# the library search path.
-orm_domain_generator_LDFLAGS = $(all_libraries) \
-	$(top_builddir)/lib/util/libybutil.la \
+orm_domain_generator_LDFLAGS = \
 	$(top_builddir)/lib/orm/libyborm.la \
+	$(top_builddir)/lib/util/libybutil.la \
 	$(XML_LIBS) \
-	-lboost_thread -lboost_date_time \
-	-lodbc
+	$(BOOST_LDFLAGS) \
+	$(BOOST_LIBS_R) \
+	$(ODBC_LIBS)
 
