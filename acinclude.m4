@@ -110,6 +110,51 @@ AC_DEFUN([YB_BOOST],
     CXXFLAGS="$ac_save_cxxflags"
 ])
 
+AC_DEFUN([YB_TRY_LINK_BOOST_THREAD], [
+    AC_LANG_PUSH(C++)
+    AC_TRY_LINK([ 
+/*
+        #include <boost/thread.hpp> 
+        bool bRet = 0;
+        void thdfunc() { bRet = 1; }
+*/
+        #include <boost/thread/mutex.hpp>
+    ], [
+/*
+        boost::thread thrd(&thdfunc);
+        thrd.join();
+        return bRet == 1;
+*/
+        boost::mutex m;
+        {
+            boost::mutex::scoped_lock lock(m);
+        }
+        return 0;
+    ], [
+        ifelse([$1], , :, [$1])
+        use_boost_mt="yes"
+    ], [
+        ifelse([$2], , :, [$2])
+    ])
+    AC_LANG_POP(C++)
+])
+
+AC_DEFUN([YB_TRY_LINK_BOOST_DATETIME], [
+    AC_LANG_PUSH(C++)
+    AC_TRY_LINK([ 
+        #include <boost/date_time/gregorian/gregorian.hpp> 
+    ], [
+        using namespace boost::gregorian;
+        date d = from_string("1978-01-27");
+        return d == boost::gregorian::date(1978, Jan, 27);
+    ], [
+        ifelse([$1], , :, [$1])
+    ], [ 
+        ifelse([$2], , :, [$2])
+    ])
+    AC_LANG_POP(C++)
+])
+
 dnl YB_BOOST_THREAD([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
 dnl Test for the Boost thread library
 dnl Call this BEFORE calling YB_BOOST_DATETIME or YB_BOOST_REGEX,
@@ -122,58 +167,37 @@ AC_DEFUN([YB_BOOST_THREAD],
 
     AC_MSG_CHECKING([whether we can use boost_thread library])
 
-    if test "$build_os" = "mingw32" ; then
-        BOOST_CPPFLAGS="$BOOST_CPPFLAGS"
-    else
+    if test "$build_os" != "mingw32" ; then
         BOOST_CPPFLAGS="$BOOST_CPPFLAGS -D_REENTRANT -pthread"
     fi
-    BOOST_LIBS_R="$BOOST_LIBS_R -lboost_thread-$boost_libsuff_r"
     ac_save_cxxflags="$CXXFLAGS"
     ac_save_ldflags="$LDFLAGS"
     ac_save_libs="$LIBS"
     CXXFLAGS="$ac_save_cxxflags $BOOST_CPPFLAGS"
     LDFLAGS="$ac_save_ldflags $BOOST_LDFLAGS"
-    LIBS="$ac_save_libs $BOOST_LIBS_R"
 
-    AC_LANG_PUSH(C++)
-    AC_TRY_LINK(
-        [ 
-/*
-        #include <boost/thread.hpp> 
-        bool bRet = 0;
-        void thdfunc() { bRet = 1; }
-*/
-        #include <boost/thread/mutex.hpp>
-        ],
-        [
-/*
-        boost::thread thrd(&thdfunc);
-        thrd.join();
-        return bRet == 1;
-*/
-        boost::mutex m;
-        {
-            boost::mutex::scoped_lock lock(m);
-        }
-        return 0;
-        ], 
-        [
+    LIBS="$ac_save_libs -lboost_thread-$boost_libsuff_r"
+    YB_TRY_LINK_BOOST_THREAD([
+        BOOST_LIBS_R="$BOOST_LIBS_R -lboost_thread-$boost_libsuff_r"
         AC_MSG_RESULT([yes])
         ifelse([$1], , :, [$1])
-        use_boost_mt="yes"
-        ],
-        [
-        AC_MSG_RESULT([no])
-        ifelse([$2], , :, [$2])
+    ], [
+        LIBS="$ac_save_libs -lboost_thread"
+        YB_TRY_LINK_BOOST_THREAD([
+            BOOST_LIBS_R="$BOOST_LIBS_R -lboost_thread"
+            AC_MSG_RESULT([yes])
+            ifelse([$1], , :, [$1])
+        ], [
+            AC_MSG_RESULT([no])
+            ifelse([$2], , :, [$2])
         ])
-
-    AC_LANG_POP(C++)
+    ])
 
     CXXFLAGS="$ac_save_cxxflags"
     LDFLAGS="$ac_save_ldflags"
     LIBS="$ac_save_libs"
 ])
-        
+
 dnl YB_BOOST_DATETIME([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
 dnl Test for the Boost datetime library
 dnl Defines
@@ -184,39 +208,34 @@ AC_DEFUN([YB_BOOST_DATETIME],
 
     AC_MSG_CHECKING([whether we can use boost_datetime library])
 
-    BOOST_LIBS="$BOOST_LIBS -lboost_date_time-$boost_libsuff"
-    BOOST_LIBS_R="$BOOST_LIBS_R -lboost_date_time-$boost_libsuff_r"
     ac_save_cxxflags="$CXXFLAGS"
     ac_save_ldflags="$LDFLAGS"
     ac_save_libs="$LIBS"
     CXXFLAGS="$ac_save_cxxflags $BOOST_CPPFLAGS"
     LDFLAGS="$ac_save_ldflags $BOOST_LDFLAGS"
-    if test "x$use_boost_mt" = "xno" ; then
-        LIBS="$ac_save_libs $BOOST_LIBS"
-    else
-        LIBS="$ac_save_libs $BOOST_LIBS_R"
-    fi
 
-    AC_LANG_PUSH(C++)
-    AC_TRY_LINK(
-        [ 
-        #include <boost/date_time/gregorian/gregorian.hpp> 
-        ],
-        [
-        using namespace boost::gregorian;
-        date d = from_string("1978-01-27");
-        return d == boost::gregorian::date(1978, Jan, 27);
-        ], 
-        [
+    if test "x$use_boost_mt" = "xno" ; then
+        LIBS="$ac_save_libs -lboost_date_time-$boost_libsuff"
+    else
+        LIBS="$ac_save_libs -lboost_date_time-$boost_libsuff_r"
+    fi
+    YB_TRY_LINK_BOOST_DATETIME([
+        BOOST_LIBS="$BOOST_LIBS -lboost_date_time-$boost_libsuff"
+        BOOST_LIBS_R="$BOOST_LIBS_R -lboost_date_time-$boost_libsuff_r"
         AC_MSG_RESULT([yes])
         ifelse([$1], , :, [$1])
-        ],
-        [ 
-        AC_MSG_RESULT([no])
-        ifelse([$2], , :, [$2])
+    ], [
+        LIBS="$ac_save_libs -lboost_date_time"
+        YB_TRY_LINK_BOOST_DATETIME([
+            BOOST_LIBS="$BOOST_LIBS -lboost_date_time"
+            BOOST_LIBS_R="$BOOST_LIBS_R -lboost_date_time"
+            AC_MSG_RESULT([yes])
+            ifelse([$1], , :, [$1])
+        ], [
+            AC_MSG_RESULT([no])
+            ifelse([$2], , :, [$2])
         ])
-
-    AC_LANG_POP(C++)
+    ])
 
     CXXFLAGS="$ac_save_cxxflags"
     LDFLAGS="$ac_save_ldflags"
