@@ -86,8 +86,8 @@ public:
 		CPPUNIT_ASSERT_EQUAL(true, m5.is_positive());
 		CPPUNIT_ASSERT_EQUAL((decimal_numerator)2, m5.ipart());
 		CPPUNIT_ASSERT_EQUAL((decimal_numerator)0, m5.fpart(3));
-		CPPUNIT_ASSERT_EQUAL(999999999999999999LL, x1.ipart());
-		CPPUNIT_ASSERT_EQUAL(999999999999999999LL, x2.fpart(18));
+		CPPUNIT_ASSERT_EQUAL(MAX_DECIMAL_NUMERATOR, x1.ipart());
+		CPPUNIT_ASSERT_EQUAL(MAX_DECIMAL_NUMERATOR, x2.fpart(18));
 
 		CPPUNIT_ASSERT(decimal((decimal_numerator)100000011, 2) == m6);
 		CPPUNIT_ASSERT(decimal() == m7);

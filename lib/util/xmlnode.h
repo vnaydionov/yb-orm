@@ -9,7 +9,7 @@
 
 namespace Xml {
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef __int64 LongInt;
 #else
 typedef long long LongInt;

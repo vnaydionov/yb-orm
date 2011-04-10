@@ -1,7 +1,7 @@
 
 #include "decimal.h"
 #include <sstream>
-#include <util/str_utils.hpp>
+#include "str_utils.hpp"
 
 using namespace std;
 using namespace Yb::StrUtils;

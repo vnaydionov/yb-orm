@@ -6,12 +6,18 @@
 #include <string>
 #include <iosfwd>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef __int64 decimal_numerator;
 #else
 typedef long long decimal_numerator;
 #endif
-const decimal_numerator MAX_DECIMAL_NUMERATOR = 999999999999999999LL;
+
+#if defined(_MSC_VER) || defined(__BORLANDC__)
+#define MAX_DECIMAL_NUMERATOR 999999999999999999
+#else
+#define MAX_DECIMAL_NUMERATOR 999999999999999999LL
+#endif
+
 const int MAX_DECIMAL_LENGTH = 18;
 
 class decimal
