@@ -57,7 +57,7 @@ SqlDataSource::row_data_vector2sql_rows(const TableMetaData &table,
 {
     string seq_name;
     string pk_name = table.find_synth_pk();
-    if (!pk_name.empty())
+    if (!pk_name.empty() && session_.get_dialect()->has_sequences())
         seq_name = table.get_seq_name();
     RowsPtr sql_rows(new Rows());
     RowDataVector::const_iterator it = rows.begin(), end = rows.end();
@@ -134,7 +134,8 @@ SqlDataSource::insert_rows(const string &table_name,
 {
     const TableMetaData &table = reg_.get_table(table_name);
     do_insert_rows(table_name, rows, false);
-    if (table.get_autoinc())
+    if (!session_.get_dialect()->has_sequences() &&
+            (!table.get_seq_name().empty() || table.get_autoinc()))
         do_insert_rows(table_name, rows, true);
 }
 
@@ -158,18 +159,6 @@ SqlDataSource::update_rows(const string &table_name,
 void
 SqlDataSource::delete_row(const RowData &row)
 {
-}
-
-LongInt
-SqlDataSource::get_curr_id(const string &seq_name)
-{
-    return session_.get_curr_value(seq_name);
-}
-
-LongInt
-SqlDataSource::get_next_id(const string &seq_name)
-{
-    return session_.get_next_value(seq_name);
 }
 
 } // namespace Yb

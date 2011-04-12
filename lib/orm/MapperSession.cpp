@@ -6,7 +6,8 @@ using namespace std;
 namespace Yb {
 
 MapperSession::MapperSession(bool read_only)
-    : Session(read_only ? Session::READ_ONLY : Session::MANUAL)
+    : Session(read_only ? Session::READ_ONLY : Session::MANUAL,
+        "MYSQL" /* FIX: fake param */)
     , session_(read_only ? Session::READ_ONLY : Session::MANUAL)
     , ds_(theMetaData::instance(), session_)
     , mapper_(theMetaData::instance(), ds_)

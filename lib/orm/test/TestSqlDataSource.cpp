@@ -14,7 +14,7 @@ public:
     LongInt seq_;
 
     MockSqlSession()
-        : Session(MANUAL)
+        : Session(MANUAL, "ORACLE")
         , select_cnt_(0)
         , insert_cnt_(0)
         , update_cnt_(0)
@@ -100,7 +100,6 @@ class TestSqlDataSource : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_row_data_vector2sql_rows_mixed, TableDoesNotMatchRow);
     CPPUNIT_TEST(test_insert_rows);
     CPPUNIT_TEST(test_update_rows);
-    CPPUNIT_TEST(test_seq);
     CPPUNIT_TEST_SUITE_END();
 
     TableMetaDataRegistry r_;
@@ -262,15 +261,6 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("Z"), *ses.excluded_.begin());
         CPPUNIT_ASSERT_EQUAL(1, (int)ses.keys_.size());
         CPPUNIT_ASSERT_EQUAL(string("X"), *ses.keys_.begin());
-    }
-
-    void test_seq()
-    {
-        MockSqlSession ses;
-        SqlDataSource ds(get_r(), ses);
-        LongInt x = ds.get_curr_id("S_A_X");
-        LongInt y = ds.get_next_id("S_A_X");
-        CPPUNIT_ASSERT_EQUAL(y, x + 1);
     }
 };
 

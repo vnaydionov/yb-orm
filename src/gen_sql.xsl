@@ -4,9 +4,19 @@
     xmlns:str="http://exslt.org/strings"
     exclude-result-prefixes="xsl str">
 
+    <xsl:param name="dialect" select="''"/>
     <xsl:output method="text" encoding="utf-8" />
 
+    <xsl:variable name="dbtype">
+        <xsl:value-of select="$dialect"/>
+    </xsl:variable>
+
     <xsl:template match="/">
+        <xsl:text>-- DBTYPE=</xsl:text>
+        <xsl:value-of select="$dbtype"/>
+        <xsl:text>
+
+</xsl:text>
         <xsl:apply-templates select="/scheme/table" mode="create-table" />
     </xsl:template>
 
@@ -30,20 +40,29 @@
 
     <xsl:template match="table" mode="seq" />
 
-    <xsl:template match="table[/scheme[@dbtype = 'ORACLE'] and @sequence]"
-            mode="seq">
-        <xsl:text>CREATE SEQUENCE </xsl:text>
-        <xsl:value-of select="@sequence" />
-        <xsl:text>;
+    <xsl:template match="table[@sequence]" mode="seq">
+        <xsl:choose>
+            <xsl:when test="$dbtype = 'ORACLE'">
+                <xsl:text>CREATE SEQUENCE </xsl:text>
+                <xsl:value-of select="@sequence" />
+                <xsl:text>;
 
 </xsl:text>
+            </xsl:when>
+            <xsl:when test="$dbtype = 'INTERBASE'">
+                <xsl:text>CREATE GENERATOR </xsl:text>
+                <xsl:value-of select="@sequence" />
+                <xsl:text>;
+
+</xsl:text>
+            </xsl:when>
+        </xsl:choose>
     </xsl:template>
 
-    <xsl:template match="table" mode="suffix" />
-
-    <xsl:template match="table[/scheme[@dbtype = 'MYSQL']]"
-            mode="suffix">
-        <xsl:text> ENGINE=INNODB DEFAULT CHARSET=utf8</xsl:text>
+    <xsl:template match="table" mode="suffix">
+        <xsl:if test="$dbtype = 'MYSQL'">
+            <xsl:text> ENGINE=INNODB DEFAULT CHARSET=utf8</xsl:text>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template match="column" mode="typed-column">
@@ -58,14 +77,16 @@
     </xsl:template>
 
     <xsl:template match="column" mode="not-null-def">
-        <xsl:apply-templates select="." mode="def-value" />
-        <xsl:apply-templates select="." mode="not-null" />
-    </xsl:template>
-
-    <xsl:template match="column[/scheme[@dbtype = 'MYSQL']]"
-            mode="not-null-def">
-        <xsl:apply-templates select="." mode="not-null" />
-        <xsl:apply-templates select="." mode="def-value" />
+        <xsl:choose>
+            <xsl:when test="$dbtype = 'MYSQL'">
+                <xsl:apply-templates select="." mode="not-null" />
+                <xsl:apply-templates select="." mode="def-value" />
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:apply-templates select="." mode="def-value" />
+                <xsl:apply-templates select="." mode="not-null" />
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
 
     <xsl:template match="column" mode="fk" />
@@ -120,66 +141,76 @@
         <xsl:text>'</xsl:text>
     </xsl:template>
 
-    <xsl:template match="column[@type = 'datetime' and @default = 'sysdate'
-                and /scheme[@dbtype = 'MYSQL']]"
+    <xsl:template match="column[@type = 'datetime' and @default = 'sysdate']"
             mode="typed-def-value">
-        <xsl:text>CURRENT_TIMESTAMP</xsl:text>
-    </xsl:template>
-
-    <xsl:template match="column[@type = 'datetime' and @default = 'sysdate'
-                and /scheme[@dbtype = 'ORACLE']]"
-            mode="typed-def-value">
-        <xsl:text>SYSDATE</xsl:text>
+        <xsl:choose>
+            <xsl:when test="$dbtype = 'ORACLE'">
+                <xsl:text>SYSDATE</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:text>CURRENT_TIMESTAMP</xsl:text>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
 
     <xsl:template match="column" mode="autoinc" />
 
-    <xsl:template match="column[/scheme/@dbtype = 'MYSQL'
-            and primarykey and (../../@sequence or ../../@autoinc)]"
-            mode="autoinc">
-        <xsl:text> AUTO_INCREMENT</xsl:text>
+    <xsl:template match="column[primarykey and
+            (../../@sequence or ../../@autoinc)]" mode="autoinc">
+        <xsl:if test="$dbtype = 'MYSQL'">
+            <xsl:text> AUTO_INCREMENT</xsl:text>
+        </xsl:if>
     </xsl:template>
 
-    <xsl:template match="column[/scheme/@dbtype = 'MYSQL'
-            and @type = 'decimal']" mode="sql-type">
-        <xsl:text>DECIMAL(12, 6)</xsl:text>
+    <xsl:template match="column[@type = 'decimal']" mode="sql-type">
+        <xsl:choose>
+            <xsl:when test="$dbtype = 'ORACLE'">
+                <xsl:text>NUMBER</xsl:text>
+            </xsl:when>
+            <xsl:when test="$dbtype = 'MYSQL'">
+                <xsl:text>DECIMAL(12, 6)</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:text>DECIMAL</xsl:text>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
 
-    <xsl:template match="column[/scheme/@dbtype != 'MYSQL'
-            and @type = 'decimal']" mode="sql-type">
-        <xsl:text>NUMBER</xsl:text>
+    <xsl:template match="column[@type = 'datetime']" mode="sql-type">
+        <xsl:choose>
+            <xsl:when test="$dbtype = 'ORACLE'">
+                <xsl:text>DATE</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:text>TIMESTAMP</xsl:text>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
 
-    <xsl:template match="column[/scheme/@dbtype = 'MYSQL'
-            and @type = 'datetime']" mode="sql-type">
-        <xsl:text>TIMESTAMP</xsl:text>
+    <xsl:template match="column[@type = 'longint']" mode="sql-type">
+        <xsl:choose>
+            <xsl:when test="$dbtype = 'ORACLE'">
+                <xsl:text>NUMBER</xsl:text>
+            </xsl:when>
+            <xsl:when test="$dbtype = 'POSTGRES'">
+                <xsl:text>INT8</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:text>BIGINT</xsl:text>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
 
-    <xsl:template match="column[/scheme/@dbtype != 'MYSQL'
-            and @type = 'datetime']" mode="sql-type">
-        <xsl:text>DATE</xsl:text>
-    </xsl:template>
-
-    <xsl:template match="column[/scheme/@dbtype = 'MYSQL'
-            and @type = 'longint']" mode="sql-type">
-        <xsl:text>INT</xsl:text>
-    </xsl:template>
-
-    <xsl:template match="column[/scheme/@dbtype != 'MYSQL'
-            and @type = 'longint']" mode="sql-type">
-        <xsl:text>NUMBER</xsl:text>
-    </xsl:template>
-
-    <xsl:template match="column[/scheme/@dbtype = 'ORACLE'
-            and @type = 'string']" mode="sql-type">
-        <xsl:text>VARCHAR2(</xsl:text>
-        <xsl:value-of select="size" />
-        <xsl:text>)</xsl:text>
-    </xsl:template>
-
-    <xsl:template match="column[/scheme/@dbtype != 'ORACLE'
-            and @type = 'string']" mode="sql-type">
-        <xsl:text>VARCHAR(</xsl:text>
+    <xsl:template match="column[@type = 'string']" mode="sql-type">
+        <xsl:choose>
+            <xsl:when test="$dbtype = 'ORACLE'">
+                <xsl:text>VARCHAR2</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:text>VARCHAR</xsl:text>
+            </xsl:otherwise>
+        </xsl:choose>
+        <xsl:text>(</xsl:text>
         <xsl:value-of select="size" />
         <xsl:text>)</xsl:text>
     </xsl:template>

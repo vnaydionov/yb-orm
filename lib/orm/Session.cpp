@@ -24,9 +24,68 @@ BadOperationInMode::BadOperationInMode(const string &msg)
     : DBError(msg)
 {}
 
-Session::Session(mode work_mode)
+SqlDialectError::SqlDialectError(const string &msg)
+    : DBError(msg)
+{}
+
+SqlDialect::~SqlDialect()
+{}
+
+class OracleDialect: public SqlDialect
+{
+public:
+    const string get_name() { return "ORACLE"; }
+    bool has_sequences() { return true; }
+    const string select_curr_value(const string &seq_name)
+    { return seq_name + ".CURRVAL"; }
+    const string select_next_value(const string &seq_name)
+    { return seq_name + ".NEXTVAL"; }
+    const string dual_name()
+    { return "DUAL"; }
+};
+
+class InterbaseDialect: public SqlDialect
+{
+public:
+    const string get_name() { return "INTERBASE"; }
+    bool has_sequences() { return true; }
+    const string select_curr_value(const string &seq_name)
+    { return "GEN_ID(" + seq_name + ", 0)"; }
+    const string select_next_value(const string &seq_name)
+    { return "GEN_ID(" + seq_name + ", 1)"; }
+    const string dual_name()
+    { return "RDB$DATABASE"; }
+};
+
+class MysqlDialect: public SqlDialect
+{
+public:
+    const string get_name() { return "MYSQL"; }
+    bool has_sequences() { return false; }
+    const string select_curr_value(const string &seq_name)
+    { throw SqlDialectError("No sequences, please"); }
+    const string select_next_value(const string &seq_name)
+    { throw SqlDialectError("No sequences, please"); }
+    const string dual_name()
+    { return "DUAL"; }
+};
+
+SqlDialect *mk_dialect(const string &name)
+{
+    auto_ptr<SqlDialect> d(
+        !name.compare("ORACLE")? (SqlDialect *)new OracleDialect():
+        !name.compare("INTERBASE")? (SqlDialect *)new InterbaseDialect():
+        !name.compare("MYSQL")? (SqlDialect *)new MysqlDialect():
+        NULL);
+    if (!d.get())
+        throw SqlDialectError("Unknown dialect: " + name);
+    return d.release();
+}
+
+Session::Session(mode work_mode, const string &dialect_name)
     : touched_(false)
     , mode_(work_mode)
+    , dialect_(mk_dialect(dialect_name))
 {}
 
 Session::~Session()
@@ -134,13 +193,15 @@ Session::select1(const string &what, const string &from, const Filter &where)
 LongInt
 Session::get_curr_value(const string &seq_name)
 {
-    return select1(seq_name + ".CURRVAL", "DUAL", Filter()).as_longint();
+    return select1(dialect_->select_curr_value(seq_name),
+            dialect_->dual_name(), Filter()).as_longint();
 }
 
 LongInt
 Session::get_next_value(const string &seq_name)
 {
-    return select1(seq_name + ".NEXTVAL", "DUAL", Filter()).as_longint();
+    return select1(dialect_->select_next_value(seq_name),
+            dialect_->dual_name(), Filter()).as_longint();
 }
 
 const DateTime

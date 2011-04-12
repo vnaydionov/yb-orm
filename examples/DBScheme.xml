@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<scheme dbtype="MYSQL">
+<scheme>
 	<table name="T_CLIENT" sequence="S_CLIENT_ID" xml-name="client">
 		<columns>
 			<column name="ID" type="longint">

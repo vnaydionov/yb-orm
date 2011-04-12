@@ -142,7 +142,6 @@ public:
     void set_name(const std::string &name) { name_ = name; }
     void set_xml_name(const std::string &xml_name) { xml_name_ = xml_name; }
     void set_depth(int depth) { depth_ = depth; }
-    void set_db_type(const std::string &db_type) { db_type_ = db_type; }
 private:
     std::string name_;
     std::string xml_name_;
@@ -150,7 +149,6 @@ private:
     bool autoinc_;
     Map cols_;
     int depth_;
-    std::string db_type_;
 };
 
 class TableMetaDataRegistry
@@ -164,8 +162,6 @@ public:
     size_t size() const { return tables_.size(); }
     void set_table(const TableMetaData &table_meta_data);
     const TableMetaData &get_table(const std::string &name) const;
-    const std::string &get_db_type() const { return db_type_; }
-    void set_db_type(const std::string &db_type) { db_type_ = db_type; }
     void check();
 private:
     void CheckForeignKey(const std::string &table, const std::string &fk_table, const std::string &fk_field);
@@ -175,7 +171,6 @@ private:
     void fill_map_tree_by_meta(const std::set<std::string> &unique_tables, StrMap &tree_map);
     void traverse_children(const StrMap &parent_child, std::map<std::string, int> &depths);
     Map tables_;
-    std::string db_type_;
 };
 
 const std::string mk_xml_name(const std::string &name, const std::string &xml_name);

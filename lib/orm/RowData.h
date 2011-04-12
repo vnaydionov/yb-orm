@@ -70,8 +70,6 @@ public:
     virtual void update_rows(const std::string &table_name,
             const RowDataVector &rows) = 0;
     virtual void delete_row(const RowData &row) = 0;
-    virtual LongInt get_curr_id(const std::string &seq_name) = 0;
-    virtual LongInt get_next_id(const std::string &seq_name) = 0;
     virtual ~DataSource();
 };
 

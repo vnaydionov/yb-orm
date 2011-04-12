@@ -8,7 +8,7 @@ using namespace Yb::StrUtils;
 namespace Yb {
 
 OdbcSession::OdbcSession(mode work_mode)
-    : Session(work_mode)
+    : Session(work_mode, xgetenv("YBORM_DBTYPE"))
     , drv_(new OdbcDriver())
 {
     drv_->open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));

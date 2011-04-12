@@ -47,6 +47,12 @@ public:
     BadOperationInMode(const std::string &msg);
 };
 
+class SqlDialectError : public DBError
+{
+public:
+    SqlDialectError(const std::string &msg);
+};
+
 class StrList
 {
     std::string str_list_;
@@ -91,13 +97,26 @@ typedef std::auto_ptr<Row> RowPtr;
 typedef std::vector<Row> Rows;
 typedef std::auto_ptr<Rows> RowsPtr;
 
+class SqlDialect
+{
+public:
+    virtual ~SqlDialect();
+    virtual const std::string get_name() = 0;
+    virtual bool has_sequences() = 0;
+    virtual const std::string select_curr_value(const std::string &seq_name) = 0;
+    virtual const std::string select_next_value(const std::string &seq_name) = 0;
+    virtual const std::string dual_name() = 0;
+};
+
+SqlDialect *mk_dialect(const std::string &name);
+
 class Session : private boost::noncopyable
 {
     friend class ::TestOdbcSession;
 
 public:
     enum mode { READ_ONLY, MANUAL, FORCE_SELECT_UPDATE }; 
-    Session(mode work_mode);
+    Session(mode work_mode, const std::string &dialect_name);
     virtual ~Session();
 
     // SQL operators
@@ -136,6 +155,7 @@ public:
 
     virtual const DateTime fix_dt_hook(const DateTime &t);
 
+    SqlDialect *get_dialect() { return dialect_.get(); }
 private:
     virtual RowsPtr on_select(const StrList &what,
             const StrList &from, const Filter &where,
@@ -157,6 +177,7 @@ private:
 private:
     bool touched_;
     mode mode_;
+    std::auto_ptr<SqlDialect> dialect_;
 };
 
 } // namespace Yb

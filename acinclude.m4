@@ -86,7 +86,9 @@ AC_DEFUN([YB_BOOST],
 #include <fstream>
 ], [dnl
     std::ofstream o("conftest.out");
-    o << BOOST_VERSION / 100000 << "_" << (BOOST_VERSION / 100) % 1000 << "_" << BOOST_VERSION % 100;
+    o << BOOST_VERSION / 100000 << "_" << (BOOST_VERSION / 100) % 1000;
+    if (BOOST_VERSION % 100)
+        o << "_" << BOOST_VERSION % 100;
     o.close();
     return 0;
 ])],
