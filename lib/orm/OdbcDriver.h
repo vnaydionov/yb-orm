@@ -8,9 +8,23 @@
 
 namespace Yb {
 
+class SqlDriver
+{
+public:
+    virtual ~SqlDriver();
+    virtual void open(const std::string &db,
+        const std::string &user, const std::string &passwd) = 0;
+    virtual void commit() = 0;
+    virtual void rollback() = 0;
+    virtual void exec_direct(const std::string &sql) = 0;
+    virtual RowsPtr fetch_rows(int max_rows = -1) = 0;
+    virtual void prepare(const std::string &sql) = 0;
+    virtual void exec(const Values &params) = 0;
+};
+
 class OdbcDriverImpl;
 
-class OdbcDriver
+class OdbcDriver: public SqlDriver
 {
     OdbcDriverImpl *impl_;
 public:

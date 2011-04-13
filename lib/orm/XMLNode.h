@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <util/xml_writer.h>
-#include "Mapper.h"
+#include "Session.h"
 #include "EngineBase.h"
 
 namespace Yb {
@@ -38,13 +38,13 @@ private:
 };
 
 /**
- * @param mapper OR mapper
+ * @param session OR session
  * @param d start point
  * @param depth == -1 recursion not limited
  *              >= 1 nested levels
  * @return XMLNode
  */
-const XMLNode deep_xmlize(Mapper &mapper, const RowData &d, int depth = 0);
+const XMLNode deep_xmlize(SessionBase &session, const RowData &d, int depth = 0);
 
 const XMLNode xmlize_row(const Row &row, const std::string &entry_name);
 const XMLNode xmlize_rows(const Rows &rows,

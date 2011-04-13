@@ -9,7 +9,7 @@ ybtestlib_LTLIBRARIES = libormtest.la
 
 libormtest_la_SOURCES = \
 	TestFilters.cpp \
-	TestMapper.cpp \
+	TestSession.cpp \
 	TestMetaData.cpp \
 	TestRowData.cpp \
 	TestValue.cpp \

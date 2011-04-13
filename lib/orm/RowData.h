@@ -74,12 +74,12 @@ public:
 };
 
 struct PKIDRecord;
-class Mapper;
+class SessionBase;
 
 class RowData
 {
     friend class ::TestRowData;
-    friend class Mapper;
+    friend class SessionBase;
     struct Entry {
         bool init;
         Value value;

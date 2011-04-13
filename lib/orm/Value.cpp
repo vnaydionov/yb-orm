@@ -6,7 +6,7 @@
 #include <util/str_utils.hpp>
 #include "Value.h"
 #include "MetaData.h"
-#include "Mapper.h"
+#include "Session.h"
 
 using namespace std;
 using namespace Yb::StrUtils;

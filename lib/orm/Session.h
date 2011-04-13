@@ -1,5 +1,5 @@
-#ifndef YB__ORM__MAPPER__INCLUDED
-#define YB__ORM__MAPPER__INCLUDED
+#ifndef YB__ORM__SESSION__INCLUDED
+#define YB__ORM__SESSION__INCLUDED
 
 #include <string>
 #include <list>
@@ -8,14 +8,14 @@
 #include <boost/shared_ptr.hpp>
 #include "RowData.h"
 
-class TestTableMapper;
+class TestSession;
 
 namespace Yb {
 
-class Mapper
+class SessionBase
 {
 public:
-    virtual ~Mapper();
+    virtual ~SessionBase();
     virtual RowData *find(const RowData &key) = 0;
     virtual LoadedRows load_collection(
             const std::string &table_name, const Filter &filter, 
@@ -27,12 +27,12 @@ public:
     virtual const TableMetaDataRegistry &get_meta_data_registry() = 0;
 };
 
-class TableMapper : public Mapper
+class Session : public SessionBase
 {
-    friend class ::TestTableMapper;
+    friend class ::TestSession;
     typedef std::multimap<std::string, std::string> StrMap;
 public:
-    TableMapper(const TableMetaDataRegistry &reg, DataSource &ds);
+    Session(const TableMetaDataRegistry &reg, DataSource &ds);
     RowData *find(const RowData &key);
     LoadedRows load_collection(
             const std::string &table_name, const Filter &filter, 
@@ -62,4 +62,4 @@ private:
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__ORM__MAPPER__INCLUDED
+#endif // YB__ORM__SESSION__INCLUDED

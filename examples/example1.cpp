@@ -1,5 +1,5 @@
 #include <iostream>
-#include <orm/MapperEngine.h>
+#include <orm/EngineSession.h>
 #include <orm/MetaDataSingleton.h>
 #include <orm/XMLMetaDataConfig.h>
 #include "domain/Client.h"
@@ -13,7 +13,7 @@ int main()
     Yb::load_xml_file("./DBScheme.xml", xml);
     Yb::XMLMetaDataConfig xml_config(xml);
     xml_config.parse(Yb::theMetaData::instance());
-    Yb::MapperEngine session(false);
+    Yb::EngineSession session(false);
     Domain::Client client(session);
     string name, email;
     cout << "Enter name, email: \n";
@@ -31,6 +31,8 @@ int main()
     cout << "client created: " << client.get_id().as_longint() << endl;
     cout << "order created: " << order.get_id().as_longint() << endl;
     session.commit();
+    Yb::XMLNode node(order.auto_xmlize(1));
+    cout << node.get_xml() << endl;
     return 0;
 }
 

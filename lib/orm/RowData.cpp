@@ -1,7 +1,7 @@
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 #include "RowData.h"
-#include "Mapper.h"
+#include "Session.h"
 
 using namespace std;
 

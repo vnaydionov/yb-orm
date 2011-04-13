@@ -2,7 +2,7 @@
 #include <cppunit/TestAssert.h>
 #include "util/str_utils.hpp"
 #include "orm/XMLNode.h"
-#include "orm/MapperEngine.h"
+#include "orm/EngineSession.h"
 #include "orm/MetaDataSingleton.h"
 #include "orm/DomainFactorySingleton.h"
 #include "orm/DataObj.h"
@@ -18,16 +18,16 @@ using namespace Yb::StrUtils;
 
 class OrmTestDomainSimple: public AutoXMLizable
 {
-    Mapper *mapper_;
+    SessionBase *session_;
     StrongObject obj_;
 public:
-    OrmTestDomainSimple(Mapper &mapper, LongInt id)
-        :mapper_(&mapper)
-        ,obj_(mapper, "T_ORM_TEST", id)
+    OrmTestDomainSimple(SessionBase &session, LongInt id)
+        :session_(&session)
+        ,obj_(session, "T_ORM_TEST", id)
     {}
     const XMLNode auto_xmlize(int deep = 0) const
     {
-        return obj_.auto_xmlize(*mapper_, deep);
+        return obj_.auto_xmlize(*session_, deep);
     }
 };
 
@@ -40,16 +40,16 @@ public:
 */
 class OrmXMLDomainSimple: public AutoXMLizable
 {
-    Mapper *mapper_;
+    SessionBase *session_;
     StrongObject obj_;
 public:
-    OrmXMLDomainSimple(Mapper &mapper, LongInt id)
-        :mapper_(&mapper)
-        ,obj_(mapper, "T_ORM_XML", id)
+    OrmXMLDomainSimple(SessionBase &session, LongInt id)
+        :session_(&session)
+        ,obj_(session, "T_ORM_XML", id)
     {}
     const XMLNode auto_xmlize(int deep = 0) const
     {
-        return obj_.auto_xmlize(*mapper_, deep);
+        return obj_.auto_xmlize(*session_, deep);
     }
 };
 
@@ -208,8 +208,8 @@ public:
     void test_deep_xmlize1()
     {
         init_singleton_registry();
-        MapperEngine mapper;
-        OrmXMLDomainSimple test(mapper, 10);
+        EngineSession session;
+        OrmXMLDomainSimple test(session, 10);
         XMLNode node = test.auto_xmlize();
         CPPUNIT_ASSERT_EQUAL(std::string("<orm-xml><b>4</b><id>10</id><orm-test-id>1</orm-test-id></orm-xml>\n"),
                 node.get_xml());
@@ -218,8 +218,8 @@ public:
     void test_deep_xmlize2()
     {
         init_singleton_registry();
-        MapperEngine mapper;
-        OrmXMLDomainSimple test(mapper, 10);
+        EngineSession session;
+        OrmXMLDomainSimple test(session, 10);
         XMLNode node = test.auto_xmlize(1);        
         CPPUNIT_ASSERT_EQUAL(
                 std::string(
@@ -230,8 +230,8 @@ public:
     void test_deep_xmlize3()
     {
         init_singleton_registry();
-        MapperEngine mapper;
-        OrmXMLDomainSimple test(mapper, 10);
+        EngineSession session;
+        OrmXMLDomainSimple test(session, 10);
         XMLNode node = test.auto_xmlize(-1);     
         CPPUNIT_ASSERT_EQUAL(
                 std::string(

@@ -65,33 +65,33 @@ private:
         }
         str << "class " << get_file_class_name(t.get_name()) << ": public Yb::AutoXMLizable\n"
             << "{\n"
-            << "\tYb::Mapper *mapper_;\n";
+            << "\tYb::SessionBase *session_;\n";
         write_members(t, str);
 
         str << "public:\n"
             << "\t// static method 'find'\n"
             << "\ttypedef std::vector<" << get_file_class_name(t.get_name()) << "> List;\n"
             << "\ttypedef std::auto_ptr<List> ListPtr;\n"
-            << "\tstatic ListPtr find(Yb::Mapper &mapper,\n"
+            << "\tstatic ListPtr find(Yb::SessionBase &session,\n"
             << "\t\t\tconst Yb::Filter &filter, const Yb::StrList order_by = \"\", int max_n = -1);\n";
 
         str << "\t// constructors\n"
             << "\t" << get_file_class_name(t.get_name()) << "()\n"
-            << "\t\t: mapper_(NULL)\n"
+            << "\t\t: session_(NULL)\n"
             << "\t{}\n";
-        str << "\t" << get_file_class_name(t.get_name()) << "(Yb::Mapper &mapper, const Yb::RowData &key)\n"
-            << "\t\t: mapper_(&mapper)\n"
-            << "\t\t, " << get_member_name(t.get_name()) << "(mapper, key)\n"
+        str << "\t" << get_file_class_name(t.get_name()) << "(Yb::SessionBase &session, const Yb::RowData &key)\n"
+            << "\t\t: session_(&session)\n"
+            << "\t\t, " << get_member_name(t.get_name()) << "(session, key)\n"
             << "\t" << "{}\n";
         try {
             std::string mega_key = reg_.get_table(t.get_name()).get_unique_pk();
-            str << "\t" << get_file_class_name(t.get_name()) << "(Yb::Mapper &mapper, Yb::LongInt id)\n"
-                << "\t\t: mapper_(&mapper)\n"
-                << "\t\t, " << get_member_name(t.get_name()) << "(mapper, \"" << t.get_name() << "\", id)\n"
+            str << "\t" << get_file_class_name(t.get_name()) << "(Yb::SessionBase &session, Yb::LongInt id)\n"
+                << "\t\t: session_(&session)\n"
+                << "\t\t, " << get_member_name(t.get_name()) << "(session, \"" << t.get_name() << "\", id)\n"
                 << "\t{}\n";
         }
         catch (const AmbiguousPK &) {}
-        str << "\t" << get_file_class_name(t.get_name()) << "(Yb::Mapper &mapper);\n\n";
+        str << "\t" << get_file_class_name(t.get_name()) << "(Yb::SessionBase &session);\n\n";
         
         str << "\tvoid set(const std::string &field, const Yb::Value &val) {\n"
             << "\t\t" << get_member_name(t.get_name()) << ".set(field, val);\n"
@@ -115,7 +115,7 @@ private:
         }
         str << "\tconst Yb::XMLNode auto_xmlize(int deep = 0) const\n"
             << "\t{\n"
-            << "\t\treturn " << get_member_name(t.get_name()) << ".auto_xmlize(*mapper_, deep);\n"
+            << "\t\treturn " << get_member_name(t.get_name()) << ".auto_xmlize(*session_, deep);\n"
             << "\t}\n";
     }
 
@@ -149,9 +149,9 @@ private:
 // Constructor for creating new objects
 
         str << get_file_class_name(t.get_name()) << "::" 
-            << get_file_class_name(t.get_name()) << "(Yb::Mapper &mapper)\n"
-            << "\t: mapper_(&mapper)\n"
-            << "\t, " << get_member_name(t.get_name()) << "(mapper, \"" << t.get_name() << "\")\n";
+            << get_file_class_name(t.get_name()) << "(Yb::SessionBase &session)\n"
+            << "\t: session_(&session)\n"
+            << "\t, " << get_member_name(t.get_name()) << "(session, \"" << t.get_name() << "\")\n";
         
         if(mem_weak) {
             str << "{}\n";
@@ -183,17 +183,17 @@ private:
         }
 
         str << "\n" << get_file_class_name(t.get_name()) << "::ListPtr\n"
-            << get_file_class_name(t.get_name()) << "::find(Yb::Mapper &mapper,\n"
+            << get_file_class_name(t.get_name()) << "::find(Yb::SessionBase &session,\n"
             << "\t\tconst Yb::Filter &filter, const Yb::StrList order_by, int max_n)\n"
             << "{\n"
             << "\t" << get_file_class_name(t.get_name()) << "::ListPtr lst(new "
             << get_file_class_name(t.get_name()) << "::List());\n"
-            << "\tYb::LoadedRows rows = mapper.load_collection(\""
+            << "\tYb::LoadedRows rows = session.load_collection(\""
             << t.get_name() << "\", filter, order_by, max_n);\n"
             << "\tif (rows.get()) {\n"
             << "\t\tstd::vector<Yb::RowData * > ::const_iterator it = rows->begin(), end = rows->end();\n"
             << "\t\tfor (; it != end; ++it)\n"
-            << "\t\t\tlst->push_back(" << get_file_class_name(t.get_name()) << "(mapper, **it));\n"
+            << "\t\t\tlst->push_back(" << get_file_class_name(t.get_name()) << "(session, **it));\n"
             << "\t}\n"
             << "\treturn lst;\n"
             << "}\n\n"
@@ -389,7 +389,7 @@ private:
                 str << "\tconst " << get_file_class_name(it->second.get_fk_table_name())
                     <<  " get_" << name << "() const {\n"
                     << "\t\treturn " << get_file_class_name(it->second.get_fk_table_name())
-                    << "(*mapper_, get(\"" << it->second.get_name() << "\").as_longint());\n"
+                    << "(*session_, get(\"" << it->second.get_name() << "\").as_longint());\n"
                     << "\t}\n";
             }
     }

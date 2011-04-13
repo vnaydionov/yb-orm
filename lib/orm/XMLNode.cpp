@@ -62,14 +62,14 @@ void XMLNode::xmlize(Yb::Writer::Document &doc) const
 }
 
 /**
- * @param mapper OR mapper
+ * @param session OR session
  * @param d start point
  * @param depth == -1 recursion not limited
  *              >= 0 nested levels
  * @return XMLNode
  */
 const XMLNode
-deep_xmlize(Mapper &mapper, const RowData &d, int depth)
+deep_xmlize(SessionBase &session, const RowData &d, int depth)
 {   
     XMLNode node(d);
     if (depth == -1 || depth > 0) {
@@ -78,7 +78,7 @@ deep_xmlize(Mapper &mapper, const RowData &d, int depth)
         for (; it != end; ++it)
             if (it->second.has_fk() && !d.get(it->second.get_name()).is_null()) {
                 boost::shared_ptr<AutoXMLizable> domain_obj = 
-                    theDomainFactory::instance().create_object(mapper, it->second.get_fk_table_name(), 
+                    theDomainFactory::instance().create_object(session, it->second.get_fk_table_name(), 
                         d.get(it->second.get_name()).as_longint()); 
                 XMLNode ref_node(domain_obj->auto_xmlize((depth == -1 ) ? -1: depth - 1));
                 node.replace_child_object_by_field(it->second.get_xml_name(), ref_node);

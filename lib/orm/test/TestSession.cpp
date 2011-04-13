@@ -1,6 +1,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-#include "orm/Mapper.h"
+#include "orm/Session.h"
 
 using namespace std;
 using namespace Yb;
@@ -98,9 +98,9 @@ public:
     size_t get_delete_cnt() const { return delete_cnt_; }
 };
 
-class TestTableMapper : public CppUnit::TestFixture
+class TestSession : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(TestTableMapper);
+    CPPUNIT_TEST_SUITE(TestSession);
     CPPUNIT_TEST(test_id_map);
     CPPUNIT_TEST(test_load);
     CPPUNIT_TEST(test_lazy_load);
@@ -150,10 +150,10 @@ public:
     void test_load()
     {
         MockDataSource ds(get_r());
-        TableMapper mapper(get_r(), ds);
+        Session session(get_r(), ds);
         RowData key(get_r(), "A");
         key.set("X", Value(1));
-        RowData *d = mapper.find(key);
+        RowData *d = session.find(key);
         CPPUNIT_ASSERT(d != NULL);
         CPPUNIT_ASSERT_EQUAL(1, (int)d->get("X").as_longint());
         CPPUNIT_ASSERT_EQUAL(string("#"), d->get("Y").as_string());
@@ -162,10 +162,10 @@ public:
     void test_lazy_load()
     {
         MockDataSource ds(get_r());
-        TableMapper mapper(get_r(), ds);
+        Session session(get_r(), ds);
         RowData key(get_r(), "A");
         key.set("X", Value(1));
-        RowData *d = mapper.find(key);
+        RowData *d = session.find(key);
         CPPUNIT_ASSERT(d != NULL);
         CPPUNIT_ASSERT(d->is_ghost());
         d->get("X");
@@ -174,23 +174,23 @@ public:
         d->get("Y");
         CPPUNIT_ASSERT(!d->is_ghost());
         CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_select_cnt());
-        mapper.find(key);
+        session.find(key);
         CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_select_cnt());
     }
 
     void test_dirty()
     {
         MockDataSource ds(get_r());
-        TableMapper mapper(get_r(), ds);
+        Session session(get_r(), ds);
         RowData key(get_r(), "A");
         key.set("X", Value(1));
-        RowData *d = mapper.find(key);
+        RowData *d = session.find(key);
         CPPUNIT_ASSERT(d != NULL);
         CPPUNIT_ASSERT(!d->is_dirty());
         d->set("Y", Value("abc"));
         CPPUNIT_ASSERT(d->is_dirty());
         CPPUNIT_ASSERT_EQUAL(0, (int)ds.get_update_cnt());
-        mapper.flush();
+        session.flush();
         CPPUNIT_ASSERT(!d->is_dirty());
         CPPUNIT_ASSERT_EQUAL(string("abc"), d->get("Y").as_string());
         CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_update_cnt());
@@ -199,8 +199,8 @@ public:
     void test_new()
     {
         MockDataSource ds(get_r());
-        TableMapper mapper(get_r(), ds);
-        RowData *d = mapper.create("A");
+        Session session(get_r(), ds);
+        RowData *d = session.create("A");
         CPPUNIT_ASSERT(d != NULL);
         CPPUNIT_ASSERT(d->is_new());
         Value id = d->get("X");
@@ -211,7 +211,7 @@ public:
         d->set("Y", Value("xyz"));
         CPPUNIT_ASSERT(d->is_new());
         CPPUNIT_ASSERT_EQUAL(0, (int)ds.get_insert_cnt());
-        mapper.flush();
+        session.flush();
         CPPUNIT_ASSERT(!d->is_new());
         CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_insert_cnt());
         CPPUNIT_ASSERT_EQUAL(false, id.as_pkid().is_temp());
@@ -221,24 +221,24 @@ public:
     void test_new_and_existing()
     {
         MockDataSource ds(get_r());
-        TableMapper mapper(get_r(), ds);
-        RowData *d = mapper.create("A");
+        Session session(get_r(), ds);
+        RowData *d = session.create("A");
         d->set("Y", Value("abc"));
-        //cout << "rows_.size()=" << mapper.rows_.size() << " item="
-        //     << (int *)mapper.rows_.begin()->second.get() << "\n";
-        mapper.flush();
+        //cout << "rows_.size()=" << session.rows_.size() << " item="
+        //     << (int *)session.rows_.begin()->second.get() << "\n";
+        session.flush();
         LongInt id = d->get("X").as_longint();
-        //cout << "id=" << id << ", rows_.size()=" << mapper.rows_.size()
-        //     << " item=" << (int *)mapper.rows_.begin()->second.get() << "\n";
+        //cout << "id=" << id << ", rows_.size()=" << session.rows_.size()
+        //     << " item=" << (int *)session.rows_.begin()->second.get() << "\n";
         RowData key(get_r(), "A");
         key.set("X", Value(PKIDValue(get_r().get_table("A"), id)));
-        RowData *e = mapper.find(key);
-        //cout << "id=" << id << ", rows_.size()=" << mapper.rows_.size()
-        //     << " item=" << (int *)mapper.rows_.begin()->second.get() << "\n";
+        RowData *e = session.find(key);
+        //cout << "id=" << id << ", rows_.size()=" << session.rows_.size()
+        //     << " item=" << (int *)session.rows_.begin()->second.get() << "\n";
         CPPUNIT_ASSERT_EQUAL(d, e);
         RowData key2(get_r(), "A");
         key2.set("X", id);
-        RowData *f = mapper.find(key2);
+        RowData *f = session.find(key2);
         CPPUNIT_ASSERT_EQUAL(d, f);
         CPPUNIT_ASSERT(d->is_ghost());
     }
@@ -246,29 +246,29 @@ public:
     void test_register_as_new()
     {
         MockDataSource ds(get_r());
-        TableMapper mapper(get_r(), ds);
+        Session session(get_r(), ds);
         LongInt next_id = ds.get_curr_id("S_A_X") + 1;
         RowData d(get_r(), "A");
         d.set("X", Value(next_id));
         d.set("Y", Value("abc"));
-        RowData *e = mapper.register_as_new(d);
+        RowData *e = session.register_as_new(d);
         CPPUNIT_ASSERT(e->is_new());
-        mapper.flush();
+        session.flush();
         CPPUNIT_ASSERT(!e->is_new());
     }
 
     void test_register_as_deleted()
     {
         MockDataSource ds(get_r());
-        TableMapper mapper(get_r(), ds);
+        Session session(get_r(), ds);
         RowData key(get_r(), "A");
         key.set("X", Value(1));
-        RowData *d = mapper.find(key);
+        RowData *d = session.find(key);
         d->set_deleted();
         CPPUNIT_ASSERT_EQUAL(0, (int)ds.get_delete_cnt());
-        mapper.flush();
+        session.flush();
         CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_delete_cnt());
-        d = mapper.find(key);
+        d = session.find(key);
         d->load();
     }
 
@@ -280,12 +280,12 @@ public:
         t.set_column(ColumnMetaData("U", Value::LONGINT, 0, 0));
         r_.set_table(t);
         MockDataSource ds(get_r());
-        TableMapper mapper(get_r(), ds);
+        Session session(get_r(), ds);
         RowData key(get_r(), "B");
         key.set("X", 2);
-        RowData *d = mapper.find(key);
+        RowData *d = session.find(key);
         CPPUNIT_ASSERT(d->is_ghost());
-        LoadedRows rows = mapper.load_collection("B",
+        LoadedRows rows = session.load_collection("B",
                 filter_eq("U", Value(1)));
         CPPUNIT_ASSERT_EQUAL(2, (int)rows->size());
         CPPUNIT_ASSERT(!(*rows)[0]->is_ghost());
@@ -326,15 +326,15 @@ public:
         r.check();
 
         MockDataSource ds(r);
-        TableMapper mapper(r, ds);
-        mapper.create("C");
-        mapper.create("A");
-        mapper.create("A");
-        mapper.create("B");
-        CPPUNIT_ASSERT_EQUAL(4, (int)mapper.rows_.size());
+        Session session(r, ds);
+        session.create("C");
+        session.create("A");
+        session.create("A");
+        session.create("B");
+        CPPUNIT_ASSERT_EQUAL(4, (int)session.rows_.size());
 
         set<string> tables;
-        mapper.get_unique_tables_for_insert(tables);
+        session.get_unique_tables_for_insert(tables);
         CPPUNIT_ASSERT_EQUAL(3, (int)tables.size());
         {
             set<string>::const_iterator it = tables.begin();
@@ -344,7 +344,7 @@ public:
         }
 
         list<string> s_tables;
-        mapper.sort_tables(tables, s_tables);
+        session.sort_tables(tables, s_tables);
         CPPUNIT_ASSERT_EQUAL(3, (int)s_tables.size());
         {
             list<string>::const_iterator it = s_tables.begin();
@@ -355,6 +355,6 @@ public:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(TestTableMapper);
+CPPUNIT_TEST_SUITE_REGISTRATION(TestSession);
 
 // vim:ts=4:sts=4:sw=4:et:

@@ -19,7 +19,7 @@ class Engine : public EngineBase
 {
     friend class ::TestEngine;
 
-    OdbcDriver *drv_;
+    SqlDriver *drv_;
 public:
     Engine(mode work_mode = READ_ONLY);
     ~Engine();

@@ -14,6 +14,9 @@ using Yb::StrUtils::str_to_upper;
 
 namespace Yb {
 
+SqlDriver::~SqlDriver()
+{}
+
 class OdbcDriverImpl
 {
     tiodbc::connection conn_;

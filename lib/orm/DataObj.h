@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 #include <boost/shared_ptr.hpp>
-#include "Mapper.h"
+#include "Session.h"
 #include "XMLNode.h"
 
 namespace Yb {
@@ -16,11 +16,11 @@ public:
     {}
 };
 
-class NoMapperGiven : public std::logic_error
+class NoSessionBaseGiven : public std::logic_error
 {
 public:
-    NoMapperGiven()
-        : logic_error("No mapper given to the WeakObject")
+    NoSessionBaseGiven()
+        : logic_error("No session given to the WeakObject")
     {}
 };
 
@@ -30,7 +30,7 @@ public:
     virtual ~DataObject()
     {}
 
-    virtual const XMLNode auto_xmlize(Mapper &mapper, int deep) const = 0;
+    virtual const XMLNode auto_xmlize(SessionBase &session, int deep) const = 0;
     const Value &get(const std::string &column_name) const
     {
         return get_row_data().get(column_name);
@@ -62,10 +62,10 @@ class StrongObject : public DataObject
 {
     RowData *d_;
     RowData *ptr() const { return d_; }
-    static const RowData mk_key(Mapper &mapper,
+    static const RowData mk_key(SessionBase &session,
             const std::string &table_name, LongInt id)
     {
-        RowData key(mapper.get_meta_data_registry(), table_name);
+        RowData key(session.get_meta_data_registry(), table_name);
         const TableMetaData &table = key.get_table();
         key.set(table.get_synth_pk(), Value(id));
         return key;
@@ -74,19 +74,19 @@ public:
     StrongObject()
         : d_(NULL)
     {}
-    StrongObject(Mapper &mapper, const RowData &key)
-        : d_(mapper.find(key))
+    StrongObject(SessionBase &session, const RowData &key)
+        : d_(session.find(key))
     {}
-    StrongObject(Mapper &mapper, const std::string &table_name, LongInt id)
-        : d_(mapper.find(mk_key(mapper, table_name, id)))
+    StrongObject(SessionBase &session, const std::string &table_name, LongInt id)
+        : d_(session.find(mk_key(session, table_name, id)))
     {}
-    StrongObject(Mapper &mapper, const std::string &table_name)
-        : d_(mapper.create(table_name))
+    StrongObject(SessionBase &session, const std::string &table_name)
+        : d_(session.create(table_name))
     {}
 
-    virtual const XMLNode auto_xmlize(Mapper &mapper, int deep = 0) const
+    virtual const XMLNode auto_xmlize(SessionBase &session, int deep = 0) const
     {    
-        return deep_xmlize(mapper, get_row_data(), deep);
+        return deep_xmlize(session, get_row_data(), deep);
     }
 };
 
@@ -94,12 +94,12 @@ class WeakObject : public DataObject
 {
     RowData *d_;
     boost::shared_ptr<RowData> new_d_;
-    Mapper *mapper_;
+    SessionBase *session_;
     RowData *ptr() const { return d_? d_: new_d_.get(); }
-    static const RowData mk_key(Mapper &mapper,
+    static const RowData mk_key(SessionBase &session,
             const std::string &table_name, LongInt id)
     {
-        RowData key(mapper.get_meta_data_registry(), table_name);
+        RowData key(session.get_meta_data_registry(), table_name);
         const TableMetaData &table = key.get_table();
         key.set(table.get_unique_pk(), Value(id));
         return key;
@@ -107,33 +107,33 @@ class WeakObject : public DataObject
 public:
     WeakObject()
         : d_(NULL)
-        , mapper_(NULL)
+        , session_(NULL)
     {}
-    WeakObject(Mapper &mapper, const RowData &key)
-        : d_(mapper.find(key))
-        , mapper_(NULL)
+    WeakObject(SessionBase &session, const RowData &key)
+        : d_(session.find(key))
+        , session_(NULL)
     {}
-    WeakObject(Mapper &mapper, const std::string &table_name, LongInt id)
-        : d_(mapper.find(mk_key(mapper, table_name, id)))
-        , mapper_(NULL)
+    WeakObject(SessionBase &session, const std::string &table_name, LongInt id)
+        : d_(session.find(mk_key(session, table_name, id)))
+        , session_(NULL)
     {}
-    WeakObject(Mapper &mapper, const std::string &table_name)
+    WeakObject(SessionBase &session, const std::string &table_name)
         : d_(NULL)
-        , new_d_(new RowData(mapper.get_meta_data_registry(), table_name))
-        , mapper_(&mapper)
+        , new_d_(new RowData(session.get_meta_data_registry(), table_name))
+        , session_(&session)
     {}
-    void register_in_mapper()
+    void register_in_session()
     {
-        if (!mapper_)
-            throw NoMapperGiven();
-        d_ = mapper_->register_as_new(*new_d_);
+        if (!session_)
+            throw NoSessionBaseGiven();
+        d_ = session_->register_as_new(*new_d_);
         new_d_.reset();
-        mapper_ = NULL;
+        session_ = NULL;
     }
     
-    virtual const XMLNode auto_xmlize(Mapper &mapper, int deep = 0) const
+    virtual const XMLNode auto_xmlize(SessionBase &session, int deep = 0) const
     {    
-        return deep_xmlize(mapper, get_row_data(), deep);
+        return deep_xmlize(session, get_row_data(), deep);
     }
 };
 

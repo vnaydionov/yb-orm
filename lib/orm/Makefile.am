@@ -12,7 +12,7 @@ lib_LTLIBRARIES = libyborm.la
 
 yborminclude_HEADERS = \
 	Filters.h \
-	Mapper.h \
+	Session.h \
 	MetaData.h \
 	RowData.h \
 	EngineBase.h \
@@ -24,7 +24,7 @@ yborminclude_HEADERS = \
 	DataObj.h \
 	DomainFactory.h \
 	DomainFactorySingleton.h \
-	MapperEngine.h \
+	EngineSession.h \
 	MetaDataSingleton.h \
 	XMLMetaDataConfig.h \
 	XMLNode.h
@@ -32,7 +32,7 @@ yborminclude_HEADERS = \
 libyborm_la_SOURCES = \
 	$(yborminclude_HEADERS) \
 	Filters.cpp \
-	Mapper.cpp \
+	Session.cpp \
 	MetaData.cpp \
 	RowData.cpp \
 	EngineBase.cpp \
@@ -41,7 +41,7 @@ libyborm_la_SOURCES = \
 	Engine.cpp \
 	OdbcDriver.cpp \
 	tiodbc.cpp \
-	MapperEngine.cpp \
+	EngineSession.cpp \
 	XMLMetaDataConfig.cpp \
 	XMLNode.cpp
 

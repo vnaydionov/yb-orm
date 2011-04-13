@@ -1,22 +1,22 @@
-#ifndef YB__ORM__MAPPER_ENGINE__INCLUDED
-#define YB__ORM__MAPPER_ENGINE__INCLUDED
+#ifndef YB__ORM__ENGINE_SESSION__INCLUDED
+#define YB__ORM__ENGINE_SESSION__INCLUDED
 
-#include "Mapper.h"
+#include "Session.h"
 #include "SqlDataSource.h"
 #include "Engine.h"
 
 namespace Yb {
 
-class MapperEngine
+class EngineSession
     : public EngineBase
-    , public Mapper
+    , public SessionBase
 {
-    Engine session_;
+    Engine engine_;
     SqlDataSource ds_;
-    TableMapper mapper_;
+    Session session_;
 public:
-    MapperEngine(bool read_only = true);
-    // mapper interface methods
+    EngineSession(bool read_only = true);
+    // session interface methods
     RowData *find(const RowData &key);
     LoadedRows load_collection(
             const std::string &table_name, const Filter &filter, 
@@ -48,4 +48,4 @@ private:
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__ORM__MAPPER_ENGINE__INCLUDED
+#endif // YB__ORM__ENGINE_SESSION__INCLUDED

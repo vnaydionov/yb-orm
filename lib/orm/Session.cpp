@@ -1,20 +1,20 @@
-#include "Mapper.h"
+#include "Session.h"
 
 using namespace std;
 
 namespace Yb {
 
-Mapper::~Mapper()
+SessionBase::~SessionBase()
 {}
 
-TableMapper::TableMapper(const TableMetaDataRegistry &reg, DataSource &ds)
+Session::Session(const TableMetaDataRegistry &reg, DataSource &ds)
     : reg_(reg)
     , ds_(ds)
     , new_id_(1)
 {}
 
 RowData *
-TableMapper::find(const RowData &key)
+Session::find(const RowData &key)
 {
     RowSet::iterator it = rows_.find(key);
     if (it != rows_.end())
@@ -30,7 +30,7 @@ TableMapper::find(const RowData &key)
 }
 
 LoadedRows
-TableMapper::load_collection(
+Session::load_collection(
         const string &table_name, const Filter &filter, const StrList &order_by,
         int max, const string &table_alias)
 {
@@ -47,7 +47,7 @@ TableMapper::load_collection(
 }
 
 RowData *
-TableMapper::create(const string &table_name)
+Session::create(const string &table_name)
 {
     RowData key(reg_, table_name);
     const TableMetaData &t = key.get_table();
@@ -59,7 +59,7 @@ TableMapper::create(const string &table_name)
 }
 
 RowData *
-TableMapper::register_as_new(const RowData &row)
+Session::register_as_new(const RowData &row)
 {
     RowData *d = find(row);
     *d = row;
@@ -69,7 +69,7 @@ TableMapper::register_as_new(const RowData &row)
 }
 
 void
-TableMapper::flush()
+Session::flush()
 {
     flush_new();
     // update
@@ -96,13 +96,13 @@ TableMapper::flush()
 }
 
 const TableMetaDataRegistry &
-TableMapper::get_meta_data_registry()
+Session::get_meta_data_registry()
 {
     return reg_;
 }
 
 void
-TableMapper::flush_new()
+Session::flush_new()
 {
     list<string> ordered_ins_tables;
     sort_tables(tables_for_insert_, ordered_ins_tables);
@@ -117,7 +117,7 @@ TableMapper::flush_new()
 }
 
 void
-TableMapper::insert_new_to_table(const string &table_name)
+Session::insert_new_to_table(const string &table_name)
 {
     const TableMetaData &table = reg_.get_table(table_name);
     string pk_name = table.find_synth_pk();
@@ -149,7 +149,7 @@ TableMapper::insert_new_to_table(const string &table_name)
 }
 
 void
-TableMapper::mark_new_as_ghost()
+Session::mark_new_as_ghost()
 {
     RowSet::iterator it = rows_.begin(), end = rows_.end();
     for (; it != end; ++it)
@@ -158,7 +158,7 @@ TableMapper::mark_new_as_ghost()
 }
 
 void
-TableMapper::get_unique_tables_for_insert(set<string> &unique_tables)
+Session::get_unique_tables_for_insert(set<string> &unique_tables)
 {
     set<string> ut;
     RowSet::const_iterator it = rows_.begin(), end = rows_.end();
@@ -169,7 +169,7 @@ TableMapper::get_unique_tables_for_insert(set<string> &unique_tables)
 }
 
 void
-TableMapper::sort_tables(const set<string> &unique_tabs,
+Session::sort_tables(const set<string> &unique_tabs,
         list<string> &ordered_tables)
 {
     typedef multimap<int, string> IntStrMap;
@@ -186,7 +186,7 @@ TableMapper::sort_tables(const set<string> &unique_tabs,
 }
 
 boost::shared_ptr<PKIDRecord>
-TableMapper::create_temp_pkid(const TableMetaData &table)
+Session::create_temp_pkid(const TableMetaData &table)
 {
     new_ids_.push_back(boost::shared_ptr<PKIDRecord>(
                 new PKIDRecord(&table, new_id_++, true)));
