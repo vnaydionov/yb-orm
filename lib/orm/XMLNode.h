@@ -4,7 +4,7 @@
 #include <vector>
 #include <util/xml_writer.h>
 #include "Mapper.h"
-#include "Session.h"
+#include "EngineBase.h"
 
 namespace Yb {
 

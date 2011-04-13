@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 #include "Value.h"
-#include "Session.h"
+#include "EngineBase.h"
 
 namespace Yb {
 

@@ -1,6 +1,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-#include "orm/Session.h"
+#include "orm/EngineBase.h"
 
 using namespace std;
 using namespace Yb;

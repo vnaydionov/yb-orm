@@ -1,28 +1,28 @@
-#ifndef YB__ORM__ODBC_SESSION__INCLUDED
-#define YB__ORM__ODBC_SESSION__INCLUDED
+#ifndef YB__ORM__ENGINE__INCLUDED
+#define YB__ORM__ENGINE__INCLUDED
 
 #include <memory>
 #include <vector>
 #include <string>
 #include <map>
 #include "Value.h"
-#include "Session.h"
+#include "EngineBase.h"
 #include "OdbcDriver.h"
 
-class TestOdbcSession;
+class TestEngine;
 
 namespace Yb {
 
 typedef std::map<std::string, int> ParamNums;
 
-class OdbcSession : public Session
+class Engine : public EngineBase
 {
-    friend class ::TestOdbcSession;
+    friend class ::TestEngine;
 
     OdbcDriver *drv_;
 public:
-    OdbcSession(mode work_mode = READ_ONLY);
-    ~OdbcSession();
+    Engine(mode work_mode = READ_ONLY);
+    ~Engine();
 
 private:
     RowsPtr on_select(const StrList &what,
@@ -60,4 +60,4 @@ private:
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__ORM__ODBC_SESSION__INCLUDED
+#endif // YB__ORM__ENGINE__INCLUDED

@@ -5,7 +5,7 @@
 using namespace std;
 using namespace Yb;
 
-class MockSqlSession : public Session
+class MockSqlEngine : public EngineBase
 {
 public:
     size_t select_cnt_, insert_cnt_, update_cnt_, delete_cnt_;
@@ -13,8 +13,8 @@ public:
     FieldSet excluded_, keys_;
     LongInt seq_;
 
-    MockSqlSession()
-        : Session(MANUAL, "ORACLE")
+    MockSqlEngine()
+        : EngineBase(MANUAL, "ORACLE")
         , select_cnt_(0)
         , insert_cnt_(0)
         , update_cnt_(0)
@@ -122,13 +122,13 @@ public:
 
     void test_select_row()
     {
-        MockSqlSession ses;
-        SqlDataSource ds(get_r(), ses);
+        MockSqlEngine engine;
+        SqlDataSource ds(get_r(), engine);
         RowData key(get_r(), "A");
         key.set("X", Value(1));
-        CPPUNIT_ASSERT_EQUAL(0, (int)ses.select_cnt_);
+        CPPUNIT_ASSERT_EQUAL(0, (int)engine.select_cnt_);
         RowDataPtr d = ds.select_row(key);
-        CPPUNIT_ASSERT_EQUAL(1, (int)ses.select_cnt_);
+        CPPUNIT_ASSERT_EQUAL(1, (int)engine.select_cnt_);
         CPPUNIT_ASSERT(d.get());
         CPPUNIT_ASSERT_EQUAL(string("A"), d->get_table().get_name());
         CPPUNIT_ASSERT_EQUAL(string("#"), d->get("Y").as_string());
@@ -139,8 +139,8 @@ public:
 
     void test_object_not_found_by_key()
     {
-        MockSqlSession ses;
-        SqlDataSource ds(get_r(), ses);
+        MockSqlEngine engine;
+        SqlDataSource ds(get_r(), engine);
         RowData key(get_r(), "A");
         key.set("X", Value(3));
         ds.select_row(key);
@@ -154,8 +154,8 @@ public:
         t.set_column(ColumnMetaData("Q", Value::STRING, 0, 0));
         TableMetaDataRegistry r;
         r.set_table(t);
-        MockSqlSession ses;
-        SqlDataSource ds(r, ses);
+        MockSqlEngine engine;
+        SqlDataSource ds(r, engine);
         RowData key(r, "A");
         key.set("X", Value(1));
         ds.select_row(key);
@@ -204,15 +204,15 @@ public:
         RowData x(get_r(), "B");
         x.set("Q", Value(1));
         v.push_back(x);
-        MockSqlSession ses;
-        SqlDataSource ds(get_r(), ses);
+        MockSqlEngine engine;
+        SqlDataSource ds(get_r(), engine);
         ds.row_data_vector2sql_rows(get_r().get_table("A"), v);
     }
 
     void test_insert_rows()
     {
-        MockSqlSession ses;
-        SqlDataSource ds(get_r(), ses);
+        MockSqlEngine engine;
+        SqlDataSource ds(get_r(), engine);
         RowDataVector v;
         RowData x(get_r(), "A");
         x.set("X", Value(2));
@@ -222,23 +222,23 @@ public:
         y.set("X", Value(4));
         y.set("Y", Value("$"));
         v.push_back(y);
-        CPPUNIT_ASSERT_EQUAL(0, (int)ses.insert_cnt_);
+        CPPUNIT_ASSERT_EQUAL(0, (int)engine.insert_cnt_);
         ds.insert_rows("A", v);
-        CPPUNIT_ASSERT_EQUAL(2, (int)ses.insert_cnt_);
-        CPPUNIT_ASSERT_EQUAL(2, (int)ses.stored_.size());
+        CPPUNIT_ASSERT_EQUAL(2, (int)engine.insert_cnt_);
+        CPPUNIT_ASSERT_EQUAL(2, (int)engine.stored_.size());
         Row row;
         row["X"] = Value(4);
         row["Y"] = Value("$");
         row["Z"] = Value();
-        CPPUNIT_ASSERT(row == ses.stored_[1]);
-        CPPUNIT_ASSERT_EQUAL(1, (int)ses.excluded_.size());
-        CPPUNIT_ASSERT_EQUAL(string("Z"), *ses.excluded_.begin());
+        CPPUNIT_ASSERT(row == engine.stored_[1]);
+        CPPUNIT_ASSERT_EQUAL(1, (int)engine.excluded_.size());
+        CPPUNIT_ASSERT_EQUAL(string("Z"), *engine.excluded_.begin());
     }
 
     void test_update_rows()
     {
-        MockSqlSession ses;
-        SqlDataSource ds(get_r(), ses);
+        MockSqlEngine engine;
+        SqlDataSource ds(get_r(), engine);
         RowDataVector v;
         RowData x(get_r(), "A");
         x.set("X", Value(2));
@@ -248,19 +248,19 @@ public:
         y.set("X", Value(4));
         y.set("Y", Value("$"));
         v.push_back(y);
-        CPPUNIT_ASSERT_EQUAL(0, (int)ses.update_cnt_);
+        CPPUNIT_ASSERT_EQUAL(0, (int)engine.update_cnt_);
         ds.update_rows("A", v);
-        CPPUNIT_ASSERT_EQUAL(2, (int)ses.update_cnt_);
-        CPPUNIT_ASSERT_EQUAL(2, (int)ses.stored_.size());
+        CPPUNIT_ASSERT_EQUAL(2, (int)engine.update_cnt_);
+        CPPUNIT_ASSERT_EQUAL(2, (int)engine.stored_.size());
         Row row;
         row["X"] = Value(4);
         row["Y"] = Value("$");
         row["Z"] = Value();
-        CPPUNIT_ASSERT(row == ses.stored_[1]);
-        CPPUNIT_ASSERT_EQUAL(1, (int)ses.excluded_.size());
-        CPPUNIT_ASSERT_EQUAL(string("Z"), *ses.excluded_.begin());
-        CPPUNIT_ASSERT_EQUAL(1, (int)ses.keys_.size());
-        CPPUNIT_ASSERT_EQUAL(string("X"), *ses.keys_.begin());
+        CPPUNIT_ASSERT(row == engine.stored_[1]);
+        CPPUNIT_ASSERT_EQUAL(1, (int)engine.excluded_.size());
+        CPPUNIT_ASSERT_EQUAL(string("Z"), *engine.excluded_.begin());
+        CPPUNIT_ASSERT_EQUAL(1, (int)engine.keys_.size());
+        CPPUNIT_ASSERT_EQUAL(string("X"), *engine.keys_.begin());
     }
 };
 

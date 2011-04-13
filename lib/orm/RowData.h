@@ -9,7 +9,7 @@
 #include "Value.h"
 #include "MetaData.h"
 #include "Filters.h"
-#include "Session.h"
+#include "EngineBase.h"
 
 class TestRowData;
 

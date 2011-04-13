@@ -1,21 +1,21 @@
-#ifndef YB__ORM__MAPPER_SESSION__INCLUDED
-#define YB__ORM__MAPPER_SESSION__INCLUDED
+#ifndef YB__ORM__MAPPER_ENGINE__INCLUDED
+#define YB__ORM__MAPPER_ENGINE__INCLUDED
 
 #include "Mapper.h"
 #include "SqlDataSource.h"
-#include "OdbcSession.h"
+#include "Engine.h"
 
 namespace Yb {
 
-class MapperSession
-    : public Session
+class MapperEngine
+    : public EngineBase
     , public Mapper
 {
-    OdbcSession session_;
+    Engine session_;
     SqlDataSource ds_;
     TableMapper mapper_;
 public:
-    MapperSession(bool read_only = true);
+    MapperEngine(bool read_only = true);
     // mapper interface methods
     RowData *find(const RowData &key);
     LoadedRows load_collection(
@@ -27,7 +27,7 @@ public:
     void flush();
     const TableMetaDataRegistry &get_meta_data_registry();
 private:
-    // session policy methods
+    // engine policy methods
     RowsPtr on_select(const StrList &what,
             const StrList &from, const Filter &where,
             const StrList &group_by, const Filter &having,
@@ -48,4 +48,4 @@ private:
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__ORM__MAPPER_SESSION__INCLUDED
+#endif // YB__ORM__MAPPER_ENGINE__INCLUDED

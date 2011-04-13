@@ -3,7 +3,7 @@
 #include "util/str_utils.hpp"
 #include "orm/Mapper.h"
 #include "orm/SqlDataSource.h"
-#include "orm/OdbcSession.h"
+#include "orm/Engine.h"
 #include "orm/XMLNode.h"
 #include "orm/OdbcDriver.h"
 
@@ -14,7 +14,7 @@ using Yb::StrUtils::xgetenv;
 #define TEST_TBL1 "T_ORM_TEST"
 #define NUM_STMT 4
 
-typedef OdbcSession MySession;
+typedef Engine MyEngine;
 
 class TestIntegrMapper : public CppUnit::TestFixture
 {
@@ -31,16 +31,16 @@ class TestIntegrMapper : public CppUnit::TestFixture
     string db_type_;
     const TableMetaDataRegistry &get_r() const { return r_; }
 
-    LongInt get_next_test_id(Session &ses, const string &seq_name)
+    LongInt get_next_test_id(EngineBase &engine, const string &seq_name)
     {
         if (db_type_ == "MYSQL") {
-            RowsPtr ptr = ses.select("MAX(ID) MAX_ID", "T_ORM_TEST", Filter());
+            RowsPtr ptr = engine.select("MAX(ID) MAX_ID", "T_ORM_TEST", Filter());
             CPPUNIT_ASSERT(1 == ptr->size() && 1 == (*ptr)[0].size());
             Value x = (*ptr)[0]["MAX_ID"];
             return x.is_null()? 1: x.as_longint() + 1;
         }
         else {
-            return ses.get_next_value(seq_name);
+            return engine.get_next_value(seq_name);
         }
     }
 public:
@@ -105,8 +105,8 @@ public:
 
     void test_find()
     {
-        MySession ses;
-        SqlDataSource ds(get_r(), ses);
+        MyEngine engine;
+        SqlDataSource ds(get_r(), engine);
         TableMapper mapper(get_r(), ds);
         RowData key(get_r(), TEST_TBL1);
         key.set("ID", 2);
@@ -120,8 +120,8 @@ public:
 
     void test_object_not_found()
     {
-        MySession ses;
-        SqlDataSource ds(get_r(), ses);
+        MyEngine engine;
+        SqlDataSource ds(get_r(), engine);
         TableMapper mapper(get_r(), ds);
         RowData key(get_r(), TEST_TBL1);
         key.set("ID", Value(-1));
@@ -132,8 +132,8 @@ public:
 
     void test_load_collection()
     {
-        MySession ses;
-        SqlDataSource ds(get_r(), ses);
+        MyEngine engine;
+        SqlDataSource ds(get_r(), engine);
         TableMapper mapper(get_r(), ds);
         LoadedRows rows = mapper.load_collection(TEST_TBL1,
                 Filter("ID < 10"));
@@ -153,8 +153,8 @@ public:
     {
         LongInt id;
         {
-            MySession ses(Session::MANUAL);
-            SqlDataSource ds(get_r(), ses);
+            MyEngine engine(EngineBase::MANUAL);
+            SqlDataSource ds(get_r(), engine);
             TableMapper mapper(get_r(), ds);
             RowData *d = mapper.create(TEST_TBL1);
             CPPUNIT_ASSERT(d);
@@ -162,11 +162,11 @@ public:
             d->set("C", Decimal("-.001"));
             mapper.flush();
             id = d->get("ID").as_longint();
-            ses.commit();
+            engine.commit();
         }
         {
-            MySession ses;
-            SqlDataSource ds(get_r(), ses);
+            MyEngine engine;
+            SqlDataSource ds(get_r(), engine);
             TableMapper mapper(get_r(), ds);
             RowData key(get_r(), TEST_TBL1);
             key.set("ID", id);
@@ -182,21 +182,21 @@ public:
     {
         LongInt id;
         {
-            MySession ses(Session::MANUAL);
-            SqlDataSource ds(get_r(), ses);
+            MyEngine engine(EngineBase::MANUAL);
+            SqlDataSource ds(get_r(), engine);
             TableMapper mapper(get_r(), ds);
             RowData d(get_r(), TEST_TBL1);
-            id = get_next_test_id(ses, "S_ORM_TEST_ID");
+            id = get_next_test_id(engine, "S_ORM_TEST_ID");
             d.set("ID", id);
             d.set("A", Value(string("...")));
             d.set("C", Decimal("-.001"));
             mapper.register_as_new(d);
             mapper.flush();
-            ses.commit();
+            engine.commit();
         }
         {
-            MySession ses;
-            SqlDataSource ds(get_r(), ses);
+            MyEngine engine;
+            SqlDataSource ds(get_r(), engine);
             TableMapper mapper(get_r(), ds);
             RowData key(get_r(), TEST_TBL1);
             key.set("ID", id);
@@ -215,8 +215,8 @@ public:
         RowData key2(get_r(), TEST_TBL1);
         key2.set("ID", 1);
         {
-            MySession ses(Session::MANUAL);
-            SqlDataSource ds(get_r(), ses);
+            MyEngine engine(EngineBase::MANUAL);
+            SqlDataSource ds(get_r(), engine);
             TableMapper mapper(get_r(), ds);
             RowData *d = mapper.find(key1);
             CPPUNIT_ASSERT(d);
@@ -226,11 +226,11 @@ public:
             CPPUNIT_ASSERT(e);
             e->set("A", "xxx");
             mapper.flush();
-            ses.commit();
+            engine.commit();
         }
         {
-            MySession ses;
-            SqlDataSource ds(get_r(), ses);
+            MyEngine engine;
+            SqlDataSource ds(get_r(), engine);
             TableMapper mapper(get_r(), ds);
             RowData *d = mapper.find(key1);
             CPPUNIT_ASSERT(d);

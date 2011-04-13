@@ -13,7 +13,7 @@ libormtest_la_SOURCES = \
 	TestMetaData.cpp \
 	TestRowData.cpp \
 	TestValue.cpp \
-	TestOdbcSession.cpp \
+	TestEngine.cpp \
 	TestSqlDataSource.cpp \
 	TestXMLConfig.cpp \
 	TestIntegrMapper.cpp \

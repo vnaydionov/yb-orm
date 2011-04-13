@@ -1,26 +1,26 @@
 #include <sstream>
 #include <util/str_utils.hpp>
-#include "OdbcSession.h"
+#include "Engine.h"
 
 using namespace std;
 using namespace Yb::StrUtils;
 
 namespace Yb {
 
-OdbcSession::OdbcSession(mode work_mode)
-    : Session(work_mode, xgetenv("YBORM_DBTYPE"))
+Engine::Engine(mode work_mode)
+    : EngineBase(work_mode, xgetenv("YBORM_DBTYPE"))
     , drv_(new OdbcDriver())
 {
     drv_->open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
 }
 
-OdbcSession::~OdbcSession()
+Engine::~Engine()
 {
     delete drv_;
 }
 
 RowsPtr
-OdbcSession::on_select(const StrList &what,
+Engine::on_select(const StrList &what,
         const StrList &from, const Filter &where,
         const StrList &group_by, const Filter &having,
         const StrList &order_by, int max_rows,
@@ -36,7 +36,7 @@ OdbcSession::on_select(const StrList &what,
 }
 
 const vector<LongInt>
-OdbcSession::on_insert(const string &table_name,
+Engine::on_insert(const string &table_name,
         const Rows &rows, const FieldSet &exclude_fields,
         bool collect_new_ids)
 {
@@ -76,7 +76,7 @@ OdbcSession::on_insert(const string &table_name,
 }
 
 void
-OdbcSession::on_update(const string &table_name,
+Engine::on_update(const string &table_name,
         const Rows &rows, const FieldSet &key_fields,
         const FieldSet &exclude_fields, const Filter &where)
 {
@@ -98,7 +98,7 @@ OdbcSession::on_update(const string &table_name,
 }
 
 void
-OdbcSession::on_delete(const string &table_name, const Filter &where)
+Engine::on_delete(const string &table_name, const Filter &where)
 {
     string sql;
     Values params;
@@ -108,25 +108,25 @@ OdbcSession::on_delete(const string &table_name, const Filter &where)
 }
 
 void
-OdbcSession::on_exec_proc(const string &proc_code)
+Engine::on_exec_proc(const string &proc_code)
 {
     drv_->exec_direct(proc_code);
 }
 
 void
-OdbcSession::on_commit()
+Engine::on_commit()
 {
     drv_->commit();
 }
 
 void
-OdbcSession::on_rollback()
+Engine::on_rollback()
 {
     drv_->rollback();
 }
 
 void
-OdbcSession::do_gen_sql_select(string &sql, Values &params,
+Engine::do_gen_sql_select(string &sql, Values &params,
         const StrList &what, const StrList &from, const Filter &where,
         const StrList &group_by, const Filter &having,
         const StrList &order_by, bool for_update) const
@@ -154,7 +154,7 @@ OdbcSession::do_gen_sql_select(string &sql, Values &params,
 }
 
 void
-OdbcSession::do_gen_sql_insert(string &sql, Values &params,
+Engine::do_gen_sql_insert(string &sql, Values &params,
         ParamNums &param_nums, const string &table_name,
         const Row &row, const FieldSet &exclude_fields) const
 {
@@ -182,7 +182,7 @@ OdbcSession::do_gen_sql_insert(string &sql, Values &params,
 }
 
 void
-OdbcSession::do_gen_sql_update(string &sql, Values &params,
+Engine::do_gen_sql_update(string &sql, Values &params,
         ParamNums &param_nums, const string &table_name,
         const Row &row, const FieldSet &key_fields,
         const FieldSet &exclude_fields, const Filter &where) const
@@ -243,7 +243,7 @@ OdbcSession::do_gen_sql_update(string &sql, Values &params,
 }
 
 void
-OdbcSession::do_gen_sql_delete(string &sql, Values &params,
+Engine::do_gen_sql_delete(string &sql, Values &params,
         const string &table, const Filter &where) const
 {
     if (where.get_sql() == Filter().get_sql())

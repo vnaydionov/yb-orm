@@ -1,4 +1,4 @@
-#include "Session.h"
+#include "EngineBase.h"
 
 using namespace std;
 
@@ -82,17 +82,17 @@ SqlDialect *mk_dialect(const string &name)
     return d.release();
 }
 
-Session::Session(mode work_mode, const string &dialect_name)
+EngineBase::EngineBase(mode work_mode, const string &dialect_name)
     : touched_(false)
     , mode_(work_mode)
     , dialect_(mk_dialect(dialect_name))
 {}
 
-Session::~Session()
+EngineBase::~EngineBase()
 {}
 
 RowsPtr
-Session::select(const StrList &what,
+EngineBase::select(const StrList &what,
         const StrList &from, const Filter &where,
         const StrList &group_by, const Filter &having,
         const StrList &order_by, int max_rows, bool for_update)
@@ -108,7 +108,7 @@ Session::select(const StrList &what,
 }
 
 const vector<LongInt>
-Session::insert(const string &table_name,
+EngineBase::insert(const string &table_name,
         const Rows &rows, const FieldSet &exclude_fields,
         bool collect_new_ids)
 {
@@ -119,7 +119,7 @@ Session::insert(const string &table_name,
 }
 
 void
-Session::update(const string &table_name,
+EngineBase::update(const string &table_name,
         const Rows &rows, const FieldSet &key_fields,
         const FieldSet &exclude_fields, const Filter &where)
 {
@@ -130,7 +130,7 @@ Session::update(const string &table_name,
 }
 
 void
-Session::delete_from(const string &table_name, const Filter &where)
+EngineBase::delete_from(const string &table_name, const Filter &where)
 {
     if (mode_ == READ_ONLY)
         throw BadOperationInMode("Using DELETE operation in read-only mode");
@@ -139,7 +139,7 @@ Session::delete_from(const string &table_name, const Filter &where)
 }
 
 void
-Session::exec_proc(const string &proc_code)
+EngineBase::exec_proc(const string &proc_code)
 {
     if (mode_ == READ_ONLY)
         throw BadOperationInMode("Trying to invoke a PROCEDURE in read-only mode");
@@ -148,7 +148,7 @@ Session::exec_proc(const string &proc_code)
 }
 
 void
-Session::commit()
+EngineBase::commit()
 {
     if (mode_ == READ_ONLY)
         throw BadOperationInMode("Using COMMIT operation in read-only mode");	
@@ -157,7 +157,7 @@ Session::commit()
 }
 
 void
-Session::rollback()
+EngineBase::rollback()
 {
     if (mode_ == READ_ONLY)
         throw BadOperationInMode("Using ROLLBACK operation in read-only mode");	
@@ -166,7 +166,7 @@ Session::rollback()
 }
 
 RowPtr
-Session::select_row(const StrList &what, const StrList &from, const Filter &where)
+EngineBase::select_row(const StrList &what, const StrList &from, const Filter &where)
 {
     RowsPtr rows = select(what, from, where);
     if (rows->size() != 1)
@@ -176,13 +176,13 @@ Session::select_row(const StrList &what, const StrList &from, const Filter &wher
 }
 
 RowPtr
-Session::select_row(const StrList &from, const Filter &where)
+EngineBase::select_row(const StrList &from, const Filter &where)
 {
     return select_row("*", from, where);
 }
 
 const Value
-Session::select1(const string &what, const string &from, const Filter &where)
+EngineBase::select1(const string &what, const string &from, const Filter &where)
 {
     RowPtr row(select_row(what, from, where));
     if (row->size() != 1)
@@ -191,21 +191,21 @@ Session::select1(const string &what, const string &from, const Filter &where)
 }
 
 LongInt
-Session::get_curr_value(const string &seq_name)
+EngineBase::get_curr_value(const string &seq_name)
 {
     return select1(dialect_->select_curr_value(seq_name),
             dialect_->dual_name(), Filter()).as_longint();
 }
 
 LongInt
-Session::get_next_value(const string &seq_name)
+EngineBase::get_next_value(const string &seq_name)
 {
     return select1(dialect_->select_next_value(seq_name),
             dialect_->dual_name(), Filter()).as_longint();
 }
 
 const DateTime
-Session::fix_dt_hook(const DateTime &t)
+EngineBase::fix_dt_hook(const DateTime &t)
 {
     // by default do nothing:
     return t;

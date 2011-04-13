@@ -1,15 +1,15 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
 #include "util/str_utils.hpp"
-#include "orm/OdbcSession.h"
+#include "orm/Engine.h"
 
 using namespace std;
 using namespace Yb;
 using Yb::StrUtils::xgetenv;
 
-class TestOdbcSession : public CppUnit::TestFixture
+class TestEngine : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(TestOdbcSession);
+    CPPUNIT_TEST_SUITE(TestEngine);
     CPPUNIT_TEST(test_strlist_one);
     CPPUNIT_TEST(test_strlist_two);
     CPPUNIT_TEST(test_select_simple);
@@ -45,29 +45,29 @@ class TestOdbcSession : public CppUnit::TestFixture
     string db_type_;
     LongInt record_id_;
 
-    LongInt get_next_test_id(Session &ses, const string &seq_name)
+    LongInt get_next_test_id(EngineBase &engine, const string &seq_name)
     {
         if (db_type_ == "MYSQL") {
-            RowsPtr ptr = ses.select("MAX(ID) MAX_ID", "T_ORM_TEST", Filter());
+            RowsPtr ptr = engine.select("MAX(ID) MAX_ID", "T_ORM_TEST", Filter());
             CPPUNIT_ASSERT(1 == ptr->size() && 1 == (*ptr)[0].size());
             Value x = (*ptr)[0]["MAX_ID"];
             return x.is_null()? 1: x.as_longint() + 1;
         }
         else {
-            return ses.get_next_value(seq_name);
+            return engine.get_next_value(seq_name);
         }
     }
 
 public:
-    TestOdbcSession()
+    TestEngine()
         : db_type_(xgetenv("YBORM_DBTYPE"))
         , record_id_(0)
     {}
 
     void init_sql()
     {
-        OdbcSession ses;
-        record_id_ = get_next_test_id(ses, "S_ORM_TEST_ID");
+        Engine engine;
+        record_id_ = get_next_test_id(engine, "S_ORM_TEST_ID");
         CPPUNIT_ASSERT(record_id_ > 0);
         ostringstream sql;
         sql << "INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)";
@@ -111,30 +111,30 @@ public:
 
     void test_select_simple()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Values params;
-        ses.do_gen_sql_select(sql, params, "A, B", "T",
+        engine.do_gen_sql_select(sql, params, "A, B", "T",
                 Filter(), StrList(), Filter(), StrList(), false);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T"), sql);
     }
 
     void test_select_for_update()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Values params;
-        ses.do_gen_sql_select(sql, params, "1", "T",
+        engine.do_gen_sql_select(sql, params, "1", "T",
                 Filter(), StrList(), Filter(), StrList(), true);
         CPPUNIT_ASSERT_EQUAL(string("SELECT 1 FROM T FOR UPDATE"), sql);
     }
 
     void test_select_where()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Values params;
-        ses.do_gen_sql_select(sql, params, "*", "T",
+        engine.do_gen_sql_select(sql, params, "*", "T",
                 filter_eq("ID", Value(1)),
                 StrList(), Filter(), StrList(), false);
         CPPUNIT_ASSERT_EQUAL(string("SELECT * FROM T WHERE ID = ?"), sql);
@@ -144,53 +144,53 @@ public:
 
     void test_select_groupby()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Values params;
-        ses.do_gen_sql_select(sql, params, "A, B", "T",
+        engine.do_gen_sql_select(sql, params, "A, B", "T",
                 Filter(), "A, B", Filter(), StrList(), false);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T GROUP BY A, B"), sql);
     }
 
     void test_select_having()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Values params;
-        ses.do_gen_sql_select(sql, params, "A, COUNT(*)", "T",
+        engine.do_gen_sql_select(sql, params, "A, COUNT(*)", "T",
                 Filter(), "A", Filter("COUNT(*) > 2"), StrList(), false);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, COUNT(*) FROM T GROUP BY A HAVING COUNT(*) > 2"), sql);
     }
 
     void test_select_having_wo_groupby()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Values params;
-        ses.do_gen_sql_select(sql, params, "A, B", "T", Filter(), "",
+        engine.do_gen_sql_select(sql, params, "A, B", "T", Filter(), "",
                 filter_eq("ID", Value(1)), StrList(), false);
     }
 
     void test_select_orderby()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Values params;
-        ses.do_gen_sql_select(sql, params, "A, B", "T", Filter(), "",
+        engine.do_gen_sql_select(sql, params, "A, B", "T", Filter(), "",
                 Filter(), "A", false);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T ORDER BY A"), sql);
     }
 
     void test_insert_simple()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Row row;
         row.insert(make_pair(string("ID"), Value(1)));
         row.insert(make_pair(string("A"), Value("a")));
         Values params;
         ParamNums param_nums;
-        ses.do_gen_sql_insert(sql, params, param_nums, "T", row, FieldSet());
+        engine.do_gen_sql_insert(sql, params, param_nums, "T", row, FieldSet());
         CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (A, ID) VALUES (?, ?)"), sql);
         CPPUNIT_ASSERT_EQUAL(2, (int)params.size());
         CPPUNIT_ASSERT_EQUAL(string("a"), params[0].as_string());
@@ -199,7 +199,7 @@ public:
 
     void test_insert_exclude()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Row row;
         row.insert(make_pair(string("ID"), Value(1)));
@@ -208,29 +208,29 @@ public:
         exclude.insert("ID");
         Values params;
         ParamNums param_nums;
-        ses.do_gen_sql_insert(sql, params, param_nums, "T", row, exclude);
+        engine.do_gen_sql_insert(sql, params, param_nums, "T", row, exclude);
         CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (A) VALUES (?)"), sql);
         CPPUNIT_ASSERT(1 == params.size() && Value("a") == params[0]);
     }
 
     void test_insert_empty_row()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Values params;
         ParamNums param_nums;
-        ses.do_gen_sql_insert(sql, params, param_nums, "A", Row(), FieldSet());
+        engine.do_gen_sql_insert(sql, params, param_nums, "A", Row(), FieldSet());
     }
 
     void test_update_where()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Row row;
         row["A"] = Value("a");
         Values params;
         ParamNums param_nums;
-        ses.do_gen_sql_update(sql, params, param_nums,
+        engine.do_gen_sql_update(sql, params, param_nums,
                 "T", row, FieldSet(), FieldSet(), filter_eq("B", Value("b")));
         CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET A = ? WHERE (B = ?)"), sql);
         CPPUNIT_ASSERT(2 == params.size()
@@ -240,7 +240,7 @@ public:
 
     void test_update_combo()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Row row;
         row["A"] = Value("a");
@@ -256,7 +256,7 @@ public:
         exclude.insert("C");
         Values params;
         ParamNums param_nums;
-        ses.do_gen_sql_update(sql, params, param_nums,
+        engine.do_gen_sql_update(sql, params, param_nums,
                 "T", row, key, exclude, filter_eq("Q", Value("q")));
         CPPUNIT_ASSERT_EQUAL(string(
                     "UPDATE T SET E = ?, F = ? WHERE (Q = ?) AND (B = ?) AND (D = ?)"), sql);
@@ -270,51 +270,51 @@ public:
 
     void test_update_empty_row()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Values params;
         ParamNums param_nums;
-        ses.do_gen_sql_update(sql, params, param_nums,
+        engine.do_gen_sql_update(sql, params, param_nums,
                 "A", Row(), FieldSet(), FieldSet(), Filter());
     }
 
     void test_update_wo_clause()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Row row;
         row["A"] = Value("a");
         Values params;
         ParamNums param_nums;
-        ses.do_gen_sql_update(sql, params, param_nums,
+        engine.do_gen_sql_update(sql, params, param_nums,
                 "T", row, FieldSet(), FieldSet(), Filter());
     }
 
     void test_delete()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Values params;
-        ses.do_gen_sql_delete(sql, params, "T", filter_eq("ID", Value(1)));
+        engine.do_gen_sql_delete(sql, params, "T", filter_eq("ID", Value(1)));
         CPPUNIT_ASSERT_EQUAL(string("DELETE FROM T WHERE ID = ?"), sql);
         CPPUNIT_ASSERT(1 == params.size() && Value(1) == params[0]);
     }
 
     void test_delete_wo_clause()
     {
-        OdbcSession ses;
+        Engine engine;
         string sql;
         Values params;
-        ses.do_gen_sql_delete(sql, params, "T", Filter());
+        engine.do_gen_sql_delete(sql, params, "T", Filter());
     }
 
     void test_select_sql()
     {
-        OdbcSession ses;
-        CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
+        Engine engine;
+        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         init_sql();
-        RowsPtr ptr = ses.select("*", "T_ORM_TEST", filter_eq("ID", Value(record_id_)));
-        CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
+        RowsPtr ptr = engine.select("*", "T_ORM_TEST", filter_eq("ID", Value(record_id_)));
+        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("item"), (ptr->begin())->find("A")->second.as_string());
         CPPUNIT_ASSERT_EQUAL(Decimal("1.2"), (ptr->begin())->find("C")->second.as_decimal());
@@ -323,45 +323,45 @@ public:
 
     void test_select_sql_max_rows()
     {
-        OdbcSession ses;
-        CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
+        Engine engine;
+        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         init_sql();
-        RowsPtr ptr = ses.select("*", "T_ORM_TEST", filter_eq("ID", Value(record_id_)),
+        RowsPtr ptr = engine.select("*", "T_ORM_TEST", filter_eq("ID", Value(record_id_)),
                 StrList(), Filter(), StrList(), 0);
-        CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
+        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         CPPUNIT_ASSERT_EQUAL(0, (int)ptr->size());
         finish_sql();
     }
 
     void test_insert_sql()
     {
-        OdbcSession ses(Session::MANUAL);
-        CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
+        Engine engine(EngineBase::MANUAL);
+        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         Rows rows;
-        LongInt id = get_next_test_id(ses, "S_ORM_TEST_ID");
+        LongInt id = get_next_test_id(engine, "S_ORM_TEST_ID");
         Row row;
         row.insert(make_pair(string("ID"), Value(id)));
         row.insert(make_pair(string("A"), Value("inserted")));
         row.insert(make_pair(string("B"), Value(now())));
         row.insert(make_pair(string("C"), Value(Decimal("1.1"))));
         rows.push_back(row);
-        ses.insert("T_ORM_TEST", rows);
-        CPPUNIT_ASSERT_EQUAL(true, ses.touched_);
-        RowsPtr ptr = ses.select("*", "T_ORM_TEST", filter_eq("ID", Value(id)));
+        engine.insert("T_ORM_TEST", rows);
+        CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
+        RowsPtr ptr = engine.select("*", "T_ORM_TEST", filter_eq("ID", Value(id)));
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("inserted"), (ptr->begin())->find("A")->second.as_string());
         CPPUNIT_ASSERT(Decimal("1.1") == (ptr->begin())->find("C")->second.as_decimal());
-        ses.commit();
+        engine.commit();
         finish_sql();
     }
 
     void test_update_sql()
     {
         init_sql();
-        OdbcSession ses(Session::MANUAL);
-        CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
+        Engine engine(EngineBase::MANUAL);
+        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         Rows rows;
-        LongInt id = get_next_test_id(ses, "S_ORM_TEST_ID");
+        LongInt id = get_next_test_id(engine, "S_ORM_TEST_ID");
         Row row;
         row["A"] = Value("updated");
         row["C"] = Value(Decimal("1.3"));
@@ -370,61 +370,61 @@ public:
         FieldSet key, exclude;
         key.insert("ID");
         exclude.insert("B");
-        ses.update("T_ORM_TEST", rows, key, exclude);
-        CPPUNIT_ASSERT_EQUAL(true, ses.touched_);
-        RowsPtr ptr = ses.select("*", "T_ORM_TEST", filter_eq("ID", Value(record_id_)));
+        engine.update("T_ORM_TEST", rows, key, exclude);
+        CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
+        RowsPtr ptr = engine.select("*", "T_ORM_TEST", filter_eq("ID", Value(record_id_)));
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("updated"), (ptr->begin())->find("A")->second.as_string());
         CPPUNIT_ASSERT_EQUAL(Decimal("1.3"), (ptr->begin())->find("C")->second.as_decimal());
-        ses.commit();
+        engine.commit();
         finish_sql();
     }
     
     void test_insert_ro_mode()
     {
-        OdbcSession ses;
-        ses.insert("", Rows());
+        Engine engine;
+        engine.insert("", Rows());
     }
     
     void test_update_ro_mode()
     {
-        OdbcSession ses;
-        ses.update("", Rows(), FieldSet(), FieldSet());
+        Engine engine;
+        engine.update("", Rows(), FieldSet(), FieldSet());
     }
     
     void test_selforupdate_ro_mode()
     {
-        OdbcSession ses;
-        ses.select("", "", Filter(), StrList(), Filter(), StrList(), -1, true);
+        Engine engine;
+        engine.select("", "", Filter(), StrList(), Filter(), StrList(), -1, true);
     }
     
     void test_commit_ro_mode()
     {
-        OdbcSession ses;
-        ses.commit();
+        Engine engine;
+        engine.commit();
     }
     
     void test_delete_ro_mode()
     {
-        OdbcSession ses;
-        ses.delete_from("", Filter());
+        Engine engine;
+        engine.delete_from("", Filter());
     }
     
     void test_execpoc_ro_mode()
     {
-        OdbcSession ses;
-        ses.exec_proc("");
+        Engine engine;
+        engine.exec_proc("");
     }
 
     void test_force_select_for_update()
     {
-        OdbcSession ses(Session::FORCE_SELECT_UPDATE);
-        CPPUNIT_ASSERT_EQUAL(false, ses.touched_);
-        RowsPtr ptr = ses.select("*", "T_ORM_TEST", Filter());
-        CPPUNIT_ASSERT_EQUAL(true, ses.touched_);
+        Engine engine(EngineBase::FORCE_SELECT_UPDATE);
+        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
+        RowsPtr ptr = engine.select("*", "T_ORM_TEST", Filter());
+        CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(TestOdbcSession);
+CPPUNIT_TEST_SUITE_REGISTRATION(TestEngine);
 
 // vim:ts=4:sts=4:sw=4:et:

@@ -1,5 +1,5 @@
-#ifndef YB__ORM__SESSION__INCLUDED
-#define YB__ORM__SESSION__INCLUDED
+#ifndef YB__ORM__ENGINE_BASE__INCLUDED
+#define YB__ORM__ENGINE_BASE__INCLUDED
 
 #include <map>
 #include <vector>
@@ -10,7 +10,7 @@
 #include "Value.h"
 #include "Filters.h"
 
-class TestOdbcSession;
+class TestEngine;
 
 namespace Yb {
 
@@ -110,14 +110,14 @@ public:
 
 SqlDialect *mk_dialect(const std::string &name);
 
-class Session : private boost::noncopyable
+class EngineBase : private boost::noncopyable
 {
-    friend class ::TestOdbcSession;
+    friend class ::TestEngine;
 
 public:
     enum mode { READ_ONLY, MANUAL, FORCE_SELECT_UPDATE }; 
-    Session(mode work_mode, const std::string &dialect_name);
-    virtual ~Session();
+    EngineBase(mode work_mode, const std::string &dialect_name);
+    virtual ~EngineBase();
 
     // SQL operators
     RowsPtr select(const StrList &what,
@@ -146,7 +146,7 @@ public:
     LongInt get_next_value(const std::string &seq_name);
 
     /* Use cases:
-    Yb::Session db;
+    Yb::EngineBase db;
     int count = db.select1("count(1)", "t_manager", Yb::FilterEq("hidden", Yb::Value(1))).as_longint();
     Yb::RowPtr row = db.select_row("v_ui_contract", Yb::FilterEq("contract_id", Yb::Value(contract_id)));
     */
@@ -183,4 +183,4 @@ private:
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__ORM__SESSION__INCLUDED
+#endif // YB__ORM__ENGINE_BASE__INCLUDED

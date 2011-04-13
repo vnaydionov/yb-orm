@@ -1,14 +1,14 @@
 #include "MetaDataSingleton.h"
-#include "MapperSession.h"
+#include "MapperEngine.h"
 
 using namespace std;
 
 namespace Yb {
 
-MapperSession::MapperSession(bool read_only)
-    : Session(read_only ? Session::READ_ONLY : Session::MANUAL,
+MapperEngine::MapperEngine(bool read_only)
+    : EngineBase(read_only ? EngineBase::READ_ONLY : EngineBase::MANUAL,
         "MYSQL" /* FIX: fake param */)
-    , session_(read_only ? Session::READ_ONLY : Session::MANUAL)
+    , session_(read_only ? EngineBase::READ_ONLY : EngineBase::MANUAL)
     , ds_(theMetaData::instance(), session_)
     , mapper_(theMetaData::instance(), ds_)
 {}
@@ -17,13 +17,13 @@ MapperSession::MapperSession(bool read_only)
 // methods are just proxied
 
 RowData *
-MapperSession::find(const RowData &key)
+MapperEngine::find(const RowData &key)
 {
     return mapper_.find(key);
 }
 
 LoadedRows
-MapperSession::load_collection(
+MapperEngine::load_collection(
         const string &table_name, const Filter &filter, const StrList &order_by, int max,
         const string &table_alias)
 {
@@ -31,34 +31,34 @@ MapperSession::load_collection(
 }
 
 RowData *
-MapperSession::create(const string &table_name)
+MapperEngine::create(const string &table_name)
 {
     return mapper_.create(table_name);
 }
 
 RowData *
-MapperSession::register_as_new(const RowData &row)
+MapperEngine::register_as_new(const RowData &row)
 {
     return mapper_.register_as_new(row);
 }
 
 void
-MapperSession::flush()
+MapperEngine::flush()
 {
     mapper_.flush();
 }
 
 const TableMetaDataRegistry &
-MapperSession::get_meta_data_registry()
+MapperEngine::get_meta_data_registry()
 {
     return mapper_.get_meta_data_registry();
 }
 
-// session policy methods:
+// engine policy methods:
 // low level access requested, always mapper_.flush() before proceeding
 
 RowsPtr
-MapperSession::on_select(const StrList &what,
+MapperEngine::on_select(const StrList &what,
         const StrList &from, const Filter &where,
         const StrList &group_by, const Filter &having,
         const StrList &order_by, int max_rows,
@@ -70,7 +70,7 @@ MapperSession::on_select(const StrList &what,
 }
 
 const vector<LongInt>
-MapperSession::on_insert(const string &table_name,
+MapperEngine::on_insert(const string &table_name,
         const Rows &rows, const FieldSet &exclude_fields,
         bool collect_new_ids)
 {
@@ -80,7 +80,7 @@ MapperSession::on_insert(const string &table_name,
 }
 
 void
-MapperSession::on_update(const string &table_name,
+MapperEngine::on_update(const string &table_name,
         const Rows &rows, const FieldSet &key_fields,
         const FieldSet &exclude_fields, const Filter &where)
 {
@@ -89,28 +89,28 @@ MapperSession::on_update(const string &table_name,
 }
 
 void
-MapperSession::on_delete(const string &table_name, const Filter &where)
+MapperEngine::on_delete(const string &table_name, const Filter &where)
 {
     mapper_.flush();
     session_.delete_from(table_name, where);
 }
 
 void
-MapperSession::on_exec_proc(const string &proc_code)
+MapperEngine::on_exec_proc(const string &proc_code)
 {
     mapper_.flush();
     session_.exec_proc(proc_code);
 }
 
 void
-MapperSession::on_commit()
+MapperEngine::on_commit()
 {
     mapper_.flush();
     session_.commit();
 }
 
 void
-MapperSession::on_rollback()
+MapperEngine::on_rollback()
 {
     mapper_.flush();
     session_.rollback();

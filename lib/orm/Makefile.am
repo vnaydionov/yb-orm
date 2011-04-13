@@ -15,16 +15,16 @@ yborminclude_HEADERS = \
 	Mapper.h \
 	MetaData.h \
 	RowData.h \
-	Session.h \
+	EngineBase.h \
 	SqlDataSource.h \
 	Value.h \
-	OdbcSession.h \
+	Engine.h \
 	OdbcDriver.h \
 	tiodbc.hpp \
 	DataObj.h \
 	DomainFactory.h \
 	DomainFactorySingleton.h \
-	MapperSession.h \
+	MapperEngine.h \
 	MetaDataSingleton.h \
 	XMLMetaDataConfig.h \
 	XMLNode.h
@@ -35,13 +35,13 @@ libyborm_la_SOURCES = \
 	Mapper.cpp \
 	MetaData.cpp \
 	RowData.cpp \
-	Session.cpp \
+	EngineBase.cpp \
 	SqlDataSource.cpp \
 	Value.cpp \
-	OdbcSession.cpp \
+	Engine.cpp \
 	OdbcDriver.cpp \
 	tiodbc.cpp \
-	MapperSession.cpp \
+	MapperEngine.cpp \
 	XMLMetaDataConfig.cpp \
 	XMLNode.cpp
 

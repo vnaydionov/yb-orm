@@ -6,9 +6,9 @@ using namespace std;
 namespace Yb {
 
 SqlDataSource::SqlDataSource(const TableMetaDataRegistry &reg,
-        Session &session)
+        EngineBase &engine)
     : reg_(reg)
-    , session_(session)
+    , engine_(engine)
 {}
 
 RowDataPtr
@@ -33,7 +33,7 @@ SqlDataSource::sql_row2row_data(const string &table_name, const Row &row)
         if (x == row.end())
             throw FieldNotFoundInFetchedRow(table_name, it->second.get_name());
         Value v(!x->second.is_null() && it->second.get_type() == Value::DATETIME ?
-                Value(session_.fix_dt_hook(x->second.as_date_time())) :
+                Value(engine_.fix_dt_hook(x->second.as_date_time())) :
                 x->second);
         d.set(it->second.get_name(), v);
     }
@@ -57,7 +57,7 @@ SqlDataSource::row_data_vector2sql_rows(const TableMetaData &table,
 {
     string seq_name;
     string pk_name = table.find_synth_pk();
-    if (!pk_name.empty() && session_.get_dialect()->has_sequences())
+    if (!pk_name.empty() && engine_.get_dialect()->has_sequences())
         seq_name = table.get_seq_name();
     RowsPtr sql_rows(new Rows());
     RowDataVector::const_iterator it = rows.begin(), end = rows.end();
@@ -68,7 +68,7 @@ SqlDataSource::row_data_vector2sql_rows(const TableMetaData &table,
         if (!seq_name.empty()) {
             PKIDValue pkid = it->get(pk_name).as_pkid();
             if (pkid.is_temp())
-                pkid.sync(session_.get_next_value(seq_name));
+                pkid.sync(engine_.get_next_value(seq_name));
         }
         if (0 == filter || 1 == filter) {
             bool is_temp = false;
@@ -91,7 +91,7 @@ SqlDataSource::select_rows(
         const string &table_alias)
 {
     RowDataVectorPtr vp(new RowDataVector);
-    RowsPtr rows = session_.select("*", table_name, filter, StrList(), Filter(), order_by, max);
+    RowsPtr rows = engine_.select("*", table_name, filter, StrList(), Filter(), order_by, max);
     if (rows.get()) {
         Rows::const_iterator it = rows->begin(), end = rows->end();
         for (; it != end; ++it)
@@ -116,7 +116,7 @@ SqlDataSource::do_insert_rows(const string &table_name,
         if ((it->second.is_ro() && !it->second.is_pk()) ||
                 (it->first == pk_name && process_autoinc))
             excluded.insert(it->second.get_name());
-    vector<LongInt> new_ids = session_.insert(
+    vector<LongInt> new_ids = engine_.insert(
             table_name, *sql_rows, excluded, process_autoinc);
     if (process_autoinc) {
         if (new_ids.size() != sql_rows->size())
@@ -134,7 +134,7 @@ SqlDataSource::insert_rows(const string &table_name,
 {
     const TableMetaData &table = reg_.get_table(table_name);
     do_insert_rows(table_name, rows, false);
-    if (!session_.get_dialect()->has_sequences() &&
+    if (!engine_.get_dialect()->has_sequences() &&
             (!table.get_seq_name().empty() || table.get_autoinc()))
         do_insert_rows(table_name, rows, true);
 }
@@ -153,7 +153,7 @@ SqlDataSource::update_rows(const string &table_name,
         if (it->second.is_ro() && !it->second.is_pk())
             excluded.insert(it->second.get_name());
     }
-    session_.update(table_name, *sql_rows, keys, excluded);
+    engine_.update(table_name, *sql_rows, keys, excluded);
 }
 
 void
