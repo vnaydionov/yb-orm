@@ -7,7 +7,7 @@
 #include "orm/DomainFactorySingleton.h"
 #include "orm/DataObj.h"
 #include "orm/AutoXMLizable.h"
-#include "orm/OdbcDriver.h"
+#include "orm/SqlDriver.h"
 
 #define TEST_TBL1 "T_ORM_TEST"
 #define NUM_STMT 4
@@ -143,12 +143,11 @@ public:
             };
             st = st_data;
         }
-        OdbcDriver drv;
-        drv.open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"),
-                xgetenv("YBORM_PASSWD"));
+        SqlConnect conn("ODBC", xgetenv("YBORM_DBTYPE"),
+                xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
         for (size_t i = 0; i < NUM_STMT; ++i)
-            drv.exec_direct(st[i]);
-        drv.commit();
+            conn.exec_direct(st[i]);
+        conn.commit();
     }
 
     void test_xmlize_row_data()

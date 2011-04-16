@@ -4,88 +4,10 @@ using namespace std;
 
 namespace Yb {
 
-DBError::DBError(const string &msg)
-    : logic_error(msg)
-{}
-
-GenericDBError::GenericDBError(const string &err)
-    : DBError("Database error, details: " + err)
-{}
-
-NoDataFound::NoDataFound(const string &msg)
-    : DBError("Data wasn't found, details: " + msg)
-{}
-
-BadSQLOperation::BadSQLOperation(const string &msg)
-    : DBError(msg)
-{}
-
-BadOperationInMode::BadOperationInMode(const string &msg)
-    : DBError(msg)
-{}
-
-SqlDialectError::SqlDialectError(const string &msg)
-    : DBError(msg)
-{}
-
-SqlDialect::~SqlDialect()
-{}
-
-class OracleDialect: public SqlDialect
-{
-public:
-    const string get_name() { return "ORACLE"; }
-    bool has_sequences() { return true; }
-    const string select_curr_value(const string &seq_name)
-    { return seq_name + ".CURRVAL"; }
-    const string select_next_value(const string &seq_name)
-    { return seq_name + ".NEXTVAL"; }
-    const string dual_name()
-    { return "DUAL"; }
-};
-
-class InterbaseDialect: public SqlDialect
-{
-public:
-    const string get_name() { return "INTERBASE"; }
-    bool has_sequences() { return true; }
-    const string select_curr_value(const string &seq_name)
-    { return "GEN_ID(" + seq_name + ", 0)"; }
-    const string select_next_value(const string &seq_name)
-    { return "GEN_ID(" + seq_name + ", 1)"; }
-    const string dual_name()
-    { return "RDB$DATABASE"; }
-};
-
-class MysqlDialect: public SqlDialect
-{
-public:
-    const string get_name() { return "MYSQL"; }
-    bool has_sequences() { return false; }
-    const string select_curr_value(const string &seq_name)
-    { throw SqlDialectError("No sequences, please"); }
-    const string select_next_value(const string &seq_name)
-    { throw SqlDialectError("No sequences, please"); }
-    const string dual_name()
-    { return "DUAL"; }
-};
-
-SqlDialect *mk_dialect(const string &name)
-{
-    auto_ptr<SqlDialect> d(
-        !name.compare("ORACLE")? (SqlDialect *)new OracleDialect():
-        !name.compare("INTERBASE")? (SqlDialect *)new InterbaseDialect():
-        !name.compare("MYSQL")? (SqlDialect *)new MysqlDialect():
-        NULL);
-    if (!d.get())
-        throw SqlDialectError("Unknown dialect: " + name);
-    return d.release();
-}
-
 EngineBase::EngineBase(mode work_mode, const string &dialect_name)
     : touched_(false)
     , mode_(work_mode)
-    , dialect_(mk_dialect(dialect_name))
+    , dialect_(sql_dialect(dialect_name))
 {}
 
 EngineBase::~EngineBase()

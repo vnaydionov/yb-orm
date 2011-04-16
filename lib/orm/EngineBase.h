@@ -9,6 +9,7 @@
 #include <boost/utility.hpp>
 #include "Value.h"
 #include "Filters.h"
+#include "SqlDriver.h"
 
 class TestEngine;
 
@@ -16,42 +17,6 @@ namespace Yb {
 
 typedef std::vector<std::string> FieldList;
 typedef std::set<std::string> FieldSet;
-
-class DBError : public std::logic_error
-{
-public:
-    DBError(const std::string &msg);
-};
-
-class GenericDBError: public DBError
-{
-public:
-    GenericDBError(const std::string &err);
-};
-
-class NoDataFound : public DBError
-{
-public:
-    NoDataFound(const std::string &msg = "");
-};
-
-class BadSQLOperation : public DBError
-{
-public:
-    BadSQLOperation(const std::string &msg);
-};
-
-class BadOperationInMode : public DBError
-{
-public:
-    BadOperationInMode(const std::string &msg);
-};
-
-class SqlDialectError : public DBError
-{
-public:
-    SqlDialectError(const std::string &msg);
-};
 
 class StrList
 {
@@ -88,27 +53,6 @@ public:
     {}
     const std::string &get_str() const { return str_list_; }
 };
-
-
-typedef std::set<std::string> FieldSet;
-
-typedef std::map<std::string, Value> Row;
-typedef std::auto_ptr<Row> RowPtr;
-typedef std::vector<Row> Rows;
-typedef std::auto_ptr<Rows> RowsPtr;
-
-class SqlDialect
-{
-public:
-    virtual ~SqlDialect();
-    virtual const std::string get_name() = 0;
-    virtual bool has_sequences() = 0;
-    virtual const std::string select_curr_value(const std::string &seq_name) = 0;
-    virtual const std::string select_next_value(const std::string &seq_name) = 0;
-    virtual const std::string dual_name() = 0;
-};
-
-SqlDialect *mk_dialect(const std::string &name);
 
 class EngineBase : private boost::noncopyable
 {
@@ -155,7 +99,7 @@ public:
 
     virtual const DateTime fix_dt_hook(const DateTime &t);
 
-    SqlDialect *get_dialect() { return dialect_.get(); }
+    SqlDialect *get_dialect() { return dialect_; }
 private:
     virtual RowsPtr on_select(const StrList &what,
             const StrList &from, const Filter &where,
@@ -177,7 +121,7 @@ private:
 private:
     bool touched_;
     mode mode_;
-    std::auto_ptr<SqlDialect> dialect_;
+    SqlDialect *dialect_;
 };
 
 } // namespace Yb

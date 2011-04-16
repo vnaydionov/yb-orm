@@ -15,7 +15,7 @@ class EngineSession
     SqlDataSource ds_;
     Session session_;
 public:
-    EngineSession(bool read_only = true);
+    EngineSession(bool read_only = true, SqlConnect *conn = NULL);
     // session interface methods
     RowData *find(const RowData &key);
     LoadedRows load_collection(
@@ -26,6 +26,7 @@ public:
     RowData *register_as_new(const RowData &row);
     void flush();
     const TableMetaDataRegistry &get_meta_data_registry();
+    SqlConnect *get_connect() { return engine_.get_connect(); }
 private:
     // engine policy methods
     RowsPtr on_select(const StrList &what,

@@ -7,7 +7,7 @@
 #include <map>
 #include "Value.h"
 #include "EngineBase.h"
-#include "OdbcDriver.h"
+#include "SqlDriver.h"
 
 class TestEngine;
 
@@ -19,10 +19,10 @@ class Engine : public EngineBase
 {
     friend class ::TestEngine;
 
-    SqlDriver *drv_;
+    std::auto_ptr<SqlConnect> conn_;
 public:
-    Engine(mode work_mode = READ_ONLY);
-    ~Engine();
+    Engine(mode work_mode = READ_ONLY, SqlConnect *conn = NULL);
+    SqlConnect *get_connect() { return conn_.get(); }
 
 private:
     RowsPtr on_select(const StrList &what,

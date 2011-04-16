@@ -24,6 +24,15 @@ bool load_xml_file(const string &name, string &where)
     return true;
 }
 
+void load_meta(const string &name, TableMetaDataRegistry &reg)
+{
+    string xml;
+    if (!load_xml_file(name, xml))
+        throw XMLConfigError("Can't read file: " + name);
+    XMLMetaDataConfig xml_config(xml);
+    xml_config.parse(reg);
+}
+
 XMLMetaDataConfig::XMLMetaDataConfig(const string &xml_string)
 try
     :node_(Parse(xml_string))

@@ -52,10 +52,6 @@ public:
     {}
 };
 
-using namespace Xml;
-
-bool load_xml_file(const std::string &name, std::string &where);
-
 class XMLMetaDataConfig
 {
 public:
@@ -80,6 +76,10 @@ private:
     Xml::Node node_;
 };
  
+bool load_xml_file(const std::string &name, std::string &where);
+
+void load_meta(const std::string &name, TableMetaDataRegistry &reg);
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

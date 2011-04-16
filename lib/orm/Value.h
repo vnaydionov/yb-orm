@@ -184,6 +184,7 @@ inline bool operator>(const Value &x, const Value &y) { return y.lt(x); }
 inline bool operator<=(const Value &x, const Value &y) { return !y.lt(x); }
 
 typedef std::vector<Value> Values;
+typedef std::vector<std::string> Names;
 
 } // namespace Yb
 

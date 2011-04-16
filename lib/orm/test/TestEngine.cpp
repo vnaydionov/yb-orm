@@ -76,20 +76,20 @@ public:
         params.push_back(Value("item"));
         params.push_back(Value(now()));
         params.push_back(Value(Decimal("1.2")));
-        OdbcDriver drv;
-        drv.open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
-        drv.exec_direct("DELETE FROM T_ORM_TEST");
-        drv.prepare(sql.str());
-        drv.exec(params);
-        drv.commit();
+        SqlConnect conn("ODBC", xgetenv("YBORM_DBTYPE"),
+                xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
+        conn.exec_direct("DELETE FROM T_ORM_TEST");
+        conn.prepare(sql.str());
+        conn.exec(params);
+        conn.commit();
     }
 
     void finish_sql()
     {
-        OdbcDriver drv;
-        drv.open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
-        drv.exec_direct("DELETE FROM T_ORM_TEST");
-        drv.commit();
+        SqlConnect conn("ODBC", xgetenv("YBORM_DBTYPE"),
+                xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
+        conn.exec_direct("DELETE FROM T_ORM_TEST");
+        conn.commit();
     }
 
     void test_strlist_one()

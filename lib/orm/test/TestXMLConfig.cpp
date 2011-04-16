@@ -55,7 +55,7 @@ public:
     {
         TableMetaData t;
         string xml =  "<table name=\"A\" sequence=\"S\"><col></col></table>";
-        Node node(Parse(xml));
+        Xml::Node node(Xml::Parse(xml));
         XMLMetaDataConfig cfg("");
         cfg.parse_table(node.get(), t);
     }
@@ -69,7 +69,7 @@ public:
 	        "<column type=\"longint\" name=\"B_ID\">"
 		    "<foreign-key table=\"T_B\" field=\"ID\"/></column>"
             "</columns></table>";
-        Node node(Parse(xml));
+        Xml::Node node(Xml::Parse(xml));
 
         XMLMetaDataConfig cfg("<empty/>");
         cfg.parse_table(node.get(), t);
@@ -90,7 +90,7 @@ public:
     void testGetWrongNodeValue()
     {
         int a;
-        XMLMetaDataConfig::get_node_ptr_value(Parse("<size>a</size>"), a);
+        XMLMetaDataConfig::get_node_ptr_value(Xml::Parse("<size>a</size>"), a);
     }
     
     void testStrTypeToInt()
@@ -105,14 +105,14 @@ public:
     void testWrongColumnType()
     {
         string xml = "<column type=\"long\" name=\"ID\"></column>";
-        ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(Parse(xml));
+        ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(Xml::Parse(xml));
     }
     
     void testParseColumn()
     {
         string xml = "<column type=\"longint\" name=\"ID\"><xml-name>i-d</xml-name>"
                      "<readonly/><primarykey/></column>";
-        Node node(Parse(xml));
+        Xml::Node node(Xml::Parse(xml));
         xmlNodePtr p_node = node.get();
         ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(p_node);
         CPPUNIT_ASSERT_EQUAL(std::string("ID"), col.get_name());
@@ -125,7 +125,7 @@ public:
     void testParseForeignKey()
     {
         string xml = "<foreign-key table=\"T_INVOICE\" field=\"ID\"></foreign-key>";
-        Node node(Parse(xml));
+        Xml::Node node(Xml::Parse(xml));
         std::string fk_table, fk_field;
         XMLMetaDataConfig::get_foreign_key_data(node.get(), fk_table, fk_field);
         CPPUNIT_ASSERT_EQUAL(std::string("T_INVOICE"), fk_table);
@@ -135,7 +135,7 @@ public:
     void testInvalidCombination()
     {      
         string xml = "<column type=\"longint\" name=\"ID\"><size>10</size></column>";
-        Node node(Parse(xml));
+        Xml::Node node(Xml::Parse(xml));
         ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(node.get());
     }
 
@@ -143,27 +143,27 @@ public:
     {
         string xml = "<foreign-key table=\"T_INVOICE\"></foreign-key>";
         std::string fk_table, fk_field;
-        XMLMetaDataConfig::get_foreign_key_data(Parse(xml), fk_table, fk_field);
+        XMLMetaDataConfig::get_foreign_key_data(Xml::Parse(xml), fk_table, fk_field);
     }
 
     void testAbsentForeignKeyTable()
     {
         string xml = "<foreign-key field=\"ID\"></foreign-key>";
         std::string fk_table, fk_field;
-        XMLMetaDataConfig::get_foreign_key_data(Parse(xml), fk_table, fk_field);
+        XMLMetaDataConfig::get_foreign_key_data(Xml::Parse(xml), fk_table, fk_field);
     }
     
     void testAbsentColumnName()
     {
         string xml = "<column type=\"longint\"></column>";
-        Node node(Parse(xml));
+        Xml::Node node(Xml::Parse(xml));
         ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(node.get());
     }
 
     void testAbsentColumnType()
     {
         string xml = "<column name=\"ID\"></column>";
-        Node node(Parse(xml));
+        Xml::Node node(Xml::Parse(xml));
         ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(node.get());
     }
 

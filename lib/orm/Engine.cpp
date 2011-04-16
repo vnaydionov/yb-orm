@@ -7,17 +7,12 @@ using namespace Yb::StrUtils;
 
 namespace Yb {
 
-Engine::Engine(mode work_mode)
-    : EngineBase(work_mode, xgetenv("YBORM_DBTYPE"))
-    , drv_(new OdbcDriver())
-{
-    drv_->open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
-}
-
-Engine::~Engine()
-{
-    delete drv_;
-}
+Engine::Engine(mode work_mode, SqlConnect *conn)
+    : EngineBase(work_mode,
+            conn? conn->get_dialect()->get_name(): xgetenv("YBORM_DBTYPE"))
+    , conn_(conn? conn: new SqlConnect("ODBC", xgetenv("YBORM_DBTYPE"),
+                xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD")))
+{}
 
 RowsPtr
 Engine::on_select(const StrList &what,
@@ -30,9 +25,9 @@ Engine::on_select(const StrList &what,
     Values params;
     do_gen_sql_select(sql, params,
             what, from, where, group_by, having, order_by, for_update);
-    drv_->prepare(sql);
-    drv_->exec(params);
-    return drv_->fetch_rows(max_rows);
+    conn_->prepare(sql);
+    conn_->exec(params);
+    return conn_->fetch_rows(max_rows);
 }
 
 const vector<LongInt>
@@ -48,27 +43,27 @@ Engine::on_insert(const string &table_name,
     ParamNums param_nums;
     do_gen_sql_insert(sql, params, param_nums, table_name, rows[0], exclude_fields);
     if (!collect_new_ids) {
-        drv_->prepare(sql);
+        conn_->prepare(sql);
         Rows::const_iterator it = rows.begin(), end = rows.end();
         for (; it != end; ++it) {
             Row::const_iterator f = it->begin(), fend = it->end();
             for (; f != fend; ++f)
                 if (exclude_fields.find(f->first) == exclude_fields.end())
                     params[param_nums[f->first]] = f->second;
-            drv_->exec(params);
+            conn_->exec(params);
         }
     }
     else {
         Rows::const_iterator it = rows.begin(), end = rows.end();
         for (; it != end; ++it) {
-            drv_->prepare(sql);
+            conn_->prepare(sql);
             Row::const_iterator f = it->begin(), fend = it->end();
             for (; f != fend; ++f)
                 if (exclude_fields.find(f->first) == exclude_fields.end())
                     params[param_nums[f->first]] = f->second;
-            drv_->exec(params);
-            drv_->exec_direct("SELECT LAST_INSERT_ID() LID");
-            RowsPtr id_rows = drv_->fetch_rows();
+            conn_->exec(params);
+            conn_->exec_direct("SELECT LAST_INSERT_ID() LID");
+            RowsPtr id_rows = conn_->fetch_rows();
             ids.push_back((*id_rows)[0]["LID"].as_longint());
         }
     }
@@ -86,14 +81,14 @@ Engine::on_update(const string &table_name,
     Values params;
     ParamNums param_nums;
     do_gen_sql_update(sql, params, param_nums, table_name, rows[0], key_fields, exclude_fields, where);
-    drv_->prepare(sql);
+    conn_->prepare(sql);
     Rows::const_iterator it = rows.begin(), end = rows.end();
     for (; it != end; ++it) {
         Row::const_iterator f = it->begin(), fend = it->end();
         for (; f != fend; ++f)
             if (exclude_fields.find(f->first) == exclude_fields.end())
                 params[param_nums[f->first]] = f->second;
-        drv_->exec(params);
+        conn_->exec(params);
     }
 }
 
@@ -103,26 +98,26 @@ Engine::on_delete(const string &table_name, const Filter &where)
     string sql;
     Values params;
     do_gen_sql_delete(sql, params, table_name, where);
-    drv_->prepare(sql);
-    drv_->exec(params);
+    conn_->prepare(sql);
+    conn_->exec(params);
 }
 
 void
 Engine::on_exec_proc(const string &proc_code)
 {
-    drv_->exec_direct(proc_code);
+    conn_->exec_direct(proc_code);
 }
 
 void
 Engine::on_commit()
 {
-    drv_->commit();
+    conn_->commit();
 }
 
 void
 Engine::on_rollback()
 {
-    drv_->rollback();
+    conn_->rollback();
 }
 
 void

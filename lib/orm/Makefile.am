@@ -19,7 +19,7 @@ yborminclude_HEADERS = \
 	SqlDataSource.h \
 	Value.h \
 	Engine.h \
-	OdbcDriver.h \
+	SqlDriver.h \
 	tiodbc.hpp \
 	DataObj.h \
 	DomainFactory.h \
@@ -39,7 +39,7 @@ libyborm_la_SOURCES = \
 	SqlDataSource.cpp \
 	Value.cpp \
 	Engine.cpp \
-	OdbcDriver.cpp \
+	SqlDriver.cpp \
 	tiodbc.cpp \
 	EngineSession.cpp \
 	XMLMetaDataConfig.cpp \

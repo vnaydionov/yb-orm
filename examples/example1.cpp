@@ -9,11 +9,9 @@ using namespace std;
 
 int main()
 {
-    string xml;
-    Yb::load_xml_file("./DBScheme.xml", xml);
-    Yb::XMLMetaDataConfig xml_config(xml);
-    xml_config.parse(Yb::theMetaData::instance());
+    Yb::load_meta("DBScheme.xml", Yb::theMetaData::instance());
     Yb::EngineSession session(false);
+    session.get_connect()->set_echo(true);
     Domain::Client client(session);
     string name, email;
     cout << "Enter name, email: \n";
@@ -31,8 +29,7 @@ int main()
     cout << "client created: " << client.get_id().as_longint() << endl;
     cout << "order created: " << order.get_id().as_longint() << endl;
     session.commit();
-    Yb::XMLNode node(order.auto_xmlize(1));
-    cout << node.get_xml() << endl;
+    cout << order.auto_xmlize(1).get_xml() << endl;
     return 0;
 }
 

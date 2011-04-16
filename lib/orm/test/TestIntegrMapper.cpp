@@ -5,7 +5,7 @@
 #include "orm/SqlDataSource.h"
 #include "orm/Engine.h"
 #include "orm/XMLNode.h"
-#include "orm/OdbcDriver.h"
+#include "orm/SqlDriver.h"
 
 using namespace std;
 using namespace Yb;
@@ -81,11 +81,11 @@ public:
             };
             st = st_data;
         }
-        OdbcDriver drv;
-        drv.open(xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
+        SqlConnect conn("ODBC", xgetenv("YBORM_DBTYPE"),
+                xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
         for (size_t i = 0; i < NUM_STMT; ++i)
-            drv.exec_direct(st[i]);
-        drv.commit();
+            conn.exec_direct(st[i]);
+        conn.commit();
 
         TableMetaData t(TEST_TBL1, "test");
         t.set_column(ColumnMetaData("ID", Value::LONGINT, 0,

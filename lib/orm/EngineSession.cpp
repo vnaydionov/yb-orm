@@ -5,10 +5,10 @@ using namespace std;
 
 namespace Yb {
 
-EngineSession::EngineSession(bool read_only)
+EngineSession::EngineSession(bool read_only, SqlConnect *conn)
     : EngineBase(read_only ? EngineBase::READ_ONLY : EngineBase::MANUAL,
         "MYSQL" /* FIX: fake param */)
-    , engine_(read_only ? EngineBase::READ_ONLY : EngineBase::MANUAL)
+    , engine_(read_only ? EngineBase::READ_ONLY : EngineBase::MANUAL, conn)
     , ds_(theMetaData::instance(), engine_)
     , session_(theMetaData::instance(), ds_)
 {}
