@@ -55,7 +55,7 @@ unit_tests_LDADD = \
 	libyborm.la \
 	$(top_builddir)/lib/util/libybutil.la \
 	$(top_builddir)/lib/test/libtestmain.la \
-	-lcppunit \
+	$(CPPUNIT_LIBS) \
 	$(XML_LIBS) \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_LIBS_R) \

@@ -3,7 +3,8 @@ include $(top_srcdir)/dirs.mk
 
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
-	$(BOOST_CPPFLAGS)
+	$(BOOST_CPPFLAGS) \
+	$(CPPUNIT_CFLAGS)
 
 ybtestlib_LTLIBRARIES = libormtest.la
 

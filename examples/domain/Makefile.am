@@ -11,3 +11,6 @@ mk_tables.sql: $(top_srcdir)/examples/DBScheme.xml
 
 export YBORM_DBTYPE=MYSQL
 
+clean-local:
+	-rm -f *.cpp *.h *.sql
+

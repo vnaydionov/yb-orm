@@ -26,7 +26,7 @@ unit_tests_LDADD = \
 	test/libutiltest.la \
 	libybutil.la \
 	$(top_builddir)/lib/test/libtestmain.la \
-	-lcppunit \
+	$(CPPUNIT_LIBS) \
 	$(XML_LIBS) \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_LIBS_R)

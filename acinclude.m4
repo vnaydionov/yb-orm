@@ -288,4 +288,110 @@ AC_DEFUN([YB_ODBC],
     LIBS="$ac_save_libs"
 ])
 
+dnl
+dnl YB_PATH_CPPUNIT(MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
+dnl
+AC_DEFUN([YB_PATH_CPPUNIT],
+[
+    AC_ARG_WITH([cppunit-prefix],
+        AC_HELP_STRING([--with-cppunit-prefix=PFX],
+            [Prefix where CppUnit is installed (optional)]),
+        [cppunit_config_prefix="$withval"], [cppunit_config_prefix=""])
+    AC_ARG_WITH([cppunit-exec-prefix],
+        AC_HELP_STRING([--with-cppunit-exec-prefix=PFX],
+            [Exec prefix where CppUnit is installed (optional)]),
+        [cppunit_config_exec_prefix="$withval"], [cppunit_config_exec_prefix=""])
+
+    if test x$cppunit_config_exec_prefix != x ; then
+        cppunit_config_args="$cppunit_config_args --exec-prefix=$cppunit_config_exec_prefix"
+        if test x${CPPUNIT_CONFIG+set} != xset ; then
+            CPPUNIT_CONFIG=$cppunit_config_exec_prefix/bin/cppunit-config
+        fi
+    fi
+    if test x$cppunit_config_prefix != x ; then
+        cppunit_config_args="$cppunit_config_args --prefix=$cppunit_config_prefix"
+        if test x${CPPUNIT_CONFIG+set} != xset ; then
+            CPPUNIT_CONFIG=$cppunit_config_prefix/bin/cppunit-config
+        fi
+    fi
+
+    AC_PATH_PROG(CPPUNIT_CONFIG, cppunit-config, no)
+    cppunit_version_min=$1
+
+    AC_MSG_CHECKING(for Cppunit - version >= $cppunit_version_min)
+    no_cppunit=""
+    if test "$CPPUNIT_CONFIG" = "no" ; then
+        no_cppunit=yes
+    else
+        CPPUNIT_CFLAGS=`$CPPUNIT_CONFIG --cflags`
+        CPPUNIT_LIBS=`$CPPUNIT_CONFIG --libs`
+        cppunit_version=`$CPPUNIT_CONFIG --version`
+
+        cppunit_major_version=`echo $cppunit_version | \
+            sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\1/'`
+        cppunit_minor_version=`echo $cppunit_version | \
+            sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\2/'`
+        cppunit_micro_version=`echo $cppunit_version | \
+            sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\3/'`
+
+        cppunit_major_min=`echo $cppunit_version_min | \
+            sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\1/'`
+        cppunit_minor_min=`echo $cppunit_version_min | \
+            sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\2/'`
+        cppunit_micro_min=`echo $cppunit_version_min | \
+            sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\3/'`
+
+        cppunit_version_proper=`expr \
+            $cppunit_major_version \> $cppunit_major_min \| \
+            $cppunit_major_version \= $cppunit_major_min \& \
+            $cppunit_minor_version \> $cppunit_minor_min \| \
+            $cppunit_major_version \= $cppunit_major_min \& \
+            $cppunit_minor_version \= $cppunit_minor_min \& \
+            $cppunit_micro_version \>= $cppunit_micro_min `
+
+        if test "$cppunit_version_proper" = "1" ; then
+            # Save CXXFLAGS, LIBS
+            ac_save_cxxflags="$CXXFLAGS"
+            ac_save_libs="$LIBS"
+
+            # Modify CXXFLAGS, LIBS
+            CXXFLAGS="$ac_save_cxxflags $CPPUNIT_CFLAGS"
+            LIBS="$ac_save_libs $CPPUNIT_LIBS"
+
+            AC_LANG_PUSH(C++)
+            AC_TRY_LINK([
+#include <cppunit/ui/text/TestRunner.h>
+],
+                [CppUnit::TextUi::TestRunner runner;],
+                [link_ok=yes],[link_ok=no])
+            AC_LANG_POP(C++)
+
+            # Restore CXXFLAGS, LIBS
+            CXXFLAGS="$ac_save_cxxflags"
+            LIBS="$ac_save_libs"
+
+            if test "x$link_ok" != "xyes" ; then
+                AC_MSG_RESULT(no)
+                no_cppunit=yes
+            else
+                AC_MSG_RESULT([$cppunit_major_version.$cppunit_minor_version.$cppunit_micro_version])
+            fi
+        else
+            AC_MSG_RESULT(no)
+            no_cppunit=yes
+        fi
+    fi
+
+    if test "x$no_cppunit" = x ; then
+        ifelse([$2], , :, [$2])     
+    else
+        CPPUNIT_CFLAGS=""
+        CPPUNIT_LIBS=""
+        ifelse([$3], , :, [$3])
+    fi
+
+    AC_SUBST(CPPUNIT_CFLAGS)
+    AC_SUBST(CPPUNIT_LIBS)
+])
+
 dnl vim:ts=4:sts=4:sw=4:et:
