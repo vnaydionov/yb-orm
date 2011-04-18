@@ -1,0 +1,15 @@
+<?xml version='1.0'?>
+<Config>
+    <DbPoolSize>5</DbPoolSize>
+    <DbBackend id="default">
+        <Driver>mysql</Driver>
+        <Host>localhost</Host>
+        <Port>3306</Port>
+        <Name>test1_db</Name>
+        <User>test1</User>
+        <Pass>test1_pwd</Pass>
+        <Timeout>2</Timeout>
+    </DbBackend>
+</Config>
+<!-- vim:ts=4:sts=4:sw=4:et:
+-->

@@ -2,7 +2,7 @@
 #define YB__ORM__SQL_DATA_SOURCE__INCLUDED
 
 #include "RowData.h"
-#include "EngineBase.h"
+#include "Engine.h"
 
 class TestSqlDataSource;
 
@@ -13,7 +13,7 @@ class SqlDataSource : public DataSource
     friend class ::TestSqlDataSource;
 
     const TableMetaDataRegistry &reg_;
-    EngineBase &engine_;
+    Engine &engine_;
 private:
     const RowData sql_row2row_data(const std::string &table_name, const Row &row);
     static RowPtr row_data2sql_row(const RowData &rd);
@@ -23,7 +23,8 @@ private:
             const RowDataVector &rows, bool process_autoinc);
 public:
     SqlDataSource(const TableMetaDataRegistry &reg,
-            EngineBase &engine);
+            Engine &engine);
+    Engine &get_engine() { return engine_; }
     RowDataPtr select_row(const RowData &key);
     RowDataVectorPtr select_rows(
             const std::string &table_name, const Filter &filter, const StrList &order_by = StrList(),

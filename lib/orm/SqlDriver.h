@@ -31,13 +31,13 @@ public:
         return NULL;
     }
 
-    bool register_item(const std::string &name, Item *item)
+    bool register_item(const std::string &name, std::auto_ptr<Item> item)
     {
         boost::mutex::scoped_lock lock(mutex_);
         typename Map::const_iterator it = map_.find(name);
         if (it != map_.end())
             return false;
-        map_.insert(typename Map::value_type(name, ItemPtr(item)));
+        map_.insert(typename Map::value_type(name, ItemPtr(item.release())));
         return true;
     }
 
@@ -119,12 +119,15 @@ public:
     const std::string &get_name() { return name_; }
     const std::string &dual_name() { return dual_; }
     bool has_sequences() { return has_sequences_; }
-    virtual const std::string select_curr_value(const std::string &seq_name) = 0;
-    virtual const std::string select_next_value(const std::string &seq_name) = 0;
+    virtual const std::string select_curr_value(
+            const std::string &seq_name) = 0;
+    virtual const std::string select_next_value(
+            const std::string &seq_name) = 0;
+    virtual const std::string sql_value(const Value &x) = 0;
 };
 
 SqlDialect *sql_dialect(const std::string &name);
-bool register_sql_dialect(SqlDialect *dialect);
+bool register_sql_dialect(std::auto_ptr<SqlDialect> dialect);
 const Names list_sql_dialects();
 
 typedef std::map<std::string, Value> Row;
@@ -161,11 +164,11 @@ public:
     {}
     virtual ~SqlDriver();
     const std::string &get_name() { return name_; }
-    virtual SqlConnectBackend *create_backend() = 0;
+    virtual std::auto_ptr<SqlConnectBackend> create_backend() = 0;
 };
 
 SqlDriver *sql_driver(const std::string &name);
-bool register_sql_driver(SqlDriver *driver);
+bool register_sql_driver(std::auto_ptr<SqlDriver> driver);
 const Names list_sql_drivers();
 
 class SqlConnect
@@ -180,7 +183,7 @@ class SqlConnect
 public:
     SqlConnect(const std::string &driver_name,
             const std::string &dialect_name, const std::string &db,
-            const std::string &user, const std::string &passwd);
+            const std::string &user = "", const std::string &passwd = "");
     ~SqlConnect();
     SqlDriver *get_driver() { return driver_; }
     SqlDialect *get_dialect() { return dialect_; }

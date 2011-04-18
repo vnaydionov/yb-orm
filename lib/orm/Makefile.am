@@ -15,7 +15,6 @@ yborminclude_HEADERS = \
 	Session.h \
 	MetaData.h \
 	RowData.h \
-	EngineBase.h \
 	SqlDataSource.h \
 	Value.h \
 	Engine.h \
@@ -24,10 +23,11 @@ yborminclude_HEADERS = \
 	DataObj.h \
 	DomainFactory.h \
 	DomainFactorySingleton.h \
-	EngineSession.h \
 	MetaDataSingleton.h \
 	XMLMetaDataConfig.h \
 	XMLNode.h
+
+#	DBPoolDriver.h
 
 libyborm_la_SOURCES = \
 	$(yborminclude_HEADERS) \
@@ -35,15 +35,15 @@ libyborm_la_SOURCES = \
 	Session.cpp \
 	MetaData.cpp \
 	RowData.cpp \
-	EngineBase.cpp \
 	SqlDataSource.cpp \
 	Value.cpp \
 	Engine.cpp \
 	SqlDriver.cpp \
 	tiodbc.cpp \
-	EngineSession.cpp \
 	XMLMetaDataConfig.cpp \
 	XMLNode.cpp
+
+#	DBPoolDriver.cpp
 
 libyborm_la_LDFLAGS = -version-info 0:0:0
 

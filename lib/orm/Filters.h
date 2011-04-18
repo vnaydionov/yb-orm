@@ -1,11 +1,54 @@
 #ifndef YB__ORM__FILTERS__INCLUDED
 #define YB__ORM__FILTERS__INCLUDED
 
+#include <vector>
 #include <string>
+#include <set>
+#include <map>
 #include <boost/shared_ptr.hpp>
 #include "Value.h"
 
 namespace Yb {
+
+typedef std::vector<std::string> FieldList;
+typedef std::set<std::string> FieldSet;
+typedef std::map<std::string, int> ParamNums;
+
+class StrList
+{
+    std::string str_list_;
+    template <typename T>
+    static const std::string container_to_str(const T &cont)
+    {
+        std::string r;
+        typename T::const_iterator it = cont.begin(), end = cont.end();
+        if (it != end)
+            r = *it;
+        for (++it; it != end; ++it)
+            r += ", " + *it;
+        return r;
+    }
+public:
+    StrList()
+    {}
+    StrList(const FieldSet &fs)
+        : str_list_(container_to_str<FieldSet>(fs))
+    {}
+    StrList(const FieldList &fl)
+        : str_list_(container_to_str<FieldList>(fl))
+    {}
+    template <typename T>
+    StrList(const T &fl)
+	: str_list_(container_to_str<T>(fl))
+    {}
+    StrList(const std::string &s)
+        : str_list_(s)
+    {}
+    StrList(const char *s)
+        : str_list_(s)
+    {}
+    const std::string &get_str() const { return str_list_; }
+};
 
 class FilterBackend
 {

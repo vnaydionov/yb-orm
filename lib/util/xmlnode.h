@@ -20,8 +20,8 @@ xmlNodePtr AddNode(xmlNodePtr node, xmlNodePtr child);
 xmlNodePtr DupNode(xmlNodePtr node);
 void FreeNode(xmlNodePtr node);
 
-xmlNodePtr Child(xmlNodePtr node, const std::string &name);
-xmlNodePtr Sibling(xmlNodePtr node, const std::string &name);
+xmlNodePtr Child(xmlNodePtr node, const std::string &name = "");
+xmlNodePtr Sibling(xmlNodePtr node, const std::string &name = "");
 
 void SetContent(xmlNodePtr node, const std::string &content);
 const std::string GetContent(xmlNodePtr node);
@@ -31,20 +31,10 @@ const std::string GetAttr(xmlNodePtr node, const std::string &name);
 void SetAttr(xmlNodePtr node, const std::string &name, const std::string &value);
 
 xmlNodePtr Parse(const std::string &content);
+xmlNodePtr ParseFile(const std::string &file_name);
 
 // NOTE: 'node' parameter is freed inside the following function
 std::string str(xmlNodePtr node, const std::string &enc = "UTF-8");
-
-// XML parser wrapper class
-class Parser
-{
-public:
-    Parser();
-    virtual ~Parser();
-    static Parser &instance();
-    xmlDocPtr Parse(const std::string &content);
-    xmlDocPtr ParseFile(const std::string &fname);
-};
 
 // XML node wrapper class
 
@@ -89,8 +79,8 @@ public:
 
     xmlNodePtr AddNode(xmlNodePtr child);
     xmlNodePtr AddNode(const std::string &node_name);
-    xmlNodePtr Child(const std::string &name);
-    xmlNodePtr Sibling(const std::string &name);
+    xmlNodePtr Child(const std::string &name = "");
+    xmlNodePtr Sibling(const std::string &name = "");
 
     // Manipulate text content
 

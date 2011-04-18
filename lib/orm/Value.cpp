@@ -11,7 +11,7 @@
 using namespace std;
 using namespace Yb::StrUtils;
 
-#ifdef __WIN32__
+#if defined(__WIN32__) || defined(_WIN32)
 struct tm *localtime_r(const time_t *clock, struct tm *result)
 { 
     if (!clock || !result)
@@ -71,9 +71,11 @@ const string ValueDataImpl<string>::to_sql_str() const
 template <>
 const string ValueDataImpl<DateTime>::to_sql_str() const
 {
-    return "TO_DATE('" +
-        boost::posix_time::to_iso_extended_string(x_)
-        + "', 'YYYY-MM-DD\"T\"HH24:MI:SS')";
+    string t(to_string(x_));
+    size_t pos = t.find('T');
+    if (pos != string::npos)
+        t[pos] = ' ';
+    return "'" + t + "'";
 }
 
 template <>

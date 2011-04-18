@@ -4,7 +4,8 @@
 #include <vector>
 #include <util/xml_writer.h>
 #include "Session.h"
-#include "EngineBase.h"
+#include "RowData.h"
+#include "SqlDriver.h"
 
 namespace Yb {
 

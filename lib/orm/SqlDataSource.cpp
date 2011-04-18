@@ -6,7 +6,7 @@ using namespace std;
 namespace Yb {
 
 SqlDataSource::SqlDataSource(const TableMetaDataRegistry &reg,
-        EngineBase &engine)
+        Engine &engine)
     : reg_(reg)
     , engine_(engine)
 {}
@@ -32,10 +32,7 @@ SqlDataSource::sql_row2row_data(const string &table_name, const Row &row)
         Row::const_iterator x = row.find(it->second.get_name());
         if (x == row.end())
             throw FieldNotFoundInFetchedRow(table_name, it->second.get_name());
-        Value v(!x->second.is_null() && it->second.get_type() == Value::DATETIME ?
-                Value(engine_.fix_dt_hook(x->second.as_date_time())) :
-                x->second);
-        d.set(it->second.get_name(), v);
+        d.set(it->second.get_name(), x->second);
     }
     return d;
 }

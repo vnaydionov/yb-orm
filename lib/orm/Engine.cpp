@@ -7,12 +7,153 @@ using namespace Yb::StrUtils;
 
 namespace Yb {
 
-Engine::Engine(mode work_mode, SqlConnect *conn)
-    : EngineBase(work_mode,
-            conn? conn->get_dialect()->get_name(): xgetenv("YBORM_DBTYPE"))
-    , conn_(conn? conn: new SqlConnect("ODBC", xgetenv("YBORM_DBTYPE"),
-                xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD")))
+static inline const string cfg(const string &entry)
+{ return xgetenv("YBORM_" + entry); }
+
+Engine::Engine(Mode work_mode)
+    : touched_(false)
+    , mode_(work_mode)
+    , conn_(new SqlConnect("ODBC", cfg("DBTYPE"),
+                cfg("DB"), cfg("USER"), cfg("PASSWD")))
+    , dialect_(conn_->get_dialect())
 {}
+
+Engine::Engine(Mode work_mode, auto_ptr<SqlConnect> conn)
+    : touched_(false)
+    , mode_(work_mode)
+    , conn_(conn)
+    , dialect_(conn_->get_dialect())
+{}
+
+Engine::Engine(Mode work_mode, SqlDialect *dialect)
+    : touched_(false)
+    , mode_(work_mode)
+    , dialect_(dialect)
+{}
+
+Engine::~Engine()
+{}
+
+RowsPtr
+Engine::select(const StrList &what,
+        const StrList &from, const Filter &where,
+        const StrList &group_by, const Filter &having,
+        const StrList &order_by, int max_rows, bool for_update)
+{
+    bool select_mode = (mode_ == FORCE_SELECT_UPDATE) ? true : for_update;
+    if ((mode_ == READ_ONLY) && select_mode)
+        throw BadOperationInMode(
+                "Using SELECT FOR UPDATE in read-only mode");  
+    RowsPtr rows(on_select(what, from, where,
+                group_by, having, order_by, max_rows, select_mode));
+    if (select_mode)
+        touched_ = true;
+    return rows;
+}
+
+const vector<LongInt>
+Engine::insert(const string &table_name,
+        const Rows &rows, const FieldSet &exclude_fields,
+        bool collect_new_ids)
+{
+    if (mode_ == READ_ONLY)
+        throw BadOperationInMode(
+                "Using INSERT operation in read-only mode");
+    touched_ = true;
+    return on_insert(table_name, rows, exclude_fields, collect_new_ids);
+}
+
+void
+Engine::update(const string &table_name,
+        const Rows &rows, const FieldSet &key_fields,
+        const FieldSet &exclude_fields, const Filter &where)
+{
+    if (mode_ == READ_ONLY)
+        throw BadOperationInMode(
+                "Using UPDATE operation in read-only mode");
+    on_update(table_name, rows, key_fields, exclude_fields, where);
+    touched_ = true;
+}
+
+void
+Engine::delete_from(const string &table_name, const Filter &where)
+{
+    if (mode_ == READ_ONLY)
+        throw BadOperationInMode(
+                "Using DELETE operation in read-only mode");
+    on_delete(table_name, where);
+    touched_ = true;
+}
+
+void
+Engine::exec_proc(const string &proc_code)
+{
+    if (mode_ == READ_ONLY)
+        throw BadOperationInMode(
+                "Trying to invoke a PROCEDURE in read-only mode");
+    on_exec_proc(proc_code);
+    touched_ = true;
+}
+
+void
+Engine::commit()
+{
+    if (mode_ == READ_ONLY)
+        throw BadOperationInMode(
+                "Using COMMIT operation in read-only mode");
+    on_commit();
+    touched_ = false;
+}
+
+void
+Engine::rollback()
+{
+    if (mode_ == READ_ONLY)
+        throw BadOperationInMode(
+                "Using ROLLBACK operation in read-only mode");
+    on_rollback();
+    touched_ = false;
+}
+
+RowPtr
+Engine::select_row(const StrList &what,
+        const StrList &from, const Filter &where)
+{
+    RowsPtr rows = select(what, from, where);
+    if (rows->size() != 1)
+        throw NoDataFound("Unable to fetch exactly one row!");
+    RowPtr row(new Row((*rows)[0]));
+    return row;
+}
+
+RowPtr
+Engine::select_row(const StrList &from, const Filter &where)
+{
+    return select_row("*", from, where);
+}
+
+const Value
+Engine::select1(const string &what, const string &from, const Filter &where)
+{
+    RowPtr row(select_row(what, from, where));
+    if (row->size() != 1)
+        throw BadSQLOperation("Unable to fetch exactly one column!");
+    return row->begin()->second;
+}
+
+LongInt
+Engine::get_curr_value(const string &seq_name)
+{
+    return select1(dialect_->select_curr_value(seq_name),
+            dialect_->dual_name(), Filter()).as_longint();
+}
+
+LongInt
+Engine::get_next_value(const string &seq_name)
+{
+    return select1(dialect_->select_next_value(seq_name),
+            dialect_->dual_name(), Filter()).as_longint();
+}
 
 RowsPtr
 Engine::on_select(const StrList &what,
@@ -41,7 +182,8 @@ Engine::on_insert(const string &table_name,
     string sql;
     Values params;
     ParamNums param_nums;
-    do_gen_sql_insert(sql, params, param_nums, table_name, rows[0], exclude_fields);
+    do_gen_sql_insert(sql, params, param_nums, table_name,
+            rows[0], exclude_fields);
     if (!collect_new_ids) {
         conn_->prepare(sql);
         Rows::const_iterator it = rows.begin(), end = rows.end();
@@ -80,7 +222,8 @@ Engine::on_update(const string &table_name,
     string sql;
     Values params;
     ParamNums param_nums;
-    do_gen_sql_update(sql, params, param_nums, table_name, rows[0], key_fields, exclude_fields, where);
+    do_gen_sql_update(sql, params, param_nums, table_name,
+            rows[0], key_fields, exclude_fields, where);
     conn_->prepare(sql);
     Rows::const_iterator it = rows.begin(), end = rows.end();
     for (; it != end; ++it) {
@@ -138,7 +281,8 @@ Engine::do_gen_sql_select(string &sql, Values &params,
     s = having.collect_params_and_build_sql(params);
     if (s != Filter().get_sql()) {
         if (group_by.get_str().empty())
-            throw BadSQLOperation("Trying to use HAVING without GROUP BY clause");
+            throw BadSQLOperation(
+                    "Trying to use HAVING without GROUP BY clause");
         sql_query << " HAVING " << s;
     }
     if (!order_by.get_str().empty())
@@ -183,7 +327,8 @@ Engine::do_gen_sql_update(string &sql, Values &params,
         const FieldSet &exclude_fields, const Filter &where) const
 {
     if (key_fields.empty() && (where.get_sql() == Filter().get_sql()))
-        throw BadSQLOperation("Can't do UPDATE without where clause and empty key_fields");
+        throw BadSQLOperation(
+                "Can't do UPDATE without where clause and empty key_fields");
     if (row.empty())
         throw BadSQLOperation("Can't UPDATE with empty row set");
 
@@ -197,7 +342,8 @@ Engine::do_gen_sql_update(string &sql, Values &params,
             excluded_row.insert(make_pair(it->first, it->second));
     }
 
-    Row::const_iterator last = (excluded_row.empty() ? excluded_row.end() : --excluded_row.end());
+    Row::const_iterator last = (excluded_row.empty() ?
+            excluded_row.end() : --excluded_row.end());
     end = excluded_row.end();
     for (it = excluded_row.begin(); it != excluded_row.end(); ++it)
     {
@@ -217,7 +363,8 @@ Engine::do_gen_sql_update(string &sql, Values &params,
         if (!key_fields.empty())
             where_sql << " AND ";
     }
-    FieldSet::const_iterator it_where = key_fields.begin(), end_where = key_fields.end();
+    FieldSet::const_iterator it_where = key_fields.begin(),
+        end_where = key_fields.end();
     FieldSet::const_iterator it_last =
         (key_fields.empty()) ? key_fields.end() : --key_fields.end();
     for (; it_where != end_where; ++it_where) {

@@ -149,7 +149,7 @@ public:
 
     void test_load()
     {
-        MockDataSource ds(get_r());
+        auto_ptr<DataSource> ds(new MockDataSource(get_r()));
         Session session(get_r(), ds);
         RowData key(get_r(), "A");
         key.set("X", Value(1));
@@ -161,7 +161,8 @@ public:
 
     void test_lazy_load()
     {
-        MockDataSource ds(get_r());
+        auto_ptr<DataSource> ds(new MockDataSource(get_r()));
+        MockDataSource *mds = (MockDataSource *)ds.get();
         Session session(get_r(), ds);
         RowData key(get_r(), "A");
         key.set("X", Value(1));
@@ -170,17 +171,18 @@ public:
         CPPUNIT_ASSERT(d->is_ghost());
         d->get("X");
         CPPUNIT_ASSERT(d->is_ghost());
-        CPPUNIT_ASSERT_EQUAL(0, (int)ds.get_select_cnt());
+        CPPUNIT_ASSERT_EQUAL(0, (int)mds->get_select_cnt());
         d->get("Y");
         CPPUNIT_ASSERT(!d->is_ghost());
-        CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_select_cnt());
+        CPPUNIT_ASSERT_EQUAL(1, (int)mds->get_select_cnt());
         session.find(key);
-        CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_select_cnt());
+        CPPUNIT_ASSERT_EQUAL(1, (int)mds->get_select_cnt());
     }
 
     void test_dirty()
     {
-        MockDataSource ds(get_r());
+        auto_ptr<DataSource> ds(new MockDataSource(get_r()));
+        MockDataSource *mds = (MockDataSource *)ds.get();
         Session session(get_r(), ds);
         RowData key(get_r(), "A");
         key.set("X", Value(1));
@@ -189,16 +191,17 @@ public:
         CPPUNIT_ASSERT(!d->is_dirty());
         d->set("Y", Value("abc"));
         CPPUNIT_ASSERT(d->is_dirty());
-        CPPUNIT_ASSERT_EQUAL(0, (int)ds.get_update_cnt());
+        CPPUNIT_ASSERT_EQUAL(0, (int)mds->get_update_cnt());
         session.flush();
         CPPUNIT_ASSERT(!d->is_dirty());
         CPPUNIT_ASSERT_EQUAL(string("abc"), d->get("Y").as_string());
-        CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_update_cnt());
+        CPPUNIT_ASSERT_EQUAL(1, (int)mds->get_update_cnt());
     }
 
     void test_new()
     {
-        MockDataSource ds(get_r());
+        auto_ptr<DataSource> ds(new MockDataSource(get_r()));
+        MockDataSource *mds = (MockDataSource *)ds.get();
         Session session(get_r(), ds);
         RowData *d = session.create("A");
         CPPUNIT_ASSERT(d != NULL);
@@ -210,17 +213,17 @@ public:
         CPPUNIT_ASSERT(d->get("Y").is_null());
         d->set("Y", Value("xyz"));
         CPPUNIT_ASSERT(d->is_new());
-        CPPUNIT_ASSERT_EQUAL(0, (int)ds.get_insert_cnt());
+        CPPUNIT_ASSERT_EQUAL(0, (int)mds->get_insert_cnt());
         session.flush();
         CPPUNIT_ASSERT(!d->is_new());
-        CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_insert_cnt());
+        CPPUNIT_ASSERT_EQUAL(1, (int)mds->get_insert_cnt());
         CPPUNIT_ASSERT_EQUAL(false, id.as_pkid().is_temp());
         CPPUNIT_ASSERT(d->get("X").as_longint() > 0);
     }
 
     void test_new_and_existing()
     {
-        MockDataSource ds(get_r());
+        auto_ptr<DataSource> ds(new MockDataSource(get_r()));
         Session session(get_r(), ds);
         RowData *d = session.create("A");
         d->set("Y", Value("abc"));
@@ -245,9 +248,10 @@ public:
 
     void test_register_as_new()
     {
-        MockDataSource ds(get_r());
+        auto_ptr<DataSource> ds(new MockDataSource(get_r()));
+        MockDataSource *mds = (MockDataSource *)ds.get();
         Session session(get_r(), ds);
-        LongInt next_id = ds.get_curr_id("S_A_X") + 1;
+        LongInt next_id = mds->get_curr_id("S_A_X") + 1;
         RowData d(get_r(), "A");
         d.set("X", Value(next_id));
         d.set("Y", Value("abc"));
@@ -259,15 +263,16 @@ public:
 
     void test_register_as_deleted()
     {
-        MockDataSource ds(get_r());
+        auto_ptr<DataSource> ds(new MockDataSource(get_r()));
+        MockDataSource *mds = (MockDataSource *)ds.get();
         Session session(get_r(), ds);
         RowData key(get_r(), "A");
         key.set("X", Value(1));
         RowData *d = session.find(key);
         d->set_deleted();
-        CPPUNIT_ASSERT_EQUAL(0, (int)ds.get_delete_cnt());
+        CPPUNIT_ASSERT_EQUAL(0, (int)mds->get_delete_cnt());
         session.flush();
-        CPPUNIT_ASSERT_EQUAL(1, (int)ds.get_delete_cnt());
+        CPPUNIT_ASSERT_EQUAL(1, (int)mds->get_delete_cnt());
         d = session.find(key);
         d->load();
     }
@@ -279,7 +284,7 @@ public:
                     ColumnMetaData::PK));
         t.set_column(ColumnMetaData("U", Value::LONGINT, 0, 0));
         r_.set_table(t);
-        MockDataSource ds(get_r());
+        auto_ptr<DataSource> ds(new MockDataSource(get_r()));
         Session session(get_r(), ds);
         RowData key(get_r(), "B");
         key.set("X", 2);
@@ -325,7 +330,7 @@ public:
         }
         r.check();
 
-        MockDataSource ds(r);
+        auto_ptr<DataSource> ds(new MockDataSource(r));
         Session session(r, ds);
         session.create("C");
         session.create("A");

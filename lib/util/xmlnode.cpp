@@ -37,8 +37,9 @@ xmlNodePtr Child(xmlNodePtr node, const string &name)
 {
     if (!node || !node->children)
         return NULL;
-    if (node->children->type == XML_ELEMENT_NODE &&
-            !strcmp((const char *)node->children->name, name.c_str()))
+    if (XML_ELEMENT_NODE == node->children->type &&
+            (name.empty() || !name.compare("*") ||
+             !name.compare((const char *)node->children->name)))
     {
         return node->children;
     }
@@ -47,14 +48,18 @@ xmlNodePtr Child(xmlNodePtr node, const string &name)
 
 xmlNodePtr Sibling(xmlNodePtr node, const string &name)
 {
-    if (!node || !node->next)
+    if (!node)
         return NULL;
-    if (node->next->type == XML_ELEMENT_NODE &&
-            !strcmp((const char *)node->next->name, name.c_str()))
+    for (xmlNodePtr cur = node->next; cur; cur = cur->next)
     {
-        return node->next;
+        if (XML_ELEMENT_NODE == cur->type &&
+                (name.empty() || !name.compare("*") ||
+                 !name.compare((const char *)cur->name)))
+        {
+            return cur;
+        }
     }
-    return Sibling(node->next, name);
+    return NULL;
 }
 
 void SetContent(xmlNodePtr node, const string &content)
@@ -94,14 +99,6 @@ void SetAttr(xmlNodePtr node, const string &name, const string &value)
     xmlNewProp(node, (const xmlChar *)name.c_str(), (const xmlChar *)value.c_str());
 }
 
-xmlNodePtr Parse(const string &content)
-{
-    xmlDocPtr doc = Parser::instance().Parse(content);
-    xmlNodePtr node = xmlCopyNodeList(xmlDocGetRootElement(doc));
-    xmlFreeDoc(doc);
-    return node;
-}
-
 // callback
 static int string_writer(void *context, const char *buffer, int len)
 {
@@ -126,37 +123,45 @@ string str(xmlNodePtr node, const string &enc) // NOTE: node is freed inside
 }
 
 // XML parser wrapper class
-
-Parser::Parser()
+class Parser
 {
-    xmlInitParser();
+public:
+    Parser() { xmlInitParser(); }
+    ~Parser() { xmlCleanupParser(); }
+    static Parser &instance() {
+        typedef Yb::SingletonHolder<Parser> Parser_t;
+        return Parser_t::instance();
+    }
+    xmlDocPtr Parse(const std::string &content)
+    {
+        xmlDocPtr doc = xmlParseMemory(content.c_str(), content.size());
+        if (!doc)
+            throw std::runtime_error("xmlParseMemory returned NULL.");
+        return doc;
+    }
+    xmlDocPtr ParseFile(const std::string &fname)
+    {
+        xmlDocPtr doc = xmlParseFile(fname.c_str());
+        if (!doc)
+            throw std::runtime_error("xmlParseFile returned NULL.");
+        return doc;
+    }
+};
+
+xmlNodePtr Parse(const string &content)
+{
+    xmlDocPtr doc = Parser::instance().Parse(content);
+    xmlNodePtr node = xmlCopyNodeList(xmlDocGetRootElement(doc));
+    xmlFreeDoc(doc);
+    return node;
 }
 
-Parser::~Parser()
+xmlNodePtr ParseFile(const string &file_name)
 {
-    xmlCleanupParser();
-}
-
-Parser &Parser::instance()
-{
-    typedef Yb::SingletonHolder<Parser> Parser_t;
-    return Parser_t::instance();
-}
-
-xmlDocPtr Parser::Parse(const string &content)
-{
-    xmlDocPtr doc = xmlParseMemory(content.c_str(), content.size());
-    if (!doc)
-        throw std::runtime_error("xmlParseMemory returned NULL.");
-    return doc;
-}
-
-xmlDocPtr Parser::ParseFile(const string &fname)
-{
-    xmlDocPtr doc = xmlParseFile(fname.c_str());
-    if (!doc)
-        throw std::runtime_error("xmlParseFile returned NULL.");
-    return doc;
+    xmlDocPtr doc = Parser::instance().ParseFile(file_name);
+    xmlNodePtr node = xmlCopyNodeList(xmlDocGetRootElement(doc));
+    xmlFreeDoc(doc);
+    return node;
 }
 
 // XML node wrapper class

@@ -1,6 +1,7 @@
 #ifndef YB__ORM__SESSION__INCLUDED
 #define YB__ORM__SESSION__INCLUDED
 
+#include <memory>
 #include <string>
 #include <list>
 #include <set>
@@ -25,14 +26,15 @@ public:
     virtual RowData *register_as_new(const RowData &row) = 0;
     virtual void flush() = 0;
     virtual const TableMetaDataRegistry &get_meta_data_registry() = 0;
+    virtual DataSource &get_ds() = 0;
 };
 
-class Session : public SessionBase
+class Session : private boost::noncopyable, public SessionBase
 {
     friend class ::TestSession;
     typedef std::multimap<std::string, std::string> StrMap;
 public:
-    Session(const TableMetaDataRegistry &reg, DataSource &ds);
+    Session(const TableMetaDataRegistry &reg, std::auto_ptr<DataSource> ds);
     RowData *find(const RowData &key);
     LoadedRows load_collection(
             const std::string &table_name, const Filter &filter, 
@@ -42,6 +44,7 @@ public:
     RowData *register_as_new(const RowData &row);
     void flush();
     const TableMetaDataRegistry &get_meta_data_registry();
+    DataSource &get_ds();
 private:
     void flush_new();
     void insert_new_to_table(const std::string &table_name);
@@ -52,7 +55,7 @@ private:
             const TableMetaData &table);
 private:
     const TableMetaDataRegistry &reg_;
-    DataSource &ds_;
+    std::auto_ptr<DataSource> ds_;
     RowSet rows_;
     std::set<std::string> tables_for_insert_;
     LongInt new_id_;

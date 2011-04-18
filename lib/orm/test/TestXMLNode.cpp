@@ -2,12 +2,13 @@
 #include <cppunit/TestAssert.h>
 #include "util/str_utils.hpp"
 #include "orm/XMLNode.h"
-#include "orm/EngineSession.h"
 #include "orm/MetaDataSingleton.h"
 #include "orm/DomainFactorySingleton.h"
 #include "orm/DataObj.h"
 #include "orm/AutoXMLizable.h"
-#include "orm/SqlDriver.h"
+#include "orm/Session.h"
+#include "orm/SqlDataSource.h"
+#include "orm/Engine.h"
 
 #define TEST_TBL1 "T_ORM_TEST"
 #define NUM_STMT 4
@@ -207,7 +208,9 @@ public:
     void test_deep_xmlize1()
     {
         init_singleton_registry();
-        EngineSession session;
+        Engine engine(Engine::READ_ONLY);
+        Session session(theMetaData::instance(), auto_ptr<DataSource>(
+                    new SqlDataSource(theMetaData::instance(), engine)));
         OrmXMLDomainSimple test(session, 10);
         XMLNode node = test.auto_xmlize();
         CPPUNIT_ASSERT_EQUAL(std::string("<orm-xml><b>4</b><id>10</id><orm-test-id>1</orm-test-id></orm-xml>\n"),
@@ -217,7 +220,9 @@ public:
     void test_deep_xmlize2()
     {
         init_singleton_registry();
-        EngineSession session;
+        Engine engine(Engine::READ_ONLY);
+        Session session(theMetaData::instance(), auto_ptr<DataSource>(
+                    new SqlDataSource(theMetaData::instance(), engine)));
         OrmXMLDomainSimple test(session, 10);
         XMLNode node = test.auto_xmlize(1);        
         CPPUNIT_ASSERT_EQUAL(
@@ -229,7 +234,9 @@ public:
     void test_deep_xmlize3()
     {
         init_singleton_registry();
-        EngineSession session;
+        Engine engine(Engine::READ_ONLY);
+        Session session(theMetaData::instance(), auto_ptr<DataSource>(
+                    new SqlDataSource(theMetaData::instance(), engine)));
         OrmXMLDomainSimple test(session, 10);
         XMLNode node = test.auto_xmlize(-1);     
         CPPUNIT_ASSERT_EQUAL(

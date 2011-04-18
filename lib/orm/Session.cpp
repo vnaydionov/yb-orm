@@ -7,7 +7,7 @@ namespace Yb {
 SessionBase::~SessionBase()
 {}
 
-Session::Session(const TableMetaDataRegistry &reg, DataSource &ds)
+Session::Session(const TableMetaDataRegistry &reg, auto_ptr<DataSource> ds)
     : reg_(reg)
     , ds_(ds)
     , new_id_(1)
@@ -20,7 +20,7 @@ Session::find(const RowData &key)
     if (it != rows_.end())
         return it->second.get();
     auto_ptr<RowData> x(new RowData(key));
-    x->set_data_source(&ds_);
+    x->set_data_source(ds_.get());
     x->set_ghost();
     rows_[key] = boost::shared_ptr<RowData>(x.release());
     it = rows_.find(key);
@@ -34,7 +34,7 @@ Session::load_collection(
         const string &table_name, const Filter &filter, const StrList &order_by,
         int max, const string &table_alias)
 {
-    RowDataVectorPtr vp = ds_.select_rows(table_name, filter, order_by, max, table_alias);
+    RowDataVectorPtr vp = ds_->select_rows(table_name, filter, order_by, max, table_alias);
     LoadedRows ld(new vector<RowData * > () );
     RowDataVector::const_iterator it = vp->begin(), end = vp->end();
     for (; it != end; ++it) {
@@ -79,14 +79,14 @@ Session::flush()
         if (it->second->is_dirty()) {
             RowDataVector v;
             v.push_back(*it->second);
-            ds_.update_rows(it->second->get_table().get_name(), v);
+            ds_->update_rows(it->second->get_table().get_name(), v);
             it->second->set_ghost();
         }
     }
     it = rows_.begin(), end = rows_.end();
     for (; it != end; ) {
         if (it->second->is_deleted()) {
-            ds_.delete_row(*it->second);
+            ds_->delete_row(*it->second);
             rows_.erase(it++);
         }
         else {
@@ -99,6 +99,12 @@ const TableMetaDataRegistry &
 Session::get_meta_data_registry()
 {
     return reg_;
+}
+
+DataSource &
+Session::get_ds()
+{
+    return *ds_;
 }
 
 void
@@ -139,7 +145,7 @@ Session::insert_new_to_table(const string &table_name)
         else
             ++it;
     }
-    ds_.insert_rows(table_name, v);
+    ds_->insert_rows(table_name, v);
     for (int j = 0; j < pkid_changed.size(); ++j) {
         PKIDValue pkid(table,
                 pkid_changed[j]->get(pk_name).as_pkid().as_longint());

@@ -14,8 +14,6 @@ using Yb::StrUtils::xgetenv;
 #define TEST_TBL1 "T_ORM_TEST"
 #define NUM_STMT 4
 
-typedef Engine MyEngine;
-
 class TestIntegrMapper : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestIntegrMapper);
@@ -31,7 +29,7 @@ class TestIntegrMapper : public CppUnit::TestFixture
     string db_type_;
     const TableMetaDataRegistry &get_r() const { return r_; }
 
-    LongInt get_next_test_id(EngineBase &engine, const string &seq_name)
+    LongInt get_next_test_id(Engine &engine, const string &seq_name)
     {
         if (db_type_ == "MYSQL") {
             RowsPtr ptr = engine.select("MAX(ID) MAX_ID", "T_ORM_TEST", Filter());
@@ -105,9 +103,9 @@ public:
 
     void test_find()
     {
-        MyEngine engine;
-        SqlDataSource ds(get_r(), engine);
-        Session session(get_r(), ds);
+        Engine engine(Engine::READ_ONLY);
+        Session session(get_r(), auto_ptr<DataSource>(
+                    new SqlDataSource(get_r(), engine)));
         RowData key(get_r(), TEST_TBL1);
         key.set("ID", 2);
         RowData *d = session.find(key);
@@ -120,9 +118,9 @@ public:
 
     void test_object_not_found()
     {
-        MyEngine engine;
-        SqlDataSource ds(get_r(), engine);
-        Session session(get_r(), ds);
+        Engine engine(Engine::READ_ONLY);
+        Session session(get_r(), auto_ptr<DataSource>(
+                    new SqlDataSource(get_r(), engine)));
         RowData key(get_r(), TEST_TBL1);
         key.set("ID", Value(-1));
         RowData *d = session.find(key);
@@ -132,9 +130,9 @@ public:
 
     void test_load_collection()
     {
-        MyEngine engine;
-        SqlDataSource ds(get_r(), engine);
-        Session session(get_r(), ds);
+        Engine engine(Engine::READ_ONLY);
+        Session session(get_r(), auto_ptr<DataSource>(
+                    new SqlDataSource(get_r(), engine)));
         LoadedRows rows = session.load_collection(TEST_TBL1,
                 Filter("ID < 10"));
         CPPUNIT_ASSERT(rows.get() && rows->size() == 3);
@@ -153,9 +151,9 @@ public:
     {
         LongInt id;
         {
-            MyEngine engine(EngineBase::MANUAL);
-            SqlDataSource ds(get_r(), engine);
-            Session session(get_r(), ds);
+            Engine engine(Engine::MANUAL);
+            Session session(get_r(), auto_ptr<DataSource>(
+                        new SqlDataSource(get_r(), engine)));
             RowData *d = session.create(TEST_TBL1);
             CPPUNIT_ASSERT(d);
             d->set("A", "...");
@@ -165,9 +163,9 @@ public:
             engine.commit();
         }
         {
-            MyEngine engine;
-            SqlDataSource ds(get_r(), engine);
-            Session session(get_r(), ds);
+            Engine engine(Engine::READ_ONLY);
+            Session session(get_r(), auto_ptr<DataSource>(
+                        new SqlDataSource(get_r(), engine)));
             RowData key(get_r(), TEST_TBL1);
             key.set("ID", id);
             RowData *d = session.find(key);
@@ -182,9 +180,9 @@ public:
     {
         LongInt id;
         {
-            MyEngine engine(EngineBase::MANUAL);
-            SqlDataSource ds(get_r(), engine);
-            Session session(get_r(), ds);
+            Engine engine(Engine::MANUAL);
+            Session session(get_r(), auto_ptr<DataSource>(
+                        new SqlDataSource(get_r(), engine)));
             RowData d(get_r(), TEST_TBL1);
             id = get_next_test_id(engine, "S_ORM_TEST_ID");
             d.set("ID", id);
@@ -195,9 +193,9 @@ public:
             engine.commit();
         }
         {
-            MyEngine engine;
-            SqlDataSource ds(get_r(), engine);
-            Session session(get_r(), ds);
+            Engine engine(Engine::READ_ONLY);
+            Session session(get_r(), auto_ptr<DataSource>(
+                        new SqlDataSource(get_r(), engine)));
             RowData key(get_r(), TEST_TBL1);
             key.set("ID", id);
             RowData *d = session.find(key);
@@ -215,9 +213,9 @@ public:
         RowData key2(get_r(), TEST_TBL1);
         key2.set("ID", 1);
         {
-            MyEngine engine(EngineBase::MANUAL);
-            SqlDataSource ds(get_r(), engine);
-            Session session(get_r(), ds);
+            Engine engine(Engine::MANUAL);
+            Session session(get_r(), auto_ptr<DataSource>(
+                        new SqlDataSource(get_r(), engine)));
             RowData *d = session.find(key1);
             CPPUNIT_ASSERT(d);
             d->set("A", Value(string("???")));
@@ -229,9 +227,9 @@ public:
             engine.commit();
         }
         {
-            MyEngine engine;
-            SqlDataSource ds(get_r(), engine);
-            Session session(get_r(), ds);
+            Engine engine(Engine::READ_ONLY);
+            Session session(get_r(), auto_ptr<DataSource>(
+                        new SqlDataSource(get_r(), engine)));
             RowData *d = session.find(key1);
             CPPUNIT_ASSERT(d);
             CPPUNIT_ASSERT(!d->get("B").is_null());

@@ -10,13 +10,13 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <util/decimal.h>
 
-#ifdef __WIN32__
+#if defined(__WIN32__) || defined(_WIN32)
 struct tm *localtime_r(const time_t *clock, struct tm *result);
 #endif
 
 namespace Yb {
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef __int64 LongInt;
 #else
 typedef long long LongInt;

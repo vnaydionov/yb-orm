@@ -51,6 +51,14 @@ public:
     { return seq_name + ".CURRVAL"; }
     const string select_next_value(const string &seq_name)
     { return seq_name + ".NEXTVAL"; }
+    const string sql_value(const Value &x)
+    {
+        if (x.get_type() == Value::DATETIME) {
+            return "TO_DATE(" + x.sql_str()
+                + ", 'YYYY-MM-DD HH24:MI:SS')";
+        }
+        return x.sql_str();
+    }
 };
 
 class InterbaseDialect: public SqlDialect
@@ -63,6 +71,10 @@ public:
     { return "GEN_ID(" + seq_name + ", 0)"; }
     const string select_next_value(const string &seq_name)
     { return "GEN_ID(" + seq_name + ", 1)"; }
+    const string sql_value(const Value &x)
+    {
+        return x.sql_str();
+    }
 };
 
 class MysqlDialect: public SqlDialect
@@ -75,19 +87,30 @@ public:
     { throw SqlDialectError("No sequences, please"); }
     const string select_next_value(const string &seq_name)
     { throw SqlDialectError("No sequences, please"); }
+    const string sql_value(const Value &x)
+    {
+        return x.sql_str();
+    }
 };
 
 typedef SingletonHolder<ItemRegistry<SqlDialect> > theDialectRegistry;
 
 void register_std_dialects()
 {
-    SqlDialect *dialect;
-    dialect = (SqlDialect *)new OracleDialect();
-    theDialectRegistry::instance().register_item(dialect->get_name(), dialect);
-    dialect = (SqlDialect *)new MysqlDialect();
-    theDialectRegistry::instance().register_item(dialect->get_name(), dialect);
-    dialect = (SqlDialect *)new InterbaseDialect();
-    theDialectRegistry::instance().register_item(dialect->get_name(), dialect);
+    auto_ptr<SqlDialect> dialect;
+    SqlDialect *p;
+    dialect.reset((SqlDialect *)new OracleDialect());
+    p = dialect.get();
+    theDialectRegistry::instance().register_item(
+            p->get_name(), dialect);
+    dialect.reset((SqlDialect *)new MysqlDialect());
+    p = dialect.get();
+    theDialectRegistry::instance().register_item(
+            p->get_name(), dialect);
+    dialect.reset((SqlDialect *)new InterbaseDialect());
+    p = dialect.get();
+    theDialectRegistry::instance().register_item(
+            p->get_name(), dialect);
 }
 
 SqlDialect *sql_dialect(const string &name)
@@ -100,10 +123,13 @@ SqlDialect *sql_dialect(const string &name)
     return dialect;
 }
 
-bool register_sql_dialect(SqlDialect *dialect)
+bool register_sql_dialect(auto_ptr<SqlDialect> dialect)
 {
+    if (theDialectRegistry::instance().empty())
+        register_std_dialects();
+    SqlDialect *p = dialect.get();
     return theDialectRegistry::instance().register_item(
-            dialect->get_name(), dialect);
+            p->get_name(), dialect);
 }
 
 const Names list_sql_dialects()
@@ -227,9 +253,11 @@ public:
     OdbcDriver():
         SqlDriver("ODBC")
     {}
-    SqlConnectBackend *create_backend()
+    auto_ptr<SqlConnectBackend> create_backend()
     {
-        return (SqlConnectBackend *)new OdbcConnectBackend();
+        auto_ptr<SqlConnectBackend> p(
+                (SqlConnectBackend *)new OdbcConnectBackend());
+        return p;
     }
 };
 
@@ -237,9 +265,9 @@ typedef SingletonHolder<ItemRegistry<SqlDriver> > theDriverRegistry;
 
 void register_std_drivers()
 {
-    SqlDriver *driver;
-    driver = (SqlDriver *)new OdbcDriver();
-    theDriverRegistry::instance().register_item(driver->get_name(), driver);
+    auto_ptr<SqlDriver> driver((SqlDriver *)new OdbcDriver());
+    SqlDriver *p = driver.get();
+    theDriverRegistry::instance().register_item(p->get_name(), driver);
 }
 
 SqlDriver *sql_driver(const string &name)
@@ -252,10 +280,13 @@ SqlDriver *sql_driver(const string &name)
     return driver;
 }
 
-bool register_sql_driver(SqlDriver *driver)
+bool register_sql_driver(auto_ptr<SqlDriver> driver)
 {
+    if (theDriverRegistry::instance().empty())
+        register_std_drivers();
+    SqlDriver *p = driver.get();
     return theDriverRegistry::instance().register_item(
-            driver->get_name(), driver);
+            p->get_name(), driver);
 }
 
 const Names list_sql_drivers()

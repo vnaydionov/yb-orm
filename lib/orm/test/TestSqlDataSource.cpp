@@ -1,11 +1,12 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
 #include "orm/SqlDataSource.h"
+#include "orm/Engine.h"
 
 using namespace std;
 using namespace Yb;
 
-class MockSqlEngine : public EngineBase
+class MockSqlEngine : public Engine
 {
 public:
     size_t select_cnt_, insert_cnt_, update_cnt_, delete_cnt_;
@@ -14,7 +15,7 @@ public:
     LongInt seq_;
 
     MockSqlEngine()
-        : EngineBase(MANUAL, "ORACLE")
+        : Engine(MANUAL, sql_dialect("ORACLE"))
         , select_cnt_(0)
         , insert_cnt_(0)
         , update_cnt_(0)
