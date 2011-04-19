@@ -42,8 +42,8 @@ SQLAlchemy (http://www.sqlalchemy.org/) для языка Python.
 применяется пакет GNU Autotools.
 
 Данная библиотека стремится быть независимой от конкретной СУБД.  На данный
-момент опробована работа библиотеки с СУБД Oracle и MySQL через ODBC
-драйверы.
+момент опробована работа библиотеки с СУБД Oracle, MySQL и Firebird2
+через ODBC драйверы.
 
 СБОРКА И УСТАНОВКА
 
@@ -51,8 +51,8 @@ SQLAlchemy (http://www.sqlalchemy.org/) для языка Python.
     boost-thread >= 1.31.0
     boost-date-time >= 1.31.0
     libxml2 >= 2.6.16
-    cppunit >= 1.10.2
     xsltproc >= 1.1.24
+    cppunit >= 1.10.2 (если вы намереваетесь запускать юнит-тесты)
     autotools >= 2.61, automake >= 1.10.1
     (для GNU/Linux) unixODBC >= 2.2.11 (чтобы заработал драйвер ODBC
         для Oracle в GNU/Linux x86_64 я использовал unixODBC = 2.3.0)
@@ -68,11 +68,11 @@ SQLAlchemy (http://www.sqlalchemy.org/) для языка Python.
 Предположим, что вы выполнили "svn up", далее приведены шаги, которые
 нужно выполнить:
 1) Создать схему БД для выполнения тестов.
-    Посмотрите на файлы lib/orm/test/misc/test1_db*sql
+    Посмотрите на файлы lib/orm/test/mk_tables.sql
     Отредактировать и применить используя sqlplus(Oracle) или mysql.
 2) Настроить источник данных ODBC.
     Создайте или отредактируйте /etc/odbcinst.ini ~/.odbc.ini
-    За основу можно взять файлы: lib/orm/test/misc/odbc*ini
+    За основу можно взять файлы: lib/orm/test/odbc*ini
 3) Собрать библиотеку и запустить тесты.
     $ sh autogen.sh
     $ ./configure

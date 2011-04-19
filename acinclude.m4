@@ -476,4 +476,32 @@ AC_DEFUN([YB_CHECK_DBPOOL3],
     LIBS="$ac_save_libs"
 ])
 
+AC_DEFUN([YB_TEST_DB], 
+[
+    AC_SUBST(YBORM_DBTYPE)
+    AC_SUBST(YBORM_DB)
+    AC_SUBST(YBORM_USER)
+    AC_SUBST(YBORM_PASSWD)
+    YBORM_DBTYPE=""
+    YBORM_DB=""
+    YBORM_USER=""
+    YBORM_PASSWD=""
+    AC_ARG_WITH([test-dbtype],
+        AC_HELP_STRING([--with-test-dbtype=MYSQL|INTERBASE|ORACLE],
+            [Specify SQL dialect of the test database]),
+        [YBORM_DBTYPE="$withval"],[YBORM_DBTYPE=""])
+    AC_ARG_WITH([test-db],
+        AC_HELP_STRING([--with-test-db=DSN],
+            [Specify ODBC DSN entry for the test database]),
+        [YBORM_DB="$withval"],[YBORM_DB=""])
+    AC_ARG_WITH([test-user],
+        AC_HELP_STRING([--with-test-user=USER],
+            [Specify database user name to connect to the test database]),
+        [YBORM_USER="$withval"],[YBORM_USER=""])
+    AC_ARG_WITH([test-passwd],
+        AC_HELP_STRING([--with-test-passwd=PASSWD],
+            [Specify database password to connect to the test database]),
+        [YBORM_PASSWD="$withval"],[YBORM_PASSWD=""])
+])
+
 dnl vim:ts=4:sts=4:sw=4:et:

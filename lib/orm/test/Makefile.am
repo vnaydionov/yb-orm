@@ -7,6 +7,8 @@ AM_CXXFLAGS = \
 	$(BOOST_CPPFLAGS) \
 	$(CPPUNIT_CFLAGS)
 
+BUILT_SOURCES=mk_tables.sql
+
 check_PROGRAMS = unit_tests
 
 unit_tests_SOURCES = \
@@ -35,15 +37,10 @@ unit_tests_LDADD = \
 
 TESTS = unit_tests
 
-export YBORM_DBTYPE=MYSQL
-export YBORM_DB=test1_db
-export YBORM_USER=test1
-export YBORM_PASSWD=test1_pwd
-
-#export YBORM_DBTYPE=ORACLE
-#export YBORM_DB=test1_db_ora
-#export YBORM_USER=bo
-#export YBORM_PASSWD=balalancing
+export YBORM_DBTYPE=@YBORM_DBTYPE@
+export YBORM_DB=@YBORM_DB@
+export YBORM_USER=@YBORM_USER@
+export YBORM_PASSWD=@YBORM_PASSWD@
 
 # Oracle specific
 export TWO_TASK=balance-dev.yandex.ru
@@ -52,4 +49,12 @@ export LD_LIBRARY_PATH=/opt/oracle/instantclient_10_2
 export NLS_NUMERIC_CHARACTERS=. 
 export NLS_SORT=RUSSIAN
 export NLS_LANG=AMERICAN_CIS.UTF8
+
+mk_tables.sql: $(srcdir)/test_schema.xml
+	xsltproc --stringparam dialect ${YBORM_DBTYPE} \
+		$(top_srcdir)/src/gen_sql.xsl \
+		$(srcdir)/test_schema.xml > $@
+
+clean-local:
+	-rm -f mk_tables.sql
 

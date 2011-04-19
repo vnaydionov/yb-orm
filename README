@@ -39,7 +39,7 @@ portable across different platforms, although the development is done
 primarily on GNU/Linux, using G++.  GNU Autotools are used as building system.
 
 The library aims to be database independent.  At the time of this writing 
-it is tested to work with Oracle and MySQL via ODBC drivers.
+it is tested to work with Oracle, MySQL and Firebird2 via ODBC drivers.
 
 BUILD AND INSTALL
 
@@ -47,8 +47,8 @@ To build the software, the following prerequisites should be met:
     boost-thread >= 1.31.0
     boost-date-time >= 1.31.0
     libxml2 >= 2.6.16
-    cppunit >= 1.10.2
     xsltproc >= 1.1.24
+    cppunit >= 1.10.2 (if you want to run unit tests)
     autotools >= 2.61, automake >= 1.10.1
     (for GNU/Linux) unixODBC >= 2.2.11 (for Oracle ODBC driver to work
     	under GNU/Linux x86_64 I used unixODBC = 2.3.0)
@@ -63,11 +63,11 @@ Also, to access some database you will need one of the following:
 
 Assuming you've done "svn up", here are the steps to follow.
 1) Create database schema for running tests.
-    Take a look at lib/orm/test/misc/test1_db*sql
+    Take a look at lib/orm/test/mk_tables.sql
     Edit, then apply using sqlplus(Oracle) or mysql commands.
 2) Setup an ODBC data source.
     Create or edit /etc/odbcinst.ini ~/.odbc.ini
-    You can use this files as the base: lib/orm/test/misc/odbc*ini
+    You can use this files as the base: lib/orm/test/odbc*ini
 3) Build the library and run the tests.
     $ sh autogen.sh
     $ ./configure

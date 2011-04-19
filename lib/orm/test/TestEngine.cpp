@@ -78,6 +78,7 @@ public:
         params.push_back(Value(Decimal("1.2")));
         SqlConnect conn("ODBC", xgetenv("YBORM_DBTYPE"),
                 xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
+        conn.exec_direct("DELETE FROM T_ORM_XML");
         conn.exec_direct("DELETE FROM T_ORM_TEST");
         conn.prepare(sql.str());
         conn.exec(params);
@@ -335,6 +336,7 @@ public:
 
     void test_insert_sql()
     {
+        init_sql();
         Engine engine(Engine::MANUAL);
         CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         Rows rows;

@@ -21,6 +21,7 @@
     </xsl:template>
 
     <xsl:template match="table" mode="create-table">
+        <xsl:apply-templates select="." mode="before-create-table"/>
         <xsl:text>CREATE TABLE </xsl:text>
         <xsl:value-of select="@name" />
         <xsl:text> (
@@ -36,6 +37,17 @@
 
 </xsl:text>
         <xsl:apply-templates select="." mode="seq" />
+        <xsl:apply-templates select="." mode="after-create-table"/>
+    </xsl:template>
+
+    <xsl:template match="table" mode="before-create-table" />
+
+    <xsl:template match="table" mode="after-create-table">
+        <xsl:if test="$dbtype = 'INTERBASE'">
+            <xsl:text>COMMIT;
+
+</xsl:text>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template match="table" mode="seq" />
@@ -167,8 +179,8 @@
             <xsl:when test="$dbtype = 'ORACLE'">
                 <xsl:text>NUMBER</xsl:text>
             </xsl:when>
-            <xsl:when test="$dbtype = 'MYSQL'">
-                <xsl:text>DECIMAL(12, 6)</xsl:text>
+            <xsl:when test="$dbtype = 'MYSQL' or $dbtype = 'INTERBASE'">
+                <xsl:text>DECIMAL(16, 6)</xsl:text>
             </xsl:when>
             <xsl:otherwise>
                 <xsl:text>DECIMAL</xsl:text>
@@ -216,3 +228,5 @@
     </xsl:template>
 
 </xsl:stylesheet>
+<!-- vim:ts=4:sts=4:sw=4:et:
+-->

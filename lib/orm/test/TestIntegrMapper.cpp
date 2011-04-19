@@ -12,7 +12,7 @@ using namespace Yb;
 using Yb::StrUtils::xgetenv;
 
 #define TEST_TBL1 "T_ORM_TEST"
-#define NUM_STMT 4
+#define NUM_STMT 5
 
 class TestIntegrMapper : public CppUnit::TestFixture
 {
@@ -57,6 +57,7 @@ public:
         const char **st;
         if (db_type_ == "ORACLE") {
             static const char *st_data[NUM_STMT] = {
+                "DELETE FROM T_ORM_XML",
                 "DELETE FROM " TEST_TBL1,
                 "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
                     "'abc', TO_DATE('1981-05-30', 'YYYY-MM-DD'), 3.14)",
@@ -69,6 +70,7 @@ public:
         }
         else {
             static const char *st_data[NUM_STMT] = {
+                "DELETE FROM T_ORM_XML",
                 "DELETE FROM " TEST_TBL1,
                 "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
                     "'abc', '1981-05-30', 3.14)",

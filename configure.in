@@ -27,6 +27,8 @@ AM_CONDITIONAL([CPPUNIT_PRESENT], [test x$no_cppunit != xyes])
 YB_CHECK_DBPOOL3()
 AM_CONDITIONAL([DBPOOL3_PRESENT], [test x$ac_dbpool_present = xyes])
 
+YB_TEST_DB
+
 AC_OUTPUT(Makefile
 	lib/Makefile
 	lib/test/Makefile
@@ -36,5 +38,6 @@ AC_OUTPUT(Makefile
 	lib/orm/test/Makefile
 	src/Makefile
         examples/Makefile
+	examples/example1.sh
         examples/domain/Makefile)
 

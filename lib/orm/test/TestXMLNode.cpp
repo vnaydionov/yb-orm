@@ -11,7 +11,7 @@
 #include "orm/Engine.h"
 
 #define TEST_TBL1 "T_ORM_TEST"
-#define NUM_STMT 4
+#define NUM_STMT 6
 
 using namespace std;
 using namespace Yb;
@@ -122,25 +122,29 @@ public:
         const char **st;
         if (db_type_ == "ORACLE") {
             static const char *st_data[NUM_STMT] = {
+                "DELETE FROM T_ORM_XML",
                 "DELETE FROM " TEST_TBL1,
                 "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "                              
                     "'abc', TO_DATE('1981-05-30', 'YYYY-MM-DD'), 3.14)",                         
                 "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
                     "'xyz', TO_DATE('2006-11-22 09:54:00', 'YYYY-MM-DD HH24:MI:SS'), -0.5)",     
                 "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
-                    "'@#$', TO_DATE('2006-11-22', 'YYYY-MM-DD'), 0.01)"    
+                    "'@#$', TO_DATE('2006-11-22', 'YYYY-MM-DD'), 0.01)",
+                "INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES(10, 1, 4)",
             };
             st = st_data;
         }
         else {
             static const char *st_data[NUM_STMT] = {
+                "DELETE FROM T_ORM_XML",
                 "DELETE FROM " TEST_TBL1,
                 "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "                              
                     "'abc', '1981-05-30', 3.14)",
                 "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "                              
                     "'xyz', '2006-11-22 09:54:00', -0.5)",
                 "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "                              
-                    "'@#$', '2006-11-22', 0.01)"
+                    "'@#$', '2006-11-22', 0.01)",
+                "INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES(10, 1, 4)",
             };
             st = st_data;
         }
