@@ -2,15 +2,27 @@
 include $(top_srcdir)/dirs.mk
 ybormincludedir=$(ybincludedir)/orm
 
-SUBDIRS = test
+if CPPUNIT_PRESENT
+SUBDIRS = . test
+else
+SUBDIRS = 
+endif
+
+if DBPOOL3_PRESENT
+yborminclude_HEADERS = $(H_FILES) DBPoolDriver.h
+libyborm_la_SOURCES = $(CPP_FILES) DBPoolDriver.cpp
+else
+yborminclude_HEADERS = $(H_FILES)
+libyborm_la_SOURCES = $(CPP_FILES)
+endif
 
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
-	$(BOOST_CPPFLAGS)
+	$(XML_CPPFLAGS) \
+	$(BOOST_CPPFLAGS) \
+	$(DBPOOL3_CXXFLAGS)
 
-lib_LTLIBRARIES = libyborm.la
-
-yborminclude_HEADERS = \
+H_FILES = \
 	Filters.h \
 	Session.h \
 	MetaData.h \
@@ -27,10 +39,8 @@ yborminclude_HEADERS = \
 	XMLMetaDataConfig.h \
 	XMLNode.h
 
-#	DBPoolDriver.h
-
-libyborm_la_SOURCES = \
-	$(yborminclude_HEADERS) \
+CPP_FILES = \
+	$(H_FILES) \
 	Filters.cpp \
 	Session.cpp \
 	MetaData.cpp \
@@ -43,42 +53,16 @@ libyborm_la_SOURCES = \
 	XMLMetaDataConfig.cpp \
 	XMLNode.cpp
 
-#	DBPoolDriver.cpp
+lib_LTLIBRARIES = libyborm.la
 
 libyborm_la_LDFLAGS = -version-info 0:0:0
 
-
-check_PROGRAMS = unit_tests
-
-unit_tests_LDADD = \
-	test/libormtest.la \
-	libyborm.la \
+libyborm_la_LIBADD = \
 	$(top_builddir)/lib/util/libybutil.la \
-	$(top_builddir)/lib/test/libtestmain.la \
-	$(CPPUNIT_LIBS) \
 	$(XML_LIBS) \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_LIBS_R) \
-	$(ODBC_LIBS)
+	$(ODBC_LIBS) \
+	$(DBPOOL3_LDFLAGS) \
+	$(DBPOOL3_LIBS)
 
-unit_tests_SOURCES =
-
-export YBORM_DBTYPE=MYSQL
-export YBORM_DB=test1_db
-export YBORM_USER=test1
-export YBORM_PASSWD=test1_pwd
-
-#export YBORM_DBTYPE=ORACLE
-#export YBORM_DB=test1_db_ora
-#export YBORM_USER=bo
-#export YBORM_PASSWD=balalancing
-
-# Oracle specific
-export TWO_TASK=balance-dev.yandex.ru
-export ORACLE_HOME=/opt/oracle/instantclient_10_2
-export LD_LIBRARY_PATH=/opt/oracle/instantclient_10_2
-export NLS_NUMERIC_CHARACTERS=. 
-export NLS_SORT=RUSSIAN
-export NLS_LANG=AMERICAN_CIS.UTF8
-
-TESTS = unit_tests

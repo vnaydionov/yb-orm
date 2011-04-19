@@ -10,6 +10,7 @@ AM_PROG_LIBTOOL
 AM_PATH_XML2
 CPPFLAGS="$CPPFLAGS $XML_CPPFLAGS"
 
+# required dependencies
 YB_BOOST([1.31.0],[],
     AC_MSG_ERROR([Package requires the Boost C++ libraries!]))
 YB_BOOST_THREAD([],
@@ -18,8 +19,13 @@ YB_BOOST_DATETIME([],
     AC_MSG_ERROR([Package requires the Boost date_time library!]))
 YB_ODBC([],
     AC_MSG_ERROR([ODBC library is required!]))
+
+# optional dependencies
 YB_PATH_CPPUNIT([1.10.0],[],
                 [echo "WARNING!! You will not be able to run tests!!"])
+AM_CONDITIONAL([CPPUNIT_PRESENT], [test x$no_cppunit != xyes])
+YB_CHECK_DBPOOL3()
+AM_CONDITIONAL([DBPOOL3_PRESENT], [test x$ac_dbpool_present = xyes])
 
 AC_OUTPUT(Makefile
 	lib/Makefile

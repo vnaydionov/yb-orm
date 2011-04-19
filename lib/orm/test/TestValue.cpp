@@ -96,7 +96,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("NULL"), Value().sql_str());
         CPPUNIT_ASSERT_EQUAL(string("123"), Value(123).sql_str());
         CPPUNIT_ASSERT_EQUAL(string("'a''sd'"), Value("a'sd").sql_str());
-        CPPUNIT_ASSERT_EQUAL(string("123.45"), Value(decimal("0123.450")).sql_str());
+        CPPUNIT_ASSERT_EQUAL(string("123.45"), Value(Decimal("0123.450")).sql_str());
         Value t(now());
         //CPPUNIT_ASSERT_EQUAL(
         //        "TO_DATE('" + t.as_string() + "', 'YYYY-MM-DD\"T\"HH24:MI:SS')",
@@ -107,7 +107,7 @@ public:
     {
         CPPUNIT_ASSERT_EQUAL(string("123"), Value(123).as_string());
         CPPUNIT_ASSERT_EQUAL(string("a'sd"), Value("a'sd").as_string());
-        CPPUNIT_ASSERT_EQUAL(string("123.45"), Value(decimal("0123.450")).as_string());
+        CPPUNIT_ASSERT_EQUAL(string("123.45"), Value(Decimal("0123.450")).as_string());
         DateTime a(mk_datetime(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT_EQUAL(string("2006-11-16T15:05:10"), Value(a).as_string());
     }

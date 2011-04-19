@@ -2,10 +2,15 @@
 include $(top_srcdir)/dirs.mk
 ybutilincludedir=$(ybincludedir)/util
 
-SUBDIRS = test
+if CPPUNIT_PRESENT
+SUBDIRS = . test
+else
+SUBDIRS =
+endif
 
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
+	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS)
 
 lib_LTLIBRARIES = libybutil.la
@@ -19,18 +24,8 @@ libybutil_la_SOURCES = \
 
 libybutil_la_LDFLAGS = -version-info 0:0:0
 
-
-check_PROGRAMS = unit_tests
-
-unit_tests_LDADD = \
-	test/libutiltest.la \
-	libybutil.la \
-	$(top_builddir)/lib/test/libtestmain.la \
-	$(CPPUNIT_LIBS) \
+libybutil_la_LIBADD = \
 	$(XML_LIBS) \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_LIBS_R)
 
-unit_tests_SOURCES =
-
-TESTS = unit_tests
