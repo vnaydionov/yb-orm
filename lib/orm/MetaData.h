@@ -92,10 +92,10 @@ public:
             const std::string &xml_name = "");
 
     void set_default_value(const Value &value) {
-	    default_value_ = value;
+        default_value_ = value;
     }
     const Value get_default_value() const {
-	    return default_value_;
+        return default_value_;
     }
     const std::string &get_name() const { return name_; }
     int get_type() const { return type_; }

@@ -48,7 +48,7 @@ const string XMLNode::get_xml()  const
 void XMLNode::xmlize(Yb::Writer::Document &doc) const
 {
     if(name_.empty())
-	return;
+        return;
     Yb::Writer::Element elem(doc, name_);
 
     if (value_.is_null() && children_.empty())

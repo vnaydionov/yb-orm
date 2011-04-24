@@ -30,14 +30,15 @@ AM_CONDITIONAL([DBPOOL3_PRESENT], [test x$ac_dbpool_present = xyes])
 YB_TEST_DB
 
 AC_OUTPUT(Makefile
-	lib/Makefile
-	lib/test/Makefile
-	lib/util/Makefile
-	lib/util/test/Makefile
-	lib/orm/Makefile
-	lib/orm/test/Makefile
-	src/Makefile
-        examples/Makefile
-	examples/example1.sh
-        examples/domain/Makefile)
+    lib/Makefile
+    lib/test/Makefile
+    lib/util/Makefile
+    lib/util/test/Makefile
+    lib/orm/Makefile
+    lib/orm/test/Makefile
+    src/Makefile
+    examples/Makefile
+    examples/example1.sh
+    examples/domain/Makefile)
 
+# vim:ts=4:sts=4:sw=4:et:

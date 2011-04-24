@@ -51,7 +51,7 @@ To build the software, the following prerequisites should be met:
     cppunit >= 1.10.2 (if you want to run unit tests)
     autotools >= 2.61, automake >= 1.10.1
     (for GNU/Linux) unixODBC >= 2.2.11 (for Oracle ODBC driver to work
-    	under GNU/Linux x86_64 I used unixODBC = 2.3.0)
+        under GNU/Linux x86_64 I used unixODBC = 2.3.0)
 
 Older versions may or may not work.
 This software also imports some pieces of 

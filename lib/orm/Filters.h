@@ -39,7 +39,7 @@ public:
     {}
     template <typename T>
     StrList(const T &fl)
-	: str_list_(container_to_str<T>(fl))
+        : str_list_(container_to_str<T>(fl))
     {}
     StrList(const std::string &s)
         : str_list_(s)

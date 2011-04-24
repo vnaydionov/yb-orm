@@ -80,9 +80,9 @@ SQLAlchemy (http://www.sqlalchemy.org/) для языка Python.
     $ make check
 4) Запуск "example1".
     Здесь находится файл XML с описанием схемы для тестовой БД:
-    	examples/ex1_schema.xml
+        examples/ex1_schema.xml
     Отредактировать и применить авто-сгенерированный DDL:
-    	examples/domain/mk_tables.sql
+        examples/domain/mk_tables.sql
     запустить пример:
     $ cd examples/
     $ sh example1.sh
