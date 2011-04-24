@@ -1,5 +1,6 @@
 #include <memory>
 #include <iostream>
+#include <util/str_utils.hpp>
 #include <orm/Session.h>
 #include <orm/SqlDataSource.h>
 #include <orm/MetaDataSingleton.h>
@@ -15,10 +16,13 @@ using namespace std;
 
 int main()
 {
-    Yb::load_meta("DBScheme.xml", Yb::theMetaData::instance());
+    string conf_dir = Yb::StrUtils::xgetenv("EX1_DIR");
+    if (conf_dir.empty())
+        conf_dir = ".";
+    Yb::load_meta(conf_dir + "/ex1_schema.xml", Yb::theMetaData::instance());
 #ifdef HAVE_DBPOOL3
     std::auto_ptr<Yb::DBPoolConfig> conf(
-            new Yb::DBPoolConfig("dbpool.cfg.xml"));
+            new Yb::DBPoolConfig(conf_dir + "/dbpool.cfg.xml"));
     std::auto_ptr<Yb::SqlDriver> drv(
             new Yb::DBPoolDriver(conf, "MY_DBPOOL"));
     Yb::register_sql_driver(drv);

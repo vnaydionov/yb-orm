@@ -66,7 +66,7 @@ public:
         const TableMetaData &t = reg_.get_table(table_name);
         const string pk_name = t.find_synth_pk();
         if (!pk_name.empty())
-            for (int i = 0; i < rows.size(); ++i) {
+            for (unsigned i = 0; i < rows.size(); ++i) {
                 PKIDValue pkid = rows[i].get(pk_name).as_pkid();
                 if (pkid.is_temp())
                     pkid.sync(get_next_id("S_A_X"));

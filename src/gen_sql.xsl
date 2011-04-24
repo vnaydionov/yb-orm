@@ -17,7 +17,7 @@
         <xsl:text>
 
 </xsl:text>
-        <xsl:apply-templates select="/scheme/table" mode="create-table" />
+        <xsl:apply-templates select="/schema/table" mode="create-table" />
     </xsl:template>
 
     <xsl:template match="table" mode="create-table">
@@ -26,10 +26,10 @@
         <xsl:value-of select="@name" />
         <xsl:text> (
 </xsl:text>
-        <xsl:apply-templates select="columns/column" mode="typed-column"/>
-        <xsl:apply-templates select="columns/column" mode="fk"/>
+        <xsl:apply-templates select="column" mode="typed-column"/>
+        <xsl:apply-templates select="column" mode="fk"/>
         <xsl:text>    PRIMARY KEY (</xsl:text>
-        <xsl:apply-templates select="columns/column[primarykey]" mode="pk"/>
+        <xsl:apply-templates select="column[primarykey]" mode="pk"/>
         <xsl:text>)
 )</xsl:text>
         <xsl:apply-templates select="." mode="suffix" />
@@ -223,7 +223,7 @@
             </xsl:otherwise>
         </xsl:choose>
         <xsl:text>(</xsl:text>
-        <xsl:value-of select="size" />
+        <xsl:value-of select="@size" />
         <xsl:text>)</xsl:text>
     </xsl:template>
 

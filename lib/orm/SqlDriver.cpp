@@ -219,7 +219,7 @@ public:
 
     void exec(const Values &params)
     {
-        for (int i = 0; i < params.size(); ++i) {
+        for (unsigned i = 0; i < params.size(); ++i) {
             if (params[i].get_type() == Value::DATETIME) {
                 TIMESTAMP_STRUCT ts;
                 memset(&ts, 0, sizeof(ts));
@@ -227,19 +227,19 @@ public:
                 ts.year = t.date().year();
                 ts.month = t.date().month();
                 ts.day = t.date().day();
-                ts.hour = t.time_of_day().hours();
-                ts.minute = t.time_of_day().minutes();
-                ts.second = t.time_of_day().seconds();
+                ts.hour = (SQLUSMALLINT)t.time_of_day().hours();
+                ts.minute = (SQLUSMALLINT)t.time_of_day().minutes();
+                ts.second = (SQLUSMALLINT)t.time_of_day().seconds();
                 ts.fraction = 0; // TODO
                 stmt_.param(i + 1).set_as_date_time(
                         ts,
                         params[i].is_null());
             }
             else {
-                stmt_.param(i + 1).set_as_string(
-                        params[i].is_null()?
-                            string(): params[i].as_string(),
-                        params[i].is_null());
+                string value;
+                if (!params[i].is_null())
+                    value = params[i].as_string();
+                stmt_.param(i + 1).set_as_string(value, params[i].is_null());
             }
         }
         if (!stmt_.execute())
@@ -303,10 +303,10 @@ SqlConnect::SqlConnect(const string &driver_name,
     , dialect_(sql_dialect(dialect_name))
     , db_(db)
     , user_(user)
-    , backend_(driver_->create_backend())
     , activity_(false)
     , echo_(false)
 {
+    backend_.reset(driver_->create_backend().release());
     backend_->open(dialect_, db, user, passwd);
 }
 
@@ -330,7 +330,7 @@ SqlConnect::exec_direct(const string &sql)
 RowsPtr
 SqlConnect::fetch_rows(int max_rows)
 {
-    RowsPtr rows(backend_->fetch_rows(max_rows));
+    RowsPtr rows = backend_->fetch_rows(max_rows);
     if (echo_) {
         cout << "fetch:\n";
         Rows::const_iterator i = rows->begin(), iend = rows->end();
@@ -358,7 +358,7 @@ void
 SqlConnect::exec(const Values &params)
 {
     if (echo_) {
-        for (int i = 0; i < params.size(); ++i)
+        for (unsigned i = 0; i < params.size(); ++i)
             cout << "exec: p[" << (i + 1) << "]=\"" << params[i].sql_str() << "\"\n";
     }
     backend_->exec(params);

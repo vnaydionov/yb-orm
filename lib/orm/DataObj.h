@@ -8,19 +8,19 @@
 
 namespace Yb {
 
-class NoRawData : public std::logic_error
+class NoRawData : public ORMError
 {
 public:
     NoRawData()
-        : logic_error("No ROW data is associated with DataObject")
+        : ORMError("No ROW data is associated with DataObject")
     {}
 };
 
-class NoSessionBaseGiven : public std::logic_error
+class NoSessionBaseGiven : public ORMError
 {
 public:
     NoSessionBaseGiven()
-        : logic_error("No session given to the WeakObject")
+        : ORMError("No session given to the WeakObject")
     {}
 };
 

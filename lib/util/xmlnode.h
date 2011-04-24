@@ -56,27 +56,19 @@ private:
     void check_ptr();
 
 public:
-    // Constructors / destructor
-    Node(xmlNodePtr p = NULL, bool free_on_destroy = true);
-    Node(const std::string &node_name, bool free_on_destroy = true);
-    Node(Node &obj);
-    Node(const Node &obj);
+    explicit Node(xmlNodePtr p = NULL, bool free_on_destroy = true);
+    explicit Node(const std::string &node_name);
+    explicit Node(Node &obj);
     ~Node();
-
-    // Assignment
     Node &operator=(Node &obj);
-    Node &operator=(const Node &obj);
 
     // Getters / setters
     xmlNodePtr release();
-    xmlNodePtr _retn();
-    xmlNodePtr get() const;
-    xmlNodePtr operator->() const;
+    xmlNodePtr get() { return ptr_; }
     xmlNodePtr set(xmlNodePtr p);
     xmlNodePtr set(const std::string &node_name);
 
     // Node methods
-
     xmlNodePtr AddNode(xmlNodePtr child);
     xmlNodePtr AddNode(const std::string &node_name);
     xmlNodePtr Child(const std::string &name = "");

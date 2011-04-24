@@ -42,7 +42,7 @@ public:
         CPPUNIT_ASSERT(a == Value("2006-11-16 15:05:10").as_date_time());
         time_t t = time(NULL);
         tm stm;
-        localtime_r(&t, &stm);
+        localtime_safe(&t, &stm);
         DateTime b(mk_datetime(stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday,
                     stm.tm_hour, stm.tm_min, stm.tm_sec));
         CPPUNIT_ASSERT(b == Value(t).as_date_time());

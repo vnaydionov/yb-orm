@@ -22,20 +22,20 @@ class TestXMLConfig : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(testGetWrongNodeValue, ParseError);
     CPPUNIT_TEST(testParseTable);
     CPPUNIT_TEST_EXCEPTION(testWrongElementTable, ParseError);
-    CPPUNIT_TEST(testParseScheme);
+    CPPUNIT_TEST(testParseSchema);
     CPPUNIT_TEST_SUITE_END();
 public:
-    void testParseScheme()
+    void testParseSchema()
     {
         string xml = 
-            "<scheme>"
-            "<table name=\"A\"><columns>"
-	        "<column type=\"string\" name=\"AA\"><size>10</size></column>"
-            "</columns></table>"
-            "<table name=\"B\"><columns>"
-	        "<column type=\"longint\" name=\"BA\"></column>"
-            "</columns></table>"
-            "</scheme>";
+            "<schema>"
+            "<table name=\"A\">"
+            "<column type=\"string\" name=\"AA\" size=\"10\" />"
+            "</table>"
+            "<table name=\"B\">"
+            "<column type=\"longint\" name=\"BA\"></column>"
+            "</table>"
+            "</schema>";
         XMLMetaDataConfig cfg(xml);
         TableMetaDataRegistry reg;
         cfg.parse(reg);
@@ -64,11 +64,11 @@ public:
     {
         TableMetaData t;
         string xml = 
-            "<table name=\"A\" sequence=\"S\"><columns>"
-	        "<column type=\"string\" name=\"ASTR\"><size>10</size></column>"
-	        "<column type=\"longint\" name=\"B_ID\">"
-		    "<foreign-key table=\"T_B\" field=\"ID\"/></column>"
-            "</columns></table>";
+            "<table name=\"A\" sequence=\"S\">"
+            "<column type=\"string\" name=\"ASTR\" size=\"10\" />"
+            "<column type=\"longint\" name=\"B_ID\">"
+            "<foreign-key table=\"T_B\" field=\"ID\"/></column>"
+            "</table>";
         Xml::Node node(Xml::Parse(xml));
 
         XMLMetaDataConfig cfg("<empty/>");
@@ -134,7 +134,7 @@ public:
     
     void testInvalidCombination()
     {      
-        string xml = "<column type=\"longint\" name=\"ID\"><size>10</size></column>";
+        string xml = "<column type=\"longint\" name=\"ID\" size=\"10\" />";
         Xml::Node node(Xml::Parse(xml));
         ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(node.get());
     }

@@ -37,7 +37,20 @@ public:
         typename Map::const_iterator it = map_.find(name);
         if (it != map_.end())
             return false;
-        map_.insert(typename Map::value_type(name, ItemPtr(item.release())));
+        map_.insert(
+#if defined(__BORLANDC__)
+            Map::value_type
+#else
+            typename Map::value_type
+#endif
+            (name, ItemPtr(item.release())));
+        map_.insert(
+#if defined(__BORLANDC__)
+            Map::value_type
+#else
+            typename Map::value_type
+#endif
+            (name, ItemPtr(item.release())));
         return true;
     }
 
@@ -189,7 +202,7 @@ public:
     SqlDialect *get_dialect() { return dialect_; }
     const std::string &get_db() { return db_; }
     const std::string &get_user() { return user_; }
-    bool set_echo(bool echo) { echo_ = echo; }
+    void set_echo(bool echo) { echo_ = echo; }
     void exec_direct(const std::string &sql);
     RowsPtr fetch_rows(int max_rows = -1);
     void prepare(const std::string &sql);

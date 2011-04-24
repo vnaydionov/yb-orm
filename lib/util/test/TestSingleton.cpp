@@ -44,7 +44,7 @@ public:
 			BadSingleton::instance().x_;
 			CPPUNIT_FAIL("Exception not thrown!");
 		}
-		catch (const logic_error &e) {}
+		catch (const logic_error &) {}
 		CPPUNIT_ASSERT(!BadSingleton::singleton.instance_.get());
 	}
 };

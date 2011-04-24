@@ -44,8 +44,8 @@ Engine::select(const StrList &what,
     if ((mode_ == READ_ONLY) && select_mode)
         throw BadOperationInMode(
                 "Using SELECT FOR UPDATE in read-only mode");  
-    RowsPtr rows(on_select(what, from, where,
-                group_by, having, order_by, max_rows, select_mode));
+    RowsPtr rows = on_select(what, from, where,
+                group_by, having, order_by, max_rows, select_mode);
     if (select_mode)
         touched_ = true;
     return rows;
@@ -135,7 +135,7 @@ Engine::select_row(const StrList &from, const Filter &where)
 const Value
 Engine::select1(const string &what, const string &from, const Filter &where)
 {
-    RowPtr row(select_row(what, from, where));
+    RowPtr row = select_row(what, from, where);
     if (row->size() != 1)
         throw BadSQLOperation("Unable to fetch exactly one column!");
     return row->begin()->second;
@@ -189,9 +189,11 @@ Engine::on_insert(const string &table_name,
         Rows::const_iterator it = rows.begin(), end = rows.end();
         for (; it != end; ++it) {
             Row::const_iterator f = it->begin(), fend = it->end();
-            for (; f != fend; ++f)
-                if (exclude_fields.find(f->first) == exclude_fields.end())
+            for (; f != fend; ++f) {
+                FieldSet::const_iterator x = exclude_fields.find(f->first);
+                if (x == exclude_fields.end())
                     params[param_nums[f->first]] = f->second;
+            }
             conn_->exec(params);
         }
     }
@@ -200,9 +202,11 @@ Engine::on_insert(const string &table_name,
         for (; it != end; ++it) {
             conn_->prepare(sql);
             Row::const_iterator f = it->begin(), fend = it->end();
-            for (; f != fend; ++f)
-                if (exclude_fields.find(f->first) == exclude_fields.end())
+            for (; f != fend; ++f) {
+                FieldSet::const_iterator x = exclude_fields.find(f->first);
+                if (x == exclude_fields.end())
                     params[param_nums[f->first]] = f->second;
+            }
             conn_->exec(params);
             conn_->exec_direct("SELECT LAST_INSERT_ID() LID");
             RowsPtr id_rows = conn_->fetch_rows();
@@ -228,9 +232,11 @@ Engine::on_update(const string &table_name,
     Rows::const_iterator it = rows.begin(), end = rows.end();
     for (; it != end; ++it) {
         Row::const_iterator f = it->begin(), fend = it->end();
-        for (; f != fend; ++f)
-            if (exclude_fields.find(f->first) == exclude_fields.end())
+        for (; f != fend; ++f) {
+            FieldSet::const_iterator x = exclude_fields.find(f->first);
+            if (x == exclude_fields.end())
                 params[param_nums[f->first]] = f->second;
+        }
         conn_->exec(params);
     }
 }
@@ -306,7 +312,8 @@ Engine::do_gen_sql_insert(string &sql, Values &params,
     vector_string pholders;
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it) {
-        if (exclude_fields.find(it->first) == exclude_fields.end()) {
+        FieldSet::const_iterator x = exclude_fields.find(it->first);
+        if (x == exclude_fields.end()) {
             param_nums[it->first] = params.size();
             params.push_back(it->second);
             names.push_back(it->first);
@@ -337,8 +344,9 @@ Engine::do_gen_sql_update(string &sql, Values &params,
     sql_query << "UPDATE " << table_name << " SET ";
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it) {
-        if ((exclude_fields.find(it->first) == exclude_fields.end()) &&
-                (key_fields.find(it->first) == key_fields.end()))
+        FieldSet::const_iterator x = exclude_fields.find(it->first),
+            y = key_fields.find(it->first);
+        if ((x == exclude_fields.end()) && (y == key_fields.end()))
             excluded_row.insert(make_pair(it->first, it->second));
     }
 

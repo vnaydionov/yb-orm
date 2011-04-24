@@ -101,9 +101,9 @@ public:
     int get_type() const { return type_; }
     size_t get_size() const { return size_; }
     int get_flags() const { return flags_; }
-    bool is_pk() const { return flags_ & PK; }
-    bool is_ro() const { return flags_ & RO; }
-    bool is_nullable() const { return flags_ & NULLABLE; }
+    bool is_pk() const { return (flags_ & PK) != 0; }
+    bool is_ro() const { return (flags_ & RO) != 0; }
+    bool is_nullable() const { return (flags_ & NULLABLE) != 0; }
     const std::string &get_fk_table_name() const { return fk_table_name_; }
     const std::string &get_fk_name() const { return fk_name_; }
     bool has_fk() const { return !fk_table_name_.empty() && !fk_name_.empty(); }

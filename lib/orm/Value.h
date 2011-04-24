@@ -10,10 +10,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <util/decimal.h>
 
-#if defined(__WIN32__) || defined(_WIN32)
-struct tm *localtime_r(const time_t *clock, struct tm *result);
-#endif
-
 namespace Yb {
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
@@ -21,6 +17,8 @@ typedef __int64 LongInt;
 #else
 typedef long long LongInt;
 #endif
+
+struct tm *localtime_safe(const time_t *clock, struct tm *result);
 
 typedef ::decimal Decimal;
 typedef ::boost::posix_time::ptime DateTime;
@@ -44,59 +42,74 @@ inline const DateTime mk_datetime(int year, int month, int day,
             boost::posix_time::time_duration(hour, minute, second));
 }
 
+const std::string ptime2str(const boost::posix_time::ptime &t);
+
 template <typename T>
-inline std::string to_string(const T &x)
+inline const std::string to_string(const T &x)
 {
     return boost::lexical_cast<std::string>(x);
 }
 
-inline std::string to_string(const Decimal &x)
+inline const std::string to_string(const Decimal &x)
 {
     return x.str();
 }
 
-inline std::string to_string(const DateTime &x)
+inline const std::string to_string(const DateTime &x)
 {
-    return boost::posix_time::to_iso_extended_string(x);
+    return ptime2str(x);
 }
 
-class ValueIsNull : public std::logic_error
+class ValueError : public std::logic_error
+{
+public:
+    ValueError(const std::string &msg) :
+#if defined(__BORLANDC__)
+        std::logic_error
+#else
+        logic_error
+#endif
+        (msg)
+    {}
+};
+
+class ValueIsNull : public ValueError
 {
 public:
     ValueIsNull()
-        :logic_error("Trying to get value of null")
+        :ValueError("Trying to get value of null")
     {}
 };
 
-class ValueBadCast : public std::logic_error
+class ValueBadCast : public ValueError
 {
 public:
     ValueBadCast(const std::string &value, const std::string &type)
-        :logic_error("Can't cast value '" + value + "' to type " + type)
+        :ValueError("Can't cast value '" + value + "' to type " + type)
     {}
 };
 
-class PKIDInvalid: public std::logic_error
+class PKIDInvalid: public ValueError
 {
 public:
-    PKIDInvalid(): logic_error("Invalid PKID object") {}
+    PKIDInvalid(): ValueError("Invalid PKID object") {}
 };
 
-class PKIDAlreadySynced: public std::logic_error
+class PKIDAlreadySynced: public ValueError
 {
 public:
     PKIDAlreadySynced(const std::string &table_name, LongInt id)
-        : logic_error("PKID is already synchronized: " + 
+        : ValueError("PKID is already synchronized: " + 
                 table_name + "(" +
                 boost::lexical_cast<std::string>(id) + ")")
     {}
 };
 
-class PKIDNotSynced: public std::logic_error
+class PKIDNotSynced: public ValueError
 {
 public:
     PKIDNotSynced(const std::string &table_name, LongInt id)
-        : logic_error("PKID is temporary: " + table_name + "(" +
+        : ValueError("PKID is temporary: " + table_name + "(" +
                 boost::lexical_cast<std::string>(id) + ")")
     {}
 };

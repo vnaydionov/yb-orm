@@ -209,8 +209,21 @@ const string comma(const string &item1, const string &item2)
 
 const string xgetenv(const string &var_name)
 {
-    char *x = getenv(var_name.c_str());
-    return x && *x ? string(x) : string();
+    char *x;
+    string s;
+#if defined(_MSC_VER)
+    size_t len;
+    errno_t err = _dupenv_s(&x, &len, var_name.c_str());
+    if (!err) {
+        s = string(x);
+        free(x);
+    }
+#else
+    x = getenv(var_name.c_str());
+    if (x && *x)
+        s = string(x);
+#endif
+    return s;
 }
 
 } // end of namespace StrUtils

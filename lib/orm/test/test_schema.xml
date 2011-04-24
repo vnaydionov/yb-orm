@@ -1,30 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<scheme>
+<schema>
 	<table name="T_ORM_TEST" sequence="S_ORM_TEST_ID" xml-name="orm-test">
-		<columns>
-			<column name="ID" type="longint">
-				<primarykey/>
-				<readonly/>
-			</column>
-			<column name="A" type="string">
-				<size>200</size>
-			</column>
-			<column name="B" type="datetime" default="sysdate"/>
-			<column name="C" type="decimal"/>
-		</columns>
+		<column name="ID" type="longint">
+			<primarykey/>
+			<readonly/>
+		</column>
+		<column name="A" type="string" size="200" />
+		<column name="B" type="datetime" default="sysdate"/>
+		<column name="C" type="decimal"/>
 	</table>
 	<table name="T_ORM_XML" sequence="S_ORM_XML_ID" xml-name="orm-xml">
-		<columns>
-			<column name="ID" type="longint">
-				<primarykey/>
-				<readonly/>
-			</column>
-			<column name="ORM_TEST_ID" type="longint">
-				<foreign-key table="T_ORM_TEST" field="ID"/>
-			</column>
-			<column name="B" type="decimal"/>
-		</columns>
+		<column name="ID" type="longint">
+			<primarykey/>
+			<readonly/>
+		</column>
+		<column name="ORM_TEST_ID" type="longint">
+			<foreign-key table="T_ORM_TEST" field="ID"/>
+		</column>
+		<column name="B" type="decimal"/>
 	</table>
-</scheme>
+</schema>
 <!-- vim:ts=4:sts=4:sw=4:noet:
 -->

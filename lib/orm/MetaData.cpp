@@ -237,7 +237,7 @@ TableMetaDataRegistry::fill_map_tree_by_meta(const set<string> &unique_tables, S
     }
     // little hack, if no a root found(parent '' in map), the tree contains cycle
     if (tree_map.find("") == tree_map.end())
-        throw IntegrityCheckFailed("Cyclic references in DB scheme found");
+        throw IntegrityCheckFailed("Cyclic references in DB schema found");
 }
 
 void
@@ -283,8 +283,8 @@ TableMetaDataRegistry::traverse_children(const StrMap &parent_child, map<string,
                 int new_depth = (parent.empty()? 0: depths[parent]) + 1;
                 if (depths[child] < new_depth)
                     depths[child] = new_depth;
-                if (new_depth > parent_child.size())
-                    throw IntegrityCheckFailed("Cyclic references in DB scheme found");
+                if (new_depth > (int)parent_child.size())
+                    throw IntegrityCheckFailed("Cyclic references in DB schema found");
             }
         }
         children.erase(children.begin());

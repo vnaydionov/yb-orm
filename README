@@ -74,7 +74,7 @@ Assuming you've done "svn up", here are the steps to follow.
     $ make
     $ make check
 4) Run "example1".
-    Here is XML file for the test DB schema: examples/DBScheme.xml
+    Here is XML file for the test DB schema: examples/ex1_schema.xml
     Edit and apply the auto-generated DDL: examples/domain/mk_tables.sql
     run the example:
     $ cd examples/

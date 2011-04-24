@@ -13,8 +13,13 @@ typedef boost::shared_ptr<AutoXMLizable> AutoXMLizablePtr;
 class NoCreator: public std::logic_error
 {
 public:
-    NoCreator(const std::string &entity_name)
-        : logic_error("Domain object creator for entity '" +
+    NoCreator(const std::string &entity_name) :
+#if defined(__BORLANDC__)
+        std::logic_error
+#else
+        logic_error
+#endif
+        ("Domain object creator for entity '" +
                 entity_name + "' not found")
     {}
 };

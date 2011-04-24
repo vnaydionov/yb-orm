@@ -6,6 +6,7 @@
 #include <list>
 #include <set>
 #include <map>
+#include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include "RowData.h"
 

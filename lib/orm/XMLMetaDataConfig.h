@@ -13,8 +13,13 @@ namespace Yb {
 class XMLConfigError: public std::logic_error
 {
 public:
-    XMLConfigError(const std::string &msg)
-        : logic_error(msg)
+    XMLConfigError(const std::string &msg) :
+#if defined(__BORLANDC__)
+        std::logic_error
+#else
+        logic_error
+#endif
+        (msg)
     {}
 };
 
@@ -76,6 +81,29 @@ private:
     Xml::Node node_;
 };
  
+template <typename T>
+void XMLMetaDataConfig::get_node_ptr_value(xmlNodePtr p_node, T &t) {
+    std::string str;
+    Xml::Node node(p_node, false);
+    str = node.GetContent();
+    try {
+        t = boost::lexical_cast<T>(str);  
+    } 
+    catch(const boost::bad_lexical_cast &) {
+        throw ParseError(std::string("Wrong element value for '")+ (const char*)node.get()->name + "'");
+    }
+}
+
+template <typename T> 
+bool XMLMetaDataConfig::get_value_of(xmlNodePtr p_node, const std::string &field, T &t)
+{
+    if(std::string((const char *)p_node->name) == field) {
+        get_node_ptr_value(p_node, t);
+        return true;
+    }
+    return false;
+}
+
 bool load_xml_file(const std::string &name, std::string &where);
 
 void load_meta(const std::string &name, TableMetaDataRegistry &reg);

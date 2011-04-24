@@ -118,7 +118,7 @@ SqlDataSource::do_insert_rows(const string &table_name,
     if (process_autoinc) {
         if (new_ids.size() != sql_rows->size())
             throw NoDataFound("Can't fetch auto-inserted IDs");
-        for (int i = 0; i < sql_rows->size(); ++i) {
+        for (unsigned i = 0; i < sql_rows->size(); ++i) {
             PKIDValue pkid = (*sql_rows)[i][pk_name].as_pkid();
             pkid.sync(new_ids[i]);
         }
@@ -154,7 +154,7 @@ SqlDataSource::update_rows(const string &table_name,
 }
 
 void
-SqlDataSource::delete_row(const RowData &row)
+SqlDataSource::delete_row(const RowData & /* row */)
 {
 }
 

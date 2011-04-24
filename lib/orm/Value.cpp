@@ -1,4 +1,5 @@
 #include <time.h>
+#include <stdio.h>
 #include <sstream>
 #include <iomanip>
 #include <boost/lexical_cast.hpp>
@@ -11,28 +12,87 @@
 using namespace std;
 using namespace Yb::StrUtils;
 
-#if defined(__WIN32__) || defined(_WIN32)
-struct tm *localtime_r(const time_t *clock, struct tm *result)
-{ 
+namespace Yb {
+
+struct tm *localtime_safe(const time_t *clock, struct tm *result)
+{
     if (!clock || !result)
         return NULL;
+#if defined(_MSC_VER)
+    errno_t err = localtime_s(result, clock);
+    if (err)
+        return NULL;
+#elif defined(__unix__)
+    if (!localtime_r(clock, result))
+        return NULL;
+#else
     static boost::mutex m;
     boost::mutex::scoped_lock lock(m);
-    memcpy(result, localtime(clock), sizeof(*result)); 
-    return result; 
-}
+    struct tm *r = localtime(clock);
+    if (!r)
+        return NULL;
+    memcpy(result, r, sizeof(*result));
 #endif
+    return result;
+}
 
-namespace Yb {
+int extract_int(const char *s, size_t len)
+{
+    int a = 0;
+    for (; len > 0 && *s >= '0' && *s <= '9';
+            a = a*10 + *s - '0', --len, ++s);
+    return len == 0? a: -1;
+}
 
 const DateTime mk_datetime(const string &s)
 {
+#if 0
     string::size_type pos = s.find('T');
     if (pos == string::npos)
         return boost::posix_time::time_from_string(s);
     string t(s);
     t[pos] = ' ';
     return boost::posix_time::time_from_string(t);
+#else
+    if (s.size() < 19 || s[4] != '-' || s[7] != '-' ||
+        (s[10] != ' ' && s[10] != 'T') || s[13] != ':' ||
+        s[16] != ':')
+    {
+        throw ValueBadCast(s, "YYYY-MM-DD HH:MI:SS");
+    }
+    const char *cs = s.c_str();
+    int year = extract_int(cs, 4), month = extract_int(cs + 5, 2),
+        day = extract_int(cs + 8, 2), hours = extract_int(cs + 11, 2),
+        minutes = extract_int(cs + 14, 2), seconds = extract_int(cs + 17, 2);
+    if (year < 0 || month < 0 || day < 0
+        || hours < 0 || minutes < 0 || seconds < 0)
+    {
+        throw ValueBadCast(s, "YYYY-MM-DD HH:MI:SS");
+    }
+    return mk_datetime(year, month, day, hours, minutes, seconds);
+#endif
+}
+
+const string ptime2str(const boost::posix_time::ptime &t)
+{
+#if 0
+    stringstream o;
+    o << setfill('0')
+        << setw(4) << t.date().year()
+        << '-' << setw(2) << (int)t.date().month()
+        << '-' << setw(2) << t.date().day()
+        << 'T' << setw(2) << t.time_of_day().hours()
+        << ':' << setw(2) << t.time_of_day().minutes()
+        << ':' << setw(2) << t.time_of_day().seconds();
+    return o.str();
+#else
+    char buf[80];
+    sprintf(buf, "%04d-%02d-%02dT%02d:%02d:%02d",
+        (int)t.date().year(), (int)t.date().month(),
+        (int)t.date().day(), (int)t.time_of_day().hours(),
+        (int)t.time_of_day().minutes(), (int)t.time_of_day().seconds());
+    return string(buf);
+#endif
 }
 
 class ValueData
@@ -250,7 +310,8 @@ Value::as_date_time() const
         try {
             time_t t = boost::lexical_cast<time_t>(s);
             tm stm;
-            localtime_r(&t, &stm);
+            if (!localtime_safe(&t, &stm))
+                throw ValueBadCast(s, "struct tm");
             return DateTime(
                     boost::gregorian::date(
                         stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday),
@@ -258,15 +319,7 @@ Value::as_date_time() const
                         stm.tm_hour, stm.tm_min, stm.tm_sec));
         }
         catch (const boost::bad_lexical_cast &) {
-            string::size_type pos = s.find("T");
-            if (pos != string::npos)
-                s[pos] = ' ';
-            try {
-                return boost::posix_time::time_from_string(s);
-            }
-            catch (const boost::bad_lexical_cast &) {
-                throw ValueBadCast(check_null().to_str(), "DateTime");
-            }
+            return mk_datetime(s);
         }
     }
     const ValueDataImpl<DateTime> &d =

@@ -34,25 +34,28 @@ void load_meta(const string &name, TableMetaDataRegistry &reg)
 }
 
 XMLMetaDataConfig::XMLMetaDataConfig(const string &xml_string)
-try
-    :node_(Parse(xml_string))
-{}
-catch (const exception &e) {
-    throw ParseError(string("XML tree parse error: ") + e.what());
+    :node_(NULL)
+{
+    try {
+        node_.set(Parse(xml_string));
+    }
+    catch (const exception &e) {
+        throw ParseError(string("XML tree parse error: ") + e.what());
+    }
 }
 
 void XMLMetaDataConfig::parse(TableMetaDataRegistry &reg)
 {
-    if(string((const char *)node_.get()->name) != "scheme")
+    if(string((const char *)node_.get()->name) != "schema")
         throw ParseError(string("Unknown element '") + 
                 (const char *)node_.get()->name + 
-                "' found during parse of root element, 'scheme' expected");
+                "' found during parse of root element, 'schema' expected");
 
     for(xmlNodePtr child = node_.get()->children; child; child = child->next) {
         if(child->type != XML_ELEMENT_NODE)
             continue;
         if(string((const char *)child->name) != "table")
-            throw ParseError(string("Unknown element '") + (const char *)child->name + "' found during parse of element 'scheme'");
+            throw ParseError(string("Unknown element '") + (const char *)child->name + "' found during parse of element 'schema'");
         TableMetaData t;
         parse_table(child, t);
         reg.set_table(t);
@@ -90,37 +93,9 @@ void XMLMetaDataConfig::parse_table(xmlNodePtr p_node, TableMetaData &table_meta
     table_meta.set_xml_name(xml_name);
     table_meta.set_seq_name(sequence_name);
     table_meta.set_autoinc(autoinc);
-    for(xmlNodePtr child = node.get()->children; child; child = child->next) {
-        if(child->type != XML_ELEMENT_NODE)
-            continue;
-        if(string((const char *)child->name) != "columns")
-            throw ParseError(string("Unknown element '") + (const char *)child->name + "' found during parse of element 'table'");
-        parse_column(child->children, table_meta);
-    }
+    parse_column(node.get()->children, table_meta);
 }
 
-template <typename T>
-void XMLMetaDataConfig::get_node_ptr_value(xmlNodePtr p_node, T &t) {
-    string str;
-    Node node(p_node, false);
-    str = node.GetContent();
-    try {
-        t = boost::lexical_cast<T>(str);  
-    } 
-    catch(const boost::bad_lexical_cast &) {
-        throw ParseError(string("Wrong element value for '")+ (const char*)node.get()->name + "'");
-    }
-}
-
-    template <typename T> 
-bool XMLMetaDataConfig::get_value_of(xmlNodePtr p_node, const string &field, T &t)
-{
-    if(string((const char *)p_node->name) == field) {
-        get_node_ptr_value(p_node, t);
-        return true;
-    }
-    return false;
-}
 int XMLMetaDataConfig::string_type_to_int(const string &type, const string &field_name)
 {
     if(Yb::StrUtils::str_to_lower(type) == string("longint"))
@@ -146,7 +121,8 @@ void XMLMetaDataConfig::parse_column(const xmlNodePtr p_node, TableMetaData &tab
         if(col->type != XML_ELEMENT_NODE)
             continue;
         if(string((const char *)col->name) != "column")
-            throw ParseError(string("Unknown element '") + (const char *)col->name + "' found during parse of element 'columns'");
+            throw ParseError(string("Unknown element '") + (const char *)col->name
+                    + "' found during parse of element 'table'");
         table_meta.set_column(fill_column_meta(col));
     }
 }
@@ -195,15 +171,17 @@ ColumnMetaData XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
                 default_val = Value(node.GetAttr("default"));
         }
     }
-    
-    for(xmlNode *child = node.get()->children; child; child = child->next) {
-        if(child->type != XML_ELEMENT_NODE)
+
+    if (node.HasAttr("size"))
+        size = node.GetLongAttr("size");
+
+    for (xmlNode *child = node.get()->children; child; child = child->next) {
+        if (child->type != XML_ELEMENT_NODE)
             continue;
-        get_value_of(child, "size", size);
         get_value_of(child, "xml-name", xml_name);
-        if(is_current_child_name(child, "readonly"))
+        if (is_current_child_name(child, "readonly"))
             flags |= ColumnMetaData::RO;
-        if(is_current_child_name(child, "primarykey"))
+        if (is_current_child_name(child, "primarykey"))
             flags |= ColumnMetaData::PK;
         if (string((const char *)child->name) == "foreign-key") {
             get_foreign_key_data(child, fk_table, fk_field);

@@ -185,9 +185,9 @@ Node::Node(xmlNodePtr p, bool free_on_destroy)
     ,auto_free_(free_on_destroy)
 {}
 
-Node::Node(const string &node_name, bool free_on_destroy)
+Node::Node(const string &node_name)
     :ptr_(NewNode(node_name))
-    ,auto_free_(free_on_destroy)
+    ,auto_free_(true)
 {
     check_ptr();
 }
@@ -195,11 +195,6 @@ Node::Node(const string &node_name, bool free_on_destroy)
 Node::Node(Node &obj)
     :ptr_(obj.release())
     ,auto_free_(obj.auto_free_)
-{}
-
-Node::Node(const Node &obj)
-    :ptr_(obj.get())
-    ,auto_free_(false)
 {}
 
 Node::~Node()
@@ -221,37 +216,11 @@ Node &Node::operator=(Node &obj)
     return *this;
 }
 
-Node &Node::operator=(const Node &obj)
-{
-    if (this != &obj) {
-        if (auto_free_)
-            free_node();
-        auto_free_ = false;
-        ptr_ = obj.get();
-    }
-    return *this;
-}
-
 xmlNodePtr Node::release()
 {
     xmlNodePtr t = ptr_;
     ptr_ = NULL;
     return t;
-}
-
-xmlNodePtr Node::_retn()
-{
-    return release();
-}
-
-xmlNodePtr Node::get() const
-{
-    return ptr_;
-}
-
-xmlNodePtr Node::operator->() const
-{
-    return get();
 }
 
 xmlNodePtr Node::set(xmlNodePtr p)

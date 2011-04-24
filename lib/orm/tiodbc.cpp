@@ -662,6 +662,7 @@ namespace tiodbc
 			cols_info.push_back(col_info);
 		}
 		m_cols.swap(cols_info);
+		return true;
 	}
 
 	// Fetch next
