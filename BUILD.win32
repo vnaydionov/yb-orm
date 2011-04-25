@@ -1,0 +1,136 @@
+
+Building YB.ORM under Windows using CMake.
+
+This method applies if you have Microsoft Visual C++ or Borland C++ Builder
+installed.  Also these cmake scripts were tested under GNU/Linux with GCC.
+Under MS Windows this method is known to work fine using the following
+versions of software:
+    - Microsoft Visual C++ 9.0 / 2008 Express Edition
+      with boost library 1.38.0
+    - Borland C++ 5.5 / Free Command Line Tools
+      with boost library 1.33.1
+
+The following directory layout is assumed in the text below:
+    c:\build-yborm - everything needed for build: sources, libraries etc.
+    c:\build-yborm\trunk - the source code of YB.ORM
+    c:\build-yborm\b - out-of-source build directory
+
+- Check out the code from SVN repository
+Use your favorite Subversion (SVN) client.  E.g. one can be
+downloaded from here: http://sourceforge.net/projects/win32svn/.
+Checkout YB.ORM code:
+    cd \build-yborm
+    svn co https://yborm.svn.sourceforge.net/svnroot/yborm/trunk
+Now c:\build-yborm\trunk\ contains YB.ORM code.
+
+- Installing CMake build system
+Download cmake-2.8.4-win32-x86.zip
+from here: http://www.cmake.org/cmake/resources/software.html
+May be it's better to unzip it under the root of drive C: to make it easier
+to setup PATH environment variable.
+For instance, if cmake.exe is found at c:\cmake2.8\bin\cmake.exe then
+to be able to start cmake just by typing 'cmake' the following
+command must be issued on the command line:
+    set PATH=c:\cmake2.8\bin;%PATH%
+
+- Download and install C++ Boost library.
+YB.ORM uses boost.date_time, boost.thread and some templates from
+this library.
+Pick up sources for proper version of boost on this page:
+http://www.boost.org/users/history/
+For different versions steps to build may vary.
+
+-- Building Boost 1.38.0 with MSVC 9.0
+Unpack boost_1_38_0.zip to c:\build-yborm\ then start Visual Studio 2008
+Command Prompt.  Issue the following commands to build boost:
+    C:\>cd \build-yborm\boost_1_38_0\tools\jam\src
+    C:\build-yborm\boost_1_38_0\tools\jam\src>build.bat
+here goes output of build process of bjam tool
+    Generating Code...
+    ...updated 2 targets...
+    C:\build-yborm\boost_1_38_0\tools\jam\src>cd ..\..\..
+    C:\build-yborm\boost_1_38_0>tools\jam\src\bin.ntx86\bjam.exe 
+      --with-date_time --with-thread --with-regex
+      toolset=msvc link=shared variant=debug threading=multi stage
+here goes output of build process of boost itself
+    ...updated 47 targets...
+    C:\build-yborm\boost_1_38_0>dir /b stage\lib
+    boost_date_time-vc90-mt-gd-1_38.dll
+    boost_date_time-vc90-mt-gd-1_38.lib
+    boost_date_time-vc90-mt-gd.lib
+    boost_regex-vc90-mt-gd-1_38.dll
+    boost_regex-vc90-mt-gd-1_38.lib
+    boost_regex-vc90-mt-gd.lib
+    boost_thread-vc90-mt-gd-1_38.dll
+    boost_thread-vc90-mt-gd-1_38.lib
+    boost_thread-vc90-mt-gd.lib
+For some strange reason these names are not ones the linker likes,
+therefore you should create aliases:
+    C:\build-yborm\boost_1_38_0>cd stage\lib
+    C:\build-yborm\boost_1_38_0\stage\lib>copy boost_date_time-vc90-mt-gd-1_38.lib
+      libboost_date_time-vc90-mt-gd-1_38.lib
+    C:\build-yborm\boost_1_38_0\stage\lib>copy boost_thread-vc90-mt-gd-1_38.lib
+      libboost_thread-vc90-mt-gd-1_38.lib
+    C:\build-yborm\boost_1_38_0\stage\lib>copy boost_regex-vc90-mt-gd-1_38.lib
+      libboost_regex-vc90-mt-gd-1_38.lib
+
+- Download and install CppUnit library.
+YB.ORM uses CppUnit to run unit tests.
+Download the source tarball cppunit-1.12.1.tar.gz from
+http://sourceforge.net/apps/mediawiki/cppunit/#Download
+Unpack it under c:\build-yborm.  To extract from *.tar.gz
+you can use a tool like 7-Zip (http://www.7-zip.org/).
+
+-- Building CppUnit 1.12.1 with MSVC 9.0
+Open workspace file from Visual Studio IDE:
+c:\build-yborm\cppunit-1.12.1\src\CppUnitLibraries.dsw
+Answer "Yes To All" when asked "Convert and open this project?"
+Select from the main menu "Build" -> "Batch Build..."
+Then check "cppunit_dll/Debug" item and push "Build" button.
+When build is completed you will find the following files:
+    C:\build-yborm>dir /b \build-yborm\cppunit-1.12.1\lib
+    .keepme
+    cppunitd_dll.dll
+    cppunitd_dll.lib
+    cppunitd_dll.pdb
+
+- Download and unpack prebuild packages for LibXML2 and friends.
+Get packages from here: ftp://xmlsoft.org/libxml2/win32/.
+Unpack them to c:\build-yborm\
+Packages needed:
+    iconv-1.9.2.win32.zip
+    libxml2-2.7.7.win32.zip
+    libxslt-1.1.26.win32.zip
+    zlib-1.2.5.win32.zip
+
+- Build YB.ORM with cmake
+Create directory for an out-of-source build, setup PATH, run cmake.
+    C:\build-yborm>mkdir b
+    C:\build-yborm>cd b
+    C:\build-yborm\b>set PATH=c:\cmake28\bin;c:\build-yborm\boost_1_38_0\stage\lib;
+      c:\build-yborm\cppunit-1.12.1\lib;c:\build-yborm\libxml2-2.7.7.win32\bin;
+      c:\build-yborm\libxslt-1.1.26.win32\bin;c:\build-yborm\iconv-1.9.2.win32\bin;
+      c:\build-yborm\zlib-1.2.5\bin;%PATH%
+    C:\build-yborm\b>cmake -G "NMake Makefiles" --build ..\trunk
+here goes some CMake output.
+    -- Build files have been written to: C:/build-yborm/b
+    C:\build-yborm\b>nmake
+If all went fine you will find static two static libraries:
+    lib\util\ybutil.lib
+    lib\orm\yborm.lib
+
+- Run the tests and examples
+These two executables can run without any additional settings:
+    lib\util\test\ybutil_unit_tests.exe
+    src\orm_domain_generator.exe
+These two require you to specify the test DB to connect to via 
+environment variables:
+    lib\orm\test\yborm_unit_tests.exe
+    examples\example1.exe
+Simple .BAT file can help, e.g. your examples\example1.bat may look like this:
+    set YBORM_DBTYPE=MYSQL
+    set YBORM_DB=test1_db
+    set YBORM_USER=test1
+    set YBORM_PASSWD=test1_pwd
+    set EX1_DIR=c:\build-yborm\trunk\examples
+    .\example1
