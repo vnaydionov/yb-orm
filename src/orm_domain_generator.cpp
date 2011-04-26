@@ -23,6 +23,7 @@ public:
         , reg_(reg)
         , mem_weak(false)
     {}
+
     void generate(const XMLMetaDataConfig &cfg)
     {
         ORM_LOG("generation started...");
@@ -31,6 +32,7 @@ public:
             if(cfg.need_generation(it->first))
                 generate_table(it->second);
     }
+
 private:
     void init_weak(const TableMetaData &t)
     {
@@ -41,6 +43,7 @@ private:
             mem_weak = true;
         }
     }
+
     void write_header(const TableMetaData &t, std::ostream &str)
     {
         init_weak(t);
@@ -132,9 +135,13 @@ private:
         str << (mem_weak ? "\tYb::WeakObject " : "\tYb::StrongObject ") << get_member_name(t.get_name()) << ";\n";
     }
 
-    void write_footer(std::ostream &str)
+    void write_footer(const TableMetaData &t, std::ostream &str)
     {
         str << "};\n\n"
+            << "struct "<< get_file_class_name(t.get_name()) << "Registrator\n{\n"
+            << "\tstatic void register_domain();\n"
+            << "\t" << get_file_class_name(t.get_name()) << "Registrator();\n"
+            << "};\n\n"
             << "} // namespace Domain\n\n"
             << "// vim:ts=4:sts=4:sw=4:et:\n"
             << "#endif\n";
@@ -197,13 +204,14 @@ private:
             << "\t}\n"
             << "\treturn lst;\n"
             << "}\n\n"
-            << "struct "<< get_file_class_name(t.get_name()) << "Registrator\n{\n"
-            << "\t" << get_file_class_name(t.get_name()) << "Registrator()\n\t{\n"
-            << "\t\tYb::theDomainFactory::instance().register_creator(\"" << t.get_name() << "\",\n"
-            << "\t\t\tYb::CreatorPtr(new Yb::DomainCreator<" << get_file_class_name(t.get_name()) << ">()));\n"
-            << "\t}\n"
-            << "};\n\n"
-            << "static " << get_file_class_name(t.get_name()) << "Registrator " << get_member_name(t.get_name()) << "registrator;\n\n"
+            << "void " << get_file_class_name(t.get_name()) << "Registrator::register_domain()\n{\n"
+            << "\tYb::theDomainFactory::instance().register_creator(\"" << t.get_name() << "\",\n"
+            << "\t\tYb::CreatorPtr(new Yb::DomainCreator<" << get_file_class_name(t.get_name()) << ">()));\n"
+            << "}\n\n"
+            << get_file_class_name(t.get_name()) << "Registrator::"
+            << get_file_class_name(t.get_name()) << "Registrator()\n{\n"
+            << "\tregister_domain();\n}\n\n"
+            << "//static " << get_file_class_name(t.get_name()) << "Registrator " << get_member_name(t.get_name()) << "registrator;\n\n"
             << "} // end namespace Domain\n\n"
             << "// vim:ts=4:sts=4:sw=4:et:\n";
     }
@@ -229,7 +237,7 @@ private:
         write_setters(table, header);
         write_is_nulls(table, header);
         write_foreign_keys_link(table, header);
-        write_footer(header);
+        write_footer(table, header);
         ofstream file(file_path.c_str());
         expand_tabs_to_stream(header.str(), file);
 
@@ -459,4 +467,4 @@ int main(int argc, char *argv[])
     }
     return 0;
 }
-
+// vim:ts=4:sts=4:sw=4:et:

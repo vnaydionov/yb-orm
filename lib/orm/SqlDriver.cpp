@@ -144,49 +144,53 @@ SqlDriver::~SqlDriver() {}
 
 class OdbcConnectBackend: public SqlConnectBackend
 {
-    tiodbc::connection conn_;
-    tiodbc::statement stmt_;
+    auto_ptr<tiodbc::connection> conn_;
+    auto_ptr<tiodbc::statement> stmt_;
 public:
     void open(SqlDialect *dialect, const string &dsn,
             const string &user, const string &passwd)
     {
-        if (!conn_.connect(dsn, user, passwd, 10, false))
-            throw DBError(conn_.last_error());
+        close();
+        conn_.reset(new tiodbc::connection());
+        stmt_.reset(new tiodbc::statement());
+        if (!conn_->connect(dsn, user, passwd, 10, false))
+            throw DBError(conn_->last_error());
     }
 
     void close()
     {
-        conn_.disconnect();
+        stmt_.reset(NULL);
+        conn_.reset(NULL);
     }
 
     void commit()
     {
-        if (!conn_.commit())
-            throw DBError(conn_.last_error());
+        if (!conn_->commit())
+            throw DBError(conn_->last_error());
     }
 
     void rollback()
     {
-        if (!conn_.rollback())
-            throw DBError(conn_.last_error());
+        if (!conn_->rollback())
+            throw DBError(conn_->last_error());
     }
 
     void exec_direct(const string &sql)
     {
-        if (!stmt_.execute_direct(conn_, sql))
-            throw DBError(stmt_.last_error());
+        if (!stmt_->execute_direct(*conn_, sql))
+            throw DBError(stmt_->last_error());
     }
 
     RowsPtr fetch_rows(int max_rows)
     {
         RowsPtr rows(new Rows);
         for (int count = 0; max_rows < 0? 1: count < max_rows; ++count) {
-            if (!stmt_.fetch_next())
+            if (!stmt_->fetch_next())
                 break;
-            int col_count = stmt_.count_columns();
+            int col_count = stmt_->count_columns();
             Row row;
             for (int i = 0; i < col_count; ++i) {
-                tiodbc::field_impl f = stmt_.field(i + 1);
+                tiodbc::field_impl f = stmt_->field(i + 1);
                 string name = str_to_upper(f.get_name());
                 Value v;
                 if (f.get_type() == SQL_DATE ||
@@ -213,8 +217,8 @@ public:
 
     void prepare(const string &sql)
     {
-        if (!stmt_.prepare(conn_, sql))
-            throw DBError(stmt_.last_error());
+        if (!stmt_->prepare(*conn_, sql))
+            throw DBError(stmt_->last_error());
     }
 
     void exec(const Values &params)
@@ -231,7 +235,7 @@ public:
                 ts.minute = (SQLUSMALLINT)t.time_of_day().minutes();
                 ts.second = (SQLUSMALLINT)t.time_of_day().seconds();
                 ts.fraction = 0; // TODO
-                stmt_.param(i + 1).set_as_date_time(
+                stmt_->param(i + 1).set_as_date_time(
                         ts,
                         params[i].is_null());
             }
@@ -239,11 +243,11 @@ public:
                 string value;
                 if (!params[i].is_null())
                     value = params[i].as_string();
-                stmt_.param(i + 1).set_as_string(value, params[i].is_null());
+                stmt_->param(i + 1).set_as_string(value, params[i].is_null());
             }
         }
-        if (!stmt_.execute())
-            throw DBError(stmt_.last_error());
+        if (!stmt_->execute())
+            throw DBError(stmt_->last_error());
     }
 };
 

@@ -23,6 +23,10 @@ AC_DEFUN([YB_BOOST],
         AC_HELP_STRING([--with-boost-libs=DIR],
             [Directory where the Boost C++ libraries reside]),
         [ac_boost_libs="$withval"])
+    AC_ARG_ENABLE([boost-debug],
+        AC_HELP_STRING([--enable-boost-debug],
+            [Link against debug version of Boost libraries]),
+        [ac_boost_debug="$enableval"])
 
     boost_min_version=ifelse([$1], ,1.20.0,[$1])
     WANT_BOOST_MAJOR=`expr $boost_min_version : '\([[0-9]]\+\)'`
@@ -75,7 +79,8 @@ AC_DEFUN([YB_BOOST],
                     boost_libsuff=`if gcc -v 2>&1 | grep -q 'Ubuntu 4\.2\.' ; then echo gcc42; else echo gcc; fi`
                 fi
                 boost_libsuff_r=$boost_libsuff-mt;
-                if test "x$enable_debug" = xyes ; then
+                if test "x$enable_debug" = xyes || \
+                        test "x$ac_boost_debug" = xyes ; then
                     boost_libsuff=$boost_libsuff-d;
                     boost_libsuff_r=$boost_libsuff_r-d;
                 fi

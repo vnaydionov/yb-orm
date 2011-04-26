@@ -20,6 +20,8 @@ int main()
     if (conf_dir.empty())
         conf_dir = ".";
     Yb::load_meta(conf_dir + "/ex1_schema.xml", Yb::theMetaData::instance());
+    Domain::ClientRegistrator::register_domain();
+    Domain::OrderRegistrator::register_domain();
 #ifdef HAVE_DBPOOL3
     std::auto_ptr<Yb::DBPoolConfig> conf(
             new Yb::DBPoolConfig(conf_dir + "/dbpool.cfg.xml"));

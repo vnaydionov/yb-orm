@@ -79,10 +79,10 @@ if (UNIX)
     find_library (CPPUNIT_LIBS cppunit)
 elseif (MSVC)
     find_library (CPPUNIT_LIBS cppunitd_dll
-            c:/build-yborm/cppunit-1.12.1/lib/vc90)
+            c:/build-yborm/cppunit-1.12.1/lib)
 elseif (BORLAND)
     find_library (CPPUNIT_LIBS cppunitd_bc5_dll
-            c:/build-yborm/cppunit-1.12.1/lib/bcc55)
+            c:/build-yborm/cppunit-1.12.1/lib)
 endif ()
 
 if (UNIX)
