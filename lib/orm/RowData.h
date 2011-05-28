@@ -79,15 +79,8 @@ class RowData
 {
     friend class ::TestRowData;
     friend class SessionBase;
-    struct Entry {
-        bool init;
-        Value value;
-        Entry() : init(false) {}
-        explicit Entry(const Value &v) : init(true), value(v) {}
-    };
     enum PersistStatus { Undef, New, Ghost, Dirty, Sync, Deleted };
 public:
-    typedef std::map<std::string, Entry> Map;
     RowData();
     RowData(const Schema &reg, const std::string &table_name);
     const Table &get_table() const;
@@ -111,11 +104,10 @@ private:
     void load_if_ghost_and_if_non_key_field_requested(const Column &c) const;
     const Value get_typed_value(const Column &c, const Value &value);
 private:
-    const Schema *reg_;
     const Table *table_;
     DataSource *ds_;
     mutable PersistStatus status_;
-    mutable Map values_;
+    mutable Values values_;
 };
 
 inline bool operator==(const RowData &x, const RowData &y) { return !x.lt(y) && !y.lt(x); }

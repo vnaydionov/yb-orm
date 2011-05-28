@@ -17,7 +17,8 @@ ObjectNotFoundByKey::ObjectNotFoundByKey(const string &msg)
 
 FieldNotFoundInFetchedRow::FieldNotFoundInFetchedRow(
         const string &table_name, const string &field_name)
-    : ORMError("Field not found in fetched row: " + table_name + "." + field_name)
+    : ORMError("Field not found in fetched row: " + table_name +
+            "." + field_name)
 {}
 
 BadTypeCast::BadTypeCast(
@@ -37,7 +38,8 @@ StringTooLong::StringTooLong(
 
 TableDoesNotMatchRow::TableDoesNotMatchRow(
         const string &table_name, const string &table_name_from_row)
-    : ORMError("Table name " + table_name + " doesn't match table name from row "
+    : ORMError("Table name " + table_name
+            + " doesn't match table name from row "
             + table_name_from_row)
 {}
 
@@ -45,18 +47,18 @@ DataSource::~DataSource()
 {}
 
 RowData::RowData()
-    : reg_(NULL)
-    , table_(NULL)
+    : table_(NULL)
     , ds_(NULL)
     , status_(Undef)
 {}
 
 RowData::RowData(const Schema &reg, const string &table_name)
-    : reg_(&reg)
-    , table_(&reg.get_table(table_name))
+    : table_(&reg.get_table(table_name))
     , ds_(NULL)
     , status_(Undef)
-{}
+{
+    values_.resize(table_->size());
+}
 
 const Table &
 RowData::get_table() const
@@ -69,16 +71,17 @@ RowData::get_table() const
 const Value &
 RowData::get(const string &column_name) const
 {
-    const Column &c = get_table().get_column(column_name);
+    const Table &t = get_table();
+    const Column &c = t.get_column(column_name);
     load_if_ghost_and_if_non_key_field_requested(c);
-    return values_[c.get_name()].value;
+    return values_[t.idx_by_name(c.get_name())];
 }
 
 const PKIDValue
 RowData::get_id() const
 {
-    const Table &table = get_table();
-    string pk_name = table.get_synth_pk();
+    const Table &t = get_table();
+    string pk_name = t.get_synth_pk();
     return get(pk_name).as_pkid();
 }
 
@@ -105,36 +108,36 @@ RowData::get_typed_value(const Column &c, const Value &value)
 void
 RowData::set(const string &column_name, const Value &value)
 {
-    const Table &table = get_table();
-    const Column &c = table.get_column(column_name);
+    const Table &t = get_table();
+    const Column &c = t.get_column(column_name);
     load_if_ghost_and_if_non_key_field_requested(c);
-    if ((c.is_ro() || c.is_pk()) && values_[c.get_name()].init) {
-        Value old = values_[c.get_name()].value;
+    size_t idx = t.idx_by_name(c.get_name());
+    if ((c.is_ro() || c.is_pk()) && !values_[idx].is_null()) {
+        Value old = values_[idx];
         if (!(old.get_type() == Value::PKID &&
                     (old.as_pkid().is_temp() ||
-                     old.as_pkid().as_longint() ==
-                     value.as_longint())))
-            throw ReadOnlyColumn(table.get_name(), c.get_name());
+                     old.as_pkid().as_longint() == value.as_longint())))
+            throw ReadOnlyColumn(t.get_name(), c.get_name());
     }
     Value x(value);
     if (x.get_type() != Value::PKID)
         x = get_typed_value(c, x);
     bool update_status = true;
     if (c.is_pk() && x.get_type() != Value::PKID) {
-        string pk_name = table.find_synth_pk();
+        string pk_name = t.find_synth_pk();
         if (c.get_name() == pk_name) {
-            if (values_[c.get_name()].init)
+            if (!values_[idx].is_null())
             {
-                PKIDValue pkid = values_[c.get_name()].value.as_pkid();
+                PKIDValue pkid = values_[idx].as_pkid();
                 if (pkid.is_temp())
                     pkid.sync(x.as_longint());
                 update_status = false;
             }
             else
-                x = Value(PKIDValue(table, x.as_longint()));
+                x = Value(PKIDValue(t, x.as_longint()));
         }
     }
-    values_[c.get_name()] = Entry(x);
+    values_[idx] = x;
     if (update_status && status_ == Sync)
         status_ = Dirty;
 }
