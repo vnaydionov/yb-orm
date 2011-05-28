@@ -62,7 +62,7 @@ mk_xml_name(const string &name, const string &xml_name)
     return translate(str_to_lower(name), underscore_to_dash);
 }
 
-ColumnMetaData::ColumnMetaData(const string &name, int type, size_t size, int flags,
+Column::Column(const string &name, int type, size_t size, int flags,
         const string &fk_table, const string &fk, const string &xml_name)
     : name_(str_to_upper(name))
     , type_(type)
@@ -71,17 +71,19 @@ ColumnMetaData::ColumnMetaData(const string &name, int type, size_t size, int fl
     , fk_table_name_(str_to_upper(fk_table))
     , fk_name_(str_to_upper(fk))
     , xml_name_(mk_xml_name(name, xml_name))
+    , table_(NULL)
 {}
 
-TableMetaData::TableMetaData(const string &name, const string &xml_name)
+Table::Table(const string &name, const string &xml_name)
     : name_(str_to_upper(name))
     , xml_name_(mk_xml_name(name, xml_name))
     , autoinc_(false)
     , depth_(0)
+    , schema_(NULL)
 {}
 
 const string 
-TableMetaData::get_unique_pk() const
+Table::get_unique_pk() const
 {
     Map::const_iterator it = cols_.begin(), end = cols_.end();
     string key_field;
@@ -96,15 +98,16 @@ TableMetaData::get_unique_pk() const
 }
 
 void
-TableMetaData::set_column(const ColumnMetaData &column)
+Table::set_column(const Column &column)
 {
     if (!is_id(column.get_name()))
         throw BadColumnName(get_name(), column.get_name());
     cols_[column.get_name()] = column;
+    cols_[column.get_name()].table(*this);
 }
 
-const ColumnMetaData &
-TableMetaData::get_column(const string &name) const
+const Column &
+Table::get_column(const string &name) const
 {
     string good_name = str_to_upper(name);
     Map::const_iterator it = cols_.find(good_name);
@@ -114,13 +117,13 @@ TableMetaData::get_column(const string &name) const
 }
 
 void
-TableMetaData::set_seq_name(const string &seq_name)
+Table::set_seq_name(const string &seq_name)
 {
     seq_name_ = str_to_upper(seq_name);
 }
 
 const string
-TableMetaData::find_synth_pk() const
+Table::find_synth_pk() const
 {
     // This call assumes that we have a table with
     // a synth. numeric primary key.
@@ -142,7 +145,7 @@ TableMetaData::find_synth_pk() const
 }
 
 const string
-TableMetaData::get_synth_pk() const
+Table::get_synth_pk() const
 {
     // This call assumes that we have a table with
     // a synth. numeric primary key.
@@ -153,19 +156,19 @@ TableMetaData::get_synth_pk() const
 }
 
 const string
-TableMetaData::get_seq_name() const
+Table::get_seq_name() const
 {
     return seq_name_;
 }
 
 bool
-TableMetaData::get_autoinc() const
+Table::get_autoinc() const
 {
     return autoinc_;
 }
 
 void
-TableMetaDataRegistry::set_table(const TableMetaData &table_meta_data)
+Schema::set_table(const Table &table_meta_data)
 {
     string good_name = str_to_upper(
             table_meta_data.get_name());
@@ -174,10 +177,11 @@ TableMetaDataRegistry::set_table(const TableMetaData &table_meta_data)
     if (table_meta_data.size() == 0)
         throw TableWithoutColumns(good_name);
     tables_[table_meta_data.get_name()] = table_meta_data;
+    tables_[table_meta_data.get_name()].schema(*this);
 }
 
-const TableMetaData &
-TableMetaDataRegistry::get_table(const string &name) const
+const Table &
+Schema::get_table(const string &name) const
 {
     string good_name = str_to_upper(name);
     Map::const_iterator it = tables_.find(good_name);
@@ -186,7 +190,7 @@ TableMetaDataRegistry::get_table(const string &name) const
     return it->second;
 }
 
-void TableMetaDataRegistry::check()
+void Schema::check()
 {
     set<string> unique_tables;
     fill_unique_tables(unique_tables);
@@ -199,7 +203,7 @@ void TableMetaDataRegistry::check()
 }
 
 void
-TableMetaDataRegistry::set_absolute_depths(const map<string, int> &depths)
+Schema::set_absolute_depths(const map<string, int> &depths)
 {
     map<string, int>::const_iterator it = depths.begin(), end = depths.end();
     for (; it != end; ++it)
@@ -207,7 +211,7 @@ TableMetaDataRegistry::set_absolute_depths(const map<string, int> &depths)
 }
 
 void
-TableMetaDataRegistry::fill_unique_tables(set<string> &unique_tables)
+Schema::fill_unique_tables(set<string> &unique_tables)
 {
     Map::const_iterator it = tables_.begin(), end = tables_.end();
     for (; it != end; ++it)
@@ -215,12 +219,12 @@ TableMetaDataRegistry::fill_unique_tables(set<string> &unique_tables)
 }
 
 void
-TableMetaDataRegistry::fill_map_tree_by_meta(const set<string> &unique_tables, StrMap &tree_map)
+Schema::fill_map_tree_by_meta(const set<string> &unique_tables, StrMap &tree_map)
 {
     set<string>::const_iterator it = unique_tables.begin(), end = unique_tables.end();
     for (; it != end; ++it) {
-        const TableMetaData &t = get_table(*it);
-        TableMetaData::Map::const_iterator it_col = t.begin(), end_col = t.end();
+        const Table &t = get_table(*it);
+        Table::Map::const_iterator it_col = t.begin(), end_col = t.end();
         bool has_parent = false;
         for (; it_col != end_col; ++it_col) {
             // if found a foreign key table in the set, add it with this dependent table
@@ -241,7 +245,7 @@ TableMetaDataRegistry::fill_map_tree_by_meta(const set<string> &unique_tables, S
 }
 
 void
-TableMetaDataRegistry::CheckForeignKey(const string &table, const string &fk_table, const string &fk_field)
+Schema::CheckForeignKey(const string &table, const string &fk_table, const string &fk_field)
 {
     if(tables_.find(fk_table) == tables_.end())
         throw IntegrityCheckFailed(string("Table '") + fk_table +
@@ -258,7 +262,7 @@ TableMetaDataRegistry::CheckForeignKey(const string &table, const string &fk_tab
 }
 
 void
-TableMetaDataRegistry::zero_depths(const set<string> &unique_tables, map<string, int> &depths)
+Schema::zero_depths(const set<string> &unique_tables, map<string, int> &depths)
 {
     map<string, int> new_depths;
     set<string>::const_iterator it = unique_tables.begin(), end = unique_tables.end();
@@ -268,7 +272,7 @@ TableMetaDataRegistry::zero_depths(const set<string> &unique_tables, map<string,
 }
 
 void
-TableMetaDataRegistry::traverse_children(const StrMap &parent_child, map<string, int> &depths)
+Schema::traverse_children(const StrMap &parent_child, map<string, int> &depths)
 {
     list<string> children;
     children.push_back("");

@@ -51,14 +51,14 @@ RowData::RowData()
     , status_(Undef)
 {}
 
-RowData::RowData(const TableMetaDataRegistry &reg, const string &table_name)
+RowData::RowData(const Schema &reg, const string &table_name)
     : reg_(&reg)
     , table_(&reg.get_table(table_name))
     , ds_(NULL)
     , status_(Undef)
 {}
 
-const TableMetaData &
+const Table &
 RowData::get_table() const
 {
     if (!table_)
@@ -69,7 +69,7 @@ RowData::get_table() const
 const Value &
 RowData::get(const string &column_name) const
 {
-    const ColumnMetaData &c = get_table().get_column(column_name);
+    const Column &c = get_table().get_column(column_name);
     load_if_ghost_and_if_non_key_field_requested(c);
     return values_[c.get_name()].value;
 }
@@ -77,13 +77,13 @@ RowData::get(const string &column_name) const
 const PKIDValue
 RowData::get_id() const
 {
-    const TableMetaData &table = get_table();
+    const Table &table = get_table();
     string pk_name = table.get_synth_pk();
     return get(pk_name).as_pkid();
 }
 
 const Value
-RowData::get_typed_value(const ColumnMetaData &c, const Value &value)
+RowData::get_typed_value(const Column &c, const Value &value)
 {
     Value x;
     try {
@@ -105,8 +105,8 @@ RowData::get_typed_value(const ColumnMetaData &c, const Value &value)
 void
 RowData::set(const string &column_name, const Value &value)
 {
-    const TableMetaData &table = get_table();
-    const ColumnMetaData &c = table.get_column(column_name);
+    const Table &table = get_table();
+    const Column &c = table.get_column(column_name);
     load_if_ghost_and_if_non_key_field_requested(c);
     if ((c.is_ro() || c.is_pk()) && values_[c.get_name()].init) {
         Value old = values_[c.get_name()].value;
@@ -142,7 +142,7 @@ RowData::set(const string &column_name, const Value &value)
 void
 RowData::set_pk(LongInt pk)
 {
-    const TableMetaData &table = get_table();
+    const Table &table = get_table();
     string pk_name = table.get_synth_pk();
     set(pk_name, pk);
 }
@@ -150,7 +150,7 @@ RowData::set_pk(LongInt pk)
 void
 RowData::set_new_pk(boost::shared_ptr<PKIDRecord> new_pk)
 {
-    const TableMetaData &t = get_table();
+    const Table &t = get_table();
     string pk_name = t.get_synth_pk();
     Value pk_value(PKIDValue(t, new_pk));
     set(pk_name, pk_value);
@@ -167,7 +167,7 @@ RowData::lt(const RowData &x, bool key_only) const
         return false;
     if (table_->get_name() != x.table_->get_name())
         return table_->get_name() < x.table_->get_name();
-    TableMetaData::Map::const_iterator it = table_->begin(), end = table_->end();
+    Table::Map::const_iterator it = table_->begin(), end = table_->end();
     for (; it != end; ++it) {
         if (!key_only || it->second.is_pk()) {
             const Value &a = get(it->second.get_name());
@@ -190,7 +190,7 @@ RowData::load(void) const
 }
 
 void
-RowData::load_if_ghost_and_if_non_key_field_requested(const ColumnMetaData &c) const
+RowData::load_if_ghost_and_if_non_key_field_requested(const Column &c) const
 {
     if (is_ghost() && ds_ && !c.is_pk())
         load();
@@ -201,8 +201,8 @@ FilterBackendByKey::do_get_sql() const
 {
     ostringstream sql;
     sql << "1=1";
-    const TableMetaData &t = key_.get_table();
-    TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
+    const Table &t = key_.get_table();
+    Table::Map::const_iterator it = t.begin(), end = t.end();
     for (; it != end; ++it)
         if (it->second.is_pk()) {
             sql << " AND " << it->second.get_name() << " = "
@@ -216,8 +216,8 @@ FilterBackendByKey::do_collect_params_and_build_sql(Values &seq) const
 {
     ostringstream sql;
     sql << "1=1";
-    const TableMetaData &t = key_.get_table();
-    TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
+    const Table &t = key_.get_table();
+    Table::Map::const_iterator it = t.begin(), end = t.end();
     for (; it != end; ++it)
         if (it->second.is_pk()) {
             seq.push_back(key_.get(it->second.get_name()));

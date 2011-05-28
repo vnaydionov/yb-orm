@@ -109,14 +109,14 @@ public:
     {}
 };
 
-class TableMetaData;
+class Table;
 
 struct PKIDRecord
 {
-    const TableMetaData *table_;
+    const Table *table_;
     LongInt pkid_;
     bool is_temp_;
-    PKIDRecord(const TableMetaData *table,
+    PKIDRecord(const Table *table,
             LongInt pkid, bool is_temp)
         : table_(table)
         , pkid_(pkid)
@@ -126,16 +126,16 @@ struct PKIDRecord
 
 class PKIDValue
 {
-    const TableMetaData *table_;
+    const Table *table_;
     std::pair<std::string, LongInt> key_;
     mutable LongInt pkid_;
     mutable boost::shared_ptr<PKIDRecord> temp_;
 public:
     PKIDValue();
-    PKIDValue(const TableMetaData &table,
+    PKIDValue(const Table &table,
             boost::shared_ptr<PKIDRecord> temp);
-    PKIDValue(const TableMetaData &table, LongInt pkid);
-    const TableMetaData &get_table() const;
+    PKIDValue(const Table &table, LongInt pkid);
+    const Table &get_table() const;
     const std::pair<std::string, LongInt> &get_key() const { return key_; }
     bool is_temp() const;
     LongInt as_longint() const;

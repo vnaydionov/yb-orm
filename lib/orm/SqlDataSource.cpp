@@ -5,7 +5,7 @@ using namespace std;
 
 namespace Yb {
 
-SqlDataSource::SqlDataSource(const TableMetaDataRegistry &reg,
+SqlDataSource::SqlDataSource(const Schema &reg,
         Engine &engine)
     : reg_(reg)
     , engine_(engine)
@@ -26,8 +26,8 @@ const RowData
 SqlDataSource::sql_row2row_data(const string &table_name, const Row &row)
 {
     RowData d(reg_, table_name);
-    const TableMetaData &table = reg_.get_table(table_name);
-    TableMetaData::Map::const_iterator it = table.begin(), end = table.end();
+    const Table &table = reg_.get_table(table_name);
+    Table::Map::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it) {
         Row::const_iterator x = row.find(it->second.get_name());
         if (x == row.end())
@@ -41,15 +41,15 @@ RowPtr
 SqlDataSource::row_data2sql_row(const RowData &rd)
 {
     RowPtr row(new Row());
-    const TableMetaData &table = rd.get_table();
-    TableMetaData::Map::const_iterator it = table.begin(), end = table.end();
+    const Table &table = rd.get_table();
+    Table::Map::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it)
         (*row)[it->second.get_name()] = rd.get(it->second.get_name());
     return row;
 }
 
 RowsPtr
-SqlDataSource::row_data_vector2sql_rows(const TableMetaData &table,
+SqlDataSource::row_data_vector2sql_rows(const Table &table,
         const RowDataVector &rows, int filter)
 {
     string seq_name;
@@ -101,14 +101,14 @@ void
 SqlDataSource::do_insert_rows(const string &table_name,
         const RowDataVector &rows, bool process_autoinc)
 {
-    const TableMetaData &table = reg_.get_table(table_name);
+    const Table &table = reg_.get_table(table_name);
     RowsPtr sql_rows = row_data_vector2sql_rows(table, rows,
             process_autoinc? 1: 0);
     if (!sql_rows->size())
         return;
     string pk_name = table.find_synth_pk();
     FieldSet excluded;
-    TableMetaData::Map::const_iterator it = table.begin(), end = table.end();
+    Table::Map::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it)
         if ((it->second.is_ro() && !it->second.is_pk()) ||
                 (it->first == pk_name && process_autoinc))
@@ -129,7 +129,7 @@ void
 SqlDataSource::insert_rows(const string &table_name,
         const RowDataVector &rows)
 {
-    const TableMetaData &table = reg_.get_table(table_name);
+    const Table &table = reg_.get_table(table_name);
     do_insert_rows(table_name, rows, false);
     if (!engine_.get_dialect()->has_sequences() &&
             (!table.get_seq_name().empty() || table.get_autoinc()))
@@ -140,10 +140,10 @@ void
 SqlDataSource::update_rows(const string &table_name,
         const RowDataVector &rows)
 {
-    const TableMetaData &table = reg_.get_table(table_name);
+    const Table &table = reg_.get_table(table_name);
     RowsPtr sql_rows = row_data_vector2sql_rows(table, rows);
     FieldSet excluded, keys;
-    TableMetaData::Map::const_iterator it = table.begin(), end = table.end();
+    Table::Map::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it) {
         if (it->second.is_pk())
             keys.insert(it->second.get_name());

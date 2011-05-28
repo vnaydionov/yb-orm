@@ -25,9 +25,9 @@ class TestIntegrMapper : public CppUnit::TestFixture
     CPPUNIT_TEST(test_update);
     CPPUNIT_TEST_SUITE_END();
 
-    TableMetaDataRegistry r_;
+    Schema r_;
     string db_type_;
-    const TableMetaDataRegistry &get_r() const { return r_; }
+    const Schema &get_r() const { return r_; }
 
     LongInt get_next_test_id(Engine &engine, const string &seq_name)
     {
@@ -87,18 +87,18 @@ public:
             conn.exec_direct(st[i]);
         conn.commit();
 
-        TableMetaData t(TEST_TBL1, "test");
-        t.set_column(ColumnMetaData("ID", Value::LONGINT, 0,
-                    ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("A", Value::STRING, 256, 0));
-        t.set_column(ColumnMetaData("B", Value::DATETIME, 0,
-                    ColumnMetaData::RO));
-        t.set_column(ColumnMetaData("C", Value::DECIMAL, 0, 0));
+        Table t(TEST_TBL1, "test");
+        t.set_column(Column("ID", Value::LONGINT, 0,
+                    Column::PK));
+        t.set_column(Column("A", Value::STRING, 256, 0));
+        t.set_column(Column("B", Value::DATETIME, 0,
+                    Column::RO));
+        t.set_column(Column("C", Value::DECIMAL, 0, 0));
         if (db_type_ == "MYSQL")
             t.set_autoinc(true);
         else
             t.set_seq_name("S_ORM_TEST_ID");
-        TableMetaDataRegistry r;
+        Schema r;
         r.set_table(t);
         r_ = r;
     }

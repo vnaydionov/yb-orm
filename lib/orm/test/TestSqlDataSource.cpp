@@ -103,20 +103,20 @@ class TestSqlDataSource : public CppUnit::TestFixture
     CPPUNIT_TEST(test_update_rows);
     CPPUNIT_TEST_SUITE_END();
 
-    TableMetaDataRegistry r_;
-    const TableMetaDataRegistry &get_r() const { return r_; }
+    Schema r_;
+    const Schema &get_r() const { return r_; }
 
 public:
     void setUp()
     {
-        TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
-                    ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Y", Value::STRING, 0, 0));
-        t.set_column(ColumnMetaData("Z", Value::DECIMAL, 0,
-                    ColumnMetaData::RO));
+        Table t("A");
+        t.set_column(Column("X", Value::LONGINT, 0,
+                    Column::PK));
+        t.set_column(Column("Y", Value::STRING, 0, 0));
+        t.set_column(Column("Z", Value::DECIMAL, 0,
+                    Column::RO));
         t.set_seq_name("S_A_X");
-        TableMetaDataRegistry r;
+        Schema r;
         r.set_table(t);
         r_ = r;
     }
@@ -149,11 +149,11 @@ public:
 
     void test_field_not_found()
     {
-        TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
-                    ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Q", Value::STRING, 0, 0));
-        TableMetaDataRegistry r;
+        Table t("A");
+        t.set_column(Column("X", Value::LONGINT, 0,
+                    Column::PK));
+        t.set_column(Column("Q", Value::STRING, 0, 0));
+        Schema r;
         r.set_table(t);
         MockSqlEngine engine;
         SqlDataSource ds(r, engine);
@@ -197,9 +197,9 @@ public:
 
     void test_row_data_vector2sql_rows_mixed()
     {
-        TableMetaData t("B");
-        t.set_column(ColumnMetaData("Q", Value::LONGINT, 0,
-                    ColumnMetaData::PK));
+        Table t("B");
+        t.set_column(Column("Q", Value::LONGINT, 0,
+                    Column::PK));
         r_.set_table(t);
         RowDataVector v;
         RowData x(get_r(), "B");

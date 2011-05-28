@@ -29,13 +29,11 @@ class DataObject
 public:
     virtual ~DataObject()
     {}
-
     virtual const XMLNode auto_xmlize(SessionBase &session, int deep) const = 0;
     const Value &get(const std::string &column_name) const
     {
         return get_row_data().get(column_name);
     }
-    
     void set(const std::string &column_name, const Value &value)
     {
         return get_row_data().set(column_name, value);
@@ -66,7 +64,7 @@ class StrongObject : public DataObject
             const std::string &table_name, LongInt id)
     {
         RowData key(session.get_meta_data_registry(), table_name);
-        const TableMetaData &table = key.get_table();
+        const Table &table = key.get_table();
         key.set(table.get_synth_pk(), Value(id));
         return key;
     }
@@ -100,7 +98,7 @@ class WeakObject : public DataObject
             const std::string &table_name, LongInt id)
     {
         RowData key(session.get_meta_data_registry(), table_name);
-        const TableMetaData &table = key.get_table();
+        const Table &table = key.get_table();
         key.set(table.get_unique_pk(), Value(id));
         return key;
     }

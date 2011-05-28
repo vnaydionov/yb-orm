@@ -23,19 +23,19 @@ int main()
     Domain::ClientRegistrator::register_domain();
     Domain::OrderRegistrator::register_domain();
 #ifdef HAVE_DBPOOL3
-    std::auto_ptr<Yb::DBPoolConfig> conf(
+    auto_ptr<Yb::DBPoolConfig> conf(
             new Yb::DBPoolConfig(conf_dir + "/dbpool.cfg.xml"));
-    std::auto_ptr<Yb::SqlDriver> drv(
+    auto_ptr<Yb::SqlDriver> drv(
             new Yb::DBPoolDriver(conf, "MY_DBPOOL"));
     Yb::register_sql_driver(drv);
-    std::auto_ptr<Yb::SqlConnect> conn(
+    auto_ptr<Yb::SqlConnect> conn(
             new Yb::SqlConnect("MY_DBPOOL", "MYSQL", "default"));
     Yb::Engine engine(Yb::Engine::MANUAL, conn);
 #else
     Yb::Engine engine(Yb::Engine::MANUAL);
 #endif
     Yb::Session session(Yb::theMetaData::instance(),
-            std::auto_ptr<Yb::DataSource>(
+            auto_ptr<Yb::DataSource>(
                 new Yb::SqlDataSource(Yb::theMetaData::instance(), engine)));
     engine.get_connect()->set_echo(true);
     Domain::Client client(session);

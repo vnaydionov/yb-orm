@@ -26,18 +26,18 @@ class TestRowData : public CppUnit::TestFixture
     CPPUNIT_TEST(test_bad_type_cast_format);
     CPPUNIT_TEST_SUITE_END();
 
-    TableMetaDataRegistry r_;
-    const TableMetaDataRegistry &get_r() const { return r_; }
+    Schema r_;
+    const Schema &get_r() const { return r_; }
 
 public:
     void setUp()
     {
-        TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
-                    ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Y", Value::STRING, 4, 0));
+        Table t("A");
+        t.set_column(Column("X", Value::LONGINT, 0,
+                    Column::PK));
+        t.set_column(Column("Y", Value::STRING, 4, 0));
         t.set_seq_name("S_A_X");
-        TableMetaDataRegistry r;
+        Schema r;
         r.set_table(t);
         r_ = r;
     }
@@ -72,9 +72,9 @@ public:
 
     void test_row_data_key_comp()
     {
-        TableMetaData t("B");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Y", Value::STRING, 0, ColumnMetaData::PK));
+        Table t("B");
+        t.set_column(Column("X", Value::LONGINT, 0, Column::PK));
+        t.set_column(Column("Y", Value::STRING, 0, Column::PK));
         r_.set_table(t);
         //
         CPPUNIT_ASSERT(!RowData_key_less()(RowData(), RowData()));
@@ -168,16 +168,16 @@ public:
 
     void test_set_value_type()
     {
-        TableMetaData t("A");
-        ColumnMetaData cx("X", Value::LONGINT, 0, 0);
+        Table t("A");
+        Column cx("X", Value::LONGINT, 0, 0);
         t.set_column(cx);
-        ColumnMetaData cy("Y", Value::STRING, 0, 0);
+        Column cy("Y", Value::STRING, 0, 0);
         t.set_column(cy);
-        ColumnMetaData cz("Z", Value::DECIMAL, 0, 0);
+        Column cz("Z", Value::DECIMAL, 0, 0);
         t.set_column(cz);
-        ColumnMetaData cw("W", Value::DATETIME, 0, 0);
+        Column cw("W", Value::DATETIME, 0, 0);
         t.set_column(cw);
-        TableMetaDataRegistry r;
+        Schema r;
         r.set_table(t);
 
         RowData d(r, "A");
@@ -197,10 +197,10 @@ public:
 
     void test_bad_type_cast_Decimal()
     {
-        TableMetaData t("A");
-        ColumnMetaData cz("Z", Value::DECIMAL, 0, 0);
+        Table t("A");
+        Column cz("Z", Value::DECIMAL, 0, 0);
         t.set_column(cz);
-        TableMetaDataRegistry r;
+        Schema r;
         r.set_table(t);
 
         RowData d(r, "A");
@@ -209,10 +209,10 @@ public:
 
     void test_bad_type_cast_date_time()
     {
-        TableMetaData t("A");
-        ColumnMetaData cw("W", Value::DATETIME, 0, 0);
+        Table t("A");
+        Column cw("W", Value::DATETIME, 0, 0);
         t.set_column(cw);
-        TableMetaDataRegistry r;
+        Schema r;
         r.set_table(t);
 
         RowData d(r, "A");
@@ -222,10 +222,10 @@ public:
     void test_bad_type_cast_format()
     {
         try {
-            TableMetaData t("A");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("Y", Value::DECIMAL, 0, 0));
-            TableMetaDataRegistry r;
+            Table t("A");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.set_column(Column("Y", Value::DECIMAL, 0, 0));
+            Schema r;
             r.set_table(t);
 
             RowData d(r, "A");

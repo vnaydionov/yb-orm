@@ -7,7 +7,7 @@ namespace Yb {
 SessionBase::~SessionBase()
 {}
 
-Session::Session(const TableMetaDataRegistry &reg, auto_ptr<DataSource> ds)
+Session::Session(const Schema &reg, auto_ptr<DataSource> ds)
     : reg_(reg)
     , ds_(ds)
     , new_id_(1)
@@ -50,7 +50,7 @@ RowData *
 Session::create(const string &table_name)
 {
     RowData key(reg_, table_name);
-    const TableMetaData &t = key.get_table();
+    const Table &t = key.get_table();
     key.set_new_pk(create_temp_pkid(t));
     RowData *d = find(key);
     d->set_new(); // TODO: iff !is_sync()
@@ -95,7 +95,7 @@ Session::flush()
     }
 }
 
-const TableMetaDataRegistry &
+const Schema &
 Session::get_meta_data_registry()
 {
     return reg_;
@@ -125,7 +125,7 @@ Session::flush_new()
 void
 Session::insert_new_to_table(const string &table_name)
 {
-    const TableMetaData &table = reg_.get_table(table_name);
+    const Table &table = reg_.get_table(table_name);
     string pk_name = table.find_synth_pk();
     RowSet::iterator it = rows_.begin(), end = rows_.end();
     vector<boost::shared_ptr<RowData> > pkid_changed;
@@ -192,7 +192,7 @@ Session::sort_tables(const set<string> &unique_tabs,
 }
 
 boost::shared_ptr<PKIDRecord>
-Session::create_temp_pkid(const TableMetaData &table)
+Session::create_temp_pkid(const Table &table)
 {
     new_ids_.push_back(boost::shared_ptr<PKIDRecord>(
                 new PKIDRecord(&table, new_id_++, true)));

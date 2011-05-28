@@ -61,21 +61,21 @@ class XMLMetaDataConfig
 {
 public:
     XMLMetaDataConfig(const std::string &xml_string);
-    void parse(TableMetaDataRegistry &reg);
+    void parse(Schema &reg);
     bool need_generation(const std::string &table_name) const {
         return std::find(skip_generation_.begin(), skip_generation_.end(), table_name) == skip_generation_.end();
     }
 private:
     friend class ::TestXMLConfig;
-    void parse_table(xmlNodePtr p_node, TableMetaData &table_meta);
+    void parse_table(xmlNodePtr p_node, Table &table_meta);
     template <typename T>
     static void get_node_ptr_value(xmlNodePtr p_node, T &t);
     template <typename T> 
     static bool get_value_of(xmlNodePtr p_node, const std::string &field, T &t);
     static int string_type_to_int(const std::string &type, const std::string &field_name);
     static bool is_current_child_name(xmlNodePtr p_node, const std::string &field);
-    static void parse_column(const xmlNodePtr p_node, TableMetaData &table_meta);
-    static ColumnMetaData fill_column_meta(xmlNodePtr p_node);
+    static void parse_column(const xmlNodePtr p_node, Table &table_meta);
+    static Column fill_column_meta(xmlNodePtr p_node);
     static void get_foreign_key_data(xmlNodePtr p_node, std::string &fk_table, std::string &fk_field);
     std::vector<std::string> skip_generation_;
     Xml::Node node_;
@@ -106,7 +106,7 @@ bool XMLMetaDataConfig::get_value_of(xmlNodePtr p_node, const std::string &field
 
 bool load_xml_file(const std::string &name, std::string &where);
 
-void load_meta(const std::string &name, TableMetaDataRegistry &reg);
+void load_meta(const std::string &name, Schema &reg);
 
 } // namespace Yb
 

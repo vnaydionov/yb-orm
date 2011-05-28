@@ -26,7 +26,7 @@ public:
     virtual RowData *create(const std::string &table_name) = 0;
     virtual RowData *register_as_new(const RowData &row) = 0;
     virtual void flush() = 0;
-    virtual const TableMetaDataRegistry &get_meta_data_registry() = 0;
+    virtual const Schema &get_meta_data_registry() = 0;
     virtual DataSource &get_ds() = 0;
 };
 
@@ -35,7 +35,7 @@ class Session : private boost::noncopyable, public SessionBase
     friend class ::TestSession;
     typedef std::multimap<std::string, std::string> StrMap;
 public:
-    Session(const TableMetaDataRegistry &reg, std::auto_ptr<DataSource> ds);
+    Session(const Schema &reg, std::auto_ptr<DataSource> ds);
     RowData *find(const RowData &key);
     LoadedRows load_collection(
             const std::string &table_name, const Filter &filter, 
@@ -44,7 +44,7 @@ public:
     RowData *create(const std::string &table_name);
     RowData *register_as_new(const RowData &row);
     void flush();
-    const TableMetaDataRegistry &get_meta_data_registry();
+    const Schema &get_meta_data_registry();
     DataSource &get_ds();
 private:
     void flush_new();
@@ -53,9 +53,9 @@ private:
     void get_unique_tables_for_insert(std::set<std::string> &unique_tables);
     void sort_tables(const std::set<std::string> &unique_tabs, std::list<std::string> &ordered_tables);
     boost::shared_ptr<PKIDRecord> create_temp_pkid(
-            const TableMetaData &table);
+            const Table &table);
 private:
-    const TableMetaDataRegistry &reg_;
+    const Schema &reg_;
     std::auto_ptr<DataSource> ds_;
     RowSet rows_;
     std::set<std::string> tables_for_insert_;

@@ -89,8 +89,8 @@ class RowData
 public:
     typedef std::map<std::string, Entry> Map;
     RowData();
-    RowData(const TableMetaDataRegistry &reg, const std::string &table_name);
-    const TableMetaData &get_table() const;
+    RowData(const Schema &reg, const std::string &table_name);
+    const Table &get_table() const;
     const Value &get(const std::string &column_name) const;
     const PKIDValue get_id() const;
     void set(const std::string &column_name, const Value &value);
@@ -108,11 +108,11 @@ public:
     bool lt(const RowData &x, bool key_only = false) const;
     void load(void) const;
 private:
-    void load_if_ghost_and_if_non_key_field_requested(const ColumnMetaData &c) const;
-    const Value get_typed_value(const ColumnMetaData &c, const Value &value);
+    void load_if_ghost_and_if_non_key_field_requested(const Column &c) const;
+    const Value get_typed_value(const Column &c, const Value &value);
 private:
-    const TableMetaDataRegistry *reg_;
-    const TableMetaData *table_;
+    const Schema *reg_;
+    const Table *table_;
     DataSource *ds_;
     mutable PersistStatus status_;
     mutable Map values_;

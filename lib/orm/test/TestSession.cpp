@@ -7,11 +7,11 @@ using namespace Yb;
 
 class MockDataSource : public DataSource
 {
-    const TableMetaDataRegistry &reg_;
+    const Schema &reg_;
     size_t select_cnt_, update_cnt_, insert_cnt_, delete_cnt_;
     LongInt seq_;
 public:
-    MockDataSource(const TableMetaDataRegistry &reg)
+    MockDataSource(const Schema &reg)
         : reg_(reg)
         , select_cnt_(0)
         , update_cnt_(0)
@@ -63,7 +63,7 @@ public:
             const RowDataVector &rows)
     {
         insert_cnt_ += rows.size();
-        const TableMetaData &t = reg_.get_table(table_name);
+        const Table &t = reg_.get_table(table_name);
         const string pk_name = t.find_synth_pk();
         if (!pk_name.empty())
             for (unsigned i = 0; i < rows.size(); ++i) {
@@ -113,18 +113,18 @@ class TestSession : public CppUnit::TestFixture
     CPPUNIT_TEST(test_insert_order);
     CPPUNIT_TEST_SUITE_END();
 
-    TableMetaDataRegistry r_;
-    const TableMetaDataRegistry &get_r() const { return r_; }
+    Schema r_;
+    const Schema &get_r() const { return r_; }
 
 public:
     void setUp()
     {
-        TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
-                    ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Y", Value::STRING, 0, 0));
+        Table t("A");
+        t.set_column(Column("X", Value::LONGINT, 0,
+                    Column::PK));
+        t.set_column(Column("Y", Value::STRING, 0, 0));
         t.set_seq_name("S_A_X");
-        TableMetaDataRegistry r;
+        Schema r;
         r.set_table(t);
         r_ = r;
     }
@@ -279,10 +279,10 @@ public:
 
     void test_load_collection()
     {
-        TableMetaData t("B");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
-                    ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("U", Value::LONGINT, 0, 0));
+        Table t("B");
+        t.set_column(Column("X", Value::LONGINT, 0,
+                    Column::PK));
+        t.set_column(Column("U", Value::LONGINT, 0, 0));
         r_.set_table(t);
         auto_ptr<DataSource> ds(new MockDataSource(get_r()));
         Session session(get_r(), ds);
@@ -303,28 +303,28 @@ public:
 
     void test_insert_order()
     {
-        TableMetaDataRegistry r;
+        Schema r;
         {
-            TableMetaData t("A");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
-                        ColumnMetaData::PK));
+            Table t("A");
+            t.set_column(Column("X", Value::LONGINT, 0,
+                        Column::PK));
             t.set_seq_name("S_A_X");
             r.set_table(t);
         }
         {
-            TableMetaData t("C");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
-                        ColumnMetaData::PK));
-            t.set_column(ColumnMetaData("AX", Value::LONGINT, 0, 0, "A", "X"));
+            Table t("C");
+            t.set_column(Column("X", Value::LONGINT, 0,
+                        Column::PK));
+            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
             t.set_seq_name("S_A_X");
             r.set_table(t);
         }
         {
-            TableMetaData t("B");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0,
-                        ColumnMetaData::PK));
-            t.set_column(ColumnMetaData("AX", Value::LONGINT, 0, 0, "A", "X"));
-            t.set_column(ColumnMetaData("CX", Value::LONGINT, 0, 0, "C", "X"));
+            Table t("B");
+            t.set_column(Column("X", Value::LONGINT, 0,
+                        Column::PK));
+            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
+            t.set_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
             t.set_seq_name("S_A_X");
             r.set_table(t);
         }

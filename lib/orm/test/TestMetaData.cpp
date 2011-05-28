@@ -36,28 +36,28 @@ class TestMetaData : public CppUnit::TestFixture
 public:
     void test_column()
     {
-        ColumnMetaData c("x", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO);
+        Column c("x", Value::LONGINT, 0, Column::PK | Column::RO);
         CPPUNIT_ASSERT_EQUAL(string("X"), c.get_name());
         CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, c.get_type());
         CPPUNIT_ASSERT_EQUAL(0, (int)c.get_size());
-        CPPUNIT_ASSERT_EQUAL((int)(ColumnMetaData::PK | ColumnMetaData::RO), c.get_flags());
+        CPPUNIT_ASSERT_EQUAL((int)(Column::PK | Column::RO), c.get_flags());
         CPPUNIT_ASSERT(c.is_pk() && c.is_ro());
-        ColumnMetaData d("y", Value::LONGINT, 0, ColumnMetaData::PK);
+        Column d("y", Value::LONGINT, 0, Column::PK);
         CPPUNIT_ASSERT(d.is_pk() && !d.is_ro());
-        ColumnMetaData e("z", Value::LONGINT, 0, 0);
+        Column e("z", Value::LONGINT, 0, 0);
         CPPUNIT_ASSERT(!e.is_pk() && !e.is_ro());
     }
 
     void test_column_ex()
     {
-        ColumnMetaData c("X_Y", Value::LONGINT, 0, 0);
+        Column c("X_Y", Value::LONGINT, 0, 0);
         CPPUNIT_ASSERT_EQUAL(string("x-y"), c.get_xml_name());
         CPPUNIT_ASSERT_EQUAL(string(""), c.get_fk_table_name());
         CPPUNIT_ASSERT_EQUAL(string(""), c.get_fk_name());
-        ColumnMetaData d("X_Y", Value::LONGINT, 0, 0, "", "", "xYz");
+        Column d("X_Y", Value::LONGINT, 0, 0, "", "", "xYz");
         CPPUNIT_ASSERT_EQUAL(string("xYz"), d.get_xml_name());
         CPPUNIT_ASSERT(!d.has_fk());
-        ColumnMetaData e("X_Y", Value::LONGINT, 0, 0, "b", "z");
+        Column e("X_Y", Value::LONGINT, 0, 0, "b", "z");
         CPPUNIT_ASSERT_EQUAL(string("B"), e.get_fk_table_name());
         CPPUNIT_ASSERT_EQUAL(string("Z"), e.get_fk_name());
         CPPUNIT_ASSERT(e.has_fk());
@@ -65,35 +65,35 @@ public:
 
     void test_table_cons()
     {
-        TableMetaData t;
+        Table t;
         CPPUNIT_ASSERT_EQUAL(string(""), t.get_name());
         CPPUNIT_ASSERT_EQUAL(string(""), t.get_xml_name());
-        TableMetaData u("a");
+        Table u("a");
         CPPUNIT_ASSERT_EQUAL(string("A"), u.get_name());
         CPPUNIT_ASSERT_EQUAL(string("a"), u.get_xml_name());
-        TableMetaData v("a_a");
+        Table v("a_a");
         CPPUNIT_ASSERT_EQUAL(string("A_A"), v.get_name());
         CPPUNIT_ASSERT_EQUAL(string("a-a"), v.get_xml_name());
-        TableMetaData w("a", "b");
+        Table w("a", "b");
         CPPUNIT_ASSERT_EQUAL(string("b"), w.get_xml_name());
     }
 
     void test_table_columns()
     {
-        TableMetaData t("a");
+        Table t("a");
         CPPUNIT_ASSERT(t.begin() == t.end());
         CPPUNIT_ASSERT_EQUAL(0, (int)t.size());
-        t.set_column(ColumnMetaData("x", Value::LONGINT, 0, 0));
+        t.set_column(Column("x", Value::LONGINT, 0, 0));
         CPPUNIT_ASSERT_EQUAL(1, (int)t.size());
         CPPUNIT_ASSERT_EQUAL(string("X"), t.begin()->second.get_name());
-        t.set_column(ColumnMetaData("Y", Value::LONGINT, 0, 0));
+        t.set_column(Column("Y", Value::LONGINT, 0, 0));
         CPPUNIT_ASSERT_EQUAL(2, (int)t.size());
         CPPUNIT_ASSERT_EQUAL(string("Y"), t.get_column("y").get_name());
     }
 
     void test_table_seq()
     {
-        TableMetaData t("A");
+        Table t("A");
         CPPUNIT_ASSERT_EQUAL(string(""), t.get_seq_name());
         t.set_seq_name("s_a_id");
         CPPUNIT_ASSERT_EQUAL(string("S_A_ID"), t.get_seq_name());
@@ -101,109 +101,109 @@ public:
 
     void test_table_synth_pk()
     {
-        TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0, 0));
-        t.set_column(ColumnMetaData("Y", Value::LONGINT, 0, ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Z", Value::LONGINT, 0, 0));
+        Table t("A");
+        t.set_column(Column("X", Value::LONGINT, 0, 0));
+        t.set_column(Column("Y", Value::LONGINT, 0, Column::PK));
+        t.set_column(Column("Z", Value::LONGINT, 0, 0));
         t.set_seq_name("S_A_ID");
         CPPUNIT_ASSERT_EQUAL(string("Y"), t.get_synth_pk());
     }
 
     void test_table_bad_synth_pk__no_pk()
     {
-        TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0, 0));
+        Table t("A");
+        t.set_column(Column("X", Value::LONGINT, 0, 0));
         t.set_seq_name("S_A_ID");
         t.get_synth_pk();
     }
 
     void test_table_bad_synth_pk__complex()
     {
-        TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK));
-        t.set_column(ColumnMetaData("Y", Value::LONGINT, 0, ColumnMetaData::PK));
+        Table t("A");
+        t.set_column(Column("X", Value::LONGINT, 0, Column::PK));
+        t.set_column(Column("Y", Value::LONGINT, 0, Column::PK));
         t.set_seq_name("S_A_ID");
         t.get_synth_pk();
     }
 
     void test_table_bad_synth_pk__no_seq()
     {
-        TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK));
+        Table t("A");
+        t.set_column(Column("X", Value::LONGINT, 0, Column::PK));
         t.get_synth_pk();
     }
 
     void test_meta_data_bad_column_name()
     {
-        TableMetaData t;
-        t.set_column(ColumnMetaData());
+        Table t;
+        t.set_column(Column());
     }
 
     void test_meta_data_bad_column_name2()
     {
-        TableMetaData t;
-        t.set_column(ColumnMetaData("1", 0, 0, 0));
+        Table t;
+        t.set_column(Column("1", 0, 0, 0));
     }
 
     void test_meta_data_column_not_found()
     {
-        TableMetaData t;
+        Table t;
         t.get_column("Y");
     }
 
     void test_md_registry()
     {
-        TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0, 0));
-        TableMetaDataRegistry tmd_reg;
+        Table t("A");
+        t.set_column(Column("X", Value::LONGINT, 0, 0));
+        Schema tmd_reg;
         CPPUNIT_ASSERT_EQUAL(0, (int)tmd_reg.size());
         CPPUNIT_ASSERT(tmd_reg.begin() == tmd_reg.end());
         tmd_reg.set_table(t);
         CPPUNIT_ASSERT_EQUAL(1, (int)tmd_reg.size());
-        const TableMetaData &d1 = tmd_reg.begin()->second;
-        const TableMetaData &d2 = tmd_reg.get_table("a");
+        const Table &d1 = tmd_reg.begin()->second;
+        const Table &d2 = tmd_reg.get_table("a");
         CPPUNIT_ASSERT_EQUAL(d1.get_name(), d2.get_name());
     }
 
     void test_meta_data_empty_table()
     {
-        TableMetaDataRegistry r;
-        r.set_table(TableMetaData("A"));
+        Schema r;
+        r.set_table(Table("A"));
     }
 
     void test_meta_data_bad_table_name()
     {
-        TableMetaData t;
-        t.set_column(ColumnMetaData("Z", 0, 0, 0));
-        TableMetaDataRegistry r;
+        Table t;
+        t.set_column(Column("Z", 0, 0, 0));
+        Schema r;
         r.set_table(t);
     }
 
     void test_meta_data_table_not_found()
     {
-        TableMetaDataRegistry r;
+        Schema r;
         r.get_table("Y");
     }
 
     void test_registry_check()
     {
-        TableMetaDataRegistry r;
+        Schema r;
         {
-            TableMetaData t("A");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
+            Table t("A");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
             r.set_table(t);
         }
         {
-            TableMetaData t("C");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("AX", Value::LONGINT, 0, 0, "A", "X"));
+            Table t("C");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
             r.set_table(t);
         }
         {
-            TableMetaData t("B");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("AX", Value::LONGINT, 0, 0, "A", "X"));
-            t.set_column(ColumnMetaData("CX", Value::LONGINT, 0, 0, "C", "X"));
+            Table t("B");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
+            t.set_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
             r.set_table(t);
         }
 
@@ -219,11 +219,11 @@ public:
             CPPUNIT_ASSERT_EQUAL(string("C"), *it++);
         }
 
-        TableMetaDataRegistry::StrMap tree_map;
+        Schema::StrMap tree_map;
         r.fill_map_tree_by_meta(tables, tree_map);
         CPPUNIT_ASSERT_EQUAL(4, (int)tree_map.size());
         {
-            TableMetaDataRegistry::StrMap::const_iterator it = tree_map.begin();
+            Schema::StrMap::const_iterator it = tree_map.begin();
             CPPUNIT_ASSERT_EQUAL(string(""), it->first);
             CPPUNIT_ASSERT_EQUAL(string("A"), it->second);
             ++it;
@@ -259,26 +259,26 @@ public:
 
     void test_registry_check_absent_fk_table()
     {
-        TableMetaDataRegistry r;
-        TableMetaData t("C");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-        t.set_column(ColumnMetaData("AX", Value::LONGINT, 0, 0, "A", "X"));
+        Schema r;
+        Table t("C");
+        t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+        t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
         r.set_table(t);
         r.check();
     }
     
     void test_registry_check_absent_fk_field()
     {
-       TableMetaDataRegistry r;
+       Schema r;
         {
-            TableMetaData t("A");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
+            Table t("A");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
             r.set_table(t);
         }
         {
-            TableMetaData t("C");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("AX", Value::LONGINT, 0, 0, "A", "Y"));
+            Table t("C");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "Y"));
             r.set_table(t);
         }
         r.check();
@@ -286,23 +286,23 @@ public:
     
     void test_registry_check_cyclic_references_whole()
     {
-        TableMetaDataRegistry r;
+        Schema r;
         {
-            TableMetaData t("A");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("BX", Value::LONGINT, 0, 0, "B", "X"));
+            Table t("A");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.set_column(Column("BX", Value::LONGINT, 0, 0, "B", "X"));
             r.set_table(t);
         }
         {
-            TableMetaData t("C");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("AX", Value::LONGINT, 0, 0, "A", "X"));
+            Table t("C");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
             r.set_table(t);
         }
         {
-            TableMetaData t("B");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("CX", Value::LONGINT, 0, 0, "C", "X"));
+            Table t("B");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.set_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
             r.set_table(t);
         }
         r.check();
@@ -310,29 +310,29 @@ public:
     
     void test_registry_check_cyclic_references_inside()
     {
-        TableMetaDataRegistry r;
+        Schema r;
         {
-            TableMetaData t("D");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
+            Table t("D");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
             r.set_table(t);
         }
         {
-            TableMetaData t("A");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("BX", Value::LONGINT, 0, 0, "B", "X"));
-            t.set_column(ColumnMetaData("DX", Value::LONGINT, 0, 0, "D", "X"));
+            Table t("A");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.set_column(Column("BX", Value::LONGINT, 0, 0, "B", "X"));
+            t.set_column(Column("DX", Value::LONGINT, 0, 0, "D", "X"));
             r.set_table(t);
         }
         {
-            TableMetaData t("C");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("AX", Value::LONGINT, 0, 0, "A", "X"));
+            Table t("C");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
             r.set_table(t);
         }
         {
-            TableMetaData t("B");
-            t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("CX", Value::LONGINT, 0, 0, "C", "X"));
+            Table t("B");
+            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.set_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
             r.set_table(t);
         }
         r.check();

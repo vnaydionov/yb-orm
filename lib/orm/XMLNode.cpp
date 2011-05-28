@@ -7,9 +7,9 @@ namespace Yb {
 
 void XMLNode::init_by_row_data(const RowData &data, const string &alt_name)
 {
-    const TableMetaData &table = data.get_table();
+    const Table &table = data.get_table();
     name_ = alt_name.empty()? table.get_xml_name(): alt_name;
-    TableMetaData::Map::const_iterator it = table.begin(), end = table.end();
+    Table::Map::const_iterator it = table.begin(), end = table.end();
     for ( ; it != end; ++it) {
         const string col_name = it->second.get_xml_name();
         if (!col_name.empty())
@@ -73,8 +73,8 @@ deep_xmlize(SessionBase &session, const RowData &d, int depth)
 {   
     XMLNode node(d);
     if (depth == -1 || depth > 0) {
-        const TableMetaData &table = d.get_table();
-        TableMetaData::Map::const_iterator it = table.begin(), end = table.end();
+        const Table &table = d.get_table();
+        Table::Map::const_iterator it = table.begin(), end = table.end();
         for (; it != end; ++it)
             if (it->second.has_fk() && !d.get(it->second.get_name()).is_null()) {
                 boost::shared_ptr<AutoXMLizable> domain_obj = 

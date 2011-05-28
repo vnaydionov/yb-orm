@@ -5,7 +5,7 @@
 #include "MetaData.h"
 
 namespace Yb {
-typedef SingletonHolder<TableMetaDataRegistry> theMetaData;
+typedef SingletonHolder<Schema> theMetaData;
 }
 
 // vim:ts=4:sts=4:sw=4:et:

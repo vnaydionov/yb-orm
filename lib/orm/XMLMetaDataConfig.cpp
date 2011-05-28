@@ -24,7 +24,7 @@ bool load_xml_file(const string &name, string &where)
     return true;
 }
 
-void load_meta(const string &name, TableMetaDataRegistry &reg)
+void load_meta(const string &name, Schema &reg)
 {
     string xml;
     if (!load_xml_file(name, xml))
@@ -44,7 +44,7 @@ XMLMetaDataConfig::XMLMetaDataConfig(const string &xml_string)
     }
 }
 
-void XMLMetaDataConfig::parse(TableMetaDataRegistry &reg)
+void XMLMetaDataConfig::parse(Schema &reg)
 {
     if(string((const char *)node_.get()->name) != "schema")
         throw ParseError(string("Unknown element '") + 
@@ -56,13 +56,13 @@ void XMLMetaDataConfig::parse(TableMetaDataRegistry &reg)
             continue;
         if(string((const char *)child->name) != "table")
             throw ParseError(string("Unknown element '") + (const char *)child->name + "' found during parse of element 'schema'");
-        TableMetaData t;
+        Table t;
         parse_table(child, t);
         reg.set_table(t);
     }
 }
 
-void XMLMetaDataConfig::parse_table(xmlNodePtr p_node, TableMetaData &table_meta)
+void XMLMetaDataConfig::parse_table(xmlNodePtr p_node, Table &table_meta)
 {
     string sequence_name;
     string name;
@@ -115,7 +115,7 @@ bool XMLMetaDataConfig::is_current_child_name(xmlNodePtr p_node, const string &f
     return (string((const char *)p_node->name) == field) ? true : false;
 }
 
-void XMLMetaDataConfig::parse_column(const xmlNodePtr p_node, TableMetaData &table_meta)
+void XMLMetaDataConfig::parse_column(const xmlNodePtr p_node, Table &table_meta)
 {
     for(xmlNodePtr col = p_node; col; col = col->next) {
         if(col->type != XML_ELEMENT_NODE)
@@ -127,7 +127,7 @@ void XMLMetaDataConfig::parse_column(const xmlNodePtr p_node, TableMetaData &tab
     }
 }
 
-ColumnMetaData XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
+Column XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
 {
     string name, type, fk_table, fk_field, xml_name = "";
     int flags = 0, size = 0, col_type = 0;
@@ -148,7 +148,7 @@ ColumnMetaData XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
     if (node.HasAttr("nullable")) {
         if (col_type == Value::STRING)
             throw InvalidCombination("nullable attribute cannot be used for strings");
-        flags |= ColumnMetaData::NULLABLE;
+        flags |= Column::NULLABLE;
     }    
    
     if (node.HasNotEmptyAttr("default")) {
@@ -180,9 +180,9 @@ ColumnMetaData XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
             continue;
         get_value_of(child, "xml-name", xml_name);
         if (is_current_child_name(child, "readonly"))
-            flags |= ColumnMetaData::RO;
+            flags |= Column::RO;
         if (is_current_child_name(child, "primarykey"))
-            flags |= ColumnMetaData::PK;
+            flags |= Column::PK;
         if (string((const char *)child->name) == "foreign-key") {
             get_foreign_key_data(child, fk_table, fk_field);
         }
@@ -190,7 +190,7 @@ ColumnMetaData XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
 
     if((size > 0) && (col_type != Value::STRING))
         throw InvalidCombination("Size musn't me used for not a string type");
-    ColumnMetaData result(name, col_type, size, flags, fk_table, fk_field, xml_name);               
+    Column result(name, col_type, size, flags, fk_table, fk_field, xml_name);               
     result.set_default_value(default_val);
     return result;
 }

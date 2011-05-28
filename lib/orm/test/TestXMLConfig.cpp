@@ -37,15 +37,15 @@ public:
             "</table>"
             "</schema>";
         XMLMetaDataConfig cfg(xml);
-        TableMetaDataRegistry reg;
+        Schema reg;
         cfg.parse(reg);
         CPPUNIT_ASSERT_EQUAL(2, (int)reg.size());
-        const TableMetaData &t = reg.get_table("A");
+        const Table &t = reg.get_table("A");
         CPPUNIT_ASSERT_EQUAL(1, (int)t.size());
         CPPUNIT_ASSERT_EQUAL(std::string("AA"), t.begin()->second.get_name());
         CPPUNIT_ASSERT_EQUAL(10, (int)t.begin()->second.get_size());
         CPPUNIT_ASSERT_EQUAL((int)Value::STRING, t.begin()->second.get_type());
-        const TableMetaData &t2 = reg.get_table("B");
+        const Table &t2 = reg.get_table("B");
         CPPUNIT_ASSERT_EQUAL(1, (int)t2.size());
         CPPUNIT_ASSERT_EQUAL(std::string("BA"), t2.begin()->second.get_name());
         CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, t2.begin()->second.get_type());
@@ -53,7 +53,7 @@ public:
     
     void testWrongElementTable()
     {
-        TableMetaData t;
+        Table t;
         string xml =  "<table name=\"A\" sequence=\"S\"><col></col></table>";
         Xml::Node node(Xml::Parse(xml));
         XMLMetaDataConfig cfg("");
@@ -62,7 +62,7 @@ public:
     
     void testParseTable()
     {
-        TableMetaData t;
+        Table t;
         string xml = 
             "<table name=\"A\" sequence=\"S\">"
             "<column type=\"string\" name=\"ASTR\" size=\"10\" />"
@@ -76,7 +76,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(std::string("A"), t.get_name());
         CPPUNIT_ASSERT_EQUAL(std::string("S"), t.get_seq_name());
         CPPUNIT_ASSERT_EQUAL(2, (int)t.size());
-        TableMetaData::Map::const_iterator it = t.begin();
+        Table::Map::const_iterator it = t.begin();
         CPPUNIT_ASSERT_EQUAL(string("ASTR"), it->second.get_name());
         CPPUNIT_ASSERT_EQUAL(10, (int)it->second.get_size());
         CPPUNIT_ASSERT_EQUAL((int)Value::STRING, it->second.get_type());
@@ -105,7 +105,7 @@ public:
     void testWrongColumnType()
     {
         string xml = "<column type=\"long\" name=\"ID\"></column>";
-        ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(Xml::Parse(xml));
+        Column col = XMLMetaDataConfig::fill_column_meta(Xml::Parse(xml));
     }
     
     void testParseColumn()
@@ -114,7 +114,7 @@ public:
                      "<readonly/><primarykey/></column>";
         Xml::Node node(Xml::Parse(xml));
         xmlNodePtr p_node = node.get();
-        ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(p_node);
+        Column col = XMLMetaDataConfig::fill_column_meta(p_node);
         CPPUNIT_ASSERT_EQUAL(std::string("ID"), col.get_name());
         CPPUNIT_ASSERT_EQUAL(true, col.is_pk());
         CPPUNIT_ASSERT_EQUAL(true, col.is_ro());
@@ -136,7 +136,7 @@ public:
     {      
         string xml = "<column type=\"longint\" name=\"ID\" size=\"10\" />";
         Xml::Node node(Xml::Parse(xml));
-        ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(node.get());
+        Column col = XMLMetaDataConfig::fill_column_meta(node.get());
     }
 
     void testAbsentForeignKeyField()
@@ -157,14 +157,14 @@ public:
     {
         string xml = "<column type=\"longint\"></column>";
         Xml::Node node(Xml::Parse(xml));
-        ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(node.get());
+        Column col = XMLMetaDataConfig::fill_column_meta(node.get());
     }
 
     void testAbsentColumnType()
     {
         string xml = "<column name=\"ID\"></column>";
         Xml::Node node(Xml::Parse(xml));
-        ColumnMetaData col = XMLMetaDataConfig::fill_column_meta(node.get());
+        Column col = XMLMetaDataConfig::fill_column_meta(node.get());
     }
 
     void testBadXML()

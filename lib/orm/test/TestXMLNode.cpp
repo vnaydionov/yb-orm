@@ -66,7 +66,7 @@ class TestXMLNode : public CppUnit::TestFixture
     CPPUNIT_TEST(test_deep_xmlize3);
     CPPUNIT_TEST_SUITE_END();
 
-    TableMetaDataRegistry r_;
+    Schema r_;
     string db_type_;
 
     void init_singleton_registry()
@@ -80,20 +80,20 @@ class TestXMLNode : public CppUnit::TestFixture
                 CreatorPtr(new DomainCreator<OrmTestDomainSimple>()));
         }
 
-        TableMetaDataRegistry &r = theMetaData::instance();
+        Schema &r = theMetaData::instance();
 //      if(r.size() == 0) {
-            TableMetaData t("T_ORM_TEST", "orm-test");
+            Table t("T_ORM_TEST", "orm-test");
             t.set_seq_name("S_ORM_TEST_ID");
-            t.set_column(ColumnMetaData("ID", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t.set_column(ColumnMetaData("A", Value::STRING, 50, 0));
-            t.set_column(ColumnMetaData("B", Value::DATETIME, 0, 0));
-            t.set_column(ColumnMetaData("C", Value::DECIMAL, 0, 0));
+            t.set_column(Column("ID", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.set_column(Column("A", Value::STRING, 50, 0));
+            t.set_column(Column("B", Value::DATETIME, 0, 0));
+            t.set_column(Column("C", Value::DECIMAL, 0, 0));
             r.set_table(t);
-            TableMetaData t2("T_ORM_XML", "orm-xml");
+            Table t2("T_ORM_XML", "orm-xml");
             t2.set_seq_name("S_ORM_TEST_ID");
-            t2.set_column(ColumnMetaData("ID", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-            t2.set_column(ColumnMetaData("ORM_TEST_ID", Value::LONGINT, 0, 0, "T_ORM_TEST", "ID"));
-            t2.set_column(ColumnMetaData("B", Value::DECIMAL, 0, 0));
+            t2.set_column(Column("ID", Value::LONGINT, 0, Column::PK | Column::RO));
+            t2.set_column(Column("ORM_TEST_ID", Value::LONGINT, 0, 0, "T_ORM_TEST", "ID"));
+            t2.set_column(Column("B", Value::DECIMAL, 0, 0));
             r.set_table(t2);
 //      }
     }
@@ -103,19 +103,19 @@ public:
     {
         db_type_ = xgetenv("YBORM_DBTYPE");
 
-        TableMetaData t("A");
-        t.set_column(ColumnMetaData("X", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-        t.set_column(ColumnMetaData("Y", Value::STRING, 0, 0));
-        t.set_column(ColumnMetaData("Z", Value::DECIMAL, 0, ColumnMetaData::RO));
-        TableMetaDataRegistry r;
+        Table t("A");
+        t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+        t.set_column(Column("Y", Value::STRING, 0, 0));
+        t.set_column(Column("Z", Value::DECIMAL, 0, Column::RO));
+        Schema r;
         r.set_table(t);
-        TableMetaData t2("XX");
-        t2.set_column(ColumnMetaData("XA", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
-        t2.set_column(ColumnMetaData("XB", Value::STRING, 0, 0));
-        t2.set_column(ColumnMetaData("XC", Value::DECIMAL, 0, ColumnMetaData::RO));
+        Table t2("XX");
+        t2.set_column(Column("XA", Value::LONGINT, 0, Column::PK | Column::RO));
+        t2.set_column(Column("XB", Value::STRING, 0, 0));
+        t2.set_column(Column("XC", Value::DECIMAL, 0, Column::RO));
         r.set_table(t2);
-        TableMetaData t3("N");
-        t3.set_column(ColumnMetaData("A", Value::LONGINT, 0, ColumnMetaData::PK | ColumnMetaData::RO));
+        Table t3("N");
+        t3.set_column(Column("A", Value::LONGINT, 0, Column::PK | Column::RO));
         r.set_table(t3);
         r_ = r;
 

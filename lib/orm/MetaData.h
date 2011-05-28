@@ -82,15 +82,32 @@ public:
     {}
 };
 
-class ColumnMetaData
+class Table;
+
+class NullPointer: public std::runtime_error {
+public: NullPointer(const std::string &ctx)
+    : std::runtime_error(ctx) {}
+};
+
+template <class T, class U>
+T *check_not_null(T *p, U ctx)
+{
+    if (!p)
+        throw NullPointer(ctx);
+    return p;
+}
+
+class Column
 {
 public:
     enum { PK = 1, RO = 2, NULLABLE = 4 };
-    ColumnMetaData(const std::string &name = "",
+    Column(const std::string &name = "",
             int type = 0, size_t size = 0, int flags = 0,
             const std::string &fk_table = "", const std::string &fk = "",
             const std::string &xml_name = "");
-
+    Table &table() const {
+        return *check_not_null(table_, "get column's parent table"); }
+    void table(Table &t) { table_ = &t; }
     void set_default_value(const Value &value) {
         default_value_ = value;
     }
@@ -106,7 +123,9 @@ public:
     bool is_nullable() const { return (flags_ & NULLABLE) != 0; }
     const std::string &get_fk_table_name() const { return fk_table_name_; }
     const std::string &get_fk_name() const { return fk_name_; }
-    bool has_fk() const { return !fk_table_name_.empty() && !fk_name_.empty(); }
+    bool has_fk() const {
+        return !fk_table_name_.empty() && !fk_name_.empty();
+    }
     const std::string &get_xml_name() const { return xml_name_; }
 private:
     std::string name_;
@@ -117,26 +136,32 @@ private:
     std::string fk_name_;
     std::string xml_name_;
     Value default_value_;
+    Table *table_;
 };
 
-class TableMetaData
+class Schema;
+
+class Table
 {
 public:
     const std::string get_unique_pk() const;
-    typedef std::map<std::string, ColumnMetaData> Map;
-    TableMetaData(const std::string &name = "", const std::string &xml_name = "");
+    typedef std::map<std::string, Column> Map;
+    Table(const std::string &name = "", const std::string &xml_name = "");
+    Schema &schema() const {
+        return *check_not_null(schema_, "get table's parent schema"); }
+    void schema(Schema &s) { schema_ = &s; }
     const std::string &get_name() const { return name_; }
     const std::string &get_xml_name() const { return xml_name_; }
     Map::const_iterator begin() const { return cols_.begin(); }
     Map::const_iterator end() const { return cols_.end(); }
     size_t size() const { return cols_.size(); }
-    const ColumnMetaData &get_column(const std::string &name) const;
+    const Column &get_column(const std::string &name) const;
     const std::string get_seq_name() const;
     bool get_autoinc() const;
     const std::string find_synth_pk() const;
     const std::string get_synth_pk() const;
     int get_depth() const { return depth_; }
-    void set_column(const ColumnMetaData &column);
+    void set_column(const Column &column);
     void set_seq_name(const std::string &seq_name);
     void set_autoinc(bool autoinc) { autoinc_ = autoinc; }
     void set_name(const std::string &name) { name_ = name; }
@@ -149,19 +174,20 @@ private:
     bool autoinc_;
     Map cols_;
     int depth_;
+    Schema *schema_;
 };
 
-class TableMetaDataRegistry
+class Schema
 {
     friend class ::TestMetaData;
     typedef std::multimap<std::string, std::string> StrMap;    
 public:
-    typedef std::map<std::string, TableMetaData> Map;
+    typedef std::map<std::string, Table> Map;
     Map::const_iterator begin() const { return tables_.begin(); }
     Map::const_iterator end() const { return tables_.end(); }
     size_t size() const { return tables_.size(); }
-    void set_table(const TableMetaData &table_meta_data);
-    const TableMetaData &get_table(const std::string &name) const;
+    void set_table(const Table &table_meta_data);
+    const Table &get_table(const std::string &name) const;
     void check();
 private:
     void CheckForeignKey(const std::string &table, const std::string &fk_table, const std::string &fk_field);

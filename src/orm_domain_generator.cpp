@@ -18,7 +18,7 @@ namespace Yb {
 class OrmDomainGenerator
 {
 public:
-    OrmDomainGenerator(const std::string &path, const TableMetaDataRegistry &reg)
+    OrmDomainGenerator(const std::string &path, const Schema &reg)
         : path_(path)
         , reg_(reg)
         , mem_weak(false)
@@ -27,14 +27,14 @@ public:
     void generate(const XMLMetaDataConfig &cfg)
     {
         ORM_LOG("generation started...");
-        TableMetaDataRegistry::Map::const_iterator it = reg_.begin(), end = reg_.end();
+        Schema::Map::const_iterator it = reg_.begin(), end = reg_.end();
         for (; it != end; ++it)
             if(cfg.need_generation(it->first))
                 generate_table(it->second);
     }
 
 private:
-    void init_weak(const TableMetaData &t)
+    void init_weak(const Table &t)
     {
         mem_weak = false;
         try {
@@ -44,7 +44,7 @@ private:
         }
     }
 
-    void write_header(const TableMetaData &t, std::ostream &str)
+    void write_header(const Table &t, std::ostream &str)
     {
         init_weak(t);
         string name = "ORM_DOMAIN__" + str_to_upper(t.get_name().substr(2)) + "__INCLUDED";
@@ -122,20 +122,20 @@ private:
             << "\t}\n";
     }
 
-    void write_include_dependencies(const TableMetaData &t, std::ostream &str)
+    void write_include_dependencies(const Table &t, std::ostream &str)
     {
-        TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
+        Table::Map::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
             if (it->second.has_fk())
                 str << "#include \"domain/" << get_file_class_name(it->second.get_fk_table_name()) << ".h\"\n";
     }
 
-    void write_members(const TableMetaData &t, std::ostream &str)
+    void write_members(const Table &t, std::ostream &str)
     {
         str << (mem_weak ? "\tYb::WeakObject " : "\tYb::StrongObject ") << get_member_name(t.get_name()) << ";\n";
     }
 
-    void write_footer(const TableMetaData &t, std::ostream &str)
+    void write_footer(const Table &t, std::ostream &str)
     {
         str << "};\n\n"
             << "struct "<< get_file_class_name(t.get_name()) << "Registrator\n{\n"
@@ -147,7 +147,7 @@ private:
             << "#endif\n";
     }
 
-    void write_cpp_data(const TableMetaData &t, std::ostream &str)
+    void write_cpp_data(const Table &t, std::ostream &str)
     {
         str << "#include \"domain/" << get_file_class_name(t.get_name()) << ".h\"\n"
             << "#include \"orm/DomainFactorySingleton.h\"\n\n"
@@ -165,7 +165,7 @@ private:
         } 
         else {
             str << "{\n";
-            TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
+            Table::Map::const_iterator it = t.begin(), end = t.end();
             for (; it != end; ++it)
             {
                 Yb::Value def_val = it->second.get_default_value();
@@ -227,7 +227,7 @@ private:
         }
     }
 
-    void generate_table(const TableMetaData &table)
+    void generate_table(const Table &table)
     {
         string file_path = path_ + "/" + get_file_class_name(table.get_name()) + ".h";
         ORM_LOG("Generating file: " << file_path << " for table '" << table.get_name() << "'");
@@ -249,11 +249,11 @@ private:
         expand_tabs_to_stream(cpp.str(), cpp_file);
     }
 
-    void write_is_nulls(const TableMetaData &t, std::ostream &str)
+    void write_is_nulls(const Table &t, std::ostream &str)
     {
         string pk_name = t.find_synth_pk();
         str << "\t// on null checkers\n";
-        TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
+        Table::Map::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
             if (!it->second.has_fk() && it->first != pk_name) {
                 str << "\tbool is_" << str_to_lower(it->second.get_name()) << "_null() const {\n"
@@ -261,11 +261,11 @@ private:
                     << "\t}\n";
             }
     }
-    void write_getters(const TableMetaData &t, std::ostream &str)
+    void write_getters(const Table &t, std::ostream &str)
     {
         string pk_name = t.find_synth_pk();
         str << "\t// getters\n";
-        TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
+        Table::Map::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
             if (!it->second.has_fk()) {
                 if (it->second.get_type() == Value::STRING) {
@@ -286,10 +286,10 @@ private:
             }
     }
 
-    void write_setters(const TableMetaData &t, std::ostream &str)
+    void write_setters(const Table &t, std::ostream &str)
     {
         str << "\t// setters\n";
-        TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
+        Table::Map::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
             if (!it->second.has_fk() && !it->second.is_ro()) {
                 str << "\tvoid set_" << str_to_lower(it->second.get_name())
@@ -338,9 +338,9 @@ private:
         }
     }
 
-    void write_foreign_keys_link(const TableMetaData &t, std::ostream &str)
+    void write_foreign_keys_link(const Table &t, std::ostream &str)
     {
-        TableMetaData::Map::const_iterator it = t.begin(), end = t.end();
+        Table::Map::const_iterator it = t.begin(), end = t.end();
         typedef std::map<std::string, std::string> MapString;
         MapString map_fk;
         for (; it != end; ++it) {
@@ -428,7 +428,7 @@ private:
     }
 
     string path_;
-    const TableMetaDataRegistry &reg_;
+    const Schema &reg_;
     bool mem_weak;
 };
 
@@ -449,7 +449,7 @@ int main(int argc, char *argv[])
         string config_contents;
         load_xml_file(config, config_contents);
         XMLMetaDataConfig cfg(config_contents);
-        TableMetaDataRegistry r;
+        Schema r;
         cfg.parse(r);
         r.check();
         OrmDomainGenerator generator(output_path, r);

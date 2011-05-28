@@ -158,7 +158,7 @@ PKIDValue::PKIDValue()
     , pkid_(0)
 {}
 
-PKIDValue::PKIDValue(const TableMetaData &table,
+PKIDValue::PKIDValue(const Table &table,
         boost::shared_ptr<PKIDRecord> temp)
     : table_(&table)
     , key_(pair<string, LongInt>("-" + table.get_name(), temp->pkid_))
@@ -166,13 +166,13 @@ PKIDValue::PKIDValue(const TableMetaData &table,
     , temp_(temp)
 {}
 
-PKIDValue::PKIDValue(const TableMetaData &table, LongInt pkid)
+PKIDValue::PKIDValue(const Table &table, LongInt pkid)
     : table_(&table)
     , key_(pair<string, LongInt>("+" + table.get_name(), pkid))
     , pkid_(pkid)
 {}
 
-const TableMetaData &PKIDValue::get_table() const
+const Table &PKIDValue::get_table() const
 {
     if (!table_)
         throw PKIDInvalid();

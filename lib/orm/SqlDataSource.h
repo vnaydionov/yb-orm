@@ -12,17 +12,17 @@ class SqlDataSource : public DataSource
 {
     friend class ::TestSqlDataSource;
 
-    const TableMetaDataRegistry &reg_;
+    const Schema &reg_;
     Engine &engine_;
 private:
     const RowData sql_row2row_data(const std::string &table_name, const Row &row);
     static RowPtr row_data2sql_row(const RowData &rd);
-    RowsPtr row_data_vector2sql_rows(const TableMetaData &table,
+    RowsPtr row_data_vector2sql_rows(const Table &table,
             const RowDataVector &rows, int filter = -1);
     void do_insert_rows(const std::string &table_name,
             const RowDataVector &rows, bool process_autoinc);
 public:
-    SqlDataSource(const TableMetaDataRegistry &reg,
+    SqlDataSource(const Schema &reg,
             Engine &engine);
     Engine &get_engine() { return engine_; }
     RowDataPtr select_row(const RowData &key);
