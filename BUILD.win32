@@ -120,6 +120,17 @@ If all went fine you will find static two static libraries:
     lib\orm\yborm.lib
 
 - Run the tests and examples
+Before running the tests and examples you will need to execute the SQL DDL
+statements on your testing DB.  These files can be produced by applying
+XSLT trasformation found in src/gen_sql.xsl to a schema XML-based file.
+When applying be sure to specify an SQL dialect.
+
+Run the transformation:
+xsltproc --stringparam dialect MYSQL|INTERBASE|ORACLE src/gen_sql.xsl 
+        lib/orm/test/test_schema.xml > lib/orm/test/mk_tables.sql
+xsltproc --stringparam dialect MYSQL|INTERBASE|ORACLE src/gen_sql.xsl 
+        examples/ex1_schema.xml > examples/mk_tables.sql
+
 These two executables can run without any additional settings:
     lib\util\test\ybutil_unit_tests.exe
     src\orm_domain_generator.exe

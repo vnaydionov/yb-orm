@@ -84,7 +84,10 @@ TODO
 
 Lots of things to be done:
     - better relationships handling
+    - object-based query language
     - update auto-generated C++ code
+    - simplify session object management
+    - connection pooling
     - etc.
 
 AUTHORS
