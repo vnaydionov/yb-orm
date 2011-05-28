@@ -168,7 +168,7 @@
     <xsl:template match="column" mode="autoinc" />
 
     <xsl:template match="column[primarykey and
-            (../../@sequence or ../../@autoinc)]" mode="autoinc">
+            (../@sequence or ../@autoinc)]" mode="autoinc">
         <xsl:if test="$dbtype = 'MYSQL'">
             <xsl:text> AUTO_INCREMENT</xsl:text>
         </xsl:if>
