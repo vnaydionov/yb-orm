@@ -64,12 +64,7 @@ class ValueError : public std::logic_error
 {
 public:
     ValueError(const std::string &msg) :
-#if defined(__BORLANDC__)
-        std::logic_error
-#else
-        logic_error
-#endif
-        (msg)
+        std::logic_error(msg)
     {}
 };
 
