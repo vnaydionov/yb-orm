@@ -27,12 +27,12 @@ SqlDataSource::sql_row2row_data(const string &table_name, const Row &row)
 {
     RowData d(reg_, table_name);
     const Table &table = reg_.get_table(table_name);
-    Table::Map::const_iterator it = table.begin(), end = table.end();
+    Columns::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it) {
-        Row::const_iterator x = row.find(it->second.get_name());
+        Row::const_iterator x = row.find(it->get_name());
         if (x == row.end())
-            throw FieldNotFoundInFetchedRow(table_name, it->second.get_name());
-        d.set(it->second.get_name(), x->second);
+            throw FieldNotFoundInFetchedRow(table_name, it->get_name());
+        d.set(it->get_name(), x->second);
     }
     return d;
 }
@@ -42,9 +42,9 @@ SqlDataSource::row_data2sql_row(const RowData &rd)
 {
     RowPtr row(new Row());
     const Table &table = rd.get_table();
-    Table::Map::const_iterator it = table.begin(), end = table.end();
+    Columns::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it)
-        (*row)[it->second.get_name()] = rd.get(it->second.get_name());
+        (*row)[it->get_name()] = rd.get(it->get_name());
     return row;
 }
 
@@ -108,11 +108,11 @@ SqlDataSource::do_insert_rows(const string &table_name,
         return;
     string pk_name = table.find_synth_pk();
     FieldSet excluded;
-    Table::Map::const_iterator it = table.begin(), end = table.end();
+    Columns::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it)
-        if ((it->second.is_ro() && !it->second.is_pk()) ||
-                (it->first == pk_name && process_autoinc))
-            excluded.insert(it->second.get_name());
+        if ((it->is_ro() && !it->is_pk()) ||
+                (it->get_name() == pk_name && process_autoinc))
+            excluded.insert(it->get_name());
     vector<LongInt> new_ids = engine_.insert(
             table_name, *sql_rows, excluded, process_autoinc);
     if (process_autoinc) {
@@ -143,12 +143,12 @@ SqlDataSource::update_rows(const string &table_name,
     const Table &table = reg_.get_table(table_name);
     RowsPtr sql_rows = row_data_vector2sql_rows(table, rows);
     FieldSet excluded, keys;
-    Table::Map::const_iterator it = table.begin(), end = table.end();
+    Columns::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it) {
-        if (it->second.is_pk())
-            keys.insert(it->second.get_name());
-        if (it->second.is_ro() && !it->second.is_pk())
-            excluded.insert(it->second.get_name());
+        if (it->is_pk())
+            keys.insert(it->get_name());
+        if (it->is_ro() && !it->is_pk())
+            excluded.insert(it->get_name());
     }
     engine_.update(table_name, *sql_rows, keys, excluded);
 }

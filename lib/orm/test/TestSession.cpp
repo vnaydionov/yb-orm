@@ -120,9 +120,9 @@ public:
     void setUp()
     {
         Table t("A");
-        t.set_column(Column("X", Value::LONGINT, 0,
+        t.add_column(Column("X", Value::LONGINT, 0,
                     Column::PK));
-        t.set_column(Column("Y", Value::STRING, 0, 0));
+        t.add_column(Column("Y", Value::STRING, 0, 0));
         t.set_seq_name("S_A_X");
         Schema r;
         r.set_table(t);
@@ -280,9 +280,9 @@ public:
     void test_load_collection()
     {
         Table t("B");
-        t.set_column(Column("X", Value::LONGINT, 0,
+        t.add_column(Column("X", Value::LONGINT, 0,
                     Column::PK));
-        t.set_column(Column("U", Value::LONGINT, 0, 0));
+        t.add_column(Column("U", Value::LONGINT, 0, 0));
         r_.set_table(t);
         auto_ptr<DataSource> ds(new MockDataSource(get_r()));
         Session session(get_r(), ds);
@@ -306,25 +306,25 @@ public:
         Schema r;
         {
             Table t("A");
-            t.set_column(Column("X", Value::LONGINT, 0,
+            t.add_column(Column("X", Value::LONGINT, 0,
                         Column::PK));
             t.set_seq_name("S_A_X");
             r.set_table(t);
         }
         {
             Table t("C");
-            t.set_column(Column("X", Value::LONGINT, 0,
+            t.add_column(Column("X", Value::LONGINT, 0,
                         Column::PK));
-            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
+            t.add_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
             t.set_seq_name("S_A_X");
             r.set_table(t);
         }
         {
             Table t("B");
-            t.set_column(Column("X", Value::LONGINT, 0,
+            t.add_column(Column("X", Value::LONGINT, 0,
                         Column::PK));
-            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
-            t.set_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
+            t.add_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
+            t.add_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
             t.set_seq_name("S_A_X");
             r.set_table(t);
         }

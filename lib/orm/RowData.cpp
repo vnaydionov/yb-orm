@@ -167,11 +167,11 @@ RowData::lt(const RowData &x, bool key_only) const
         return false;
     if (table_->get_name() != x.table_->get_name())
         return table_->get_name() < x.table_->get_name();
-    Table::Map::const_iterator it = table_->begin(), end = table_->end();
+    Columns::const_iterator it = table_->begin(), end = table_->end();
     for (; it != end; ++it) {
-        if (!key_only || it->second.is_pk()) {
-            const Value &a = get(it->second.get_name());
-            const Value &b = x.get(it->second.get_name());
+        if (!key_only || it->is_pk()) {
+            const Value &a = get(it->get_name());
+            const Value &b = x.get(it->get_name());
             if (a < b)
                 return true;
             if (b < a)
@@ -202,11 +202,11 @@ FilterBackendByKey::do_get_sql() const
     ostringstream sql;
     sql << "1=1";
     const Table &t = key_.get_table();
-    Table::Map::const_iterator it = t.begin(), end = t.end();
+    Columns::const_iterator it = t.begin(), end = t.end();
     for (; it != end; ++it)
-        if (it->second.is_pk()) {
-            sql << " AND " << it->second.get_name() << " = "
-                << key_.get(it->second.get_name()).sql_str();
+        if (it->is_pk()) {
+            sql << " AND " << it->get_name() << " = "
+                << key_.get(it->get_name()).sql_str();
         }
     return sql.str();
 }
@@ -217,11 +217,11 @@ FilterBackendByKey::do_collect_params_and_build_sql(Values &seq) const
     ostringstream sql;
     sql << "1=1";
     const Table &t = key_.get_table();
-    Table::Map::const_iterator it = t.begin(), end = t.end();
+    Columns::const_iterator it = t.begin(), end = t.end();
     for (; it != end; ++it)
-        if (it->second.is_pk()) {
-            seq.push_back(key_.get(it->second.get_name()));
-            sql << " AND " << it->second.get_name() << " = ?";
+        if (it->is_pk()) {
+            seq.push_back(key_.get(it->get_name()));
+            sql << " AND " << it->get_name() << " = ?";
         }
     return sql.str();
 }

@@ -124,10 +124,10 @@ private:
 
     void write_include_dependencies(const Table &t, std::ostream &str)
     {
-        Table::Map::const_iterator it = t.begin(), end = t.end();
+        Columns::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
-            if (it->second.has_fk())
-                str << "#include \"domain/" << get_file_class_name(it->second.get_fk_table_name()) << ".h\"\n";
+            if (it->has_fk())
+                str << "#include \"domain/" << get_file_class_name(it->get_fk_table_name()) << ".h\"\n";
     }
 
     void write_members(const Table &t, std::ostream &str)
@@ -165,23 +165,23 @@ private:
         } 
         else {
             str << "{\n";
-            Table::Map::const_iterator it = t.begin(), end = t.end();
+            Columns::const_iterator it = t.begin(), end = t.end();
             for (; it != end; ++it)
             {
-                Yb::Value def_val = it->second.get_default_value();
+                Yb::Value def_val = it->get_default_value();
                 if (!def_val.is_null()) {
-                    switch (it->second.get_type()) {
+                    switch (it->get_type()) {
                         case Value::LONGINT:
                             str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->first << "\", Yb::Value(" << def_val.as_string() << "LL));\n"; 
+                                << ".set(\"" << it->get_name() << "\", Yb::Value(" << def_val.as_string() << "LL));\n"; 
                             break;
                         case Value::DECIMAL:
                             str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->first << "\", Yb::Value(Yb::Decimal(" << def_val.as_string() << ")));\n"; 
+                                << ".set(\"" << it->get_name() << "\", Yb::Value(Yb::Decimal(" << def_val.as_string() << ")));\n"; 
                             break;
                         case Value::DATETIME:
                             str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->first << "\", Yb::Value(Yb::now()));\n"; 
+                                << ".set(\"" << it->get_name() << "\", Yb::Value(Yb::now()));\n"; 
                             break;
                     }
                 }
@@ -253,11 +253,11 @@ private:
     {
         string pk_name = t.find_synth_pk();
         str << "\t// on null checkers\n";
-        Table::Map::const_iterator it = t.begin(), end = t.end();
+        Columns::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
-            if (!it->second.has_fk() && it->first != pk_name) {
-                str << "\tbool is_" << str_to_lower(it->second.get_name()) << "_null() const {\n"
-                    << "\t\treturn " << "get(\"" << it->second.get_name() << "\")" << ".is_null();\n"
+            if (!it->has_fk() && it->get_name() != pk_name) {
+                str << "\tbool is_" << str_to_lower(it->get_name()) << "_null() const {\n"
+                    << "\t\treturn " << "get(\"" << it->get_name() << "\")" << ".is_null();\n"
                     << "\t}\n";
             }
     }
@@ -265,21 +265,21 @@ private:
     {
         string pk_name = t.find_synth_pk();
         str << "\t// getters\n";
-        Table::Map::const_iterator it = t.begin(), end = t.end();
+        Columns::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
-            if (!it->second.has_fk()) {
-                if (it->second.get_type() == Value::STRING) {
-                    str << "\t" << type_by_handle(it->second.get_type())
-                        << " get_" << str_to_lower(it->second.get_name()) << "() const {\n"
-                        << "\t\tYb::Value v(" << "get(\"" << it->second.get_name() << "\"));\n"
+            if (!it->has_fk()) {
+                if (it->get_type() == Value::STRING) {
+                    str << "\t" << type_by_handle(it->get_type())
+                        << " get_" << str_to_lower(it->get_name()) << "() const {\n"
+                        << "\t\tYb::Value v(" << "get(\"" << it->get_name() << "\"));\n"
                         << "\t\treturn v.is_null()? std::string(): v.as_string();\n"
                         << "\t}\n";
                 } 
                 else {
-                    int type = it->first == pk_name? Value::PKID: it->second.get_type();
+                    int type = it->get_name() == pk_name? Value::PKID: it->get_type();
                     str << "\t" << type_by_handle(type)
-                        << " get_" << str_to_lower(it->second.get_name()) << "() const {\n"
-                        << "\t\treturn " << "get(\"" << it->second.get_name() << "\")"
+                        << " get_" << str_to_lower(it->get_name()) << "() const {\n"
+                        << "\t\treturn " << "get(\"" << it->get_name() << "\")"
                         << "." << value_type_by_handle(type) << ";\n"
                         << "\t}\n";
                 }
@@ -289,15 +289,15 @@ private:
     void write_setters(const Table &t, std::ostream &str)
     {
         str << "\t// setters\n";
-        Table::Map::const_iterator it = t.begin(), end = t.end();
+        Columns::const_iterator it = t.begin(), end = t.end();
         for (; it != end; ++it)
-            if (!it->second.has_fk() && !it->second.is_ro()) {
-                str << "\tvoid set_" << str_to_lower(it->second.get_name())
-                    << "(" << type_by_handle(it->second.get_type())
-                    << (it->second.get_type() == Value::STRING ? " &" : " ")
-                    << str_to_lower(it->second.get_name()) << "__) {\n"
-                    << "\t\tset(\"" << it->second.get_name() << "\", Yb::Value("
-                    << str_to_lower(it->second.get_name()) << "__));\n"
+            if (!it->has_fk() && !it->is_ro()) {
+                str << "\tvoid set_" << str_to_lower(it->get_name())
+                    << "(" << type_by_handle(it->get_type())
+                    << (it->get_type() == Value::STRING ? " &" : " ")
+                    << str_to_lower(it->get_name()) << "__) {\n"
+                    << "\t\tset(\"" << it->get_name() << "\", Yb::Value("
+                    << str_to_lower(it->get_name()) << "__));\n"
                     << "\t}\n";
             }
     }
@@ -340,26 +340,26 @@ private:
 
     void write_foreign_keys_link(const Table &t, std::ostream &str)
     {
-        Table::Map::const_iterator it = t.begin(), end = t.end();
+        Columns::const_iterator it = t.begin(), end = t.end();
         typedef std::map<std::string, std::string> MapString;
         MapString map_fk;
         for (; it != end; ++it) {
-            if(it->second.has_fk()) {
-                string name = get_member_name(it->second.get_fk_table_name()).substr(0, it->second.get_fk_table_name().size()-2);
+            if(it->has_fk()) {
+                string name = get_member_name(it->get_fk_table_name()).substr(0, it->get_fk_table_name().size()-2);
                 MapString::iterator found = map_fk.find(name);
                 if (found != map_fk.end()) {
-                    std::string new_entity_name = get_entity_name_by_field(it->second.get_name());
+                    std::string new_entity_name = get_entity_name_by_field(it->get_name());
                     if(new_entity_name == name) {
                         std::string field = found->second;
                         map_fk.erase(found);
                         map_fk.insert(MapString::value_type(get_entity_name_by_field(field), field));
-                        map_fk.insert(MapString::value_type(name, it->second.get_name()));
+                        map_fk.insert(MapString::value_type(name, it->get_name()));
                     }
                     else
-                        map_fk.insert(MapString::value_type(new_entity_name, it->second.get_name()));
+                        map_fk.insert(MapString::value_type(new_entity_name, it->get_name()));
                 }
                 else
-                    map_fk.insert(MapString::value_type(name, it->second.get_name()));
+                    map_fk.insert(MapString::value_type(name, it->get_name()));
             }
         }
 
@@ -373,31 +373,31 @@ private:
 
         it = t.begin(), end = t.end();
         for (; it != end; ++it)
-            if (it->second.has_fk())
+            if (it->has_fk())
             {
-                string name = reverse_field_fk.find(it->second.get_name())->second;
-                string fk_name = str_to_lower(it->second.get_fk_name());
-                if(it->second.is_nullable()) {
+                string name = reverse_field_fk.find(it->get_name())->second;
+                string fk_name = str_to_lower(it->get_fk_name());
+                if(it->is_nullable()) {
                     str << "\tbool has_" << name << "() const {\n"
-                        << "\t\treturn !get(\"" << it->second.get_name() << "\").is_null();\n"
+                        << "\t\treturn !get(\"" << it->get_name() << "\").is_null();\n"
                         << "\t}\n";
 
                     str << "\tvoid reset_" << name << "() {\n"
                         << "\t\tset(\""
-                        << it->second.get_name() << "\", Yb::Value());\n"
+                        << it->get_name() << "\", Yb::Value());\n"
                         << "\t}\n";
                 }
                 str << "\tvoid set_" << name << "(const "
-                    << get_file_class_name(it->second.get_fk_table_name())
+                    << get_file_class_name(it->get_fk_table_name())
                     << " &" << name << ") {\n"
-                    << "\t\tset(\"" << it->second.get_name() << "\", Yb::Value("
+                    << "\t\tset(\"" << it->get_name() << "\", Yb::Value("
                     << name << ".get_" << fk_name << "()));\n"
                     << "\t}\n";
 
-                str << "\tconst " << get_file_class_name(it->second.get_fk_table_name())
+                str << "\tconst " << get_file_class_name(it->get_fk_table_name())
                     <<  " get_" << name << "() const {\n"
-                    << "\t\treturn " << get_file_class_name(it->second.get_fk_table_name())
-                    << "(*session_, get(\"" << it->second.get_name() << "\").as_longint());\n"
+                    << "\t\treturn " << get_file_class_name(it->get_fk_table_name())
+                    << "(*session_, get(\"" << it->get_name() << "\").as_longint());\n"
                     << "\t}\n";
             }
     }

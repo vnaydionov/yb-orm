@@ -84,38 +84,38 @@ class TestXMLNode : public CppUnit::TestFixture
 //      if(r.size() == 0) {
             Table t("T_ORM_TEST", "orm-test");
             t.set_seq_name("S_ORM_TEST_ID");
-            t.set_column(Column("ID", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.set_column(Column("A", Value::STRING, 50, 0));
-            t.set_column(Column("B", Value::DATETIME, 0, 0));
-            t.set_column(Column("C", Value::DECIMAL, 0, 0));
+            t.add_column(Column("ID", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("A", Value::STRING, 50, 0));
+            t.add_column(Column("B", Value::DATETIME, 0, 0));
+            t.add_column(Column("C", Value::DECIMAL, 0, 0));
             r.set_table(t);
             Table t2("T_ORM_XML", "orm-xml");
             t2.set_seq_name("S_ORM_TEST_ID");
-            t2.set_column(Column("ID", Value::LONGINT, 0, Column::PK | Column::RO));
-            t2.set_column(Column("ORM_TEST_ID", Value::LONGINT, 0, 0, "T_ORM_TEST", "ID"));
-            t2.set_column(Column("B", Value::DECIMAL, 0, 0));
+            t2.add_column(Column("ID", Value::LONGINT, 0, Column::PK | Column::RO));
+            t2.add_column(Column("ORM_TEST_ID", Value::LONGINT, 0, 0, "T_ORM_TEST", "ID"));
+            t2.add_column(Column("B", Value::DECIMAL, 0, 0));
             r.set_table(t2);
 //      }
     }
-    
+
 public:
     void setUp()
     {
         db_type_ = xgetenv("YBORM_DBTYPE");
 
         Table t("A");
-        t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-        t.set_column(Column("Y", Value::STRING, 0, 0));
-        t.set_column(Column("Z", Value::DECIMAL, 0, Column::RO));
+        t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+        t.add_column(Column("Y", Value::STRING, 0, 0));
+        t.add_column(Column("Z", Value::DECIMAL, 0, Column::RO));
         Schema r;
         r.set_table(t);
         Table t2("XX");
-        t2.set_column(Column("XA", Value::LONGINT, 0, Column::PK | Column::RO));
-        t2.set_column(Column("XB", Value::STRING, 0, 0));
-        t2.set_column(Column("XC", Value::DECIMAL, 0, Column::RO));
+        t2.add_column(Column("XA", Value::LONGINT, 0, Column::PK | Column::RO));
+        t2.add_column(Column("XB", Value::STRING, 0, 0));
+        t2.add_column(Column("XC", Value::DECIMAL, 0, Column::RO));
         r.set_table(t2);
         Table t3("N");
-        t3.set_column(Column("A", Value::LONGINT, 0, Column::PK | Column::RO));
+        t3.add_column(Column("A", Value::LONGINT, 0, Column::PK | Column::RO));
         r.set_table(t3);
         r_ = r;
 
@@ -124,10 +124,10 @@ public:
             static const char *st_data[NUM_STMT] = {
                 "DELETE FROM T_ORM_XML",
                 "DELETE FROM " TEST_TBL1,
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "                              
-                    "'abc', TO_DATE('1981-05-30', 'YYYY-MM-DD'), 3.14)",                         
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
+                    "'abc', TO_DATE('1981-05-30', 'YYYY-MM-DD'), 3.14)",
                 "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
-                    "'xyz', TO_DATE('2006-11-22 09:54:00', 'YYYY-MM-DD HH24:MI:SS'), -0.5)",     
+                    "'xyz', TO_DATE('2006-11-22 09:54:00', 'YYYY-MM-DD HH24:MI:SS'), -0.5)",
                 "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
                     "'@#$', TO_DATE('2006-11-22', 'YYYY-MM-DD'), 0.01)",
                 "INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES(10, 1, 4)",
@@ -138,11 +138,11 @@ public:
             static const char *st_data[NUM_STMT] = {
                 "DELETE FROM T_ORM_XML",
                 "DELETE FROM " TEST_TBL1,
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "                              
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
                     "'abc', '1981-05-30', 3.14)",
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "                              
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
                     "'xyz', '2006-11-22 09:54:00', -0.5)",
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "                              
+                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
                     "'@#$', '2006-11-22', 0.01)",
                 "INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES(10, 1, 4)",
             };
@@ -176,7 +176,7 @@ public:
         datax.set("xb", "aaa");
         datax.set("xc", Decimal("1.1"));
         XMLNode node(data);
-        node.replace_child_object_by_field("x", datax); 
+        node.replace_child_object_by_field("x", datax);
         CPPUNIT_ASSERT_EQUAL(string(
                     "<a><xx><xa>20</xa><xb>aaa</xb><xc>1.1</xc></xx><y>zzz</y><z>1.2</z></a>\n"),
                 node.get_xml());
@@ -208,7 +208,7 @@ public:
         XMLNode node(data);
         CPPUNIT_ASSERT_EQUAL(std::string("<n><a is_null=\"1\"/></n>\n"), node.get_xml());
     }
-    
+
     void test_deep_xmlize1()
     {
         init_singleton_registry();
@@ -217,8 +217,9 @@ public:
                     new SqlDataSource(theMetaData::instance(), engine)));
         OrmXMLDomainSimple test(session, 10);
         XMLNode node = test.auto_xmlize();
-        CPPUNIT_ASSERT_EQUAL(std::string("<orm-xml><b>4</b><id>10</id><orm-test-id>1</orm-test-id></orm-xml>\n"),
-                node.get_xml());
+        CPPUNIT_ASSERT_EQUAL(string(
+            "<orm-xml><id>10</id><orm-test-id>1</orm-test-id><b>4</b></orm-xml>\n"),
+            node.get_xml());
     }
 
     void test_deep_xmlize2()
@@ -228,11 +229,11 @@ public:
         Session session(theMetaData::instance(), auto_ptr<DataSource>(
                     new SqlDataSource(theMetaData::instance(), engine)));
         OrmXMLDomainSimple test(session, 10);
-        XMLNode node = test.auto_xmlize(1);        
-        CPPUNIT_ASSERT_EQUAL(
-                std::string(
-                    "<orm-xml><b>4</b><id>10</id><orm-test><a>abc</a><b>1981-05-30T00:00:00</b>"
-                    "<c>3.14</c><id>1</id></orm-test></orm-xml>\n"), node.get_xml());       
+        XMLNode node = test.auto_xmlize(1);
+        CPPUNIT_ASSERT_EQUAL(string(
+            "<orm-xml><id>10</id><orm-test><id>1</id><a>abc</a>"
+            "<b>1981-05-30T00:00:00</b><c>3.14</c></orm-test><b>4</b></orm-xml>\n"),
+            node.get_xml());
     }
 
     void test_deep_xmlize3()
@@ -242,13 +243,12 @@ public:
         Session session(theMetaData::instance(), auto_ptr<DataSource>(
                     new SqlDataSource(theMetaData::instance(), engine)));
         OrmXMLDomainSimple test(session, 10);
-        XMLNode node = test.auto_xmlize(-1);     
-        CPPUNIT_ASSERT_EQUAL(
-                std::string(
-                    "<orm-xml><b>4</b><id>10</id><orm-test><a>abc</a><b>1981-05-30T00:00:00</b>"
-                    "<c>3.14</c><id>1</id></orm-test></orm-xml>\n"), node.get_xml());        
+        XMLNode node = test.auto_xmlize(-1);
+        CPPUNIT_ASSERT_EQUAL(string(
+            "<orm-xml><id>10</id><orm-test><id>1</id><a>abc</a>"
+            "<b>1981-05-30T00:00:00</b><c>3.14</c></orm-test><b>4</b></orm-xml>\n"),
+            node.get_xml());
     }
-    
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestXMLNode);

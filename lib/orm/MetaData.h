@@ -2,6 +2,7 @@
 #define YB__ORM__META_DATA__INCLUDED
 
 #include <string>
+#include <vector>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -139,29 +140,33 @@ private:
     Table *table_;
 };
 
+typedef std::vector<Column> Columns;
+typedef std::map<std::string, int> IndexMap;
+
 class Schema;
 
 class Table
 {
 public:
     const std::string get_unique_pk() const;
-    typedef std::map<std::string, Column> Map;
     Table(const std::string &name = "", const std::string &xml_name = "");
     Schema &schema() const {
         return *check_not_null(schema_, "get table's parent schema"); }
     void schema(Schema &s) { schema_ = &s; }
     const std::string &get_name() const { return name_; }
     const std::string &get_xml_name() const { return xml_name_; }
-    Map::const_iterator begin() const { return cols_.begin(); }
-    Map::const_iterator end() const { return cols_.end(); }
+    Columns::const_iterator begin() const { return cols_.begin(); }
+    Columns::const_iterator end() const { return cols_.end(); }
     size_t size() const { return cols_.size(); }
-    const Column &get_column(const std::string &name) const;
+    size_t idx_by_name(const std::string &col_name) const;
+    const Column &get_column(const std::string &col_name) const
+        { return cols_[idx_by_name(col_name)]; }
     const std::string get_seq_name() const;
     bool get_autoinc() const;
     const std::string find_synth_pk() const;
     const std::string get_synth_pk() const;
     int get_depth() const { return depth_; }
-    void set_column(const Column &column);
+    void add_column(const Column &column);
     void set_seq_name(const std::string &seq_name);
     void set_autoinc(bool autoinc) { autoinc_ = autoinc; }
     void set_name(const std::string &name) { name_ = name; }
@@ -172,7 +177,8 @@ private:
     std::string xml_name_;
     std::string seq_name_;
     bool autoinc_;
-    Map cols_;
+    Columns cols_;
+    IndexMap indicies_;
     int depth_;
     Schema *schema_;
 };

@@ -88,12 +88,12 @@ public:
         conn.commit();
 
         Table t(TEST_TBL1, "test");
-        t.set_column(Column("ID", Value::LONGINT, 0,
+        t.add_column(Column("ID", Value::LONGINT, 0,
                     Column::PK));
-        t.set_column(Column("A", Value::STRING, 256, 0));
-        t.set_column(Column("B", Value::DATETIME, 0,
+        t.add_column(Column("A", Value::STRING, 256, 0));
+        t.add_column(Column("B", Value::DATETIME, 0,
                     Column::RO));
-        t.set_column(Column("C", Value::DECIMAL, 0, 0));
+        t.add_column(Column("C", Value::DECIMAL, 0, 0));
         if (db_type_ == "MYSQL")
             t.set_autoinc(true);
         else
@@ -114,8 +114,8 @@ public:
         CPPUNIT_ASSERT(d);
         XMLNode node(*d);
         CPPUNIT_ASSERT_EQUAL(string(
-                    "<test><a>xyz</a><b>2006-11-22T09:54:00</b><c>-0.5</c><id>2</id></test>\n"),
-                node.get_xml());
+            "<test><id>2</id><a>xyz</a><b>2006-11-22T09:54:00</b><c>-0.5</c></test>\n"),
+            node.get_xml());
     }
 
     void test_object_not_found()

@@ -33,9 +33,9 @@ public:
     void setUp()
     {
         Table t("A");
-        t.set_column(Column("X", Value::LONGINT, 0,
+        t.add_column(Column("X", Value::LONGINT, 0,
                     Column::PK));
-        t.set_column(Column("Y", Value::STRING, 4, 0));
+        t.add_column(Column("Y", Value::STRING, 4, 0));
         t.set_seq_name("S_A_X");
         Schema r;
         r.set_table(t);
@@ -73,8 +73,8 @@ public:
     void test_row_data_key_comp()
     {
         Table t("B");
-        t.set_column(Column("X", Value::LONGINT, 0, Column::PK));
-        t.set_column(Column("Y", Value::STRING, 0, Column::PK));
+        t.add_column(Column("X", Value::LONGINT, 0, Column::PK));
+        t.add_column(Column("Y", Value::STRING, 0, Column::PK));
         r_.set_table(t);
         //
         CPPUNIT_ASSERT(!RowData_key_less()(RowData(), RowData()));
@@ -170,13 +170,13 @@ public:
     {
         Table t("A");
         Column cx("X", Value::LONGINT, 0, 0);
-        t.set_column(cx);
+        t.add_column(cx);
         Column cy("Y", Value::STRING, 0, 0);
-        t.set_column(cy);
+        t.add_column(cy);
         Column cz("Z", Value::DECIMAL, 0, 0);
-        t.set_column(cz);
+        t.add_column(cz);
         Column cw("W", Value::DATETIME, 0, 0);
-        t.set_column(cw);
+        t.add_column(cw);
         Schema r;
         r.set_table(t);
 
@@ -199,7 +199,7 @@ public:
     {
         Table t("A");
         Column cz("Z", Value::DECIMAL, 0, 0);
-        t.set_column(cz);
+        t.add_column(cz);
         Schema r;
         r.set_table(t);
 
@@ -211,7 +211,7 @@ public:
     {
         Table t("A");
         Column cw("W", Value::DATETIME, 0, 0);
-        t.set_column(cw);
+        t.add_column(cw);
         Schema r;
         r.set_table(t);
 
@@ -223,8 +223,8 @@ public:
     {
         try {
             Table t("A");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.set_column(Column("Y", Value::DECIMAL, 0, 0));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("Y", Value::DECIMAL, 0, 0));
             Schema r;
             r.set_table(t);
 

@@ -42,13 +42,13 @@ public:
         CPPUNIT_ASSERT_EQUAL(2, (int)reg.size());
         const Table &t = reg.get_table("A");
         CPPUNIT_ASSERT_EQUAL(1, (int)t.size());
-        CPPUNIT_ASSERT_EQUAL(std::string("AA"), t.begin()->second.get_name());
-        CPPUNIT_ASSERT_EQUAL(10, (int)t.begin()->second.get_size());
-        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, t.begin()->second.get_type());
+        CPPUNIT_ASSERT_EQUAL(std::string("AA"), t.begin()->get_name());
+        CPPUNIT_ASSERT_EQUAL(10, (int)t.begin()->get_size());
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, t.begin()->get_type());
         const Table &t2 = reg.get_table("B");
         CPPUNIT_ASSERT_EQUAL(1, (int)t2.size());
-        CPPUNIT_ASSERT_EQUAL(std::string("BA"), t2.begin()->second.get_name());
-        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, t2.begin()->second.get_type());
+        CPPUNIT_ASSERT_EQUAL(std::string("BA"), t2.begin()->get_name());
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, t2.begin()->get_type());
     }
     
     void testWrongElementTable()
@@ -76,15 +76,15 @@ public:
         CPPUNIT_ASSERT_EQUAL(std::string("A"), t.get_name());
         CPPUNIT_ASSERT_EQUAL(std::string("S"), t.get_seq_name());
         CPPUNIT_ASSERT_EQUAL(2, (int)t.size());
-        Table::Map::const_iterator it = t.begin();
-        CPPUNIT_ASSERT_EQUAL(string("ASTR"), it->second.get_name());
-        CPPUNIT_ASSERT_EQUAL(10, (int)it->second.get_size());
-        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, it->second.get_type());
+        Columns::const_iterator it = t.begin();
+        CPPUNIT_ASSERT_EQUAL(string("ASTR"), it->get_name());
+        CPPUNIT_ASSERT_EQUAL(10, (int)it->get_size());
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, it->get_type());
         ++it;
-        CPPUNIT_ASSERT_EQUAL(string("B_ID"), it->second.get_name());
-        CPPUNIT_ASSERT_EQUAL(string("ID"), it->second.get_fk_name());
-        CPPUNIT_ASSERT_EQUAL(string("T_B"), it->second.get_fk_table_name());
-        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, it->second.get_type()); 
+        CPPUNIT_ASSERT_EQUAL(string("B_ID"), it->get_name());
+        CPPUNIT_ASSERT_EQUAL(string("ID"), it->get_fk_name());
+        CPPUNIT_ASSERT_EQUAL(string("T_B"), it->get_fk_table_name());
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, it->get_type()); 
     }
     
     void testGetWrongNodeValue()

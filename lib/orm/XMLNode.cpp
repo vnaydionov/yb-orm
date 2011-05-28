@@ -9,11 +9,11 @@ void XMLNode::init_by_row_data(const RowData &data, const string &alt_name)
 {
     const Table &table = data.get_table();
     name_ = alt_name.empty()? table.get_xml_name(): alt_name;
-    Table::Map::const_iterator it = table.begin(), end = table.end();
-    for ( ; it != end; ++it) {
-        const string col_name = it->second.get_xml_name();
+    Columns::const_iterator it = table.begin(), end = table.end();
+    for (; it != end; ++it) {
+        const string col_name = it->get_xml_name();
         if (!col_name.empty())
-            children_.push_back(XMLNode(col_name, data.get(it->second.get_name())));
+            children_.push_back(XMLNode(col_name, data.get(it->get_name())));
     }
 }
 
@@ -74,14 +74,14 @@ deep_xmlize(SessionBase &session, const RowData &d, int depth)
     XMLNode node(d);
     if (depth == -1 || depth > 0) {
         const Table &table = d.get_table();
-        Table::Map::const_iterator it = table.begin(), end = table.end();
+        Columns::const_iterator it = table.begin(), end = table.end();
         for (; it != end; ++it)
-            if (it->second.has_fk() && !d.get(it->second.get_name()).is_null()) {
+            if (it->has_fk() && !d.get(it->get_name()).is_null()) {
                 boost::shared_ptr<AutoXMLizable> domain_obj = 
-                    theDomainFactory::instance().create_object(session, it->second.get_fk_table_name(), 
-                        d.get(it->second.get_name()).as_longint()); 
+                    theDomainFactory::instance().create_object(session, it->get_fk_table_name(), 
+                        d.get(it->get_name()).as_longint()); 
                 XMLNode ref_node(domain_obj->auto_xmlize((depth == -1 ) ? -1: depth - 1));
-                node.replace_child_object_by_field(it->second.get_xml_name(), ref_node);
+                node.replace_child_object_by_field(it->get_xml_name(), ref_node);
             }
     }
     return node;

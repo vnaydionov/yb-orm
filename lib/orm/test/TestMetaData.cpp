@@ -83,10 +83,10 @@ public:
         Table t("a");
         CPPUNIT_ASSERT(t.begin() == t.end());
         CPPUNIT_ASSERT_EQUAL(0, (int)t.size());
-        t.set_column(Column("x", Value::LONGINT, 0, 0));
+        t.add_column(Column("x", Value::LONGINT, 0, 0));
         CPPUNIT_ASSERT_EQUAL(1, (int)t.size());
-        CPPUNIT_ASSERT_EQUAL(string("X"), t.begin()->second.get_name());
-        t.set_column(Column("Y", Value::LONGINT, 0, 0));
+        CPPUNIT_ASSERT_EQUAL(string("X"), t.begin()->get_name());
+        t.add_column(Column("Y", Value::LONGINT, 0, 0));
         CPPUNIT_ASSERT_EQUAL(2, (int)t.size());
         CPPUNIT_ASSERT_EQUAL(string("Y"), t.get_column("y").get_name());
     }
@@ -102,9 +102,9 @@ public:
     void test_table_synth_pk()
     {
         Table t("A");
-        t.set_column(Column("X", Value::LONGINT, 0, 0));
-        t.set_column(Column("Y", Value::LONGINT, 0, Column::PK));
-        t.set_column(Column("Z", Value::LONGINT, 0, 0));
+        t.add_column(Column("X", Value::LONGINT, 0, 0));
+        t.add_column(Column("Y", Value::LONGINT, 0, Column::PK));
+        t.add_column(Column("Z", Value::LONGINT, 0, 0));
         t.set_seq_name("S_A_ID");
         CPPUNIT_ASSERT_EQUAL(string("Y"), t.get_synth_pk());
     }
@@ -112,7 +112,7 @@ public:
     void test_table_bad_synth_pk__no_pk()
     {
         Table t("A");
-        t.set_column(Column("X", Value::LONGINT, 0, 0));
+        t.add_column(Column("X", Value::LONGINT, 0, 0));
         t.set_seq_name("S_A_ID");
         t.get_synth_pk();
     }
@@ -120,8 +120,8 @@ public:
     void test_table_bad_synth_pk__complex()
     {
         Table t("A");
-        t.set_column(Column("X", Value::LONGINT, 0, Column::PK));
-        t.set_column(Column("Y", Value::LONGINT, 0, Column::PK));
+        t.add_column(Column("X", Value::LONGINT, 0, Column::PK));
+        t.add_column(Column("Y", Value::LONGINT, 0, Column::PK));
         t.set_seq_name("S_A_ID");
         t.get_synth_pk();
     }
@@ -129,20 +129,20 @@ public:
     void test_table_bad_synth_pk__no_seq()
     {
         Table t("A");
-        t.set_column(Column("X", Value::LONGINT, 0, Column::PK));
+        t.add_column(Column("X", Value::LONGINT, 0, Column::PK));
         t.get_synth_pk();
     }
 
     void test_meta_data_bad_column_name()
     {
         Table t;
-        t.set_column(Column());
+        t.add_column(Column());
     }
 
     void test_meta_data_bad_column_name2()
     {
         Table t;
-        t.set_column(Column("1", 0, 0, 0));
+        t.add_column(Column("1", 0, 0, 0));
     }
 
     void test_meta_data_column_not_found()
@@ -154,7 +154,7 @@ public:
     void test_md_registry()
     {
         Table t("A");
-        t.set_column(Column("X", Value::LONGINT, 0, 0));
+        t.add_column(Column("X", Value::LONGINT, 0, 0));
         Schema tmd_reg;
         CPPUNIT_ASSERT_EQUAL(0, (int)tmd_reg.size());
         CPPUNIT_ASSERT(tmd_reg.begin() == tmd_reg.end());
@@ -174,7 +174,7 @@ public:
     void test_meta_data_bad_table_name()
     {
         Table t;
-        t.set_column(Column("Z", 0, 0, 0));
+        t.add_column(Column("Z", 0, 0, 0));
         Schema r;
         r.set_table(t);
     }
@@ -190,20 +190,20 @@ public:
         Schema r;
         {
             Table t("A");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
             r.set_table(t);
         }
         {
             Table t("C");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
             r.set_table(t);
         }
         {
             Table t("B");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
-            t.set_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
+            t.add_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
             r.set_table(t);
         }
 
@@ -261,8 +261,8 @@ public:
     {
         Schema r;
         Table t("C");
-        t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-        t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
+        t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+        t.add_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
         r.set_table(t);
         r.check();
     }
@@ -272,13 +272,13 @@ public:
        Schema r;
         {
             Table t("A");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
             r.set_table(t);
         }
         {
             Table t("C");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "Y"));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("AX", Value::LONGINT, 0, 0, "A", "Y"));
             r.set_table(t);
         }
         r.check();
@@ -289,20 +289,20 @@ public:
         Schema r;
         {
             Table t("A");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.set_column(Column("BX", Value::LONGINT, 0, 0, "B", "X"));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("BX", Value::LONGINT, 0, 0, "B", "X"));
             r.set_table(t);
         }
         {
             Table t("C");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
             r.set_table(t);
         }
         {
             Table t("B");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.set_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
             r.set_table(t);
         }
         r.check();
@@ -313,26 +313,26 @@ public:
         Schema r;
         {
             Table t("D");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
             r.set_table(t);
         }
         {
             Table t("A");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.set_column(Column("BX", Value::LONGINT, 0, 0, "B", "X"));
-            t.set_column(Column("DX", Value::LONGINT, 0, 0, "D", "X"));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("BX", Value::LONGINT, 0, 0, "B", "X"));
+            t.add_column(Column("DX", Value::LONGINT, 0, 0, "D", "X"));
             r.set_table(t);
         }
         {
             Table t("C");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.set_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("AX", Value::LONGINT, 0, 0, "A", "X"));
             r.set_table(t);
         }
         {
             Table t("B");
-            t.set_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.set_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
+            t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column("CX", Value::LONGINT, 0, 0, "C", "X"));
             r.set_table(t);
         }
         r.check();

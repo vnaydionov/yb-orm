@@ -85,12 +85,12 @@ Table::Table(const string &name, const string &xml_name)
 const string 
 Table::get_unique_pk() const
 {
-    Map::const_iterator it = cols_.begin(), end = cols_.end();
+    Columns::const_iterator it = cols_.begin(), end = cols_.end();
     string key_field;
     for (; it != end; ++it) {
-        if (it->second.is_pk())
+        if (it->is_pk())
             if (key_field.empty())
-                key_field = it->second.get_name();
+                key_field = it->get_name();
             else
                 throw AmbiguousPK(get_name()); 
     }
@@ -98,21 +98,31 @@ Table::get_unique_pk() const
 }
 
 void
-Table::set_column(const Column &column)
+Table::add_column(const Column &column)
 {
     if (!is_id(column.get_name()))
         throw BadColumnName(get_name(), column.get_name());
-    cols_[column.get_name()] = column;
-    cols_[column.get_name()].table(*this);
+    IndexMap::const_iterator it = indicies_.find(column.get_name());
+    int idx = -1;
+    if (it == indicies_.end()) {
+        idx = cols_.size();
+        cols_.push_back(column);
+        indicies_[column.get_name()] = idx;
+    }
+    else {
+        idx = it->second;
+        cols_[idx] = column;
+    }
+    cols_[idx].table(*this);
 }
 
-const Column &
-Table::get_column(const string &name) const
+size_t
+Table::idx_by_name(const string &col_name) const
 {
-    string good_name = str_to_upper(name);
-    Map::const_iterator it = cols_.find(good_name);
-    if (it == cols_.end())
-        throw ColumnNotFoundInMetaData(get_name(), good_name);
+    string fixed_name = str_to_upper(col_name);
+    IndexMap::const_iterator it = indicies_.find(fixed_name);
+    if (it == indicies_.end())
+        throw ColumnNotFoundInMetaData(get_name(), fixed_name);
     return it->second;
 }
 
@@ -130,15 +140,15 @@ Table::find_synth_pk() const
     if (get_seq_name().empty() && !get_autoinc())
         return string();
     string pk_name;
-    Map::const_iterator it = begin(), e = end();
+    Columns::const_iterator it = begin(), e = end();
     for (; it != e; ++it) {
-        if (it->second.is_pk()) {
+        if (it->is_pk()) {
             if (!pk_name.empty() ||
-                    it->second.get_type() != Value::LONGINT)
+                    it->get_type() != Value::LONGINT)
             {
                 return string();
             }
-            pk_name = it->second.get_name();
+            pk_name = it->get_name();
         }
     }
     return pk_name;
@@ -224,20 +234,20 @@ Schema::fill_map_tree_by_meta(const set<string> &unique_tables, StrMap &tree_map
     set<string>::const_iterator it = unique_tables.begin(), end = unique_tables.end();
     for (; it != end; ++it) {
         const Table &t = get_table(*it);
-        Table::Map::const_iterator it_col = t.begin(), end_col = t.end();
+        Columns::const_iterator it_col = t.begin(), end_col = t.end();
         bool has_parent = false;
         for (; it_col != end_col; ++it_col) {
             // if found a foreign key table in the set, add it with this dependent table
-            if (it_col->second.has_fk()) {
-                string fk_field = it_col->second.get_fk_name();
-                string fk_table = it_col->second.get_fk_table_name(); 
+            if (it_col->has_fk()) {
+                string fk_field = it_col->get_fk_name();
+                string fk_table = it_col->get_fk_table_name(); 
                 CheckForeignKey(t.get_name(), fk_table, fk_field);
-                tree_map.insert(StrMap::value_type(it_col->second.get_fk_table_name(), t.get_name()));
+                tree_map.insert(StrMap::value_type(it_col->get_fk_table_name(), t.get_name()));
                 has_parent = true;
             }
-            if (!has_parent)
-                tree_map.insert(StrMap::value_type("", t.get_name()));
         }
+        if (!has_parent)
+            tree_map.insert(StrMap::value_type("", t.get_name()));
     }
     // little hack, if no a root found(parent '' in map), the tree contains cycle
     if (tree_map.find("") == tree_map.end())

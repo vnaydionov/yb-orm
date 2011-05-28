@@ -123,7 +123,7 @@ void XMLMetaDataConfig::parse_column(const xmlNodePtr p_node, Table &table_meta)
         if(string((const char *)col->name) != "column")
             throw ParseError(string("Unknown element '") + (const char *)col->name
                     + "' found during parse of element 'table'");
-        table_meta.set_column(fill_column_meta(col));
+        table_meta.add_column(fill_column_meta(col));
     }
 }
 

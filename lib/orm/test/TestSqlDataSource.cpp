@@ -110,10 +110,10 @@ public:
     void setUp()
     {
         Table t("A");
-        t.set_column(Column("X", Value::LONGINT, 0,
+        t.add_column(Column("X", Value::LONGINT, 0,
                     Column::PK));
-        t.set_column(Column("Y", Value::STRING, 0, 0));
-        t.set_column(Column("Z", Value::DECIMAL, 0,
+        t.add_column(Column("Y", Value::STRING, 0, 0));
+        t.add_column(Column("Z", Value::DECIMAL, 0,
                     Column::RO));
         t.set_seq_name("S_A_X");
         Schema r;
@@ -150,9 +150,9 @@ public:
     void test_field_not_found()
     {
         Table t("A");
-        t.set_column(Column("X", Value::LONGINT, 0,
+        t.add_column(Column("X", Value::LONGINT, 0,
                     Column::PK));
-        t.set_column(Column("Q", Value::STRING, 0, 0));
+        t.add_column(Column("Q", Value::STRING, 0, 0));
         Schema r;
         r.set_table(t);
         MockSqlEngine engine;
@@ -198,7 +198,7 @@ public:
     void test_row_data_vector2sql_rows_mixed()
     {
         Table t("B");
-        t.set_column(Column("Q", Value::LONGINT, 0,
+        t.add_column(Column("Q", Value::LONGINT, 0,
                     Column::PK));
         r_.set_table(t);
         RowDataVector v;
