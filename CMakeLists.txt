@@ -61,7 +61,7 @@ elseif (MSVC)
     find_library (BOOST_DATE_TIME_LIBS libboost_date_time-vc90-mt-gd-1_38
             c:/build-yborm/boost_1_38_0/stage/lib)
 elseif (BORLAND)
-    find_library (BOOST_DATE_TIME_LIBS boost_date_time-bcb-mt-d-1_33_1
+    find_library (BOOST_DATE_TIME_LIBS boost_date_time-bcb-d-1_33_1
             c:/build-yborm/boost_1_33_1/stage/lib)
 endif ()
 
@@ -82,7 +82,7 @@ elseif (MSVC)
             c:/build-yborm/cppunit-1.12.1/lib)
 elseif (BORLAND)
     find_library (CPPUNIT_LIBS cppunitd_bc5_dll
-            c:/build-yborm/cppunit-1.12.1/lib)
+            c:/build-yborm/cppunit-1.12.1/bcc)
 endif ()
 
 if (UNIX)

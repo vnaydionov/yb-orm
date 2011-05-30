@@ -61,7 +61,7 @@ private:
                 << "{\n"
                 << "public:\n"
                 << "\t" << get_file_class_name(t.get_name()) << "NotFoundByID(Yb::LongInt id)\n"
-                << "\t\t: ObjectNotFoundByKey(\"" << get_file_class_name(t.get_name()) << " with ID = \" +\n"
+                << "\t\t: Yb::ObjectNotFoundByKey(\"" << get_file_class_name(t.get_name()) << " with ID = \" +\n"
                 << "\t\t\tboost::lexical_cast<std::string>(id) + \" not found\")\n"
                 << "\t{}\n"
                 << "};\n\n";
@@ -173,7 +173,7 @@ private:
                     switch (it->get_type()) {
                         case Value::LONGINT:
                             str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->get_name() << "\", Yb::Value(" << def_val.as_string() << "LL));\n"; 
+                                << ".set(\"" << it->get_name() << "\", Yb::Value((Yb::LongInt)" << def_val.as_string() << "));\n";
                             break;
                         case Value::DECIMAL:
                             str << "\t" << get_member_name(t.get_name()) 
