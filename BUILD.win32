@@ -145,3 +145,89 @@ Simple .BAT file can help, e.g. your examples\example1.bat may look like this:
     set YBORM_PASSWD=test1_pwd
     set EX1_DIR=c:\build-yborm\trunk\examples
     .\example1
+
+
+UNSORTED:
+
+** Creating the test user in MySQL **
+
+>C:\AppServ\MySQL\bin\mysql.exe -u root -p mysql
+Enter password:  <-- type here your root password for MySQL
+mysql> create database test1 default charset utf8;
+mysql> create user 'test1'@'localhost' identified by 'test1_pwd';
+mysql> grant all on test1_db.* to 'test1'@'localhost';
+mysql> quit
+
+
+** Compiling CppUnit with MSVC 2010 **
+
+Checkout fresh CppUnit code from SVN repo:
+>svn co https://cppunit.svn.sourceforge.net/svnroot/cppunit/trunk/cppunit
+
+Open and convert project with Visual Studio 2010: src\cppunit\cppunit_dll.vcproj
+Fix Target Name in Project's Properties for Debug configuration -> General
+from $(ProjectName) to cppunitd_dll  then build the Debug configuration.
+
+
+** Building with Borland C++ 5.5 Free Command Line Tools **
+
+C:\>set PATH=c:\Borland\BCC55\Bin;c:\cmake2.8\bin;c:\build-yborm\bin-bcc55;%PATH%
+C:\>cd \build-yborm\libxml2-2.7.7.win32\lib
+C:\build-yborm\libxml2-2.7.7.win32\lib>implib -c -a libxml2omf.lib ..\bin\libxml2.dll
+Borland Implib Version 3.0.22 Copyright (c) 1991, 2000 Inprise Corporation
+C:\build-yborm\libxml2-2.7.7.win32\lib>cd ..\..\iconv-1.9.2.win32\lib
+C:\build-yborm\iconv-1.9.2.win32\lib>implib -c -a iconvomf.lib ..\bin\iconv.dll
+Borland Implib Version 3.0.22 Copyright (c) 1991, 2000 Inprise Corporation
+C:\build-yborm\iconv-1.9.2.win32\lib>
+
+CPPUNIT
+Unzip C:\build-yborm\cppunit-1.12.1\contrib\bc5\bcc-makefile.zip
+to C:\build-yborm\cppunit-1.12.1\ and follow instructions found in
+C:\build-yborm\cppunit-1.12.1\bcc\readme_en.txt
+
+BOOST 1.33.1 
+C:\>cd build-yborm\boost_1_33_1\
+C:\build-yborm\boost_1_33_1>cd tools\build\jam_src
+C:\build-yborm\boost_1_33_1\tools\build\jam_src>build.bat borland
+-- bootstrapping does not work, you need to manually edit build.bat
+to look like this:
+
+...
+:Guess_Toolset
+REM Try and guess the toolset to bootstrap the build with...
+REM Sets BOOST_JAM_TOOLSET to the first found toolset.
+REM May also set BOOST_JAM_TOOLSET_ROOT to the
+REM location of the found toolset.
+setlocal & endlocal
+call :Test_Path bcc32.exe
+if not errorlevel 1 (
+    set BOOST_JAM_TOOLSET=borland
+    set BOOST_JAM_TOOLSET_ROOT=%FOUND_PATH%..\
+    goto :eof)
+...
+
+C:\build-yborm\boost_1_33_1\tools\build\jam_src>build.bat borland
+...updated 2 targets...
+C:\build-yborm\boost_1_33_1\tools\build\jam_src>cd ..\..\..\
+C:\build-yborm\boost_1_33_1>
+C:\build-yborm\boost_1_33_1>tools\build\jam_src\bin.ntx86\bjam.exe \
+  -sTOOLS=borland --with-date_time --with-thread --with-regex \
+  -sBUILD="debug threading<multi>" stage
+
+...failed updating 8 targets...
+...skipped 81 targets...
+...updated 106 targets...
+
+C:\build-yborm\boost_1_33_1>
+C:\build-yborm\boost_1_33_1>cd ..\
+C:\build-yborm>mkdir build-bcc55
+C:\build-yborm>cd build-bcc55
+-- edit c:\borland\bcc55\ilink32.cfg and c:\borland\bcc55\bcc32.cfg,
+append the following:
+
+-Lc:\borland\bcc55\lib
+-Lc:\borland\bcc55\lib\psdk
+-Lc:\build-yborm\boost_1_33_1\stage\lib
+
+C:\build-yborm\build-bcc55>cmake -G "Borland Makefiles" --build ..\trunk
+
