@@ -100,8 +100,7 @@ class ValueData
 public:
     virtual const string to_str() const = 0;
     virtual const string to_sql_str() const = 0;
-    virtual bool eq(const ValueData &v) const = 0;
-    virtual bool lt(const ValueData &v) const = 0;
+    virtual int cmp(const ValueData &v) const = 0;
     virtual ~ValueData() {}
 };
 
@@ -114,11 +113,9 @@ public:
     T get() const { return x_; }
     const string to_str() const { return to_string(x_); }
     const string to_sql_str() const { return to_str(); }
-    bool eq(const ValueData &v) const {
-        return x_ == dynamic_cast<const ValueDataImpl<T> &>(v).x_;
-    }
-    bool lt(const ValueData &v) const {
-        return x_ < dynamic_cast<const ValueDataImpl<T> &>(v).x_;
+    int cmp(const ValueData &v) const {
+        const T &y = dynamic_cast<const ValueDataImpl<T> &>(v).x_;
+        return x_ == y? 0: (x_ < y? -1: 1);
     }
 };
 
@@ -179,14 +176,9 @@ const Table &PKIDValue::get_table() const
     return *table_;
 }
 
-bool PKIDValue::eq(const PKIDValue &x) const
+int PKIDValue::cmp(const PKIDValue &x) const
 {
-    return key_ == x.key_;
-}
-
-bool PKIDValue::lt(const PKIDValue &x) const
-{
-    return key_ < x.key_;
+    return key_ == x.key_? 0: (key_ < x.key_? -1: 1);
 }
 
 bool PKIDValue::is_temp() const
@@ -351,37 +343,31 @@ Value::sql_str() const
     return data_->to_sql_str();
 }
 
-bool
-Value::eq(const Value &x) const
+int
+Value::cmp(const Value &x) const
 {
     if (is_null() && x.is_null())
-        return true;
-    if (is_null() || x.is_null())
-        return false;
+        return 0;
+    if (is_null())
+        return -1;
+    if (x.is_null())
+        return 1;
     try {
-        return data_->eq(*x.data_);
+        return data_->cmp(*x.data_);
     }
     catch (const std::bad_cast &) {
         if (get_type() == DECIMAL || x.get_type() == DECIMAL)
-            return as_decimal() == x.as_decimal();
-        if (get_type() == LONGINT || x.get_type() == LONGINT)
-            return as_longint() == x.as_longint();
-        if (get_type() == DATETIME || x.get_type() == DATETIME)
-            return as_date_time() == x.as_date_time();
-        return as_string() == x.as_string();
+            return as_decimal().cmp(x.as_decimal());
+        if (get_type() == LONGINT || x.get_type() == LONGINT) {
+            LongInt a = as_longint(), b = x.as_longint();
+            return a < b? -1: (a > b? 1: 0);
+        }
+        if (get_type() == DATETIME || x.get_type() == DATETIME) {
+            DateTime a = as_date_time(), b = x.as_date_time();
+            return a < b? -1: (a > b? 1: 0);
+        }
+        return as_string().compare(x.as_string());
     }
-}
-
-bool
-Value::lt(const Value &x) const
-{
-    if (is_null() && x.is_null())
-        return false;
-    if (is_null())
-        return true;
-    if (x.is_null())
-        return false;
-    return data_->lt(*x.data_);
 }
 
 const Value

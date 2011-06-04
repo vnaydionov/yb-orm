@@ -140,11 +140,15 @@ public:
     bool is_temp() const;
     LongInt as_longint() const;
     void sync(LongInt pkid) const;
-    bool eq(const PKIDValue &x) const;
-    bool lt(const PKIDValue &x) const;
-    bool operator == (const PKIDValue &x) const { return eq(x); }
-    bool operator < (const PKIDValue &x) const { return lt(x); }
+    int cmp(const PKIDValue &x) const;
 };
+
+inline bool operator==(const PKIDValue &x, const PKIDValue &y) { return !x.cmp(y); }
+inline bool operator!=(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y); }
+inline bool operator<(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) < 0; }
+inline bool operator>=(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) >= 0; }
+inline bool operator>(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) > 0; }
+inline bool operator<=(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) <= 0; }
 
 inline std::string to_string(const PKIDValue &x)
 {
@@ -172,8 +176,7 @@ public:
     const PKIDValue as_pkid() const;
     const std::string sql_str() const;
     const Value nvl(const Value &def_value) const { return is_null()? def_value: *this; }
-    bool eq(const Value &x) const;
-    bool lt(const Value &x) const;
+    int cmp(const Value &x) const;
     int get_type() const { return type_; }
     const Value get_typed_value(int type) const;
     static const char *get_type_name(int type);
@@ -184,12 +187,12 @@ private:
     Type type_;
 };
 
-inline bool operator==(const Value &x, const Value &y) { return x.eq(y); }
-inline bool operator!=(const Value &x, const Value &y) { return !x.eq(y); }
-inline bool operator<(const Value &x, const Value &y) { return x.lt(y); }
-inline bool operator>=(const Value &x, const Value &y) { return !x.lt(y); }
-inline bool operator>(const Value &x, const Value &y) { return y.lt(x); }
-inline bool operator<=(const Value &x, const Value &y) { return !y.lt(x); }
+inline bool operator==(const Value &x, const Value &y) { return !x.cmp(y); }
+inline bool operator!=(const Value &x, const Value &y) { return x.cmp(y); }
+inline bool operator<(const Value &x, const Value &y) { return x.cmp(y) < 0; }
+inline bool operator>=(const Value &x, const Value &y) { return x.cmp(y) >= 0; }
+inline bool operator>(const Value &x, const Value &y) { return x.cmp(y) > 0; }
+inline bool operator<=(const Value &x, const Value &y) { return x.cmp(y) <= 0; }
 
 typedef std::vector<Value> Values;
 typedef std::vector<std::string> Names;

@@ -26,7 +26,7 @@ public:
     virtual RowData *create(const std::string &table_name) = 0;
     virtual RowData *register_as_new(const RowData &row) = 0;
     virtual void flush() = 0;
-    virtual const Schema &get_meta_data_registry() = 0;
+    virtual const Schema &get_schema() = 0;
     virtual DataSource &get_ds() = 0;
 };
 
@@ -44,7 +44,7 @@ public:
     RowData *create(const std::string &table_name);
     RowData *register_as_new(const RowData &row);
     void flush();
-    const Schema &get_meta_data_registry();
+    const Schema &get_schema();
     DataSource &get_ds();
 private:
     void flush_new();

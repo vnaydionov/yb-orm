@@ -159,29 +159,29 @@ RowData::set_new_pk(boost::shared_ptr<PKIDRecord> new_pk)
     set(pk_name, pk_value);
 }
 
-bool
-RowData::lt(const RowData &x, bool key_only) const
+int
+RowData::cmp(const RowData &x, bool key_only) const
 {
     if (!table_ && !x.table_)
-        return false;
+        return 0;
     if (!table_)
-        return true;
+        return -1;
     if (!x.table_)
-        return false;
-    if (table_->get_name() != x.table_->get_name())
-        return table_->get_name() < x.table_->get_name();
+        return 1;
+    int r = table_->get_name().compare(x.table_->get_name());
+    if (r)
+        return r;
     Columns::const_iterator it = table_->begin(), end = table_->end();
     for (; it != end; ++it) {
         if (!key_only || it->is_pk()) {
             const Value &a = get(it->get_name());
             const Value &b = x.get(it->get_name());
-            if (a < b)
-                return true;
-            if (b < a)
-                return false;
+            r = a.cmp(b);
+            if (r)
+                return r;
         }
     }
-    return false;
+    return 0;
 }
 
 void
@@ -197,6 +197,15 @@ RowData::load_if_ghost_and_if_non_key_field_requested(const Column &c) const
 {
     if (is_ghost() && ds_ && !c.is_pk())
         load();
+}
+
+const RowData
+mk_key(const Schema &schema, const std::string &table_name, LongInt id)
+{
+    RowData key(schema, table_name);
+    const Table &table = key.get_table();
+    key.set(table.get_synth_pk(), Value(id));
+    return key;
 }
 
 const string

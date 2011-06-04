@@ -341,18 +341,11 @@ bool decimal::is_positive() const
     return value_ > 0;
 }
 
-bool decimal::eq(const decimal &x) const
+int decimal::cmp(const decimal &x) const
 {
-    decimal t(x), u(*this);
+    decimal t(*this), u(x);
     equalize_precision(t.value_, t.precision_, u.value_, u.precision_);
-    return t.value_ == u.value_;
-}
-
-bool decimal::lt(const decimal &x) const
-{
-    decimal t(x), u(*this);
-    equalize_precision(t.value_, t.precision_, u.value_, u.precision_);
-    return u.value_ < t.value_;
+    return t.value_ == u.value_? 0: (t.value_ < u.value_? -1: 1);
 }
 
 decimal &decimal::round(int p)

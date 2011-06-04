@@ -63,8 +63,7 @@ public:
     const decimal operator -- (int);
     const decimal operator - () const;
     bool is_positive() const;
-    bool eq(const decimal &x) const;
-    bool lt(const decimal &x) const;
+    int cmp(const decimal &x) const;
 
     decimal &round(int p = 0);
     const decimal round(int p = 0) const;
@@ -86,12 +85,12 @@ const decimal operator / (const decimal &, const decimal &);
 std::ostream &operator << (std::ostream &o, const decimal &x);
 std::istream &operator >> (std::istream &i, decimal &x);
 
-inline bool operator == (const decimal &x, const decimal &y) { return x.eq(y); }
-inline bool operator != (const decimal &x, const decimal &y) { return !x.eq(y); }
-inline bool operator < (const decimal &x, const decimal &y) { return x.lt(y); }
-inline bool operator > (const decimal &x, const decimal &y) { return y.lt(x); }
-inline bool operator >= (const decimal &x, const decimal &y) { return !x.lt(y); }
-inline bool operator <= (const decimal &x, const decimal &y) { return !y.lt(x); }
+inline bool operator == (const decimal &x, const decimal &y) { return !x.cmp(y); }
+inline bool operator != (const decimal &x, const decimal &y) { return x.cmp(y); }
+inline bool operator < (const decimal &x, const decimal &y) { return x.cmp(y) < 0; }
+inline bool operator > (const decimal &x, const decimal &y) { return x.cmp(y) > 0; }
+inline bool operator >= (const decimal &x, const decimal &y) { return x.cmp(y) >= 0; }
+inline bool operator <= (const decimal &x, const decimal &y) { return x.cmp(y) <= 0; }
 
 inline const decimal decimal2(const std::string &s) { return decimal(s).round(2); }
 inline const decimal decimal4(const std::string &s) { return decimal(s).round(4); }

@@ -32,7 +32,7 @@ H_FILES = \
 	Engine.h \
 	SqlDriver.h \
 	tiodbc.hpp \
-	DataObj.h \
+	DomainObj.h \
 	DomainFactory.h \
 	DomainFactorySingleton.h \
 	MetaDataSingleton.h \

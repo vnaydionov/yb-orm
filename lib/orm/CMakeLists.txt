@@ -12,9 +12,9 @@ target_link_libraries (yborm ybutil ${LIBXML2_LIBS}
     ${BOOST_DATE_TIME_LIBS} ${BOOST_THREAD_LIBS} ${ODBC_LIBS})
 
 install (TARGETS yborm DESTINATION lib)
-install (FILES AutoXMLizable.h DomainFactorySingleton.h Filters.h
+install (FILES DomainFactorySingleton.h Filters.h
     MetaDataSingleton.h Session.h SqlDriver.h Value.h XMLNode.h
-    DataObj.h DomainFactory.h Engine.h MetaData.h RowData.h
+    DomainObj.h DomainFactory.h Engine.h MetaData.h RowData.h
     SqlDataSource.h tiodbc.hpp XMLMetaDataConfig.h
              DESTINATION include/yb/orm)
 

@@ -4,8 +4,7 @@
 #include "orm/XMLNode.h"
 #include "orm/MetaDataSingleton.h"
 #include "orm/DomainFactorySingleton.h"
-#include "orm/DataObj.h"
-#include "orm/AutoXMLizable.h"
+#include "orm/DomainObj.h"
 #include "orm/Session.h"
 #include "orm/SqlDataSource.h"
 #include "orm/Engine.h"
@@ -17,19 +16,12 @@ using namespace std;
 using namespace Yb;
 using namespace Yb::StrUtils;
 
-class OrmTestDomainSimple: public AutoXMLizable
+class OrmTestDomainSimple: public DomainObject
 {
-    SessionBase *session_;
-    StrongObject obj_;
 public:
     OrmTestDomainSimple(SessionBase &session, LongInt id)
-        :session_(&session)
-        ,obj_(session, "T_ORM_TEST", id)
+        : DomainObject(session, "T_ORM_TEST", id)
     {}
-    const XMLNode auto_xmlize(int deep = 0) const
-    {
-        return obj_.auto_xmlize(*session_, deep);
-    }
 };
 
 /*
@@ -39,19 +31,12 @@ public:
             B   NUMBER,
             PRIMARY KEY(ID));
 */
-class OrmXMLDomainSimple: public AutoXMLizable
+class OrmXMLDomainSimple: public DomainObject
 {
-    SessionBase *session_;
-    StrongObject obj_;
 public:
     OrmXMLDomainSimple(SessionBase &session, LongInt id)
-        :session_(&session)
-        ,obj_(session, "T_ORM_XML", id)
+        : DomainObject(session, "T_ORM_XML", id)
     {}
-    const XMLNode auto_xmlize(int deep = 0) const
-    {
-        return obj_.auto_xmlize(*session_, deep);
-    }
 };
 
 class TestXMLNode : public CppUnit::TestFixture
@@ -216,7 +201,7 @@ public:
         Session session(theMetaData::instance(), auto_ptr<DataSource>(
                     new SqlDataSource(theMetaData::instance(), engine)));
         OrmXMLDomainSimple test(session, 10);
-        XMLNode node = test.auto_xmlize();
+        XMLNode node = test.xmlize();
         CPPUNIT_ASSERT_EQUAL(string(
             "<orm-xml><id>10</id><orm-test-id>1</orm-test-id><b>4</b></orm-xml>\n"),
             node.get_xml());
@@ -229,7 +214,7 @@ public:
         Session session(theMetaData::instance(), auto_ptr<DataSource>(
                     new SqlDataSource(theMetaData::instance(), engine)));
         OrmXMLDomainSimple test(session, 10);
-        XMLNode node = test.auto_xmlize(1);
+        XMLNode node = test.xmlize(1);
         CPPUNIT_ASSERT_EQUAL(string(
             "<orm-xml><id>10</id><orm-test><id>1</id><a>abc</a>"
             "<b>1981-05-30T00:00:00</b><c>3.14</c></orm-test><b>4</b></orm-xml>\n"),
@@ -243,7 +228,7 @@ public:
         Session session(theMetaData::instance(), auto_ptr<DataSource>(
                     new SqlDataSource(theMetaData::instance(), engine)));
         OrmXMLDomainSimple test(session, 10);
-        XMLNode node = test.auto_xmlize(-1);
+        XMLNode node = test.xmlize(-1);
         CPPUNIT_ASSERT_EQUAL(string(
             "<orm-xml><id>10</id><orm-test><id>1</id><a>abc</a>"
             "<b>1981-05-30T00:00:00</b><c>3.14</c></orm-test><b>4</b></orm-xml>\n"),

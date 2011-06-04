@@ -4,11 +4,11 @@
 #include <map>
 #include <stdexcept>
 #include <boost/shared_ptr.hpp>
-#include "AutoXMLizable.h"
+#include "DomainObj.h"
 
 namespace Yb {
 
-typedef boost::shared_ptr<AutoXMLizable> AutoXMLizablePtr;
+typedef boost::shared_ptr<DomainObject> DomainObjectPtr;
 
 class NoCreator: public std::logic_error
 {
@@ -22,16 +22,16 @@ public:
 class ICreator
 {
 public:
-    virtual AutoXMLizablePtr create(SessionBase &session, LongInt id) const = 0;  
+    virtual DomainObjectPtr create(SessionBase &session, LongInt id) const = 0;  
 };
 
 template <typename T>
 class DomainCreator: public ICreator
 {
 public:
-    virtual AutoXMLizablePtr create(SessionBase &session, LongInt id) const
+    virtual DomainObjectPtr create(SessionBase &session, LongInt id) const
     {
-        return boost::shared_ptr<AutoXMLizable>(new T(session, id));
+        return boost::shared_ptr<DomainObject>(new T(session, id));
     }
 };
 
@@ -47,7 +47,7 @@ public:
         creator_map_.insert(Map::value_type(name, creator));
     }
     
-    AutoXMLizablePtr create_object(SessionBase &session, 
+    DomainObjectPtr create_object(SessionBase &session, 
             const std::string &entity_name, LongInt id) const
     {
         Map::const_iterator it = creator_map_.find(entity_name);

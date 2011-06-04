@@ -77,10 +77,10 @@ deep_xmlize(SessionBase &session, const RowData &d, int depth)
         Columns::const_iterator it = table.begin(), end = table.end();
         for (; it != end; ++it)
             if (it->has_fk() && !d.get(it->get_name()).is_null()) {
-                boost::shared_ptr<AutoXMLizable> domain_obj = 
+                boost::shared_ptr<XMLizable> domain_obj = 
                     theDomainFactory::instance().create_object(session, it->get_fk_table_name(), 
                         d.get(it->get_name()).as_longint()); 
-                XMLNode ref_node(domain_obj->auto_xmlize((depth == -1 ) ? -1: depth - 1));
+                XMLNode ref_node(domain_obj->xmlize(depth == -1? -1: depth - 1));
                 node.replace_child_object_by_field(it->get_xml_name(), ref_node);
             }
     }

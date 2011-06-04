@@ -50,10 +50,7 @@ private:
         string name = "ORM_DOMAIN__" + str_to_upper(t.get_name().substr(2)) + "__INCLUDED";
         str << "#ifndef " << name << "\n"
             << "#define " << name << "\n\n";
-        if(!mem_weak)
-            str << "#include \"orm/RowData.h\"\n";
-        str << "#include \"orm/DataObj.h\"\n"
-            << "#include \"orm/AutoXMLizable.h\"\n";
+        str << "#include \"orm/DomainObj.h\"\n";
         write_include_dependencies(t, str);
         str << "\nnamespace Domain {\n\n";
         if (!mem_weak) {
@@ -66,12 +63,9 @@ private:
                 << "\t{}\n"
                 << "};\n\n";
         }
-        str << "class " << get_file_class_name(t.get_name()) << ": public Yb::AutoXMLizable\n"
+        str << "class " << get_file_class_name(t.get_name()) << ": public Yb::DomainObject\n"
             << "{\n"
-            << "\tYb::SessionBase *session_;\n";
-        write_members(t, str);
-
-        str << "public:\n"
+            << "public:\n"
             << "\t// static method 'find'\n"
             << "\ttypedef std::vector<" << get_file_class_name(t.get_name()) << "> List;\n"
             << "\ttypedef std::auto_ptr<List> ListPtr;\n"
@@ -79,47 +73,35 @@ private:
             << "\t\t\tconst Yb::Filter &filter, const Yb::StrList order_by = \"\", int max_n = -1);\n";
 
         str << "\t// constructors\n"
-            << "\t" << get_file_class_name(t.get_name()) << "()\n"
-            << "\t\t: session_(NULL)\n"
-            << "\t{}\n";
+            << "\t" << get_file_class_name(t.get_name()) << "();\n"
+            << "\t" << get_file_class_name(t.get_name()) << "(Yb::SessionBase &session);\n";
         str << "\t" << get_file_class_name(t.get_name()) << "(Yb::SessionBase &session, const Yb::RowData &key)\n"
-            << "\t\t: session_(&session)\n"
-            << "\t\t, " << get_member_name(t.get_name()) << "(session, key)\n"
+            << "\t\t: Yb::DomainObject(session, key)\n"
             << "\t" << "{}\n";
         try {
             std::string mega_key = reg_.get_table(t.get_name()).get_unique_pk();
             str << "\t" << get_file_class_name(t.get_name()) << "(Yb::SessionBase &session, Yb::LongInt id)\n"
-                << "\t\t: session_(&session)\n"
-                << "\t\t, " << get_member_name(t.get_name()) << "(session, \"" << t.get_name() << "\", id)\n"
+                << "\t\t: Yb::DomainObject(session, \"" << t.get_name() << "\", id)\n"
                 << "\t{}\n";
         }
         catch (const AmbiguousPK &) {}
-        str << "\t" << get_file_class_name(t.get_name()) << "(Yb::SessionBase &session);\n\n";
-        
-        str << "\tvoid set(const std::string &field, const Yb::Value &val) {\n"
-            << "\t\t" << get_member_name(t.get_name()) << ".set(field, val);\n"
-            << "\t}\n";
 
         if (mem_weak) {
-            str << "\tconst Yb::Value get(const std::string &field) const {\n"
-                << "\t\treturn " << get_member_name(t.get_name()) << ".get(field);\n"
+            str << "\tconst Yb::Value get_attr_ex(const std::string &field) const {\n"
+                << "\t\treturn get_attr(field);\n"
                 << "\t}\n";
         }
         else {
-            str << "\tconst Yb::Value get(const std::string &field) const {\n"
+            str << "\tconst Yb::Value get_attr_ex(const std::string &field) const {\n"
                 << "\t\ttry {\n"
-                << "\t\t\treturn " << get_member_name(t.get_name()) << ".get(field);\n"
+                << "\t\t\treturn get_attr(field);\n"
                 << "\t\t}\n"
                 << "\t\tcatch (const Yb::ObjectNotFoundByKey &) {\n"
                 << "\t\t\tthrow " << get_file_class_name(t.get_name()) << "NotFoundByID("
-                << get_member_name(t.get_name()) << ".get(\"ID\").as_longint());\n"
+                << "get_attr(\"ID\").as_longint());\n"
                 << "\t\t}\n"
                 << "\t}\n";
         }
-        str << "\tconst Yb::XMLNode auto_xmlize(int deep = 0) const\n"
-            << "\t{\n"
-            << "\t\treturn " << get_member_name(t.get_name()) << ".auto_xmlize(*session_, deep);\n"
-            << "\t}\n";
     }
 
     void write_include_dependencies(const Table &t, std::ostream &str)
@@ -128,11 +110,6 @@ private:
         for (; it != end; ++it)
             if (it->has_fk())
                 str << "#include \"domain/" << get_file_class_name(it->get_fk_table_name()) << ".h\"\n";
-    }
-
-    void write_members(const Table &t, std::ostream &str)
-    {
-        str << (mem_weak ? "\tYb::WeakObject " : "\tYb::StrongObject ") << get_member_name(t.get_name()) << ";\n";
     }
 
     void write_footer(const Table &t, std::ostream &str)
@@ -147,19 +124,8 @@ private:
             << "#endif\n";
     }
 
-    void write_cpp_data(const Table &t, std::ostream &str)
+    void write_cpp_ctor_body(const Table &t, std::ostream &str)
     {
-        str << "#include \"domain/" << get_file_class_name(t.get_name()) << ".h\"\n"
-            << "#include \"orm/DomainFactorySingleton.h\"\n\n"
-            << "namespace Domain {\n\n";
-
-// Constructor for creating new objects
-
-        str << get_file_class_name(t.get_name()) << "::" 
-            << get_file_class_name(t.get_name()) << "(Yb::SessionBase &session)\n"
-            << "\t: session_(&session)\n"
-            << "\t, " << get_member_name(t.get_name()) << "(session, \"" << t.get_name() << "\")\n";
-        
         if(mem_weak) {
             str << "{}\n";
         } 
@@ -172,22 +138,39 @@ private:
                 if (!def_val.is_null()) {
                     switch (it->get_type()) {
                         case Value::LONGINT:
-                            str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->get_name() << "\", Yb::Value((Yb::LongInt)" << def_val.as_string() << "));\n";
+                            str << "\tset_attr(\"" << it->get_name() << "\", Yb::Value((Yb::LongInt)" << def_val.as_string() << "));\n";
                             break;
                         case Value::DECIMAL:
-                            str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->get_name() << "\", Yb::Value(Yb::Decimal(" << def_val.as_string() << ")));\n"; 
+                            str << "\tset_attr(\"" << it->get_name() << "\", Yb::Value(Yb::Decimal(" << def_val.as_string() << ")));\n"; 
                             break;
                         case Value::DATETIME:
-                            str << "\t" << get_member_name(t.get_name()) 
-                                << ".set(\"" << it->get_name() << "\", Yb::Value(Yb::now()));\n"; 
+                            str << "\tset_attr(\"" << it->get_name() << "\", Yb::Value(Yb::now()));\n"; 
                             break;
                     }
                 }
             }
             str << "}\n";
         }
+    }
+
+    void write_cpp_data(const Table &t, std::ostream &str)
+    {
+        str << "#include \"domain/" << get_file_class_name(t.get_name()) << ".h\"\n"
+            << "#include \"orm/DomainFactorySingleton.h\"\n"
+            << "#include \"orm/MetaDataSingleton.h\"\n\n"
+            << "namespace Domain {\n\n";
+
+// Constructor for creating new objects
+
+        str << get_file_class_name(t.get_name()) << "::" 
+            << get_file_class_name(t.get_name()) << "()\n"
+            << "\t: Yb::DomainObject(Yb::theMetaData::instance(), \"" << t.get_name() << "\")\n";
+        write_cpp_ctor_body(t, str);
+        str << "\n"
+            << get_file_class_name(t.get_name()) << "::" 
+            << get_file_class_name(t.get_name()) << "(Yb::SessionBase &session)\n"
+            << "\t: Yb::DomainObject(session, \"" << t.get_name() << "\")\n";
+        write_cpp_ctor_body(t, str);
 
         str << "\n" << get_file_class_name(t.get_name()) << "::ListPtr\n"
             << get_file_class_name(t.get_name()) << "::find(Yb::SessionBase &session,\n"
@@ -257,7 +240,7 @@ private:
         for (; it != end; ++it)
             if (!it->has_fk() && it->get_name() != pk_name) {
                 str << "\tbool is_" << str_to_lower(it->get_name()) << "_null() const {\n"
-                    << "\t\treturn " << "get(\"" << it->get_name() << "\")" << ".is_null();\n"
+                    << "\t\treturn " << "get_attr_ex(\"" << it->get_name() << "\")" << ".is_null();\n"
                     << "\t}\n";
             }
     }
@@ -271,7 +254,7 @@ private:
                 if (it->get_type() == Value::STRING) {
                     str << "\t" << type_by_handle(it->get_type())
                         << " get_" << str_to_lower(it->get_name()) << "() const {\n"
-                        << "\t\tYb::Value v(" << "get(\"" << it->get_name() << "\"));\n"
+                        << "\t\tYb::Value v(" << "get_attr_ex(\"" << it->get_name() << "\"));\n"
                         << "\t\treturn v.is_null()? std::string(): v.as_string();\n"
                         << "\t}\n";
                 } 
@@ -279,7 +262,7 @@ private:
                     int type = it->get_name() == pk_name? Value::PKID: it->get_type();
                     str << "\t" << type_by_handle(type)
                         << " get_" << str_to_lower(it->get_name()) << "() const {\n"
-                        << "\t\treturn " << "get(\"" << it->get_name() << "\")"
+                        << "\t\treturn " << "get_attr_ex(\"" << it->get_name() << "\")"
                         << "." << value_type_by_handle(type) << ";\n"
                         << "\t}\n";
                 }
@@ -296,7 +279,7 @@ private:
                     << "(" << type_by_handle(it->get_type())
                     << (it->get_type() == Value::STRING ? " &" : " ")
                     << str_to_lower(it->get_name()) << "__) {\n"
-                    << "\t\tset(\"" << it->get_name() << "\", Yb::Value("
+                    << "\t\tset_attr(\"" << it->get_name() << "\", Yb::Value("
                     << str_to_lower(it->get_name()) << "__));\n"
                     << "\t}\n";
             }
@@ -379,25 +362,25 @@ private:
                 string fk_name = str_to_lower(it->get_fk_name());
                 if(it->is_nullable()) {
                     str << "\tbool has_" << name << "() const {\n"
-                        << "\t\treturn !get(\"" << it->get_name() << "\").is_null();\n"
+                        << "\t\treturn !get_attr_ex(\"" << it->get_name() << "\").is_null();\n"
                         << "\t}\n";
 
                     str << "\tvoid reset_" << name << "() {\n"
-                        << "\t\tset(\""
+                        << "\t\tset_attr(\""
                         << it->get_name() << "\", Yb::Value());\n"
                         << "\t}\n";
                 }
                 str << "\tvoid set_" << name << "(const "
                     << get_file_class_name(it->get_fk_table_name())
                     << " &" << name << ") {\n"
-                    << "\t\tset(\"" << it->get_name() << "\", Yb::Value("
+                    << "\t\tset_attr(\"" << it->get_name() << "\", Yb::Value("
                     << name << ".get_" << fk_name << "()));\n"
                     << "\t}\n";
 
                 str << "\tconst " << get_file_class_name(it->get_fk_table_name())
                     <<  " get_" << name << "() const {\n"
                     << "\t\treturn " << get_file_class_name(it->get_fk_table_name())
-                    << "(*session_, get(\"" << it->get_name() << "\").as_longint());\n"
+                    << "(*get_session(), get_attr_ex(\"" << it->get_name() << "\").as_longint());\n"
                     << "\t}\n";
             }
     }

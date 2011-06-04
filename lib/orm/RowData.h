@@ -98,7 +98,7 @@ public:
     void set_ghost() { status_= Ghost; }
     void set_sync() { status_ = Sync; }
     void set_deleted() { status_ = Deleted; }
-    bool lt(const RowData &x, bool key_only = false) const;
+    int cmp(const RowData &x, bool key_only=false) const;
     void load(void) const;
 private:
     void load_if_ghost_and_if_non_key_field_requested(const Column &c) const;
@@ -110,13 +110,17 @@ private:
     mutable Values values_;
 };
 
-inline bool operator==(const RowData &x, const RowData &y) { return !x.lt(y) && !y.lt(x); }
-inline bool operator!=(const RowData &x, const RowData &y) { return x.lt(y) || y.lt(x); }
+inline bool operator==(const RowData &x, const RowData &y) { return !x.cmp(y); }
+inline bool operator!=(const RowData &x, const RowData &y) { return x.cmp(y); }
+
+const RowData mk_key(const Schema &schema,
+    const std::string &table_name, LongInt id);
 
 class RowData_key_less
 {
 public:
-    bool operator()(const RowData &x, const RowData &y) const { return x.lt(y, true); }
+    bool operator()(const RowData &x, const RowData &y) const
+    { return x.cmp(y, true) < 0; }
 };
 
 class FilterBackendByKey : public FilterBackend

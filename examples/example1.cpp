@@ -55,7 +55,15 @@ int main()
     cout << "client created: " << client.get_id().as_longint() << endl;
     cout << "order created: " << order.get_id().as_longint() << endl;
     engine.commit();
-    cout << order.auto_xmlize(1).get_xml() << endl;
+    cout << order.xmlize(1).get_xml() << endl;
+    Yb::ManagedList<Domain::Client> lst;
+    lst.insert(client);
+    Yb::ManagedList<Domain::Client>::iterator it = lst.begin(), end = lst.end();
+    for (; it != end; ++it)
+        cout << "client in list: " << it->get_id().as_longint() << endl;
+    cout << "list size: " << lst.size() << endl;
+    lst.erase(lst.begin());
+    cout << "list size: " << lst.size() << endl;
     return 0;
 }
 // vim:ts=4:sts=4:sw=4:et:

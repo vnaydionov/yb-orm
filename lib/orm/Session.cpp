@@ -96,7 +96,7 @@ Session::flush()
 }
 
 const Schema &
-Session::get_meta_data_registry()
+Session::get_schema()
 {
     return reg_;
 }

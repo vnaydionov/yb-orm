@@ -51,6 +51,13 @@ const XMLNode xmlize_row(const Row &row, const std::string &entry_name);
 const XMLNode xmlize_rows(const Rows &rows,
         const std::string &entries_name, const std::string &entry_name);
 
+class XMLizable
+{
+public:
+    virtual ~XMLizable() {}
+    virtual const XMLNode xmlize(int depth) const = 0;
+};
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
