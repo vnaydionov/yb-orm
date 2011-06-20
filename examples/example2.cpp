@@ -45,17 +45,41 @@ int main()
     client.set_name(name);
     client.set_email(email);
     client.set_dt(Yb::now());
+    {
     Domain::Order order(session);
     string value;
     cout << "Enter order amount: \n";
     cin >> value;
     order.set_total_sum(Yb::Decimal(value));
+    cout << "orders size: " << client.get_orders().size() << endl;
     order.set_owner(client);
+    cout << "orders size: " << client.get_orders().size() << endl;
+    }
+    {
+    Domain::Order order(session);
+    string value;
+    cout << "Enter order amount: \n";
+    cin >> value;
+    order.set_total_sum(Yb::Decimal(value));
+    cout << "orders size: " << client.get_orders().size() << endl;
+    order.set_owner(client);
+    cout << "orders size: " << client.get_orders().size() << endl;
     session.flush();
     cout << "client created: " << client.get_id().as_longint() << endl;
     cout << "order created: " << order.get_id().as_longint() << endl;
     engine.commit();
     cout << order.xmlize(1).get_xml() << endl;
+    }
+    Domain::Client c2(session, client.get_id().as_longint());
+    cout << "c2.orders size: " << c2.get_orders().size() << endl;
+    Yb::ManagedList<Domain::Client> lst;
+    lst.insert(client);
+    Yb::ManagedList<Domain::Client>::iterator it = lst.begin(), end = lst.end();
+    for (; it != end; ++it)
+        cout << "client in list: " << it->get_id().as_longint() << endl;
+    cout << "list size: " << lst.size() << endl;
+    lst.erase(lst.begin());
+    cout << "list size: " << lst.size() << endl;
     return 0;
 }
 // vim:ts=4:sts=4:sw=4:et:

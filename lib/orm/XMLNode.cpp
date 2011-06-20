@@ -69,19 +69,38 @@ void XMLNode::xmlize(Yb::Writer::Document &doc) const
  * @return XMLNode
  */
 const XMLNode
-deep_xmlize(SessionBase &session, const RowData &d, int depth)
+deep_xmlize(SessionBase &session, const RowData &d,
+    int depth, const string &alt_name)
 {   
-    XMLNode node(d);
+    XMLNode node(d, alt_name);
     if (depth == -1 || depth > 0) {
         const Table &table = d.get_table();
+        const string &cname = table.get_class_name();
         Columns::const_iterator it = table.begin(), end = table.end();
         for (; it != end; ++it)
             if (it->has_fk() && !d.get(it->get_name()).is_null()) {
-                boost::shared_ptr<XMLizable> domain_obj = 
-                    theDomainFactory::instance().create_object(session, it->get_fk_table_name(), 
-                        d.get(it->get_name()).as_longint()); 
-                XMLNode ref_node(domain_obj->xmlize(depth == -1? -1: depth - 1));
-                node.replace_child_object_by_field(it->get_xml_name(), ref_node);
+                const Table &fk_table = table.schema().
+                    get_table(it->get_fk_table_name());
+                Schema::RelMap::const_iterator
+                    j = table.schema().rels_lower_bound(cname),
+                    jend = table.schema().rels_upper_bound(cname);
+                for (; j != jend; ++j) {
+                    if (j->second.type() == Relation::ONE2MANY &&
+                        j->second.side(0) == fk_table.get_class_name())
+                    {
+                        boost::shared_ptr<XMLizable> domain_obj = 
+                            theDomainFactory::instance().create_object(
+                                session, it->get_fk_table_name(),
+                                d.get(it->get_name()).as_longint());
+                        XMLNode ref_node(domain_obj->xmlize(
+                            depth == -1? -1: depth - 1, mk_xml_name(
+                                j->second.attr(1, "property"), ""
+                            )));
+                        node.replace_child_object_by_field(
+                            it->get_xml_name(), ref_node);
+                    }
+                    break;
+                }
             }
     }
     return node;

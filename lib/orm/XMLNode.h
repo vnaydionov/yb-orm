@@ -45,7 +45,8 @@ private:
  *              >= 1 nested levels
  * @return XMLNode
  */
-const XMLNode deep_xmlize(SessionBase &session, const RowData &d, int depth = 0);
+const XMLNode deep_xmlize(SessionBase &session,
+    const RowData &d, int depth = 0, const std::string &alt_name = "");
 
 const XMLNode xmlize_row(const Row &row, const std::string &entry_name);
 const XMLNode xmlize_rows(const Rows &rows,
@@ -55,7 +56,8 @@ class XMLizable
 {
 public:
     virtual ~XMLizable() {}
-    virtual const XMLNode xmlize(int depth) const = 0;
+    virtual const XMLNode xmlize(int depth,
+        const std::string &alt_name = "") const = 0;
 };
 
 } // namespace Yb

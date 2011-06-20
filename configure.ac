@@ -1,4 +1,4 @@
-AC_INIT(configure.in)
+AC_INIT(configure.ac)
 
 AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE(yborm, 0.1)
@@ -39,6 +39,7 @@ AC_OUTPUT(Makefile
     src/Makefile
     examples/Makefile
     examples/example1.sh
+    examples/example2.sh
     examples/domain/Makefile)
 
 # vim:ts=4:sts=4:sw=4:et:

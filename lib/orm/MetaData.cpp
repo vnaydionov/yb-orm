@@ -12,6 +12,11 @@ MetaDataError::MetaDataError(const string &msg)
     : logic_error(msg)
 {}
 
+BadAttributeName::BadAttributeName(const string &obj, const string &attr)
+    : MetaDataError("Bad attribute name '" + attr + "' of object '" +
+            obj + "'")
+{}
+
 BadColumnName::BadColumnName(const string &table, const string &column)
     : MetaDataError("Bad column name '" + column
             + "' while constructing metadata '" + table + "'")
@@ -33,6 +38,10 @@ BadTableName::BadTableName(const string &table)
 
 TableNotFoundInMetaData::TableNotFoundInMetaData(const string &table)
     : MetaDataError("Table '" + table + "' not found in metadata")
+{}
+
+ClassNotFoundInMetaData::ClassNotFoundInMetaData(const string &class_name)
+    : MetaDataError("Class '" + class_name + "' not found in metadata")
 {}
 
 RowNotLinkedToTable::RowNotLinkedToTable()
@@ -63,7 +72,8 @@ mk_xml_name(const string &name, const string &xml_name)
 }
 
 Column::Column(const string &name, int type, size_t size, int flags,
-        const string &fk_table, const string &fk, const string &xml_name)
+        const string &fk_table, const string &fk,
+        const string &xml_name, const string &prop_name)
     : name_(str_to_upper(name))
     , type_(type)
     , size_(size)
@@ -71,12 +81,15 @@ Column::Column(const string &name, int type, size_t size, int flags,
     , fk_table_name_(str_to_upper(fk_table))
     , fk_name_(str_to_upper(fk))
     , xml_name_(mk_xml_name(name, xml_name))
+    , prop_name_(prop_name.empty()? str_to_lower(name): prop_name)
     , table_(NULL)
 {}
 
-Table::Table(const string &name, const string &xml_name)
+Table::Table(const string &name, const string &xml_name,
+        const string &class_name)
     : name_(str_to_upper(name))
     , xml_name_(mk_xml_name(name, xml_name))
+    , class_name_(class_name)
     , autoinc_(false)
     , depth_(0)
     , schema_(NULL)
@@ -177,6 +190,20 @@ Table::get_autoinc() const
     return autoinc_;
 }
 
+bool Relation::has_attr(int n, const string &name) const {
+    const AttrMap &a = !n? attr1_: attr2_;
+    AttrMap::const_iterator it = a.find(name);
+    return it != a.end();
+}
+
+const string &Relation::attr(int n, const string &name) const {
+    const AttrMap &a = !n? attr1_: attr2_;
+    AttrMap::const_iterator it = a.find(name);
+    if (it == a.end())
+        throw BadAttributeName("relation", name);
+    return it->second;
+}
+
 void
 Schema::set_table(const Table &table_meta_data)
 {
@@ -200,8 +227,57 @@ Schema::get_table(const string &name) const
     return it->second;
 }
 
-void Schema::check()
+const Table &
+Schema::find_table_by_class(const string &class_name) const
 {
+    Map::const_iterator it = tables_.begin(), end = tables_.end();
+    for (; it != end; ++it)
+        if (it->second.get_class_name() == class_name)
+            return it->second;
+    throw ClassNotFoundInMetaData(class_name);
+}
+
+void
+Schema::add_relation(const Relation &rel)
+{
+    relations_.push_back(rel);
+    rels_.insert(std::pair<std::string, Relation>(rel.side(0), rel));
+    if (rel.side(0) != rel.side(1))
+        rels_.insert(std::pair<std::string, Relation>(rel.side(1), rel));
+}
+
+void
+Schema::fill_fkeys()
+{
+    Map::iterator i = tables_.begin(), iend = tables_.end();
+    for (; i != iend; ++i) {
+        Table &table = i->second;
+        Columns::const_iterator j = table.begin(), jend = table.end(); 
+        for (; j != jend; ++j) {
+            if (!j->get_fk_table_name().empty() &&
+                    j->get_fk_name().empty())
+            {
+                Column &c = const_cast<Column &>(*j);
+                c.set_fk_name(get_table(j->get_fk_table_name()).get_synth_pk());
+            }
+        }
+    }
+    RelMap::iterator k = rels_.begin(), kend = rels_.end();
+    for (; k != kend; ++k)
+        k->second.set_tables(
+                find_table_by_class(k->second.side(0)).get_name(),
+                find_table_by_class(k->second.side(1)).get_name());
+    Relations::iterator l = relations_.begin(), lend = relations_.end();
+    for (; l != lend; ++l)
+        l->set_tables(
+                find_table_by_class(l->side(0)).get_name(),
+                find_table_by_class(l->side(1)).get_name());
+}
+
+void
+Schema::check()
+{
+    fill_fkeys();
     set<string> unique_tables;
     fill_unique_tables(unique_tables);
     StrMap tree;

@@ -10,17 +10,9 @@ class TestXMLConfig;
 
 namespace Yb {
 
-class XMLConfigError: public std::logic_error
-{
+class XMLConfigError: public std::logic_error {
 public:
-    XMLConfigError(const std::string &msg) :
-#if defined(__BORLANDC__)
-        std::logic_error
-#else
-        logic_error
-#endif
-        (msg)
-    {}
+    XMLConfigError(const std::string &msg) : std::logic_error(msg) {}
 };
 
 class MandatoryAttributeAbsent: public XMLConfigError
@@ -68,6 +60,9 @@ public:
 private:
     friend class ::TestXMLConfig;
     void parse_table(xmlNodePtr p_node, Table &table_meta);
+    void parse_relation_side(xmlNodePtr p_node, const char **attr_names,
+            size_t attr_count, std::string &cname, Relation::AttrMap &attrs);
+    bool parse_relation(xmlNodePtr p_node, Relation &rel);
     template <typename T>
     static void get_node_ptr_value(xmlNodePtr p_node, T &t);
     template <typename T> 

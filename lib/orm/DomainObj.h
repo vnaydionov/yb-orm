@@ -125,23 +125,47 @@ public:
             return 1;
         return aptr->cmp(*bptr, true);
     }
-    const XMLNode xmlize(int depth=0) const {
+    const XMLNode xmlize(int depth = 0,
+            const std::string &alt_name = "") const
+    {
         if (!session_)
             throw NoSessionBaseGiven();
-        return deep_xmlize(*session_, row_data(), depth);
+        return deep_xmlize(*session_, row_data(), depth, alt_name);
     }
 };
 
 template <class T>
 class ManagedList {
+    enum PersistStatus { New, Ghost, Dirty, Sync };
     typedef std::vector<boost::shared_ptr<DomainObject> > Vector;
-	Vector d_;
+    mutable Vector d_;
+    mutable PersistStatus status_;
+    SessionBase *session_;
+    Filter filter_;
+
+    void load() const {
+        if (!session_)
+            throw NoSessionBaseGiven();
+        typename T::ListPtr result = T::find(*session_, filter_);
+        typename T::List::const_iterator
+            it = result->begin(), end = result->end();
+        for (; it != end; ++it)
+            d_.push_back(boost::shared_ptr<DomainObject> (new T(*it)));
+    }
+
+    void load_if_needed() const {
+        if (status_ == Ghost) {
+            load();
+            status_ = Sync;
+        }
+    }
+
 public:
     template <class V, class U>
-	class Iter {
+    class Iter {
         friend class ManagedList;
-		V &d_;
-		int pos_, step_;
+        V &d_;
+        int pos_, step_;
         Iter(V &d, int pos, int step)
             : d_(d)
             , pos_(pos)
@@ -151,7 +175,7 @@ public:
             if (pos_ < 0 || pos_ >= d_.size())
                 throw OutOfManagedList(pos_, d_.size());
         }
-	public:
+    public:
         Iter(const Iter &obj)
             : d_(obj.d_)
             , pos_(obj.pos_)
@@ -185,26 +209,58 @@ public:
     };
     typedef Iter<Vector, T> iterator;
     typedef Iter<const Vector, const T> const_iterator;
-    iterator begin() { return iterator(d_, 0, 1); }
-    iterator end() { return iterator(d_, d_.size(), 1); }
-    iterator rbegin() { return iterator(d_, (int)d_.size() - 1, -1); }
-    iterator rend() { return iterator(d_, -1, -1); }
-    const_iterator begin() const { return const_iterator(d_, 0, 1); }
-    const_iterator end() const { return const_iterator(d_, d_.size(), 1); }
-    const_iterator rbegin() const { return const_iterator(d_, (int)d_.size() - 1, -1); }
-    const_iterator rend() const { return const_iterator(d_, -1, -1); }
-    size_t size() const { return d_.size(); }
-    iterator insert(const T &x) {
+
+    ManagedList(SessionBase *session, const Filter &filter)
+        : session_(session)
+        , filter_(filter)
+        , status_(Ghost)
+    {}
+
+    ManagedList()
+        : session_(NULL)
+        , status_(New)
+    {}
+
+    iterator begin() {
+        load_if_needed();
+        return iterator(d_, 0, 1);
+    }
+    iterator end() {
+        load_if_needed();
+        return iterator(d_, d_.size(), 1);
+    }
+    iterator find(const T &x) {
+        load_if_needed();
         for (size_t i = 0; i < d_.size(); ++i) {
             if (!d_[i]->row_data().cmp(
                     dynamic_cast<const DomainObject & >(x).row_data(), true))
                 return iterator(d_, i, 1);
         }
+        return end();
+    }
+    const_iterator begin() const {
+        load_if_needed();
+        return const_iterator(d_, 0, 1);
+    }
+    const_iterator end() const {
+        load_if_needed();
+        return const_iterator(d_, d_.size(), 1);
+    }
+    size_t size() const {
+        load_if_needed();
+        return d_.size();
+    }
+    iterator insert(const T &x) {
+        load_if_needed();
+        iterator it = find(x);
+        if (it != end())
+            return it;
         d_.push_back(boost::shared_ptr<DomainObject> (new T(x)));
         // do some magic
         return iterator(d_, d_.size() - 1, 1);
     }
     void erase(iterator it) {
+        load_if_needed();
         if (&it.d_ != &d_)
             throw InvalidIterator();
         it.check_pos();

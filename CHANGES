@@ -1,0 +1,7 @@
+
+0.1.2
+    Document XML metadata format, add 'relation' element for relations
+        between classes.
+    Initial support for backrefs via managed lists, to make one-to-many
+        relationships more usable.
+

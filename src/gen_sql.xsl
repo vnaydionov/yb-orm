@@ -29,7 +29,7 @@
         <xsl:apply-templates select="column" mode="typed-column"/>
         <xsl:apply-templates select="column" mode="fk"/>
         <xsl:text>    PRIMARY KEY (</xsl:text>
-        <xsl:apply-templates select="column[primarykey]" mode="pk"/>
+        <xsl:apply-templates select="column[primary-key]" mode="pk"/>
         <xsl:text>)
 )</xsl:text>
         <xsl:apply-templates select="." mode="suffix" />
@@ -109,14 +109,23 @@
         <xsl:text>) REFERENCES </xsl:text>
         <xsl:value-of select="foreign-key/@table" />
         <xsl:text>(</xsl:text>
-        <xsl:value-of select="foreign-key/@field" />
+        <xsl:choose>
+            <xsl:when test="foreign-key/@key">
+                <xsl:value-of select="foreign-key/@key" />
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:variable name="fk" select="foreign-key/@table"/>
+                <xsl:value-of select="../../table[@name = $fk]
+                    /column[primary-key]/@name"/>
+            </xsl:otherwise>
+        </xsl:choose>
         <xsl:text>),
 </xsl:text>
     </xsl:template>
 
     <xsl:template match="column" mode="pk" />
 
-    <xsl:template match="column[primarykey]" mode="pk">
+    <xsl:template match="column[primary-key]" mode="pk">
         <xsl:if test="position() != 1">
             <xsl:text>, </xsl:text>
         </xsl:if>
@@ -125,11 +134,11 @@
 
     <xsl:template match="column" mode="not-null" />
 
-    <xsl:template match="column[primarykey]" mode="not-null">
+    <xsl:template match="column[primary-key]" mode="not-null">
         <xsl:text> NOT NULL</xsl:text>
     </xsl:template>
 
-    <xsl:template match="column[@nullable and @nullable = '0']"
+    <xsl:template match="column[@null and @null = 'false']"
             mode="not-null">
         <xsl:text> NOT NULL</xsl:text>
     </xsl:template>
@@ -167,7 +176,7 @@
 
     <xsl:template match="column" mode="autoinc" />
 
-    <xsl:template match="column[primarykey and
+    <xsl:template match="column[primary-key and
             (../@sequence or ../@autoinc)]" mode="autoinc">
         <xsl:if test="$dbtype = 'MYSQL'">
             <xsl:text> AUTO_INCREMENT</xsl:text>

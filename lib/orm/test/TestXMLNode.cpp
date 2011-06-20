@@ -67,19 +67,23 @@ class TestXMLNode : public CppUnit::TestFixture
 
         Schema &r = theMetaData::instance();
 //      if(r.size() == 0) {
-            Table t("T_ORM_TEST", "orm-test");
+            Table t("T_ORM_TEST", "orm-test", "OrmTest");
             t.set_seq_name("S_ORM_TEST_ID");
             t.add_column(Column("ID", Value::LONGINT, 0, Column::PK | Column::RO));
             t.add_column(Column("A", Value::STRING, 50, 0));
             t.add_column(Column("B", Value::DATETIME, 0, 0));
             t.add_column(Column("C", Value::DECIMAL, 0, 0));
             r.set_table(t);
-            Table t2("T_ORM_XML", "orm-xml");
+            Table t2("T_ORM_XML", "orm-xml", "OrmXml");
             t2.set_seq_name("S_ORM_TEST_ID");
             t2.add_column(Column("ID", Value::LONGINT, 0, Column::PK | Column::RO));
             t2.add_column(Column("ORM_TEST_ID", Value::LONGINT, 0, 0, "T_ORM_TEST", "ID"));
             t2.add_column(Column("B", Value::DECIMAL, 0, 0));
             r.set_table(t2);
+            Relation::AttrMap a1, a2;
+            a2["property"] = "orm_test";
+            Relation re(Relation::ONE2MANY, "OrmTest", a1, "OrmXml", a2);
+            r.add_relation(re);
 //      }
     }
 

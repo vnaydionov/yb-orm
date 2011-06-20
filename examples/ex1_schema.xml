@@ -1,82 +1,87 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schema>
-    <table name="T_CLIENT" sequence="S_CLIENT_ID" xml-name="client">
+    <table name="T_CLIENT" sequence="S_CLIENT_ID"
+            class="Client" xml-name="client">
         <column name="ID" type="longint">
-            <primarykey/>
-            <readonly/>
+            <primary-key />
         </column>
         <column name="DT" type="datetime"/>
         <column name="NAME" type="string" size="100"/>
         <column name="EMAIL" type="string" size="100"/>
         <column name="PHONE" type="string" size="50"/>
         <column name="URL" type="string" size="200"/>
-        <column name="IS_AGENCY" type="longint" nullable="0" default="0"/>
+        <column name="IS_AGENCY" type="longint" xml-name="agency-flag"
+                property="agency_flag" null="false" default="0"/>
     </table>
-    <table name="T_PRODUCT_UNIT" sequence="S_PRODUCT_UNIT_ID" xml-name="product-unit">
+    <table name="T_PRODUCT_UNIT" sequence="S_PRODUCT_UNIT_ID"
+            class="ProductUnit" xml-name="product-unit">
         <column name="ID" type="longint">
-            <primarykey/>
-            <readonly/>
+            <primary-key />
         </column>
         <column name="NAME" type="string" size="100"/>
     </table>
-    <table name="T_PRODUCT_GROUP" sequence="S_PRODUCT_GROUP_ID" xml-name="product-group">
+    <table name="T_PRODUCT_GROUP" sequence="S_PRODUCT_GROUP_ID"
+            class="ProductGroup" xml-name="product-group">
         <column name="ID" type="longint">
-            <primarykey/>
-            <readonly/>
+            <primary-key />
         </column>
-        <column name="PARENT_ID" nullable="1" type="longint">
+        <column name="PARENT_ID" null="true" type="longint">
             <!--
-            <foreign-key table="T_PRODUCT_GROUP" field="ID"/>
+            <foreign-key table="T_PRODUCT_GROUP" key="ID"/>
             -->
         </column>
         <column name="NAME" type="string" size="100"/>
     </table>
-    <table name="T_PRODUCT" sequence="S_PRODUCT_ID" xml-name="product">
+    <table name="T_PRODUCT" sequence="S_PRODUCT_ID"
+            class="Product" xml-name="product">
         <column name="ID" type="longint">
-            <primarykey/>
-            <readonly/>
+            <primary-key/>
         </column>
         <column name="DT" type="datetime"/>
         <column name="PRODUCT_GROUP_ID" type="longint">
-            <foreign-key table="T_PRODUCT_GROUP" field="ID"/>
+            <foreign-key table="T_PRODUCT_GROUP"/>
         </column>
         <column name="NAME" type="string" size="100"/>
         <column name="FULLNAME" type="string" size="500"/>
         <column name="PRICE" type="decimal"/>
         <column name="UNIT_ID" type="longint">
-            <foreign-key table="T_PRODUCT_UNIT" field="ID"/>
+            <foreign-key table="T_PRODUCT_UNIT"/>
         </column>
     </table>
-    <table name="T_ORDER" sequence="S_ORDER_ID" xml-name="order">
+    <table name="T_ORDER" sequence="S_ORDER_ID"
+            class="Order" xml-name="order">
         <column name="ID" type="longint">
-            <primarykey/>
-            <readonly/>
+            <primary-key/>
         </column>
         <column name="DT" type="datetime" default="sysdate">
-            <readonly/>
+            <read-only/>
         </column>
         <column name="RECEIPT_SUM" type="decimal" default="0"/>
         <column name="RECEIPT_DT" type="datetime"/>
         <column name="CLIENT_ID" type="longint">
-            <foreign-key table="T_CLIENT" field="ID"/>
+            <foreign-key table="T_CLIENT" />
         </column>
-        <column name="TOTAL_SUM" nullable="1" type="decimal"/>
+        <column name="TOTAL_SUM" null="true" type="decimal"/>
     </table>
-    <table name="T_ORDER_ITEM" sequence="S_ORDER_ITEM_ID" xml-name="order-item">
+    <table name="T_ORDER_ITEM" sequence="S_ORDER_ITEM_ID"
+            class="OrderItem" xml-name="order-item">
         <column name="ID" type="longint">
-            <primarykey/>
-            <readonly/>
+            <primary-key/>
         </column>
         <column name="ORDER_ID" type="longint">
-            <foreign-key table="T_ORDER" field="ID"/>
+            <foreign-key table="T_ORDER" key="ID"/>
         </column>
         <column name="PRODUCT_ID" type="longint">
-            <foreign-key table="T_PRODUCT" field="ID"/>
+            <foreign-key table="T_PRODUCT"/>
         </column>
         <column name="QUANTITY" type="decimal"/>
         <column name="ORDER_SUM" type="decimal"/>
         <column name="DISCOUNT_PCT" type="decimal" default="0"/>
     </table>
+    <relation type="one-to-many">
+        <one class="Client" property="orders" />
+        <many class="Order" property="owner" />
+    </relation>
 </schema>
 <!-- vim:ts=4:sts=4:sw=4:et:
 -->

@@ -1,10 +1,10 @@
 
 BUILT_SOURCES=Client.cpp mk_tables.sql
 
-Client.cpp: $(top_srcdir)/examples/ex1_schema.xml
+Client.cpp: $(top_srcdir)/examples/ex2_schema.xml
 	$(top_builddir)/src/orm_domain_generator $^ ./
 
-mk_tables.sql: $(top_srcdir)/examples/ex1_schema.xml
+mk_tables.sql: $(top_srcdir)/examples/ex2_schema.xml
 	xsltproc --stringparam dialect ${YBORM_DBTYPE} \
 		$(top_srcdir)/src/gen_sql.xsl $^ > $@
 
