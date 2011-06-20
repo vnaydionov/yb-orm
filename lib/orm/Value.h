@@ -144,7 +144,7 @@ public:
 };
 
 inline bool operator==(const PKIDValue &x, const PKIDValue &y) { return !x.cmp(y); }
-inline bool operator!=(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y); }
+inline bool operator!=(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) != 0; }
 inline bool operator<(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) < 0; }
 inline bool operator>=(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) >= 0; }
 inline bool operator>(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) > 0; }
@@ -188,7 +188,7 @@ private:
 };
 
 inline bool operator==(const Value &x, const Value &y) { return !x.cmp(y); }
-inline bool operator!=(const Value &x, const Value &y) { return x.cmp(y); }
+inline bool operator!=(const Value &x, const Value &y) { return x.cmp(y) != 0; }
 inline bool operator<(const Value &x, const Value &y) { return x.cmp(y) < 0; }
 inline bool operator>=(const Value &x, const Value &y) { return x.cmp(y) >= 0; }
 inline bool operator>(const Value &x, const Value &y) { return x.cmp(y) > 0; }

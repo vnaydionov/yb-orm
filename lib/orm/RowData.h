@@ -111,7 +111,7 @@ private:
 };
 
 inline bool operator==(const RowData &x, const RowData &y) { return !x.cmp(y); }
-inline bool operator!=(const RowData &x, const RowData &y) { return x.cmp(y); }
+inline bool operator!=(const RowData &x, const RowData &y) { return x.cmp(y) != 0; }
 
 const RowData mk_key(const Schema &schema,
     const std::string &table_name, LongInt id);

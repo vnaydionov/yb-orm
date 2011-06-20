@@ -86,7 +86,7 @@ std::ostream &operator << (std::ostream &o, const decimal &x);
 std::istream &operator >> (std::istream &i, decimal &x);
 
 inline bool operator == (const decimal &x, const decimal &y) { return !x.cmp(y); }
-inline bool operator != (const decimal &x, const decimal &y) { return x.cmp(y); }
+inline bool operator != (const decimal &x, const decimal &y) { return x.cmp(y) != 0; }
 inline bool operator < (const decimal &x, const decimal &y) { return x.cmp(y) < 0; }
 inline bool operator > (const decimal &x, const decimal &y) { return x.cmp(y) > 0; }
 inline bool operator >= (const decimal &x, const decimal &y) { return x.cmp(y) >= 0; }
