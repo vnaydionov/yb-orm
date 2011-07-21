@@ -154,7 +154,7 @@ public:
         conn_.reset(new tiodbc::connection());
         stmt_.reset(new tiodbc::statement());
         if (!conn_->connect(dsn, user, passwd, 10, false))
-            throw DBError(conn_->last_error());
+            throw DBError(conn_->last_error_ex());
     }
 
     void close()
@@ -166,19 +166,20 @@ public:
     void commit()
     {
         if (!conn_->commit())
-            throw DBError(conn_->last_error());
+            throw DBError(conn_->last_error_ex());
     }
 
     void rollback()
     {
         if (!conn_->rollback())
-            throw DBError(conn_->last_error());
+            throw DBError(conn_->last_error_ex());
     }
 
     void exec_direct(const string &sql)
     {
+        stmt_.reset(new tiodbc::statement());
         if (!stmt_->execute_direct(*conn_, sql))
-            throw DBError(stmt_->last_error());
+            throw DBError(stmt_->last_error_ex());
     }
 
     RowsPtr fetch_rows(int max_rows)
@@ -217,8 +218,9 @@ public:
 
     void prepare(const string &sql)
     {
+        stmt_.reset(new tiodbc::statement());
         if (!stmt_->prepare(*conn_, sql))
-            throw DBError(stmt_->last_error());
+            throw DBError(stmt_->last_error_ex());
     }
 
     void exec(const Values &params)
@@ -247,7 +249,7 @@ public:
             }
         }
         if (!stmt_->execute())
-            throw DBError(stmt_->last_error());
+            throw DBError(stmt_->last_error_ex());
     }
 };
 
@@ -362,8 +364,9 @@ void
 SqlConnect::exec(const Values &params)
 {
     if (echo_) {
+        cout << "exec prepared: \n";
         for (unsigned i = 0; i < params.size(); ++i)
-            cout << "exec: p[" << (i + 1) << "]=\"" << params[i].sql_str() << "\"\n";
+            cout << "param[" << (i + 1) << "]=\"" << params[i].sql_str() << "\"\n";
     }
     backend_->exec(params);
 }
@@ -371,6 +374,8 @@ SqlConnect::exec(const Values &params)
 void
 SqlConnect::commit()
 {
+    if (echo_)
+        cout << "commit\n";
     backend_->commit();
     activity_ = false;
 }
@@ -378,6 +383,8 @@ SqlConnect::commit()
 void
 SqlConnect::rollback()
 {
+    if (echo_)
+        cout << "rollback\n";
     backend_->rollback();
     activity_ = false;
 }

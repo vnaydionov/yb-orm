@@ -33,6 +33,12 @@
 // System headers
 #if defined(__WIN32__) || defined(_WIN32)
 #include <windows.h>
+#else
+#ifdef _UNICODE
+typedef wchar_t TCHAR;
+#else
+typedef char TCHAR;
+#endif
 #endif
 #include <sql.h>
 #include <sqlext.h>
@@ -237,6 +243,7 @@ namespace tiodbc
 		@see last_error_status_code()
 		*/
 		_tstring last_error();
+		_tstring last_error_ex();
 
 		//! Get last error code
 		/**
@@ -536,6 +543,7 @@ namespace tiodbc
 		@see last_error_status_code()
 		*/
 		_tstring last_error();
+		_tstring last_error_ex();
 
 		//! Get last error code
 		/**

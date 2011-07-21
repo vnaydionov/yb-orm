@@ -46,10 +46,10 @@ namespace tiodbc
 	// Get an error of an ODBC handle
 	bool __get_error(SQLSMALLINT _handle_type, SQLHANDLE _handle, _tstring & _error_desc, _tstring & _status_code)
 	{
-		TCHAR status_code[256];
-		TCHAR error_message[256];
-		SQLINTEGER i_native_error;
-		SQLSMALLINT total_bytes;
+		TCHAR status_code[64];
+		TCHAR error_message[512];
+		SQLINTEGER i_native_error = 0;
+		SQLSMALLINT total_bytes = 0;
 		RETCODE rc;
 
 		// Ask for info
@@ -70,6 +70,8 @@ namespace tiodbc
 			return true;
 		}
 
+		_error_desc = "Can't get error message";
+		_status_code = "UNKNOWN";
 		return false;
 	}
 
@@ -223,6 +225,17 @@ namespace tiodbc
 		__get_error(SQL_HANDLE_DBC, conn_h, error, state);
 
 		return error;
+	}
+
+	// Get last error description with status code
+	_tstring connection::last_error_ex()
+	{
+		_tstring error, state;
+		
+		// Get error message
+		__get_error(SQL_HANDLE_DBC, conn_h, error, state);
+
+		return state + ":" + error;
 	}
 
 	// Get last error code
@@ -633,8 +646,9 @@ namespace tiodbc
 			return false;
 
 		rc = SQLExecute(stmt_h);
-		if (!TIODBC_SUCCESS_CODE(rc))
+		if (!TIODBC_SUCCESS_CODE(rc)) {
 			return false;
+		}
 		b_col_info_needed = true;
 		return true;
 	}
@@ -714,6 +728,17 @@ namespace tiodbc
 		__get_error(SQL_HANDLE_STMT, stmt_h, error, state);
 
 		return error;
+	}
+
+	// Get last error description with status code
+	_tstring statement::last_error_ex()
+	{
+		_tstring error, state;
+		
+		// Get error message
+		__get_error(SQL_HANDLE_STMT, stmt_h, error, state);
+
+		return state + ":" + error;
 	}
 
 	// Get last error code
