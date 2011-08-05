@@ -4,6 +4,7 @@
 #include <boost/lexical_cast.hpp>
 #include <util/Singleton.h>
 #include <util/str_utils.hpp>
+#include <util/stacktrace.h>
 #include <iostream>
 
 using namespace std;
@@ -11,8 +12,17 @@ using Yb::StrUtils::str_to_upper;
 
 namespace Yb {
 
+static inline string format_error(const string &msg)
+{
+    ostringstream out;
+    print_stacktrace(out, 100, 2);
+    if (out.str().compare("<stack trace not implemented>\n") != 0)
+        return msg + "\nBacktrace:\n" + out.str();
+    return msg;
+}
+
 DBError::DBError(const string &msg)
-    : logic_error(msg)
+    : logic_error(format_error(msg))
 {}
 
 GenericDBError::GenericDBError(const string &err)

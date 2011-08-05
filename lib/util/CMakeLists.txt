@@ -10,6 +10,6 @@ target_link_libraries (ybutil ${LIBXML2_LIBS} ${BOOST_DATE_TIME_LIBS}
 
 install (TARGETS ybutil DESTINATION lib)
 install (FILES decimal.h str_utils.hpp xmlnode.h xml_writer.h param.hpp
-    Singleton.h
+    Singleton.h stacktrace.h
              DESTINATION include/yb/util)
 

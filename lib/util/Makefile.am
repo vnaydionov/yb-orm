@@ -16,7 +16,7 @@ AM_CXXFLAGS = \
 lib_LTLIBRARIES = libybutil.la
 
 ybutilinclude_HEADERS = \
-	str_utils.hpp param.hpp decimal.h xml_writer.h xmlnode.h
+	str_utils.hpp param.hpp decimal.h xml_writer.h xmlnode.h stacktrace.h
 
 libybutil_la_SOURCES = \
 	$(ybutilinclude_HEADERS) \
