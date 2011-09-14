@@ -18,6 +18,7 @@
 
 </xsl:text>
         <xsl:apply-templates select="/schema/table" mode="create-table" />
+        <xsl:apply-templates select="/schema/table" mode="create-fk-constr" />
     </xsl:template>
 
     <xsl:template match="table" mode="create-table">
@@ -27,7 +28,9 @@
         <xsl:text> (
 </xsl:text>
         <xsl:apply-templates select="column" mode="typed-column"/>
+        <!--
         <xsl:apply-templates select="column" mode="fk"/>
+        -->
         <xsl:text>    PRIMARY KEY (</xsl:text>
         <xsl:apply-templates select="column[primary-key]" mode="pk"/>
         <xsl:text>)
@@ -38,6 +41,10 @@
 </xsl:text>
         <xsl:apply-templates select="." mode="seq" />
         <xsl:apply-templates select="." mode="after-create-table"/>
+    </xsl:template>
+
+    <xsl:template match="table" mode="create-fk-constr">
+        <xsl:apply-templates select="column" mode="fk-constr"/>
     </xsl:template>
 
     <xsl:template match="table" mode="before-create-table" />
@@ -104,7 +111,14 @@
     <xsl:template match="column" mode="fk" />
 
     <xsl:template match="column[foreign-key]" mode="fk">
-        <xsl:text>    FOREIGN KEY (</xsl:text>
+        <xsl:text>    </xsl:text>
+        <xsl:apply-templates select="." mode="fk-rule" />
+        <xsl:text>,
+</xsl:text>
+    </xsl:template>
+
+    <xsl:template match="column[foreign-key]" mode="fk-rule">
+        <xsl:text>FOREIGN KEY (</xsl:text>
         <xsl:value-of select="@name" />
         <xsl:text>) REFERENCES </xsl:text>
         <xsl:value-of select="foreign-key/@table" />
@@ -119,7 +133,17 @@
                     /column[primary-key]/@name"/>
             </xsl:otherwise>
         </xsl:choose>
-        <xsl:text>),
+        <xsl:text>)</xsl:text>
+    </xsl:template>
+
+    <xsl:template match="column" mode="fk-constr" />
+
+    <xsl:template match="column[foreign-key]" mode="fk-constr">
+        <xsl:text>ALTER TABLE </xsl:text>
+        <xsl:value-of select="../@name" />
+        <xsl:text> ADD </xsl:text>
+        <xsl:apply-templates select="." mode="fk-rule" />
+        <xsl:text>;
 </xsl:text>
     </xsl:template>
 
