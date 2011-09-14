@@ -11,6 +11,8 @@
         <xsl:value-of select="$dialect"/>
     </xsl:variable>
 
+    <xsl:key name="seq" match="/schema/table" use="@sequence" />
+
     <xsl:template match="/">
         <xsl:text>-- DBTYPE=</xsl:text>
         <xsl:value-of select="$dbtype"/>
@@ -19,6 +21,12 @@
 </xsl:text>
         <xsl:apply-templates select="/schema/table" mode="create-table" />
         <xsl:apply-templates select="/schema/table" mode="create-fk-constr" />
+        <xsl:call-template name="commit"/>
+        <xsl:for-each select="/schema/table[generate-id(.) =
+                    generate-id(key('seq', @sequence)[1])]" >
+            <xsl:apply-templates select="." mode="seq" />
+        </xsl:for-each>
+        <xsl:call-template name="commit"/>
     </xsl:template>
 
     <xsl:template match="table" mode="create-table">
@@ -39,8 +47,10 @@
         <xsl:text>;
 
 </xsl:text>
+        <!--
         <xsl:apply-templates select="." mode="seq" />
-        <xsl:apply-templates select="." mode="after-create-table"/>
+        -->
+        <xsl:call-template name="commit"/>
     </xsl:template>
 
     <xsl:template match="table" mode="create-fk-constr">
@@ -49,7 +59,7 @@
 
     <xsl:template match="table" mode="before-create-table" />
 
-    <xsl:template match="table" mode="after-create-table">
+    <xsl:template name="commit">
         <xsl:if test="$dbtype = 'INTERBASE'">
             <xsl:text>COMMIT;
 
@@ -65,14 +75,12 @@
                 <xsl:text>CREATE SEQUENCE </xsl:text>
                 <xsl:value-of select="@sequence" />
                 <xsl:text>;
-
 </xsl:text>
             </xsl:when>
             <xsl:when test="$dbtype = 'INTERBASE'">
                 <xsl:text>CREATE GENERATOR </xsl:text>
                 <xsl:value-of select="@sequence" />
                 <xsl:text>;
-
 </xsl:text>
             </xsl:when>
         </xsl:choose>
