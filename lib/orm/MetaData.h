@@ -178,6 +178,8 @@ public:
     size_t idx_by_name(const std::string &col_name) const;
     const Column &get_column(const std::string &col_name) const
         { return cols_[idx_by_name(col_name)]; }
+    const Column &get_column(size_t idx) const
+        { return cols_[idx]; }
     const std::string get_seq_name() const;
     bool get_autoinc() const;
     const std::string find_synth_pk() const;

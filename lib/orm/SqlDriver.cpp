@@ -4,7 +4,6 @@
 #include <boost/lexical_cast.hpp>
 #include <util/Singleton.h>
 #include <util/str_utils.hpp>
-#include <util/stacktrace.h>
 #include <iostream>
 
 using namespace std;
@@ -12,17 +11,8 @@ using Yb::StrUtils::str_to_upper;
 
 namespace Yb {
 
-static inline string format_error(const string &msg)
-{
-    ostringstream out;
-    print_stacktrace(out, 100, 2);
-    if (out.str().compare("<stack trace not implemented>\n") != 0)
-        return msg + "\nBacktrace:\n" + out.str();
-    return msg;
-}
-
 DBError::DBError(const string &msg)
-    : logic_error(format_error(msg))
+    : BaseError(msg)
 {}
 
 GenericDBError::GenericDBError(const string &err)
@@ -192,38 +182,34 @@ public:
             throw DBError(stmt_->last_error_ex());
     }
 
-    RowsPtr fetch_rows(int max_rows)
+    RowPtr fetch_row()
     {
-        RowsPtr rows(new Rows);
-        for (int count = 0; max_rows < 0? 1: count < max_rows; ++count) {
-            if (!stmt_->fetch_next())
-                break;
-            int col_count = stmt_->count_columns();
-            Row row;
-            for (int i = 0; i < col_count; ++i) {
-                tiodbc::field_impl f = stmt_->field(i + 1);
-                string name = str_to_upper(f.get_name());
-                Value v;
-                if (f.get_type() == SQL_DATE ||
-                        f.get_type() == SQL_TIMESTAMP ||
-                        f.get_type() == SQL_TYPE_TIMESTAMP)
-                {
-                    TIMESTAMP_STRUCT ts = f.as_date_time();
-                    if (ts.year != 0 || f.is_null() != 1) {
-                        v = Value(mk_datetime(ts.year, ts.month, ts.day,
-                                    ts.hour, ts.minute, ts.second));
-                    }
+        if (!stmt_->fetch_next())
+            return RowPtr();
+        int col_count = stmt_->count_columns();
+        RowPtr row(new Row);
+        for (int i = 0; i < col_count; ++i) {
+            tiodbc::field_impl f = stmt_->field(i + 1);
+            string name = str_to_upper(f.get_name());
+            Value v;
+            if (f.get_type() == SQL_DATE ||
+                    f.get_type() == SQL_TIMESTAMP ||
+                    f.get_type() == SQL_TYPE_TIMESTAMP)
+            {
+                TIMESTAMP_STRUCT ts = f.as_date_time();
+                if (ts.year != 0 || f.is_null() != 1) {
+                    v = Value(mk_datetime(ts.year, ts.month, ts.day,
+                                ts.hour, ts.minute, ts.second));
                 }
-                else {
-                    string val = f.as_string();
-                    if (f.is_null() != 1)
-                        v = Value(val);
-                }
-                row[name] = v;
             }
-            rows->push_back(row);
+            else {
+                string val = f.as_string();
+                if (f.is_null() != 1)
+                    v = Value(val);
+            }
+            (*row)[name] = v;
         }
-        return rows;
+        return row;
     }
 
     void prepare(const string &sql)
@@ -312,6 +298,15 @@ const Names list_sql_drivers()
     return theDriverRegistry::instance().list_items();
 }
 
+bool SqlResultSet::fetch(Row &row)
+{
+    RowPtr p = conn_.fetch_row();
+    if (!p.get())
+        return false;
+    row.swap(*p);
+    return true;
+}
+
 SqlConnect::SqlConnect(const string &driver_name,
         const string &dialect_name, const string &db,
         const string &user, const string &passwd)
@@ -333,7 +328,7 @@ SqlConnect::~SqlConnect()
     backend_->close();
 }
 
-void
+SqlResultSet
 SqlConnect::exec_direct(const string &sql)
 {
     if (echo_) {
@@ -341,14 +336,32 @@ SqlConnect::exec_direct(const string &sql)
     }
     activity_ = true;
     backend_->exec_direct(sql);
+    return SqlResultSet(*this);
+}
+
+RowPtr
+SqlConnect::fetch_row()
+{
+    RowPtr row = backend_->fetch_row();
+    if (echo_) {
+        cout << "fetch:\n";
+        Row::const_iterator j = row->begin(), jend = row->end();
+        for (; j != jend; ++j)
+            cout << j->first << "=" << j->second.sql_str() << " ";
+        cout << "\n";
+    }
+    return row;
 }
 
 RowsPtr
 SqlConnect::fetch_rows(int max_rows)
 {
-    RowsPtr rows = backend_->fetch_rows(max_rows);
+    RowsPtr rows(new Rows);
+    SqlResultSet result(*this);
+    copy_no_more_than_n(result.begin(), result.end(),
+                        max_rows, back_inserter(*rows));
     if (echo_) {
-        cout << "fetch:\n";
+        cout << "fetch all:\n";
         Rows::const_iterator i = rows->begin(), iend = rows->end();
         for (; i != iend; ++i) {
             Row::const_iterator j = i->begin(), jend = i->end();
@@ -370,7 +383,7 @@ SqlConnect::prepare(const string &sql)
     backend_->prepare(sql);
 }
 
-void
+SqlResultSet
 SqlConnect::exec(const Values &params)
 {
     if (echo_) {
@@ -379,6 +392,7 @@ SqlConnect::exec(const Values &params)
             cout << "param[" << (i + 1) << "]=\"" << params[i].sql_str() << "\"\n";
     }
     backend_->exec(params);
+    return SqlResultSet(*this);
 }
 
 void

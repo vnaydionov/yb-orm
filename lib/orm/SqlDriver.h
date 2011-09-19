@@ -5,9 +5,11 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <iterator>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
-#include "Value.h"
+#include <util/ResultSet.h>
+#include <orm/Value.h>
 
 namespace Yb {
 
@@ -73,7 +75,7 @@ private:
     boost::mutex mutex_;
 };
 
-class DBError : public std::logic_error
+class DBError : public BaseError
 {
 public:
     DBError(const std::string &msg);
@@ -161,7 +163,7 @@ public:
     virtual void commit() = 0;
     virtual void rollback() = 0;
     virtual void exec_direct(const std::string &sql) = 0;
-    virtual RowsPtr fetch_rows(int max_rows) = 0; // -1=all
+    virtual RowPtr fetch_row() = 0;
     virtual void prepare(const std::string &sql) = 0;
     virtual void exec(const Values &params) = 0;
 };
@@ -184,6 +186,18 @@ SqlDriver *sql_driver(const std::string &name);
 bool register_sql_driver(std::auto_ptr<SqlDriver> driver);
 const Names list_sql_drivers();
 
+class SqlConnect;
+
+class SqlResultSet: public ResultSetBase<Row>
+{
+    SqlConnect &conn_;
+
+    bool fetch(Row &row);
+    SqlResultSet();
+public:
+    SqlResultSet(SqlConnect &conn): conn_(conn) {}
+};
+
 class SqlConnect
 {
     SqlDriver *driver_;
@@ -203,10 +217,11 @@ public:
     const std::string &get_db() { return db_; }
     const std::string &get_user() { return user_; }
     void set_echo(bool echo) { echo_ = echo; }
-    void exec_direct(const std::string &sql);
-    RowsPtr fetch_rows(int max_rows = -1);
+    SqlResultSet exec_direct(const std::string &sql);
+    RowPtr fetch_row();
+    RowsPtr fetch_rows(int max_rows = -1); // -1 = all
     void prepare(const std::string &sql);
-    void exec(const Values &params);
+    SqlResultSet exec(const Values &params);
     void commit();
     void rollback();
 };

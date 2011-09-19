@@ -37,7 +37,8 @@ H_FILES = \
 	DomainFactorySingleton.h \
 	MetaDataSingleton.h \
 	XMLMetaDataConfig.h \
-	XMLNode.h
+	XMLNode.h \
+	DataObject.h
 
 CPP_FILES = \
 	$(H_FILES) \
@@ -51,7 +52,8 @@ CPP_FILES = \
 	SqlDriver.cpp \
 	tiodbc.cpp \
 	XMLMetaDataConfig.cpp \
-	XMLNode.cpp
+	XMLNode.cpp \
+	DataObject.cpp
 
 lib_LTLIBRARIES = libyborm.la
 

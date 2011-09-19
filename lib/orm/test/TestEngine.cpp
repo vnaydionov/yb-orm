@@ -429,4 +429,22 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestEngine);
 
+class TestSqlDriver : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(TestSqlDriver);
+    CPPUNIT_TEST(test_fetch);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void test_fetch()
+    {
+        SqlConnect conn("ODBC", xgetenv("YBORM_DBTYPE"),
+                xgetenv("YBORM_DB"), xgetenv("YBORM_USER"),
+                xgetenv("YBORM_PASSWD"));
+        ///
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(TestSqlDriver);
+
 // vim:ts=4:sts=4:sw=4:et:

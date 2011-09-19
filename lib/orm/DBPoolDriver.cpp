@@ -283,29 +283,24 @@ public:
         }
     }
 
-    RowsPtr fetch_rows(int max_rows)
+    RowPtr fetch_row()
     {
         if (!stmt_.get())
             throw GenericDBError(
                     "fetch_rows(): no statement. context: " + saved_sql_);
         try {
-            RowsPtr rows(new Rows);
-            int row_count = 0;
-            for (mypp::Row row; stmt_->Fetch(row); ) {
-                if (max_rows >= 0 && row_count >= max_rows)
-                    break;
-                Row orm_row;
-                for (int i = 0; i < row.size(); ++i) {
-                    const string name = str_to_upper(row[i].getName());
-                    if (row[i].isNull())
-                        orm_row[name] = Value();
-                    else
-                        orm_row[name] = Value(row[i].asString());
-                }
-                rows->push_back(orm_row);
-                ++row_count;
+            mypp::Row row;
+            if (!stmt_->Fetch(row))
+                return RowPtr();
+            RowPtr orm_row(new Row);
+            for (int i = 0; i < row.size(); ++i) {
+                const string name = str_to_upper(row[i].getName());
+                if (row[i].isNull())
+                    (*orm_row)[name] = Value();
+                else
+                    (*orm_row)[name] = Value(row[i].asString());
             }
-            return rows;
+            return orm_row;
         }
         catch (const mypp::Exception &e) {
             throw GenericDBError(e.error());

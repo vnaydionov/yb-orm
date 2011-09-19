@@ -9,7 +9,10 @@ AM_CXXFLAGS = \
 
 check_PROGRAMS = unit_tests
 
-unit_tests_SOURCES = TestDecimal.cpp TestSingleton.cpp
+unit_tests_SOURCES = \
+	TestDecimal.cpp \
+	TestSingleton.cpp \
+	TestResultSet.cpp
 
 unit_tests_LDADD = \
 	$(top_builddir)/lib/test/libtestmain.la \

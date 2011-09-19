@@ -16,11 +16,22 @@ AM_CXXFLAGS = \
 lib_LTLIBRARIES = libybutil.la
 
 ybutilinclude_HEADERS = \
-	str_utils.hpp param.hpp decimal.h xml_writer.h xmlnode.h stacktrace.h
+	str_utils.hpp \
+	param.hpp \
+	decimal.h \
+	xml_writer.h \
+	xmlnode.h \
+	stacktrace.h \
+	Exception.h \
+	ResultSet.h
 
 libybutil_la_SOURCES = \
 	$(ybutilinclude_HEADERS) \
-	str_utils.cpp decimal.cpp xml_writer.cpp xmlnode.cpp
+	str_utils.cpp \
+	decimal.cpp \
+	xml_writer.cpp \
+	xmlnode.cpp \
+	Exception.cpp
 
 libybutil_la_LDFLAGS = -version-info 0:0:0
 

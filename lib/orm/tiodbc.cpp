@@ -647,6 +647,13 @@ namespace tiodbc
 
 		rc = SQLExecute(stmt_h);
 		if (!TIODBC_SUCCESS_CODE(rc)) {
+			if (rc == SQL_NEED_DATA) {
+				SQLPOINTER val_ptr;
+				SQLParamData(stmt_h, &val_ptr);
+				// Very strange bug on Intel Atom: 
+				// without this call SQLExecute sometimes
+				// gives SQL_NEED_DATA	
+			}
 			return false;
 		}
 		b_col_info_needed = true;
