@@ -187,6 +187,35 @@ split_path(const string &path, vector<string> &items)
     append_path_item(item, items);
 }
 
+vector<string> &split_str(const string &s,
+        const string &delim, vector<string> &parts)
+{
+    size_t start = 0;
+    while (1) {
+        size_t pos = s.find(delim, start);
+        if (pos == string::npos) {
+            parts.push_back(string(s, start));
+            break;
+        }
+        parts.push_back(string(s, start, pos - start));
+        start = pos + delim.size();
+    }
+    return parts;
+}
+
+const string join_str(const string &delim, const vector<string> &parts)
+{
+    string result;
+    if (parts.size()) {
+        result = parts[0];
+        for (size_t i = 1; i < parts.size(); ++i) {
+            result += delim;
+            result += parts[i];
+        }
+    }
+    return result;
+}
+
 const string quote(const string &s)
 {
     return "'" + s + "'";

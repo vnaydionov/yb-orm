@@ -5,9 +5,14 @@
 #include <util/Singleton.h>
 #include <util/str_utils.hpp>
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 using Yb::StrUtils::str_to_upper;
+
+#define DBG(x) do{ char __s[40]; ostringstream __log; time_t __t = time(NULL); \
+    strcpy(__s, ctime(&__t)); __s[strlen(__s) - 1] = 0; \
+    __log << __s << ": " << x << '\n'; cerr << __log.str(); }while(0)
 
 namespace Yb {
 
@@ -332,7 +337,7 @@ SqlResultSet
 SqlConnect::exec_direct(const string &sql)
 {
     if (echo_) {
-        cout << "exec_direct: " << sql << "\n";
+        DBG("exec_direct: " + sql);
     }
     activity_ = true;
     backend_->exec_direct(sql);
@@ -344,11 +349,17 @@ SqlConnect::fetch_row()
 {
     RowPtr row = backend_->fetch_row();
     if (echo_) {
-        cout << "fetch:\n";
-        Row::const_iterator j = row->begin(), jend = row->end();
-        for (; j != jend; ++j)
-            cout << j->first << "=" << j->second.sql_str() << " ";
-        cout << "\n";
+        if (row.get()) {
+            ostringstream out;
+            out << "fetch: ";
+            Row::const_iterator j = row->begin(), jend = row->end();
+            for (; j != jend; ++j)
+                out << j->first << "=" << j->second.sql_str() << " ";
+            DBG(out.str());
+        }
+        else {
+            DBG("fetch: no more rows");
+        }
     }
     return row;
 }
@@ -360,16 +371,6 @@ SqlConnect::fetch_rows(int max_rows)
     SqlResultSet result(*this);
     copy_no_more_than_n(result.begin(), result.end(),
                         max_rows, back_inserter(*rows));
-    if (echo_) {
-        cout << "fetch all:\n";
-        Rows::const_iterator i = rows->begin(), iend = rows->end();
-        for (; i != iend; ++i) {
-            Row::const_iterator j = i->begin(), jend = i->end();
-            for (; j != jend; ++j)
-                cout << j->first << "=" << j->second.sql_str() << " ";
-            cout << "\n";
-        }
-    }
     return rows;
 }
 
@@ -377,7 +378,7 @@ void
 SqlConnect::prepare(const string &sql)
 {
     if (echo_) {
-        cout << "prepare: " << sql << "\n";
+        DBG("prepare: " + sql);
     }
     activity_ = true;
     backend_->prepare(sql);
@@ -387,9 +388,11 @@ SqlResultSet
 SqlConnect::exec(const Values &params)
 {
     if (echo_) {
-        cout << "exec prepared: \n";
+        ostringstream out;
+        out << "exec prepared:";
         for (unsigned i = 0; i < params.size(); ++i)
-            cout << "param[" << (i + 1) << "]=\"" << params[i].sql_str() << "\"\n";
+            out << " p" << (i + 1) << "=\"" << params[i].sql_str() << "\"";
+        DBG(out.str());
     }
     backend_->exec(params);
     return SqlResultSet(*this);
@@ -399,7 +402,7 @@ void
 SqlConnect::commit()
 {
     if (echo_)
-        cout << "commit\n";
+        DBG("commit");
     backend_->commit();
     activity_ = false;
 }
@@ -408,7 +411,7 @@ void
 SqlConnect::rollback()
 {
     if (echo_)
-        cout << "rollback\n";
+        DBG("rollback");
     backend_->rollback();
     activity_ = false;
 }

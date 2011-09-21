@@ -184,6 +184,7 @@ public:
     bool get_autoinc() const;
     const std::string find_synth_pk() const;
     const std::string get_synth_pk() const;
+    const std::string get_fk_for(const std::string &table_name) const;
     int get_depth() const { return depth_; }
     void add_column(const Column &column);
     void set_seq_name(const std::string &seq_name);
@@ -208,12 +209,19 @@ class Relation {
 public:
     typedef std::map<std::string, std::string> AttrMap;
     enum { UNKNOWN = 0, ONE2MANY, MANY2MANY, PARENT2CHILD };
-    Relation() : type_(UNKNOWN) {}
-    Relation(int _type, const std::string &_side1, const AttrMap &_attr1,
-            const std::string &_side2, const AttrMap &_attr2)
+    enum { Restrict = 0, Nullify, Delete };
+    Relation()
+        : type_(UNKNOWN), cascade_(Restrict) {}
+    Relation(int _type,
+            const std::string &_side1, const AttrMap &_attr1,
+            const std::string &_side2, const AttrMap &_attr2,
+            int cascade_delete_action = Restrict)
         : type_(_type), side1_(_side1), side2_(_side2),
-        attr1_(_attr1), attr2_(_attr2) {}
+        attr1_(_attr1), attr2_(_attr2),
+        cascade_(cascade_delete_action)
+    {}
     int type() const { return type_; }
+    int cascade() const { return cascade_; }
     const std::string &side(int n) const { return n == 0? side1_: side2_; }
     const std::string &table(int n) const { return n == 0? table1_: table2_; }
     bool has_attr(int n, const std::string &name) const;
@@ -222,8 +230,9 @@ public:
         table1_ = table1;
         table2_ = table2;
     }
+    const std::string &master() const;
 private:
-    int type_;
+    int type_, cascade_;
     std::string side1_, side2_;
     std::string table1_, table2_;
     AttrMap attr1_, attr2_;

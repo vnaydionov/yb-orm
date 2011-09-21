@@ -1,7 +1,8 @@
 #include <sstream>
 #include <util/str_utils.hpp>
-#include "MetaData.h"
-#include "Value.h"
+#include <util/Exception.h>
+#include <orm/MetaData.h>
+#include <orm/Value.h>
 
 using namespace std;
 using namespace Yb::StrUtils;
@@ -179,6 +180,17 @@ Table::get_synth_pk() const
 }
 
 const string
+Table::get_fk_for(const string &table_name) const
+{
+    vector<string> parts;
+    Columns::const_iterator it = begin(), e = end();
+    for (; it != e; ++it)
+        if (it->has_fk() && it->get_fk_table_name() == table_name)
+            parts.push_back(it->get_name());
+    return StrUtils::join_str(",", parts);
+}
+
+const string
 Table::get_seq_name() const
 {
     return seq_name_;
@@ -190,18 +202,27 @@ Table::get_autoinc() const
     return autoinc_;
 }
 
-bool Relation::has_attr(int n, const string &name) const {
+bool
+Relation::has_attr(int n, const string &name) const {
     const AttrMap &a = !n? attr1_: attr2_;
     AttrMap::const_iterator it = a.find(name);
     return it != a.end();
 }
 
-const string &Relation::attr(int n, const string &name) const {
+const string &
+Relation::attr(int n, const string &name) const {
     const AttrMap &a = !n? attr1_: attr2_;
     AttrMap::const_iterator it = a.find(name);
     if (it == a.end())
         throw BadAttributeName("relation", name);
     return it->second;
+}
+
+const string &
+Relation::master() const
+{
+    YB_ASSERT(type_ == ONE2MANY);
+    return side(0);
 }
 
 void

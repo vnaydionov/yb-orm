@@ -15,6 +15,14 @@ namespace Yb {
 class Session;
 class RelationObject;
 
+class CascadeDeleteError: public BaseError {
+public:
+    CascadeDeleteError(const Relation &rel):
+        BaseError("Cascade delete error: " +
+                rel.side(0) + "-" + rel.side(1))
+    {}
+};
+
 class DataObject {
     // 0) Always allocate object in heap, pointer to object = object's identity.
     //      -> non-copyable.
@@ -58,6 +66,7 @@ public:
     static Ptr create_new(const Table &table) {
         return Ptr(new DataObject(table, New));
     }
+    ~DataObject();
     /*
     static Ptr create_from_row(const Table &table, const ResultSetItem &row) {
         Ptr obj(new DataObject(table, Sync));
@@ -82,12 +91,24 @@ public:
     Value &get(const std::string &name) {
         return get(table_.idx_by_name(name));
     }
+    void set(int i, const Value &v) {
+        lazy_load(table_.get_column(i));
+    }
+    void set(const std::string &name, const Value &v) {
+        set(table_.idx_by_name(name), v);
+    }
     SlaveRelations &slave_relations() {
         return slave_relations_;
     }
     MasterRelations &master_relations() {
         return master_relations_;
     }
+
+    bool could_be_deleted() const;
+    void delete_object();
+    void delete_master_relations();
+    void exclude_from_slave_relations();
+    void set_free_from(RelationObject *rel);
 };
 
 class RelationObject {
@@ -124,6 +145,10 @@ public:
     SlaveObjects &slave_objects() { return slave_objects_; }
     void status(Status stat) { status_ = stat; }
     Status status() const { return status_; }
+
+    bool could_master_be_deleted() const;
+    void delete_master();
+    void exclude_slave(DataObject *obj);
 };
 
 } // namespace Yb

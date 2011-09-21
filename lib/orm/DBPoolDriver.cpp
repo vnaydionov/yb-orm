@@ -275,6 +275,7 @@ public:
     {
         try {
             saved_sql_ = sql;
+            stmt_.reset(NULL);
             stmt_.reset(new mypp::Statement(handle_, sql));
             stmt_->Execute();
         }

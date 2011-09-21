@@ -29,7 +29,7 @@ int main()
             new Yb::DBPoolDriver(conf, "MY_DBPOOL"));
     Yb::register_sql_driver(drv);
     auto_ptr<Yb::SqlConnect> conn(
-            new Yb::SqlConnect("MY_DBPOOL", "MYSQL", "default"));
+            new Yb::SqlConnect("MY_DBPOOL", Yb::StrUtils::xgetenv("YBORM_DBTYPE"), "default"));
     Yb::Engine engine(Yb::Engine::MANUAL, conn);
 #else
     Yb::Engine engine(Yb::Engine::MANUAL);

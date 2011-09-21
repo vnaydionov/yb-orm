@@ -55,6 +55,13 @@ const std::string html_escape(const std::string &s);
 
 void split_path(const std::string &path, std::vector<std::string> &items);
 
+std::vector<std::string> &split_str(const std::string &s,
+        const std::string &delim,
+        std::vector<std::string> &parts);
+
+const std::string join_str(const std::string &delim,
+        const std::vector<std::string> &parts);
+
 // Code generation helpers
 
 const std::string quote(const std::string &s);
