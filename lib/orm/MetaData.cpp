@@ -202,6 +202,20 @@ Table::get_autoinc() const
     return autoinc_;
 }
 
+const Key
+Table::mk_key(const ValuesMap &key_fields) const
+{
+    return Key(name_, key_fields);
+}
+
+const Key
+Table::mk_key(LongInt id) const
+{
+    ValuesMap key_fields;
+    key_fields[get_synth_pk()] = Value(id);
+    return Key(name_, key_fields);
+}
+
 bool
 Relation::has_attr(int n, const string &name) const {
     const AttrMap &a = !n? attr1_: attr2_;
@@ -218,11 +232,12 @@ Relation::attr(int n, const string &name) const {
     return it->second;
 }
 
-const string &
+const Table &
 Relation::master() const
 {
     YB_ASSERT(type_ == ONE2MANY);
-    return side(0);
+    YB_ASSERT(schema_);
+    return schema_->find_table_by_class(side(0));
 }
 
 void
@@ -262,9 +277,14 @@ void
 Schema::add_relation(const Relation &rel)
 {
     relations_.push_back(rel);
-    rels_.insert(std::pair<std::string, Relation>(rel.side(0), rel));
-    if (rel.side(0) != rel.side(1))
-        rels_.insert(std::pair<std::string, Relation>(rel.side(1), rel));
+    std::pair<std::string, Relation> p1(rel.side(0), rel);
+    p1.second.schema(*this);
+    rels_.insert(p1);
+    if (rel.side(0) != rel.side(1)) {
+        std::pair<std::string, Relation> p2(rel.side(1), rel);
+        p2.second.schema(*this);
+        rels_.insert(p2);
+    }
 }
 
 void

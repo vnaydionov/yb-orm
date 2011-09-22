@@ -1,3 +1,4 @@
+// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__META_DATA__INCLUDED
 #define YB__ORM__META_DATA__INCLUDED
 
@@ -171,7 +172,8 @@ public:
     void schema(Schema &s) { schema_ = &s; }
     const std::string &get_name() const { return name_; }
     const std::string &get_xml_name() const { return xml_name_; }
-    const std::string &get_class_name() const { return class_name_; }
+    const std::string &get_class_name() const { return get_class(); }
+    const std::string &get_class() const { return class_name_; }
     Columns::const_iterator begin() const { return cols_.begin(); }
     Columns::const_iterator end() const { return cols_.end(); }
     size_t size() const { return cols_.size(); }
@@ -193,6 +195,8 @@ public:
     void set_xml_name(const std::string &xml_name) { xml_name_ = xml_name; }
     void set_class_name(const std::string &class_name) { class_name_ = class_name; }
     void set_depth(int depth) { depth_ = depth; }
+    const Key mk_key(const ValuesMap &key_fields) const;
+    const Key mk_key(LongInt id) const;
 private:
     std::string name_;
     std::string xml_name_;
@@ -211,15 +215,19 @@ public:
     enum { UNKNOWN = 0, ONE2MANY, MANY2MANY, PARENT2CHILD };
     enum { Restrict = 0, Nullify, Delete };
     Relation()
-        : type_(UNKNOWN), cascade_(Restrict) {}
+        : type_(UNKNOWN), cascade_(Restrict), schema_(NULL) {}
     Relation(int _type,
             const std::string &_side1, const AttrMap &_attr1,
             const std::string &_side2, const AttrMap &_attr2,
             int cascade_delete_action = Restrict)
         : type_(_type), side1_(_side1), side2_(_side2),
         attr1_(_attr1), attr2_(_attr2),
-        cascade_(cascade_delete_action)
+        cascade_(cascade_delete_action),
+        schema_(NULL)
     {}
+    Schema &schema() const {
+        return *check_not_null(schema_, "get relation's parent schema"); }
+    void schema(Schema &s) { schema_ = &s; }
     int type() const { return type_; }
     int cascade() const { return cascade_; }
     const std::string &side(int n) const { return n == 0? side1_: side2_; }
@@ -230,12 +238,23 @@ public:
         table1_ = table1;
         table2_ = table2;
     }
-    const std::string &master() const;
+    const Table &master() const;
+    bool operator==(const Relation &o) const {
+        if (this == &o)
+            return true;
+        return type_ == o.type_ && cascade_ == o.cascade_ &&
+            side1_ == o.side1_ && side2_ == o.side2_ &&
+            attr1_ == o.attr1_ && attr2_ == o.attr2_;
+    }
+    bool operator!=(const Relation &o) const {
+        return !((*this) == o);
+    }
 private:
     int type_, cascade_;
     std::string side1_, side2_;
     std::string table1_, table2_;
     AttrMap attr1_, attr2_;
+    Schema *schema_;
 };
 
 typedef std::vector<Relation> Relations;

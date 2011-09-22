@@ -128,7 +128,19 @@ bool XMLMetaDataConfig::parse_relation(xmlNodePtr p_node, Relation &rel)
     Node node(p_node, false);
     if (!node.HasNotEmptyAttr("type"))
         throw MandatoryAttributeAbsent("relation", "type");
-    std::string rtype_str = node.GetAttr("type");
+    string rtype_str = node.GetAttr("type");
+    string cascade = "restrict";
+    if (node.HasNotEmptyAttr("cascade"))
+        cascade = node.GetAttr("cascade");
+    int cascade_code = -1;
+    if (cascade == "delete")
+        cascade_code = Relation::Delete;
+    else if (cascade == "set-null")
+        cascade_code = Relation::Nullify;
+    else if (cascade == "restrict")
+        cascade_code = Relation::Restrict;
+    else
+        throw ParseError(string("Unknown 'cascade' value: ") + cascade);
     int rtype = Relation::UNKNOWN;
     if (!rtype_str.compare("one-to-many"))
         rtype = Relation::ONE2MANY;

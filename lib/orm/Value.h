@@ -1,8 +1,10 @@
+// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__VALUE__INCLUDED
 #define YB__ORM__VALUE__INCLUDED
 
 #include <string>
 #include <vector>
+#include <map>
 #include <stdexcept>
 #include <utility>
 #include <boost/lexical_cast.hpp>
@@ -195,6 +197,8 @@ inline bool operator>(const Value &x, const Value &y) { return x.cmp(y) > 0; }
 inline bool operator<=(const Value &x, const Value &y) { return x.cmp(y) <= 0; }
 
 typedef std::vector<Value> Values;
+typedef std::map<std::string, Value> ValuesMap;
+typedef std::pair<std::string, ValuesMap> Key;
 typedef std::vector<std::string> Names;
 
 } // namespace Yb

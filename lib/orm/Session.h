@@ -1,3 +1,4 @@
+// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__SESSION__INCLUDED
 #define YB__ORM__SESSION__INCLUDED
 

@@ -56,6 +56,9 @@ Also <column> may contain nested elements to describe additional constraints:
         Contents of this element depends on type of relationship specified.
         The required attribute "type" can have one of the following values:
         "one-to-many" | "many-to-many" | "parent-to-child".
+        The optional attribute "cascade" defines what action to take
+        for the slave records when there is an attempt to delete the master record.
+        Possible actions are: "restrict" | "set-null" | "delete".
 
     "one-to-many" - this type assumes two nested elements.
         <one> - class for the master table, attributes:

@@ -21,7 +21,8 @@ unit_tests_SOURCES = \
 	TestSqlDataSource.cpp \
 	TestXMLConfig.cpp \
 	TestIntegrMapper.cpp \
-	TestXMLNode.cpp
+	TestXMLNode.cpp \
+	TestDataObject.cpp
 
 unit_tests_LDADD = \
 	$(top_builddir)/lib/test/libtestmain.la \

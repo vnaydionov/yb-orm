@@ -4,7 +4,7 @@ include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES} ${BOOST_INCLUDES}
 
 add_executable (yborm_unit_tests TestEngine.cpp TestFilters.cpp
     TestIntegrMapper.cpp TestMetaData.cpp TestRowData.cpp TestSession.cpp
-    TestSqlDataSource.cpp TestValue.cpp TestXMLConfig.cpp TestXMLNode.cpp)
+    TestSqlDataSource.cpp TestValue.cpp TestXMLConfig.cpp TestXMLNode.cpp TestDataObject.cpp)
 
 target_link_libraries (yborm_unit_tests testmain ybutil yborm ${LIBXML2_LIBS}
     ${BOOST_DATE_TIME_LIBS} ${BOOST_THREAD_LIBS} ${ODBC_LIBS} ${CPPUNIT_LIBS})
