@@ -180,13 +180,20 @@ Table::get_synth_pk() const
 }
 
 const string
-Table::get_fk_for(const string &table_name) const
+Table::get_fk_for(const Relation *rel) const
 {
     vector<string> parts;
     Columns::const_iterator it = begin(), e = end();
+    string master_tbl = schema_->find_table_by_class
+        (rel->side(0)).get_name();
     for (; it != e; ++it)
-        if (it->has_fk() && it->get_fk_table_name() == table_name)
+        if (it->has_fk()
+            && it->get_fk_table_name() == master_tbl
+            && (!rel->has_attr(1, "key")
+                || rel->attr(1, "key") == it->get_name()))
+        {
             parts.push_back(it->get_name());
+        }
     return StrUtils::join_str(",", parts);
 }
 
@@ -327,6 +334,38 @@ Schema::check()
     fill_map_tree_by_meta(unique_tables, tree);
     traverse_children(tree, depths);
     set_absolute_depths(depths);
+}
+
+const Relation *
+Schema::find_relation(const string &class1,
+                      const string &relation_name,
+                      const string &class2,
+                      int prop_side) const
+{
+    const Relation *r = NULL;
+    RelMap::const_iterator
+        it = rels_lower_bound(class1),
+        end = rels_upper_bound(class1);
+    for (; it != end; ++it)
+        if (class2.empty() ||
+            (it->second.side(0) == class1 &&
+             it->second.side(1) == class2) ||
+            (it->second.side(0) == class2 &&
+             it->second.side(1) == class1))
+        {
+            if (!r) {
+                if (relation_name.empty() ||
+                    (it->second.has_attr(prop_side, "property") &&
+                     it->second.attr(prop_side, "property") == relation_name))
+                {
+                    r = &it->second;
+                }
+            }
+            else {
+                YB_ASSERT(!it->second.has_attr(prop_side, "property"));
+            }
+        }
+    return r;
 }
 
 void

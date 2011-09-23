@@ -110,53 +110,9 @@ void DataObject::load()
     status_ = Sync;
 }
 
-/*
-const Relation *DataObject::find_relation_info(
-    const string &relation_name, int mode)
-{
-    Schema &schema(table_.schema());
-    const Relation *r = NULL;
-    Schema::RelMap::const_iterator
-        it = schema.rels_lower_bound(table_.get_class()),
-        end = schema.rels_upper_bound(table_.get_class());
-    for (; it != end; ++it)
-        if (it->second.side(1) == slave->table().get_class()) {
-            if (!r) {
-                if (relation_name.empty() ||
-                    it->second.has_attr(mode, "property") == relation_name)
-                {
-                    r = &it->second;
-                }
-            }
-            else {
-                YB_ASSERT(!it->second.has_attr(mode, "property"));
-            }
-        }
-*/    
-
 void DataObject::link(DataObject *master, DataObject *slave,
-                      const string &relation_name, int mode)
+                      const Relation *r)
 {
-    // Find relation in metadata.
-    Schema &schema(master->table().schema());
-    const Relation *r = NULL;
-    Schema::RelMap::const_iterator
-        it = schema.rels_lower_bound(master->table().get_class()),
-        end = schema.rels_upper_bound(master->table().get_class());
-    for (; it != end; ++it)
-        if (it->second.side(1) == slave->table().get_class()) {
-            if (!r) {
-                if (relation_name.empty() ||
-                    (it->second.has_attr(mode, "property") &&
-                     it->second.attr(mode, "property") == relation_name))
-                {
-                    r = &it->second;
-                }
-            }
-            else {
-                YB_ASSERT(!it->second.has_attr(mode, "property"));
-            }
-        }
     YB_ASSERT(r != NULL);
     // Try to find relation object in master's relations
     RelationObject *ro = NULL;
@@ -178,14 +134,47 @@ void DataObject::link(DataObject *master, DataObject *slave,
     slave->slave_relations().insert(ro);
 }
 
-DataObject::Ptr DataObject::go_to_master(
-    const std::string relation_name)
+void DataObject::link(DataObject *master, DataObject *slave,
+                      const string &relation_name, int mode)
 {
-    /*
-    
-;
-    RelationObject *go_to_slaves(const std::string relation_name = "");
-    */
+    // Find relation in metadata.
+    Schema &schema(master->table().schema());
+    const Relation *r = schema.find_relation
+        (master->table().get_class(), relation_name,
+         slave->table().get_class(), mode);
+    link(master, slave, r);
+}
+
+DataObject::Ptr DataObject::get_master(
+    const string &relation_name)
+{
+    YB_ASSERT(session_);
+    // Find relation in metadata.
+    Schema &schema(table_.schema());
+    const Relation *r = schema.find_relation
+        (table().get_class(), relation_name, "", 1);
+    YB_ASSERT(r != NULL);
+    // Find FK value.
+    string fk = table_.get_fk_for(r);
+    vector<string> parts;
+    StrUtils::split_str(fk, ",", parts);
+    ValuesMap fk_values;
+    vector<string> ::iterator i = parts.begin(),
+        end = parts.end();
+    for (; i != end; ++i)
+        fk_values[*i] = get(*i);
+    Key fkey(schema.find_table_by_class(r->side(0))
+             .get_name(), fk_values);
+    DataObject::Ptr master = session_->get_lazy(fkey);
+    link(master.get(), this, r);
+    return master;
+}
+
+RelationObject *DataObject::get_slaves(
+    const string &relation_name)
+{
+    ///
+    return NULL;
 }
 
 DataObject::~DataObject()
@@ -224,10 +213,9 @@ void DataObject::exclude_from_slave_relations()
 
 void DataObject::set_free_from(RelationObject *rel)
 {
-    string fk = table_.get_fk_for(rel->relation_info().master().get_name());
+    string fk = table_.get_fk_for(&rel->relation_info());
     vector<string> parts;
     StrUtils::split_str(fk, ",", parts);
-    using namespace boost::lambda;
     vector<string> ::iterator i = parts.begin(), end = parts.end();
     for (; i != end; ++i)
         set(*i, Value());

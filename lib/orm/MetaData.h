@@ -160,6 +160,7 @@ typedef std::vector<Column> Columns;
 typedef std::map<std::string, int> IndexMap;
 
 class Schema;
+class Relation;
 
 class Table
 {
@@ -186,7 +187,7 @@ public:
     bool get_autoinc() const;
     const std::string find_synth_pk() const;
     const std::string get_synth_pk() const;
-    const std::string get_fk_for(const std::string &table_name) const;
+    const std::string get_fk_for(const Relation *rel) const;
     int get_depth() const { return depth_; }
     void add_column(const Column &column);
     void set_seq_name(const std::string &seq_name);
@@ -315,6 +316,10 @@ public:
     void add_relation(const Relation &rel);
     void fill_fkeys();
     void check();
+    const Relation *find_relation(const std::string &class1,
+                            const std::string &relation_name = "",
+                            const std::string &class2 = "",
+                            int prop_side = 0) const;
 private:
     void CheckForeignKey(const std::string &table, const std::string &fk_table, const std::string &fk_field);
     void set_absolute_depths(const std::map<std::string, int> &depths);

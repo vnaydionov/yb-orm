@@ -89,6 +89,8 @@ private:
     }
     static void link(DataObject *master, DataObject *slave,
                      const std::string &relation_name, int mode);
+    static void link(DataObject *master, DataObject *slave,
+                     const Relation *r);
 public:
     static Ptr create_new(const Table &table, Status status = New) {
         return Ptr(new DataObject(table, status));
@@ -148,8 +150,8 @@ public:
     void link_to_slave(Ptr slave, const std::string relation_name = "") {
         link(this, slave.get(), relation_name, 0);
     }
-    Ptr go_to_master(const std::string relation_name = "");
-    RelationObject *go_to_slaves(const std::string relation_name = "");
+    Ptr get_master(const std::string &relation_name = "");
+    RelationObject *get_slaves(const std::string &relation_name = "");
 };
 
 class RelationObject: boost::noncopyable {

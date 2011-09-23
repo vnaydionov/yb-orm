@@ -17,6 +17,7 @@ class TestDataObject : public CppUnit::TestFixture
     CPPUNIT_TEST(test_data_object_delete_cascade);
     CPPUNIT_TEST(test_data_object_delete_set_null);
     CPPUNIT_TEST_EXCEPTION(test_data_object_delete_restricted, CascadeDeleteError);
+    CPPUNIT_TEST(test_traverse_down_up);
     CPPUNIT_TEST_SUITE_END();
 
     Schema r_;
@@ -169,7 +170,19 @@ public:
             e = DataObject::create_new(get_r().get_table("B"));
         e->link_to_master(d, "MasterA");
         d->delete_object();
-   }
+    }
+
+    void test_traverse_down_up()
+    {
+        DataObject::Ptr e = DataObject::create_new(get_r().get_table("B"));
+        e->set("X", 10);
+        SessionV2 session(get_r());
+        session.save(e);
+        DataObject::Ptr d = e->get_master("MasterA");
+        DataObject::Ptr c = e->get_master();
+        CPPUNIT_ASSERT_EQUAL(d.get(), c.get());
+        CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d->status());
+    }    
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestDataObject);

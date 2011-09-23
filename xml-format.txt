@@ -74,6 +74,10 @@ Also <column> may contain nested elements to describe additional constraints:
             filter - (optional) additional filter for dependent records,
                     which should be included in the property-collection,
                     written using SQL syntax.
+            key - (optional) specifies what column to use as a foreign key,
+                    useful if there's more than one relation between two
+                    tables.
+                    
         Note: if a master object is deleted then dependent objects will have
                 their references nullified if the foreign key field has
                 null="true", otherwise the dependent objects will be deleted.
