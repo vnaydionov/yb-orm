@@ -147,7 +147,8 @@ void DataObject::link(DataObject *master, DataObject *slave,
         if (it->second.side(1) == slave->table().get_class()) {
             if (!r) {
                 if (relation_name.empty() ||
-                    it->second.has_attr(mode, "property") == relation_name)
+                    (it->second.has_attr(mode, "property") &&
+                     it->second.attr(mode, "property") == relation_name))
                 {
                     r = &it->second;
                 }
@@ -174,6 +175,7 @@ void DataObject::link(DataObject *master, DataObject *slave,
     }
     // Register slave in the relation
     ro->slave_objects().insert(slave);
+    slave->slave_relations().insert(ro);
 }
 
 DataObject::Ptr DataObject::go_to_master(
@@ -239,13 +241,18 @@ void RelationObject::delete_master(DeletionMode mode)
                 iend = slave_objects_.end();
             for (; i != iend; ++i)
                 (*i)->set_free_from(this);
+            SlaveObjects empty;
+            slave_objects_.swap(empty);
         }
     }
     else if (relation_info_.cascade() == Relation::Delete) {
-        SlaveObjects::iterator i = slave_objects_.begin(),
-            iend = slave_objects_.end();
+        SlaveObjects slaves_copy = slave_objects_;
+        SlaveObjects::iterator i = slaves_copy.begin(),
+            iend = slaves_copy.end();
         for (; i != iend; ++i)
             (*i)->delete_object(mode);
+        if (mode != DelDryRun)
+            YB_ASSERT(!slave_objects_.size());
     }
     else {
         if (slave_objects_.size() != 0)

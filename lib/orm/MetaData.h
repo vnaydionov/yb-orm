@@ -230,6 +230,7 @@ public:
     void schema(Schema &s) { schema_ = &s; }
     int type() const { return type_; }
     int cascade() const { return cascade_; }
+    void set_cascade(int cascade_mode) { cascade_ = cascade_mode; }
     const std::string &side(int n) const { return n == 0? side1_: side2_; }
     const std::string &table(int n) const { return n == 0? table1_: table2_; }
     bool has_attr(int n, const std::string &name) const;
