@@ -233,8 +233,12 @@ public:
             CPPUNIT_FAIL("Exception BadTypeCast not thrown!");
         }
         catch (const BadTypeCast &e) {
+            string err = e.what();
+            size_t pos = err.find("\nBacktrace");
+            if (pos != string::npos)
+                err = string(err, 0, pos);
             CPPUNIT_ASSERT_EQUAL(string("Can't cast field A.Y = \"#\" to type Decimal"),
-                    string(e.what()));
+                                 err);
         }
     }
 };

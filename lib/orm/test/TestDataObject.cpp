@@ -1,10 +1,13 @@
 // -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
+#include <util/str_utils.hpp>
 #include <orm/DataObject.h>
+#include <orm/XMLMetaDataConfig.h>
 
 using namespace std;
 using namespace Yb;
+using Yb::StrUtils::xgetenv;
 
 class TestDataObject : public CppUnit::TestFixture
 {
@@ -16,12 +19,60 @@ class TestDataObject : public CppUnit::TestFixture
     CPPUNIT_TEST(test_data_object_delete);
     CPPUNIT_TEST(test_data_object_delete_cascade);
     CPPUNIT_TEST(test_data_object_delete_set_null);
-    CPPUNIT_TEST_EXCEPTION(test_data_object_delete_restricted, CascadeDeleteError);
+    CPPUNIT_TEST_EXCEPTION(test_data_object_delete_restricted,
+                           CascadeDeleteError);
     CPPUNIT_TEST(test_traverse_down_up);
+    CPPUNIT_TEST(test_traverse_up_down);
+    CPPUNIT_TEST(test_lazy_load);
     CPPUNIT_TEST_SUITE_END();
 
     Schema r_;
     const Schema &get_r() const { return r_; }
+
+    void finish_sql()
+    {
+        SqlConnect conn("ODBC", xgetenv("YBORM_DBTYPE"),
+                        xgetenv("YBORM_DB"),
+                        xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
+        conn.exec_direct("DELETE FROM T_ORM_XML");
+        conn.exec_direct("DELETE FROM T_ORM_TEST");
+        conn.commit();
+    }
+
+    void init_sql()
+    {
+        finish_sql();
+        SqlConnect conn("ODBC", xgetenv("YBORM_DBTYPE"),
+                        xgetenv("YBORM_DB"),
+                        xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
+        string sql_str;
+        Values params;
+        {
+            ostringstream sql;
+            sql << "INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)";
+            sql_str = sql.str();
+            params.clear();
+            params.push_back(Value(10));
+            params.push_back(Value("item"));
+            params.push_back(Value(now()));
+            params.push_back(Value(Decimal("1.2")));
+        }
+        conn.prepare(sql_str);
+        conn.exec(params);
+        {
+            ostringstream sql;
+            sql << "INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) "
+                "VALUES (?, ?, ?)";
+            sql_str = sql.str();
+            params.clear();
+            params.push_back(Value(20));
+            params.push_back(Value(10));
+            params.push_back(Value(Decimal("3.14")));
+        }
+        conn.prepare(sql_str);
+        conn.exec(params);
+        conn.commit();
+    }
 
 public:
     void setUp()
@@ -183,6 +234,67 @@ public:
         CPPUNIT_ASSERT_EQUAL(d.get(), c.get());
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d->status());
     }    
+
+    void test_traverse_up_down()
+    {
+        DataObject::Ptr d = DataObject::create_new(get_r().get_table("A"));
+        SessionV2 session(get_r());
+        session.save(d);
+        RelationObject *ro = d->get_slaves();
+        CPPUNIT_ASSERT_EQUAL((int)RelationObject::Incomplete,
+                             (int)ro->status());
+    }
+
+    void test_lazy_load()
+    {
+        init_sql();
+        string xml = 
+"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+"<schema>"
+"    <table name=\"T_ORM_TEST\" sequence=\"S_ORM_TEST_ID\""
+"            class=\"OrmTest\" xml-name=\"orm-test\">"
+"        <column name=\"ID\" type=\"longint\">"
+"            <primary-key />"
+"            <read-only />"
+"        </column>"
+"        <column name=\"A\" type=\"string\" size=\"200\" />"
+"        <column name=\"B\" type=\"datetime\" default=\"sysdate\"/>"
+"        <column name=\"C\" type=\"decimal\"/>"
+"    </table>"
+"    <table name=\"T_ORM_XML\" sequence=\"S_ORM_XML_ID\""
+"            class=\"OrmXml\" xml-name=\"orm-xml\">"
+"        <column name=\"ID\" type=\"longint\">"
+"            <primary-key />"
+"            <read-only />"
+"        </column>"
+"        <column name=\"ORM_TEST_ID\" type=\"longint\">"
+"            <foreign-key table=\"T_ORM_TEST\" key=\"ID\"/>"
+"        </column>"
+"        <column name=\"B\" type=\"decimal\"/>"
+"    </table>"
+"    <relation type=\"one-to-many\">"
+"        <one class=\"OrmTest\" />"
+"        <many class=\"OrmXml\" property=\"orm_test\" />"
+"    </relation>"
+"</schema>";
+        XMLMetaDataConfig cfg(xml);
+        Schema reg;
+        cfg.parse(reg);
+        reg.fill_fkeys();
+        Engine engine(Engine::READ_ONLY);
+        SessionV2 session(reg, &engine);
+        DataObject::Ptr e = session.get_lazy
+            (reg.get_table("T_ORM_XML").mk_key(20));
+        CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)e->status());
+        CPPUNIT_ASSERT(Decimal("3.14") == e->get("B").as_decimal());
+        CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)e->status());
+        CPPUNIT_ASSERT_EQUAL((LongInt)10,
+                             e->get("ORM_TEST_ID").as_longint());
+        DataObject::Ptr d = e->get_master("orm_test");
+        CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d->status());
+        CPPUNIT_ASSERT_EQUAL(string("item"), d->get("A").as_string());
+        CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
+    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestDataObject);

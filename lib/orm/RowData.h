@@ -19,18 +19,6 @@ typedef std::auto_ptr<RowData> RowDataPtr;
 typedef std::vector<RowData> RowDataVector;
 typedef std::auto_ptr<RowDataVector> RowDataVectorPtr;
 
-class ORMError : public std::logic_error
-{
-public:
-    ORMError(const std::string &msg);
-};
-
-class ObjectNotFoundByKey : public ORMError
-{
-public:
-    ObjectNotFoundByKey(const std::string &msg);
-};
-
 class FieldNotFoundInFetchedRow : public ORMError
 {
 public:

@@ -13,8 +13,32 @@
 #include <util/Exception.h>
 #include <orm/Value.h>
 #include <orm/MetaData.h>
+#include <orm/Engine.h>
 
 namespace Yb {
+
+class FilterBackendByKeyFields : public FilterBackend
+{
+    const Schema &schema_;
+    Key key_;
+public:
+    FilterBackendByKeyFields(const Schema &schema, const Key &key)
+        : schema_(schema)
+        , key_(key)
+    {}
+    const std::string do_get_sql() const;
+    const std::string do_collect_params_and_build_sql(
+            Values &seq) const;
+    const Key &get_key() const { return key_; }
+};
+
+class FilterByKeyFields : public Filter
+{
+public:
+    FilterByKeyFields(const Schema &schema, const Key &key)
+        : Filter(new FilterBackendByKeyFields(schema, key))
+    {}
+};
 
 class DataObject;
 
@@ -25,13 +49,17 @@ class SessionV2: boost::noncopyable {
     Objects objects_;
     IdentityMap identity_map_;
     const Schema *schema_;
+    EngineBase *engine_;
 public:
-    SessionV2(const Schema &schema):
-        schema_(&schema) {}
+    SessionV2(const Schema &schema, EngineBase *engine = NULL):
+        schema_(&schema),
+        engine_(engine)
+    {}
     ~SessionV2();
     void save(DataObjectPtr obj);
     void detach(DataObjectPtr obj);
     DataObjectPtr get_lazy(const Key &key);
+    EngineBase *engine() { return engine_; }
 };
 
 

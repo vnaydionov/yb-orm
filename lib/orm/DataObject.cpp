@@ -9,6 +9,36 @@ using namespace std;
 
 namespace Yb {
 
+const string
+FilterBackendByKeyFields::do_get_sql() const
+{
+    ostringstream sql;
+    sql << "1=1";
+    const Table &t = schema_.get_table(key_.first);
+    Columns::const_iterator it = t.begin(), end = t.end();
+    for (; it != end; ++it)
+        if (it->is_pk()) {
+            sql << " AND " << it->get_name() << " = "
+                << key_.second.find(it->get_name())->second.sql_str();
+        }
+    return sql.str();
+}
+
+const string
+FilterBackendByKeyFields::do_collect_params_and_build_sql(Values &seq) const
+{
+    ostringstream sql;
+    sql << "1=1";
+    const Table &t = schema_.get_table(key_.first);
+    Columns::const_iterator it = t.begin(), end = t.end();
+    for (; it != end; ++it)
+        if (it->is_pk()) {
+            seq.push_back(key_.second.find(it->get_name())->second);
+            sql << " AND " << it->get_name() << " = ?";
+        }
+    return sql.str();
+}
+
 SessionV2::~SessionV2()
 {
     Objects objects_copy = objects_;
@@ -56,6 +86,10 @@ DataObject::Ptr SessionV2::get_lazy(const Key &key)
     DataObjectPtr new_obj =
         DataObject::create_new(schema_->get_table(key.first),
                                DataObject::Ghost);
+    ValuesMap::const_iterator it = key.second.begin(),
+        end = key.second.end();
+    for (; it != end; ++it)
+        new_obj->set(it->first, it->second);
     new_obj->set_session(this);
     identity_map_[key] = new_obj;
     return new_obj;
@@ -91,14 +125,14 @@ void DataObject::update_key()
 
 const Key &DataObject::key()
 {
-    if (!key_.first.size())
+    if (key_.first.empty())
         update_key();
     return key_;
 }
 
 bool DataObject::assigned_key()
 {
-    if (!key_.first.size())
+    if (key_.first.empty())
         update_key();
     return assigned_key_;
 }
@@ -106,7 +140,20 @@ bool DataObject::assigned_key()
 void DataObject::load()
 {
     YB_ASSERT(session_ != NULL);
-    ///
+    FieldList cols;
+    Columns::const_iterator it = table_.begin(), end = table_.end();
+    FilterByKeyFields f(table_.schema(), key());
+    for (; it != end; ++it)
+        cols.push_back(it->get_name());
+    RowsPtr result = session_->engine()->select
+        (StrList(cols), table_.get_name(), f);
+    if (result->size() != 1)
+        throw ObjectNotFoundByKey(table_.get_name() + "("
+                                  + f.get_sql() + ")");
+    it = table_.begin(), end = table_.end();
+    for (; it != end; ++it)
+        values_[table_.idx_by_name(it->get_name())] =
+            (*result)[0][it->get_name()];
     status_ = Sync;
 }
 
@@ -152,7 +199,7 @@ DataObject::Ptr DataObject::get_master(
     // Find relation in metadata.
     Schema &schema(table_.schema());
     const Relation *r = schema.find_relation
-        (table().get_class(), relation_name, "", 1);
+        (table_.get_class(), relation_name, "", 1);
     YB_ASSERT(r != NULL);
     // Find FK value.
     string fk = table_.get_fk_for(r);
@@ -161,10 +208,12 @@ DataObject::Ptr DataObject::get_master(
     ValuesMap fk_values;
     vector<string> ::iterator i = parts.begin(),
         end = parts.end();
-    for (; i != end; ++i)
-        fk_values[*i] = get(*i);
-    Key fkey(schema.find_table_by_class(r->side(0))
-             .get_name(), fk_values);
+    const Table &master_tbl = schema.find_table_by_class(r->side(0));
+    // TODO: support compound foreign keys
+    //for (; i != end; ++i)
+    //    fk_values[*i] = get(*i);
+    fk_values[master_tbl.get_synth_pk()] = get(*i);
+    Key fkey(master_tbl.get_name(), fk_values);
     DataObject::Ptr master = session_->get_lazy(fkey);
     link(master.get(), this, r);
     return master;
@@ -173,8 +222,28 @@ DataObject::Ptr DataObject::get_master(
 RelationObject *DataObject::get_slaves(
     const string &relation_name)
 {
-    ///
-    return NULL;
+    YB_ASSERT(session_);
+    // Find relation in metadata.
+    Schema &schema(table_.schema());
+    const Relation *r = schema.find_relation
+        (table_.get_class(), relation_name, "", 0);
+    YB_ASSERT(r != NULL);
+    // Try to find relation object in master's relations
+    RelationObject *ro = NULL;
+    MasterRelations::iterator j = master_relations_.begin(),
+        jend = master_relations_.end();
+    for (; j != jend; ++j)
+        if ((*j)->relation_info() == *r) {
+            ro = (*j).get();
+            break;
+        }
+    // Create one if it doesn't exist, master will own it
+    if (!ro) {
+        RelationObject::Ptr new_ro = RelationObject::create_new(*r, this);
+        master_relations_.insert(new_ro);
+        ro = new_ro.get();
+    }
+    return ro;
 }
 
 DataObject::~DataObject()

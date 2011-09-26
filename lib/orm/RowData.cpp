@@ -7,14 +7,6 @@ using namespace std;
 
 namespace Yb {
 
-ORMError::ORMError(const string &msg)
-    : logic_error(msg)
-{}
-
-ObjectNotFoundByKey::ObjectNotFoundByKey(const string &msg)
-    : ORMError(msg)
-{}
-
 FieldNotFoundInFetchedRow::FieldNotFoundInFetchedRow(
         const string &table_name, const string &field_name)
     : ORMError("Field not found in fetched row: " + table_name +

@@ -1,3 +1,4 @@
+// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__ENGINE__INCLUDED
 #define YB__ORM__ENGINE__INCLUDED
 
@@ -16,7 +17,41 @@ class TestEngine;
 
 namespace Yb {
 
-class Engine : private boost::noncopyable
+class EngineBase
+{
+public:
+    virtual ~EngineBase();
+    virtual RowsPtr select(
+        const StrList &what,
+        const StrList &from,
+        const Filter &where = Filter(),
+        const StrList &group_by = StrList(),
+        const Filter &having = Filter(),
+        const StrList &order_by = StrList(),
+        int max_rows = -1,
+        bool for_update = false) = 0;
+    virtual const std::vector<LongInt> insert(
+        const std::string &table_name,
+        const Rows &rows,
+        const FieldSet &exclude_fields = FieldSet(),
+        bool collect_new_ids = false) = 0;
+    virtual void update(
+        const std::string &table_name,
+        const Rows &rows,
+        const FieldSet &key_fields,
+        const FieldSet &exclude_fields = FieldSet(),
+        const Filter &where = Filter()) = 0;
+    virtual void delete_from(
+        const std::string &table_name,
+        const Filter &where) = 0;
+    virtual void exec_proc(
+        const std::string &proc_code) = 0;
+    virtual void commit() = 0;
+    virtual void rollback() = 0;
+};
+
+class Engine
+    : public EngineBase, private boost::noncopyable
 {
     friend class ::TestEngine;
 public:
@@ -36,7 +71,8 @@ public:
             const StrList &from, const Filter &where = Filter(),
             const StrList &group_by = StrList(),
             const Filter &having = Filter(),
-            const StrList &order_by = StrList(), int max_rows = -1,
+            const StrList &order_by = StrList(),
+            int max_rows = -1,
             bool for_update = false);
     const std::vector<LongInt> insert(const std::string &table_name,
             const Rows &rows, const FieldSet &exclude_fields = FieldSet(),

@@ -103,6 +103,14 @@ FilterBackendOr::do_collect_params_and_build_sql(Values &seq) const
     return "(" + p1 + ") OR (" + p2 + ")";
 }
 
+ORMError::ORMError(const string &msg)
+    : BaseError(msg)
+{}
+
+ObjectNotFoundByKey::ObjectNotFoundByKey(const string &msg)
+    : ORMError(msg)
+{}
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

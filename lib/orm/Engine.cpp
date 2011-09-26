@@ -10,6 +10,9 @@ namespace Yb {
 static inline const string cfg(const string &entry)
 { return xgetenv("YBORM_" + entry); }
 
+EngineBase::~EngineBase()
+{}
+
 Engine::Engine(Mode work_mode)
     : touched_(false)
     , mode_(work_mode)

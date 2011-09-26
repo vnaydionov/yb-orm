@@ -6,6 +6,7 @@
 #include <set>
 #include <map>
 #include <boost/shared_ptr.hpp>
+#include <util/Exception.h>
 #include "Value.h"
 
 namespace Yb {
@@ -122,6 +123,18 @@ inline const Filter operator || (const Filter &a, const Filter &b)
 {
     return Filter(new FilterBackendOr(a, b));
 }
+
+class ORMError : public BaseError
+{
+public:
+    ORMError(const std::string &msg);
+};
+
+class ObjectNotFoundByKey : public ORMError
+{
+public:
+    ObjectNotFoundByKey(const std::string &msg);
+};
 
 } // namespace Yb
 
