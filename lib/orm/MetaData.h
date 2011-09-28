@@ -165,7 +165,7 @@ class Relation;
 class Table
 {
 public:
-    const std::string get_unique_pk() const;
+    const std::string &get_unique_pk() const;
     Table(const std::string &name = "", const std::string &xml_name = "",
         const std::string &class_name = "");
     Schema &schema() const {
@@ -196,8 +196,10 @@ public:
     void set_xml_name(const std::string &xml_name) { xml_name_ = xml_name; }
     void set_class_name(const std::string &class_name) { class_name_ = class_name; }
     void set_depth(int depth) { depth_ = depth; }
+    const NameSet &pk_fields() const { return pk_fields_; }
     const Key mk_key(const ValuesMap &key_fields) const;
     const Key mk_key(LongInt id) const;
+    void refresh();
 private:
     std::string name_;
     std::string xml_name_;
@@ -206,6 +208,7 @@ private:
     bool autoinc_;
     Columns cols_;
     IndexMap indicies_;
+    NameSet pk_fields_;
     int depth_;
     Schema *schema_;
 };
@@ -216,19 +219,15 @@ public:
     enum { UNKNOWN = 0, ONE2MANY, MANY2MANY, PARENT2CHILD };
     enum { Restrict = 0, Nullify, Delete };
     Relation()
-        : type_(UNKNOWN), cascade_(Restrict), schema_(NULL) {}
+        : type_(UNKNOWN), cascade_(Restrict) {}
     Relation(int _type,
             const std::string &_side1, const AttrMap &_attr1,
             const std::string &_side2, const AttrMap &_attr2,
             int cascade_delete_action = Restrict)
         : type_(_type), side1_(_side1), side2_(_side2),
         attr1_(_attr1), attr2_(_attr2),
-        cascade_(cascade_delete_action),
-        schema_(NULL)
+        cascade_(cascade_delete_action)
     {}
-    Schema &schema() const {
-        return *check_not_null(schema_, "get relation's parent schema"); }
-    void schema(Schema &s) { schema_ = &s; }
     int type() const { return type_; }
     int cascade() const { return cascade_; }
     void set_cascade(int cascade_mode) { cascade_ = cascade_mode; }
@@ -240,7 +239,6 @@ public:
         table1_ = table1;
         table2_ = table2;
     }
-    const Table &master() const;
     bool operator==(const Relation &o) const {
         if (this == &o)
             return true;
@@ -256,7 +254,6 @@ private:
     std::string side1_, side2_;
     std::string table1_, table2_;
     AttrMap attr1_, attr2_;
-    Schema *schema_;
 };
 
 typedef std::vector<Relation> Relations;

@@ -15,12 +15,13 @@ FilterBackendByKeyFields::do_get_sql() const
     ostringstream sql;
     sql << "1=1";
     const Table &t = schema_.get_table(key_.first);
-    Columns::const_iterator it = t.begin(), end = t.end();
-    for (; it != end; ++it)
-        if (it->is_pk()) {
-            sql << " AND " << it->get_name() << " = "
-                << key_.second.find(it->get_name())->second.sql_str();
+    Columns::const_iterator i = t.begin(), iend = t.end();
+    for (; i != iend; ++i) {
+        ValuesMap::const_iterator j = key_.second.find(i->get_name());
+        if (j != key_.second.end()) {
+            sql << " AND " << i->get_name() << " = " << j->second.sql_str();
         }
+    }
     return sql.str();
 }
 
@@ -30,12 +31,14 @@ FilterBackendByKeyFields::do_collect_params_and_build_sql(Values &seq) const
     ostringstream sql;
     sql << "1=1";
     const Table &t = schema_.get_table(key_.first);
-    Columns::const_iterator it = t.begin(), end = t.end();
-    for (; it != end; ++it)
-        if (it->is_pk()) {
-            seq.push_back(key_.second.find(it->get_name())->second);
-            sql << " AND " << it->get_name() << " = ?";
+    Columns::const_iterator i = t.begin(), iend = t.end();
+    for (; i != iend; ++i) {
+        ValuesMap::const_iterator j = key_.second.find(i->get_name());
+        if (j != key_.second.end()) {
+            seq.push_back(j->second);
+            sql << " AND " << i->get_name() << " = ?";
         }
+    }
     return sql.str();
 }
 
@@ -140,9 +143,9 @@ bool DataObject::assigned_key()
 void DataObject::load()
 {
     YB_ASSERT(session_ != NULL);
+    FilterByKeyFields f(table_.schema(), key());
     FieldList cols;
     Columns::const_iterator it = table_.begin(), end = table_.end();
-    FilterByKeyFields f(table_.schema(), key());
     for (; it != end; ++it)
         cols.push_back(it->get_name());
     RowsPtr result = session_->engine()->select
@@ -150,11 +153,7 @@ void DataObject::load()
     if (result->size() != 1)
         throw ObjectNotFoundByKey(table_.get_name() + "("
                                   + f.get_sql() + ")");
-    it = table_.begin(), end = table_.end();
-    for (; it != end; ++it)
-        values_[table_.idx_by_name(it->get_name())] =
-            (*result)[0][it->get_name()];
-    status_ = Sync;
+    fill_from_row(*result->begin());
 }
 
 void DataObject::link(DataObject *master, DataObject *slave,
@@ -208,11 +207,11 @@ DataObject::Ptr DataObject::get_master(
     ValuesMap fk_values;
     vector<string> ::iterator i = parts.begin(),
         end = parts.end();
-    const Table &master_tbl = schema.find_table_by_class(r->side(0));
+    const Table &master_tbl = schema.get_table(r->table(0));
     // TODO: support compound foreign keys
     //for (; i != end; ++i)
     //    fk_values[*i] = get(*i);
-    fk_values[master_tbl.get_synth_pk()] = get(*i);
+    fk_values[master_tbl.get_unique_pk()] = get(*i);
     Key fkey(master_tbl.get_name(), fk_values);
     DataObject::Ptr master = session_->get_lazy(fkey);
     link(master.get(), this, r);
@@ -248,6 +247,16 @@ RelationObject *DataObject::get_slaves(
 
 DataObject::~DataObject()
 {}
+
+void DataObject::fill_from_row(const Row &r)
+{
+    status_ = Sync;
+    Row::const_iterator i = r.begin(), iend = r.end();
+    for (; i != iend; ++i) {
+        set(i->first, i->second);
+    }
+    status_ = Sync;
+}
 
 void DataObject::delete_object(DeletionMode mode)
 {
@@ -317,6 +326,70 @@ void RelationObject::delete_master(DeletionMode mode)
     }
 }
 
+const Key RelationObject::gen_fkey() const
+{
+    Schema &schema = master_object_->table().schema();
+    const Table &master_tbl = schema.get_table(relation_info_.table(0)),
+        &slave_tbl = schema.get_table(relation_info_.table(1));
+    vector<string> parts;
+    StrUtils::split_str(slave_tbl.get_fk_for(&relation_info_), ",", parts);
+    // TODO: support compound foreign keys
+    ValuesMap fk_values;
+    fk_values[*parts.begin()] = master_object_->get(master_tbl.get_unique_pk());
+    return Key(slave_tbl.get_name(), fk_values);
+}
+
+size_t RelationObject::count_slaves()
+{
+    if (status_ == Sync)
+        return slave_objects_.size();
+    YB_ASSERT(master_object_->session());
+    SessionV2 &session = *master_object_->session();
+    Schema &schema = master_object_->table().schema();
+    const Table &master_tbl = schema.get_table(relation_info_.table(0)),
+        &slave_tbl = schema.get_table(relation_info_.table(1));
+    FilterByKeyFields f(schema, gen_fkey());
+    FieldList cols;
+    cols.push_back("COUNT(*) RCNT");
+    RowsPtr result = session.engine()->
+        select(StrList(cols), slave_tbl.get_name(), f);
+    if (result->size() != 1)
+        throw ObjectNotFoundByKey("COUNT(*) FOR " + slave_tbl.get_name() + "("
+                                  + f.get_sql() + ")");
+    return result->begin()->begin()->second.as_longint();
+}
+
+void RelationObject::lazy_load_slaves()
+{
+    if (status_ != Incomplete)
+        return;
+    YB_ASSERT(master_object_->session());
+    SessionV2 &session = *master_object_->session();
+    Schema &schema = master_object_->table().schema();
+    const Table &master_tbl = schema.get_table(relation_info_.table(0)),
+        &slave_tbl = schema.get_table(relation_info_.table(1));
+    FilterByKeyFields f(schema, gen_fkey());
+    FieldList cols;
+    Columns::const_iterator j = slave_tbl.begin(), jend = slave_tbl.end();
+    for (; j != jend; ++j)
+        cols.push_back(j->get_name());
+    RowsPtr result = session.engine()->
+        select(StrList(cols), slave_tbl.get_name(), f);
+    Rows::const_iterator k = result->begin(), kend = result->end();
+    for (; k != kend; ++k) {
+        ValuesMap pk_values;
+        j = slave_tbl.begin(), jend = slave_tbl.end();
+        for (; j != jend; ++j)
+            if (j->is_pk())
+                pk_values[j->get_name()] = k->find(j->get_name())->second;
+        Key pkey(slave_tbl.get_name(), pk_values);
+        DataObject::Ptr o = session.get_lazy(pkey);
+        o->fill_from_row(*k);
+        DataObject::link(master_object_, o.get(), &relation_info_);
+    }
+    status_ = Sync;
+}
+
 void RelationObject::exclude_slave(DataObject *obj)
 {
     SlaveObjects::iterator i =
@@ -324,7 +397,6 @@ void RelationObject::exclude_slave(DataObject *obj)
     YB_ASSERT(i != slave_objects_.end());
     slave_objects_.erase(i);
 }
-
 
 } // namespace Yb
 

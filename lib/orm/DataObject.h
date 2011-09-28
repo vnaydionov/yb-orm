@@ -115,25 +115,19 @@ private:
         if (!c.is_pk() && status_ == Ghost)
             load();
     }
+public:
     static void link(DataObject *master, DataObject *slave,
                      const std::string &relation_name, int mode);
     static void link(DataObject *master, DataObject *slave,
                      const Relation *r);
-public:
     static Ptr create_new(const Table &table, Status status = New) {
         return Ptr(new DataObject(table, status));
     }
     ~DataObject();
-    /*
-    static Ptr create_from_row(const Table &table, const ResultSetItem &row) {
-        Ptr obj(new DataObject(table, Sync));
-        ///
-        return obj;
-    }
-    */
     const Table &table() const { return table_; }
     
     Status status() const { return status_; }
+    //void set_status(Status st) { status_ = st; }
     SessionV2 *session() const { return session_; }
     void set_session(SessionV2 *session);
     void forget_session();
@@ -152,9 +146,16 @@ public:
         return get(table_.idx_by_name(name));
     }
     void set(int i, const Value &v) {
-        lazy_load(table_.get_column(i));
+        const Column &c = table_.get_column(i);
+        lazy_load(c);
         values_[i] = v;
-        update_key();
+        if (c.is_pk()) {
+            update_key();
+        }
+        else {
+            if (status_ == Sync)
+                status_ = Dirty;
+        }
     }
     void set(const std::string &name, const Value &v) {
         set(table_.idx_by_name(name), v);
@@ -167,6 +168,7 @@ public:
     MasterRelations &master_relations() {
         return master_relations_;
     }
+    void fill_from_row(const Row &r);
 
     void delete_object(DeletionMode mode = DelNormal);
     void delete_master_relations(DeletionMode mode = DelNormal);
@@ -213,6 +215,9 @@ public:
     SlaveObjects &slave_objects() { return slave_objects_; }
     void status(Status stat) { status_ = stat; }
     Status status() const { return status_; }
+    const Key gen_fkey() const;
+    size_t count_slaves();
+    void lazy_load_slaves();
 
     void delete_master(DeletionMode mode = DelNormal);
     void exclude_slave(DataObject *obj);

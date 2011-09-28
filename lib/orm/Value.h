@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 #include <map>
 #include <stdexcept>
 #include <utility>
@@ -199,6 +200,7 @@ inline bool operator<=(const Value &x, const Value &y) { return x.cmp(y) <= 0; }
 typedef std::vector<Value> Values;
 typedef std::map<std::string, Value> ValuesMap;
 typedef std::pair<std::string, ValuesMap> Key;
+typedef std::set<std::string> NameSet;
 typedef std::vector<std::string> Names;
 
 } // namespace Yb

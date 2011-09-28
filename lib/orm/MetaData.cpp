@@ -96,19 +96,13 @@ Table::Table(const string &name, const string &xml_name,
     , schema_(NULL)
 {}
 
-const string 
+const string &
 Table::get_unique_pk() const
 {
-    Columns::const_iterator it = cols_.begin(), end = cols_.end();
-    string key_field;
-    for (; it != end; ++it) {
-        if (it->is_pk())
-            if (key_field.empty())
-                key_field = it->get_name();
-            else
-                throw AmbiguousPK(get_name()); 
-    }
-    return key_field;
+    NameSet::const_iterator i = pk_fields_.begin();
+    if (pk_fields_.size() != 1)
+        throw AmbiguousPK(*++i);
+    return *i;
 }
 
 void
@@ -128,6 +122,8 @@ Table::add_column(const Column &column)
         cols_[idx] = column;
     }
     cols_[idx].table(*this);
+    if (column.is_pk())
+        pk_fields_.insert(column.get_name());
 }
 
 size_t
@@ -153,19 +149,12 @@ Table::find_synth_pk() const
     // a synth. numeric primary key.
     if (get_seq_name().empty() && !get_autoinc())
         return string();
-    string pk_name;
-    Columns::const_iterator it = begin(), e = end();
-    for (; it != e; ++it) {
-        if (it->is_pk()) {
-            if (!pk_name.empty() ||
-                    it->get_type() != Value::LONGINT)
-            {
-                return string();
-            }
-            pk_name = it->get_name();
-        }
-    }
-    return pk_name;
+    if (pk_fields_.size() != 1)
+        return string();
+    const Column &c = get_column(*pk_fields_.begin());
+    if (c.get_type() != Value::LONGINT)
+        return string();
+    return c.get_name();
 }
 
 const string
@@ -183,16 +172,15 @@ const string
 Table::get_fk_for(const Relation *rel) const
 {
     vector<string> parts;
-    Columns::const_iterator it = begin(), e = end();
-    string master_tbl = schema_->find_table_by_class
-        (rel->side(0)).get_name();
-    for (; it != e; ++it)
-        if (it->has_fk()
-            && it->get_fk_table_name() == master_tbl
+    Columns::const_iterator i = begin(), iend = end();
+    const string &master_tbl = rel->table(0);
+    for (; i != iend; ++i)
+        if (i->has_fk()
+            && i->get_fk_table_name() == master_tbl
             && (!rel->has_attr(1, "key")
-                || rel->attr(1, "key") == it->get_name()))
+                || rel->attr(1, "key") == i->get_name()))
         {
-            parts.push_back(it->get_name());
+            parts.push_back(i->get_name());
         }
     return StrUtils::join_str(",", parts);
 }
@@ -239,14 +227,6 @@ Relation::attr(int n, const string &name) const {
     return it->second;
 }
 
-const Table &
-Relation::master() const
-{
-    YB_ASSERT(type_ == ONE2MANY);
-    YB_ASSERT(schema_);
-    return schema_->find_table_by_class(side(0));
-}
-
 void
 Schema::set_table(const Table &table_meta_data)
 {
@@ -285,11 +265,9 @@ Schema::add_relation(const Relation &rel)
 {
     relations_.push_back(rel);
     std::pair<std::string, Relation> p1(rel.side(0), rel);
-    p1.second.schema(*this);
     rels_.insert(p1);
     if (rel.side(0) != rel.side(1)) {
         std::pair<std::string, Relation> p2(rel.side(1), rel);
-        p2.second.schema(*this);
         rels_.insert(p2);
     }
 }
