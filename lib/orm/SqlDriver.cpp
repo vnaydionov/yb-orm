@@ -137,7 +137,7 @@ bool register_sql_dialect(auto_ptr<SqlDialect> dialect)
             p->get_name(), dialect);
 }
 
-const Names list_sql_dialects()
+const Strings list_sql_dialects()
 {
     if (theDialectRegistry::instance().empty())
         register_std_dialects();
@@ -296,7 +296,7 @@ bool register_sql_driver(auto_ptr<SqlDriver> driver)
             p->get_name(), driver);
 }
 
-const Names list_sql_drivers()
+const Strings list_sql_drivers()
 {
     if (theDriverRegistry::instance().empty())
         register_std_drivers();

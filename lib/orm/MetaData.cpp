@@ -99,7 +99,7 @@ Table::Table(const string &name, const string &xml_name,
 const string &
 Table::get_unique_pk() const
 {
-    NameSet::const_iterator i = pk_fields_.begin();
+    StringSet::const_iterator i = pk_fields_.begin();
     if (pk_fields_.size() != 1)
         throw AmbiguousPK(*++i);
     return *i;
@@ -198,7 +198,7 @@ Table::get_autoinc() const
 }
 
 const Key
-Table::mk_key(const ValuesMap &key_fields) const
+Table::mk_key(const ValueMap &key_fields) const
 {
     return Key(name_, key_fields);
 }
@@ -206,7 +206,7 @@ Table::mk_key(const ValuesMap &key_fields) const
 const Key
 Table::mk_key(LongInt id) const
 {
-    ValuesMap key_fields;
+    ValueMap key_fields;
     key_fields[get_synth_pk()] = Value(id);
     return Key(name_, key_fields);
 }

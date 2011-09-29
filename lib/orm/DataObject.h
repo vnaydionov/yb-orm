@@ -17,29 +17,6 @@
 
 namespace Yb {
 
-class FilterBackendByKeyFields : public FilterBackend
-{
-    const Schema &schema_;
-    Key key_;
-public:
-    FilterBackendByKeyFields(const Schema &schema, const Key &key)
-        : schema_(schema)
-        , key_(key)
-    {}
-    const std::string do_get_sql() const;
-    const std::string do_collect_params_and_build_sql(
-            Values &seq) const;
-    const Key &get_key() const { return key_; }
-};
-
-class FilterByKeyFields : public Filter
-{
-public:
-    FilterByKeyFields(const Schema &schema, const Key &key)
-        : Filter(new FilterBackendByKeyFields(schema, key))
-    {}
-};
-
 class DataObject;
 
 class SessionV2: boost::noncopyable {
@@ -50,6 +27,9 @@ class SessionV2: boost::noncopyable {
     IdentityMap identity_map_;
     const Schema *schema_;
     EngineBase *engine_;
+    void flush_new();
+    void flush_update(IdentityMap &idmap_copy);
+    void flush_delete(IdentityMap &idmap_copy);
 public:
     SessionV2(const Schema &schema, EngineBase *engine = NULL):
         schema_(&schema),
@@ -59,6 +39,7 @@ public:
     void save(DataObjectPtr obj);
     void detach(DataObjectPtr obj);
     DataObjectPtr get_lazy(const Key &key);
+    void flush();
     EngineBase *engine() { return engine_; }
 };
 
@@ -86,6 +67,8 @@ class DataObject: boost::noncopyable {
     // 5) Enumerate relations, filter relations by directions:
     //             a) master  b) slave
     //    Each relation is a pointer to a RelationObject instance.
+
+    friend class SessionV2;
 public:
     typedef boost::shared_ptr<DataObject> Ptr;
     typedef Values::iterator iterator;
@@ -101,6 +84,7 @@ private:
     SessionV2 *session_;
     Key key_;
     bool assigned_key_;
+    int depth_;
 
     DataObject(const Table &table, Status status)
         : table_(table)
@@ -108,6 +92,7 @@ private:
         , status_(status)
         , session_(NULL)
         , assigned_key_(false)
+        , depth_(-1)
     {}
     void update_key();
     void load();
@@ -115,6 +100,9 @@ private:
         if (!c.is_pk() && status_ == Ghost)
             load();
     }
+    void set_status(Status st) { status_ = st; }
+    int depth() const { return depth_; }
+    void depth(int d) { depth_ = d; }
 public:
     static void link(DataObject *master, DataObject *slave,
                      const std::string &relation_name, int mode);
@@ -127,7 +115,6 @@ public:
     const Table &table() const { return table_; }
     
     Status status() const { return status_; }
-    //void set_status(Status st) { status_ = st; }
     SessionV2 *session() const { return session_; }
     void set_session(SessionV2 *session);
     void forget_session();
@@ -161,6 +148,7 @@ public:
         set(table_.idx_by_name(name), v);
     }
     const Key &key();
+    const ValueMap values(bool include_key=true);
     bool assigned_key();
     SlaveRelations &slave_relations() {
         return slave_relations_;
@@ -169,9 +157,10 @@ public:
         return master_relations_;
     }
     void fill_from_row(const Row &r);
+    void refresh_slaves_fkeys();
 
-    void delete_object(DeletionMode mode = DelNormal);
-    void delete_master_relations(DeletionMode mode = DelNormal);
+    void delete_object(DeletionMode mode = DelNormal, int depth = 0);
+    void delete_master_relations(DeletionMode mode, int depth);
     void exclude_from_slave_relations();
     void set_free_from(RelationObject *rel);
     void link_to_master(Ptr master, const std::string relation_name = "") {
@@ -182,6 +171,7 @@ public:
     }
     Ptr get_master(const std::string &relation_name = "");
     RelationObject *get_slaves(const std::string &relation_name = "");
+    void calc_depth(int d);
 };
 
 class RelationObject: boost::noncopyable {
@@ -190,6 +180,7 @@ class RelationObject: boost::noncopyable {
     //      -> non-copyable.
     // 1) Store and enumerate pointers to related DataObject instances.
     //      one pointer to master, and vector of pointers to slaves.
+    friend class DataObject;
 public:
     typedef boost::shared_ptr<RelationObject> Ptr;
     typedef std::set<DataObject * > SlaveObjects;
@@ -215,11 +206,13 @@ public:
     SlaveObjects &slave_objects() { return slave_objects_; }
     void status(Status stat) { status_ = stat; }
     Status status() const { return status_; }
+    void calc_depth(int d);
     const Key gen_fkey() const;
     size_t count_slaves();
     void lazy_load_slaves();
+    void refresh_slaves_fkeys();
 
-    void delete_master(DeletionMode mode = DelNormal);
+    void delete_master(DeletionMode mode, int depth);
     void exclude_slave(DataObject *obj);
 };
 

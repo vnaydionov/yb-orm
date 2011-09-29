@@ -1,6 +1,7 @@
 // -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 #include <orm/DataObject.h>
 #include <algorithm>
+#include <iostream>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #include <util/str_utils.hpp>
@@ -8,39 +9,6 @@
 using namespace std;
 
 namespace Yb {
-
-const string
-FilterBackendByKeyFields::do_get_sql() const
-{
-    ostringstream sql;
-    sql << "1=1";
-    const Table &t = schema_.get_table(key_.first);
-    Columns::const_iterator i = t.begin(), iend = t.end();
-    for (; i != iend; ++i) {
-        ValuesMap::const_iterator j = key_.second.find(i->get_name());
-        if (j != key_.second.end()) {
-            sql << " AND " << i->get_name() << " = " << j->second.sql_str();
-        }
-    }
-    return sql.str();
-}
-
-const string
-FilterBackendByKeyFields::do_collect_params_and_build_sql(Values &seq) const
-{
-    ostringstream sql;
-    sql << "1=1";
-    const Table &t = schema_.get_table(key_.first);
-    Columns::const_iterator i = t.begin(), iend = t.end();
-    for (; i != iend; ++i) {
-        ValuesMap::const_iterator j = key_.second.find(i->get_name());
-        if (j != key_.second.end()) {
-            seq.push_back(j->second);
-            sql << " AND " << i->get_name() << " = ?";
-        }
-    }
-    return sql.str();
-}
 
 SessionV2::~SessionV2()
 {
@@ -89,13 +57,189 @@ DataObject::Ptr SessionV2::get_lazy(const Key &key)
     DataObjectPtr new_obj =
         DataObject::create_new(schema_->get_table(key.first),
                                DataObject::Ghost);
-    ValuesMap::const_iterator it = key.second.begin(),
+    ValueMap::const_iterator it = key.second.begin(),
         end = key.second.end();
     for (; it != end; ++it)
         new_obj->set(it->first, it->second);
     new_obj->set_session(this);
     identity_map_[key] = new_obj;
     return new_obj;
+}
+
+typedef map<string, Rows> RowsByTable;
+
+void add_row_to_rows_by_table(RowsByTable &rows_by_table,
+                              const string &tbl_name, const ValueMap &row)
+{
+    RowsByTable::iterator k = rows_by_table.find(tbl_name);
+    if (k == rows_by_table.end()) {
+        Rows rows(1);
+        rows[0] = row;
+        rows_by_table.insert(pair<string, Rows> (tbl_name, rows));
+    }
+    else {
+        Rows &rows = k->second;
+        rows.push_back(row);
+    }
+}
+
+void SessionV2::flush_new()
+{
+    SqlDialect *dialect = engine_->get_dialect();
+    bool sql_seq = dialect->has_sequences();
+    Objects::iterator i = objects_.begin(), iend = objects_.end();
+    for (; i != iend; ++i)
+        if ((*i)->status() == DataObject::New)
+            (*i)->depth(-1);
+    for (i = objects_.begin(); i != iend; ++i)
+        if ((*i)->status() == DataObject::New)
+            (*i)->calc_depth(0);
+    int max_depth = -1;
+    typedef map<string, Objects> ObjectsByTable;
+    typedef map<int, ObjectsByTable> GroupsByDepth;
+    GroupsByDepth groups_by_depth;
+    for (i = objects_.begin(); i != iend; ++i)
+        if ((*i)->status() == DataObject::New)
+    {
+        int d = (*i)->depth();
+        if (d > max_depth)
+            max_depth = d;
+        GroupsByDepth::iterator k = groups_by_depth.find(d);
+        if (k == groups_by_depth.end()) {
+            groups_by_depth.insert(pair<int, ObjectsByTable> 
+                                   (d, ObjectsByTable()));
+            k = groups_by_depth.find(d);
+        }
+        ObjectsByTable &objs_by_table = k->second;
+        const string &tbl_name = (*i)->table().get_name();
+        ObjectsByTable::iterator q = objs_by_table.find(tbl_name);
+        if (q == objs_by_table.end()) {
+            objs_by_table.insert(pair<string, Objects>
+                                 (tbl_name, Objects()));
+            q = objs_by_table.find(tbl_name);
+        }
+        Objects &objs = q->second;
+        objs.insert(*i);
+    }
+    for (int d = 0; d <= max_depth; ++d) {
+        GroupsByDepth::iterator k = groups_by_depth.find(d);
+        if (k == groups_by_depth.end())
+            continue;
+        ObjectsByTable &objs_by_table = k->second;
+        ObjectsByTable::iterator j = objs_by_table.begin(), jend = objs_by_table.end();
+        for (; j != jend; ++j) {
+            const string &tbl_name = j->first;
+            const Table &tbl = schema_->get_table(tbl_name);
+            bool use_seq = sql_seq && !tbl.get_seq_name().empty();
+            bool use_autoinc = !sql_seq &&
+                (tbl.get_autoinc() || !tbl.get_seq_name().empty());
+            Rows rows;
+            Objects &objs = j->second;
+            Objects::iterator l, lend = objs.end();
+            if (use_seq) {
+                string pk = tbl.get_synth_pk();
+                for (l = objs.begin(); l != lend; ++l)
+                    (*l)->set(pk, engine_->get_next_value(tbl.get_seq_name()));
+            }
+            for (l = objs.begin(); l != lend; ++l)
+                rows.push_back((*l)->values(!use_autoinc));
+            vector<LongInt> ids = engine_->insert
+                (tbl_name, rows, StringSet(), use_autoinc);
+            if (use_autoinc) {
+                string pk = tbl.get_synth_pk();
+                l = objs.begin();
+                for (int p = 0; l != lend; ++l, ++p)
+                    (*l)->set(pk, ids[p]);
+            }
+            // Refresh fk values for all slaves
+            for (l = objs.begin(); l != lend; ++l)
+                (*l)->refresh_slaves_fkeys();
+        }
+    }
+    for (i = objects_.begin(); i != iend; ++i)
+        if ((*i)->status() == DataObject::New)
+            (*i)->set_status(DataObject::Ghost);
+}
+
+void SessionV2::flush_update(IdentityMap &idmap_copy)
+{
+    typedef map<string, Rows> RowsByTable;
+    RowsByTable rows_by_table;
+    IdentityMap::iterator i = idmap_copy.begin(), iend = idmap_copy.end();
+    for (; i != iend; ++i)
+        if (i->second->status() == DataObject::Dirty) {
+            const string &tbl_name = i->first.first;
+            add_row_to_rows_by_table(rows_by_table, tbl_name,
+                                     i->second->values());
+            i->second->set_status(DataObject::Ghost);
+        }
+    RowsByTable::iterator j = rows_by_table.begin(),
+        jend = rows_by_table.end();
+    for (; j != jend; ++j) {
+        engine_->update(j->first, j->second,
+                        schema_->get_table(j->first).pk_fields());
+    }
+}
+
+void SessionV2::flush_delete(IdentityMap &idmap_copy)
+{
+    typedef vector<Key> Keys;
+    typedef map<string, Keys> KeysByTable;
+    typedef map<int, KeysByTable> GroupsByDepth;
+    int max_depth = -1;
+    GroupsByDepth groups_by_depth;
+    IdentityMap::iterator i = idmap_copy.begin(), iend = idmap_copy.end();
+    for (; i != iend; ++i)
+        if (i->second->status() == DataObject::ToBeDeleted)
+    {
+        int d = i->second->depth();
+        if (d > max_depth)
+            max_depth = d;
+        GroupsByDepth::iterator k = groups_by_depth.find(d);
+        if (k == groups_by_depth.end()) {
+            groups_by_depth.insert(pair<int, KeysByTable> 
+                                   (d, KeysByTable()));
+            k = groups_by_depth.find(d);
+        }
+        KeysByTable &keys_by_table = k->second;
+        const string &tbl_name = i->second->table().get_name();
+        KeysByTable::iterator q = keys_by_table.find(tbl_name);
+        if (q == keys_by_table.end()) {
+            keys_by_table.insert(pair<string, Keys> (tbl_name, Keys()));
+            q = keys_by_table.find(tbl_name);
+        }
+        Keys &keys = q->second;
+        keys.push_back(i->first);
+        i->second->set_status(DataObject::Deleted);
+    }
+    for (int d = max_depth; d >= 0; --d) {
+        GroupsByDepth::iterator k = groups_by_depth.find(d);
+        if (k == groups_by_depth.end())
+            continue;
+        KeysByTable &keys_by_table = k->second;
+        KeysByTable::iterator j = keys_by_table.begin(),
+            jend = keys_by_table.end();
+        for (; j != jend; ++j)
+            engine_->delete_from(j->first, j->second);
+    }
+}
+
+void SessionV2::flush()
+{
+    IdentityMap idmap_copy = identity_map_;
+    flush_new();
+    flush_update(idmap_copy);
+    flush_delete(idmap_copy);
+    // Delete the deleted objects
+    Objects obj_copy = objects_;
+    Objects::iterator i = obj_copy.begin(), iend = obj_copy.end();
+    for (; i != iend; ++i)
+        if ((*i)->status() == DataObject::Deleted) {
+            IdentityMap::iterator k = identity_map_.find((*i)->key());
+            if (k != identity_map_.end())
+                identity_map_.erase(k);
+            objects_.erase(objects_.find(*i));
+        }
 }
 
 void DataObject::set_session(SessionV2 *session)
@@ -114,7 +258,7 @@ void DataObject::update_key()
 {
     key_.first = table_.get_name();
     assigned_key_ = true;
-    ValuesMap new_values;
+    ValueMap new_values;
     for (size_t i = 0; i < table_.size(); ++i) {
         const Column &c = table_.get_column(i);
         if (c.is_pk()) {
@@ -133,6 +277,17 @@ const Key &DataObject::key()
     return key_;
 }
 
+const ValueMap DataObject::values(bool include_key)
+{
+    ValueMap values;
+    for (size_t i = 0; i < table_.size(); ++i) {
+        const Column &c = table_.get_column(i);
+        if (!c.is_pk() || include_key)
+            values.insert(pair<string, Value> (c.get_name(), values_[i]));
+    }
+    return values;
+}
+
 bool DataObject::assigned_key()
 {
     if (key_.first.empty())
@@ -143,8 +298,8 @@ bool DataObject::assigned_key()
 void DataObject::load()
 {
     YB_ASSERT(session_ != NULL);
-    FilterByKeyFields f(table_.schema(), key());
-    FieldList cols;
+    KeyFilter f(key());
+    Strings cols;
     Columns::const_iterator it = table_.begin(), end = table_.end();
     for (; it != end; ++it)
         cols.push_back(it->get_name());
@@ -154,6 +309,17 @@ void DataObject::load()
         throw ObjectNotFoundByKey(table_.get_name() + "("
                                   + f.get_sql() + ")");
     fill_from_row(*result->begin());
+}
+
+void DataObject::calc_depth(int d)
+{
+    if (status_ == New && d > depth_) {
+        depth_ = d;
+        MasterRelations::iterator i = master_relations_.begin(),
+            iend = master_relations_.end();
+        for (; i != iend; ++i)
+            (*i)->calc_depth(d + 1);
+    }
 }
 
 void DataObject::link(DataObject *master, DataObject *slave,
@@ -202,10 +368,10 @@ DataObject::Ptr DataObject::get_master(
     YB_ASSERT(r != NULL);
     // Find FK value.
     string fk = table_.get_fk_for(r);
-    vector<string> parts;
+    Strings parts;
     StrUtils::split_str(fk, ",", parts);
-    ValuesMap fk_values;
-    vector<string> ::iterator i = parts.begin(),
+    ValueMap fk_values;
+    Strings::iterator i = parts.begin(),
         end = parts.end();
     const Table &master_tbl = schema.get_table(r->table(0));
     // TODO: support compound foreign keys
@@ -258,23 +424,38 @@ void DataObject::fill_from_row(const Row &r)
     status_ = Sync;
 }
 
-void DataObject::delete_object(DeletionMode mode)
-{
-    if (mode != DelUnchecked)
-        delete_master_relations(DelDryRun);
-    if (mode != DelDryRun) {
-        delete_master_relations(DelUnchecked);
-        exclude_from_slave_relations();
-        status_ = status_ == New? Deleted: ToBeDeleted;
-    }
-}
-
-void DataObject::delete_master_relations(DeletionMode mode)
+void DataObject::refresh_slaves_fkeys()
 {
     MasterRelations::iterator i = master_relations_.begin(),
         iend = master_relations_.end();
     for (; i != iend; ++i)
-        (*i)->delete_master(mode);
+        (*i)->refresh_slaves_fkeys();
+}
+
+void DataObject::delete_object(DeletionMode mode, int depth)
+{
+    if (mode != DelUnchecked)
+        delete_master_relations(DelDryRun, depth + 1);
+    if (mode != DelDryRun) {
+        delete_master_relations(DelUnchecked, depth + 1);
+        exclude_from_slave_relations();
+        if (status_ == New) {
+            status_ = Deleted;
+        }
+        else {
+            cerr << table_.get_name() << ":" << depth << "\n";
+            depth_ = depth;
+            status_ = ToBeDeleted;
+        }
+    }
+}
+
+void DataObject::delete_master_relations(DeletionMode mode, int depth)
+{
+    MasterRelations::iterator i = master_relations_.begin(),
+        iend = master_relations_.end();
+    for (; i != iend; ++i)
+        (*i)->delete_master(mode, depth);
     if (mode != DelDryRun) {
         MasterRelations empty;
         master_relations_.swap(empty);
@@ -292,14 +473,22 @@ void DataObject::exclude_from_slave_relations()
 void DataObject::set_free_from(RelationObject *rel)
 {
     string fk = table_.get_fk_for(&rel->relation_info());
-    vector<string> parts;
+    Strings parts;
     StrUtils::split_str(fk, ",", parts);
-    vector<string> ::iterator i = parts.begin(), end = parts.end();
+    Strings::iterator i = parts.begin(), end = parts.end();
     for (; i != end; ++i)
         set(*i, Value());
 }
 
-void RelationObject::delete_master(DeletionMode mode)
+void RelationObject::calc_depth(int d)
+{
+    SlaveObjects::iterator i = slave_objects_.begin(),
+        iend = slave_objects_.end();
+    for (; i != iend; ++i)
+        (*i)->calc_depth(d);
+}
+
+void RelationObject::delete_master(DeletionMode mode, int depth)
 {
     if (relation_info_.cascade() == Relation::Nullify) {
         if (mode != DelDryRun) {
@@ -316,7 +505,7 @@ void RelationObject::delete_master(DeletionMode mode)
         SlaveObjects::iterator i = slaves_copy.begin(),
             iend = slaves_copy.end();
         for (; i != iend; ++i)
-            (*i)->delete_object(mode);
+            (*i)->delete_object(mode, depth);
         if (mode != DelDryRun)
             YB_ASSERT(!slave_objects_.size());
     }
@@ -331,10 +520,10 @@ const Key RelationObject::gen_fkey() const
     Schema &schema = master_object_->table().schema();
     const Table &master_tbl = schema.get_table(relation_info_.table(0)),
         &slave_tbl = schema.get_table(relation_info_.table(1));
-    vector<string> parts;
+    Strings parts;
     StrUtils::split_str(slave_tbl.get_fk_for(&relation_info_), ",", parts);
     // TODO: support compound foreign keys
-    ValuesMap fk_values;
+    ValueMap fk_values;
     fk_values[*parts.begin()] = master_object_->get(master_tbl.get_unique_pk());
     return Key(slave_tbl.get_name(), fk_values);
 }
@@ -348,8 +537,8 @@ size_t RelationObject::count_slaves()
     Schema &schema = master_object_->table().schema();
     const Table &master_tbl = schema.get_table(relation_info_.table(0)),
         &slave_tbl = schema.get_table(relation_info_.table(1));
-    FilterByKeyFields f(schema, gen_fkey());
-    FieldList cols;
+    KeyFilter f(gen_fkey());
+    Strings cols;
     cols.push_back("COUNT(*) RCNT");
     RowsPtr result = session.engine()->
         select(StrList(cols), slave_tbl.get_name(), f);
@@ -368,16 +557,15 @@ void RelationObject::lazy_load_slaves()
     Schema &schema = master_object_->table().schema();
     const Table &master_tbl = schema.get_table(relation_info_.table(0)),
         &slave_tbl = schema.get_table(relation_info_.table(1));
-    FilterByKeyFields f(schema, gen_fkey());
-    FieldList cols;
+    Strings cols;
     Columns::const_iterator j = slave_tbl.begin(), jend = slave_tbl.end();
     for (; j != jend; ++j)
         cols.push_back(j->get_name());
     RowsPtr result = session.engine()->
-        select(StrList(cols), slave_tbl.get_name(), f);
+        select(StrList(cols), slave_tbl.get_name(), KeyFilter(gen_fkey()));
     Rows::const_iterator k = result->begin(), kend = result->end();
     for (; k != kend; ++k) {
-        ValuesMap pk_values;
+        ValueMap pk_values;
         j = slave_tbl.begin(), jend = slave_tbl.end();
         for (; j != jend; ++j)
             if (j->is_pk())
@@ -388,6 +576,22 @@ void RelationObject::lazy_load_slaves()
         DataObject::link(master_object_, o.get(), &relation_info_);
     }
     status_ = Sync;
+}
+
+void RelationObject::refresh_slaves_fkeys()
+{
+    Schema &schema = master_object_->table().schema();
+    const Table &master_tbl = schema.get_table(relation_info_.table(0)),
+        &slave_tbl = schema.get_table(relation_info_.table(1));
+    string pk = master_tbl.get_synth_pk();
+    Value pk_val = master_object_->get(pk);
+    Strings parts;
+    StrUtils::split_str(slave_tbl.get_fk_for(&relation_info_), ",", parts);
+    string fk = *parts.begin();
+    SlaveObjects::iterator i = slave_objects_.begin(),
+        iend = slave_objects_.end();
+    for (; i != iend; ++i)
+        (*i)->set(fk, pk_val);
 }
 
 void RelationObject::exclude_slave(DataObject *obj)

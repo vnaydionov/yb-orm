@@ -9,6 +9,8 @@ using namespace std;
 using namespace Yb;
 using Yb::StrUtils::xgetenv;
 
+#define ECHO_SQL true
+
 class TestDataObject : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestDataObject);
@@ -55,7 +57,7 @@ public:
     void test_data_object_key()
     {
         DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
-        ValuesMap values;
+        ValueMap values;
         values["X"] = Value();
         CPPUNIT_ASSERT(Key("A", values) == d->key());
         CPPUNIT_ASSERT(!d->assigned_key());
@@ -90,7 +92,7 @@ public:
         session.save(d);
         session.save(d);
         CPPUNIT_ASSERT_EQUAL(&session, d->session());
-        ValuesMap values;
+        ValueMap values;
         values["X"] = Value(10);
         DataObject::Ptr e = session.get_lazy(Key("A", values));
         CPPUNIT_ASSERT_EQUAL(d.get(), e.get());
@@ -208,6 +210,10 @@ class TestDataObjectSaveLoad : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(TestDataObjectSaveLoad);
     CPPUNIT_TEST(test_lazy_load);
     CPPUNIT_TEST(test_lazy_load_slaves);
+    CPPUNIT_TEST(test_flush_dirty);
+    CPPUNIT_TEST(test_flush_new);
+    CPPUNIT_TEST(test_flush_new_linked);
+    CPPUNIT_TEST(test_flush_deleted);
     CPPUNIT_TEST_SUITE_END();
 
     Schema r_;
@@ -296,7 +302,7 @@ public:
     void test_lazy_load()
     {
         Engine engine(Engine::READ_ONLY);
-        engine.get_connect()->set_echo(true);
+        engine.get_connect()->set_echo(ECHO_SQL);
         SessionV2 session(r_, &engine);
         DataObject::Ptr e = session.get_lazy
             (r_.get_table("T_ORM_XML").mk_key(20));
@@ -317,7 +323,7 @@ public:
     void test_lazy_load_slaves()
     {
         Engine engine(Engine::READ_ONLY);
-        engine.get_connect()->set_echo(true);
+        engine.get_connect()->set_echo(ECHO_SQL);
         SessionV2 session(r_, &engine);
         DataObject::Ptr d = session.get_lazy
             (r_.get_table("T_ORM_TEST").mk_key(10));
@@ -330,6 +336,121 @@ public:
         ro->lazy_load_slaves();
         CPPUNIT_ASSERT_EQUAL((size_t)2, ro->slave_objects().size());
         CPPUNIT_ASSERT_EQUAL((int)RelationObject::Sync, (int)ro->status());
+    }
+
+    void test_flush_dirty()
+    {
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            SessionV2 session(r_, &engine);
+            DataObject::Ptr d = session.get_lazy(r_.get_table("T_ORM_TEST").mk_key(10));
+            CPPUNIT_ASSERT_EQUAL(string("item"), d->get("A").as_string());
+            d->set("A", Value("xyz"));
+            CPPUNIT_ASSERT_EQUAL((int)DataObject::Dirty, (int)d->status());
+            session.flush();
+            CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d->status());
+            engine.commit();
+        }
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            SessionV2 session(r_, &engine);
+            DataObject::Ptr d = session.get_lazy(r_.get_table("T_ORM_TEST").mk_key(10));
+            CPPUNIT_ASSERT_EQUAL(string("xyz"), d->get("A").as_string());
+            CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
+        }
+    }
+
+    void test_flush_new()
+    {
+        Key k;
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            SessionV2 session(r_, &engine);
+            DataObject::Ptr d = DataObject::create_new(r_.get_table("T_ORM_TEST"));
+            d->set("A", Value("abc"));
+            session.save(d);
+            session.flush();
+            CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d->status());
+            k = d->key();
+            engine.commit();
+        }
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            SessionV2 session(r_, &engine);
+            DataObject::Ptr d = session.get_lazy(k);
+            CPPUNIT_ASSERT_EQUAL(string("abc"), d->get("A").as_string());
+            CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
+        }
+    }
+
+    void test_flush_new_linked()
+    {
+        Key k;
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            SessionV2 session(r_, &engine);
+            DataObject::Ptr e = DataObject::create_new(r_.get_table("T_ORM_XML"));
+            e->set("B", Value(Decimal("0.01")));
+            DataObject::Ptr d = DataObject::create_new(r_.get_table("T_ORM_TEST"));
+            d->set("A", Value("abc"));
+            e->link_to_master(d);
+            session.save(e);
+            session.save(d);
+            DataObject::Ptr f = DataObject::create_new(r_.get_table("T_ORM_XML"));
+            f->set("B", Value(Decimal("0.03")));
+            f->link_to_master(d);
+            session.save(f);
+            session.flush();
+            CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d->status());
+            CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)e->status());
+            CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)f->status());
+            k = d->key();
+            engine.commit();
+        }
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            SessionV2 session(r_, &engine);
+            DataObject::Ptr d = session.get_lazy(k);
+            CPPUNIT_ASSERT_EQUAL(string("abc"), d->get("A").as_string());
+            CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
+            RelationObject *ro = d->get_slaves();
+            CPPUNIT_ASSERT_EQUAL((size_t)2, ro->count_slaves());
+        }
+    }
+
+    void test_flush_deleted()
+    {
+        Key k;
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            SessionV2 session(r_, &engine);
+            DataObject::Ptr d = session.get_lazy
+                (r_.get_table("T_ORM_TEST").mk_key(10));
+            RelationObject *ro = d->get_slaves();
+            ((Relation &)ro->relation_info()).set_cascade(Relation::Delete);
+            ro->lazy_load_slaves();
+            d->delete_object();
+            session.flush();
+            engine.commit();
+        }
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            SessionV2 session(r_, &engine);
+            DataObject::Ptr d = session.get_lazy
+                (r_.get_table("T_ORM_TEST").mk_key(10));
+            DataObject::Ptr e = session.get_lazy
+                (r_.get_table("T_ORM_XML").mk_key(20));
+            DataObject::Ptr f = session.get_lazy
+                (r_.get_table("T_ORM_XML").mk_key(30));
+        }
     }
 };
 

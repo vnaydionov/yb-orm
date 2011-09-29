@@ -11,8 +11,6 @@
 
 namespace Yb {
 
-typedef std::vector<std::string> FieldList;
-typedef std::set<std::string> FieldSet;
 typedef std::map<std::string, int> ParamNums;
 
 class StrList
@@ -32,11 +30,11 @@ class StrList
 public:
     StrList()
     {}
-    StrList(const FieldSet &fs)
-        : str_list_(container_to_str<FieldSet>(fs))
+    StrList(const StringSet &fs)
+        : str_list_(container_to_str<StringSet>(fs))
     {}
-    StrList(const FieldList &fl)
-        : str_list_(container_to_str<FieldList>(fl))
+    StrList(const Strings &fl)
+        : str_list_(container_to_str<Strings>(fl))
     {}
     template <typename T>
     StrList(const T &fl)
@@ -123,6 +121,25 @@ inline const Filter operator || (const Filter &a, const Filter &b)
 {
     return Filter(new FilterBackendOr(a, b));
 }
+
+class FilterBackendByPK : public FilterBackend
+{
+    Key key_;
+public:
+    FilterBackendByPK(const Key &key) : key_(key) {}
+    const std::string do_get_sql() const;
+    const std::string do_collect_params_and_build_sql(
+            Values &seq) const;
+    const Key &get_key() const { return key_; }
+};
+
+class KeyFilter : public Filter
+{
+public:
+    KeyFilter(const Key &key)
+        : Filter(new FilterBackendByPK(key))
+    {}
+};
 
 class ORMError : public BaseError
 {

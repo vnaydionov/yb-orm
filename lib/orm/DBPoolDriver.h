@@ -49,7 +49,7 @@ public:
     void set_pool_size(int pool_size) { pool_size_ = pool_size; }
     const DBPoolDataSource &get_data_source(
             const std::string &ds_name) const;
-    const Names list_data_sources() const;
+    const Strings list_data_sources() const;
     int get_pool_size() const { return pool_size_; }
 private:
     Map ds_map_;

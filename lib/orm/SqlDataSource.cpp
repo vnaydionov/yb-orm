@@ -107,7 +107,7 @@ SqlDataSource::do_insert_rows(const string &table_name,
     if (!sql_rows->size())
         return;
     string pk_name = table.find_synth_pk();
-    FieldSet excluded;
+    StringSet excluded;
     Columns::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it)
         if ((it->is_ro() && !it->is_pk()) ||
@@ -142,7 +142,7 @@ SqlDataSource::update_rows(const string &table_name,
 {
     const Table &table = reg_.get_table(table_name);
     RowsPtr sql_rows = row_data_vector2sql_rows(table, rows);
-    FieldSet excluded, keys;
+    StringSet excluded, keys;
     Columns::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it) {
         if (it->is_pk())

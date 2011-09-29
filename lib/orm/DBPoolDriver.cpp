@@ -106,10 +106,10 @@ DBPoolConfig::get_data_source(
     return i->second;
 }
 
-const Names
+const Strings
 DBPoolConfig::list_data_sources() const
 {
-    Names names;
+    Strings names;
     Map::const_iterator i = ds_map_.begin(), iend = ds_map_.end();
     for (; i != iend; ++i)
         names.push_back(i->first);

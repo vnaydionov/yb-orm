@@ -103,6 +103,32 @@ FilterBackendOr::do_collect_params_and_build_sql(Values &seq) const
     return "(" + p1 + ") OR (" + p2 + ")";
 }
 
+const string
+FilterBackendByPK::do_get_sql() const
+{
+    ostringstream sql;
+    sql << "1=1";
+    ValueMap::const_iterator i = key_.second.begin(),
+        iend = key_.second.end();
+    for (; i != iend; ++i)
+        sql << " AND " << i->first << " = " << i->second.sql_str();
+    return sql.str();
+}
+
+const string
+FilterBackendByPK::do_collect_params_and_build_sql(Values &seq) const
+{
+    ostringstream sql;
+    sql << "1=1";
+    ValueMap::const_iterator i = key_.second.begin(),
+        iend = key_.second.end();
+    for (; i != iend; ++i) {
+        sql << " AND " << i->first << " = ?";
+        seq.push_back(i->second);
+    }
+    return sql.str();
+}
+
 ORMError::ORMError(const string &msg)
     : BaseError(msg)
 {}

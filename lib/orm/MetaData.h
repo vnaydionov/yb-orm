@@ -196,8 +196,8 @@ public:
     void set_xml_name(const std::string &xml_name) { xml_name_ = xml_name; }
     void set_class_name(const std::string &class_name) { class_name_ = class_name; }
     void set_depth(int depth) { depth_ = depth; }
-    const NameSet &pk_fields() const { return pk_fields_; }
-    const Key mk_key(const ValuesMap &key_fields) const;
+    const StringSet &pk_fields() const { return pk_fields_; }
+    const Key mk_key(const ValueMap &key_fields) const;
     const Key mk_key(LongInt id) const;
     void refresh();
 private:
@@ -208,7 +208,7 @@ private:
     bool autoinc_;
     Columns cols_;
     IndexMap indicies_;
-    NameSet pk_fields_;
+    StringSet pk_fields_;
     int depth_;
     Schema *schema_;
 };

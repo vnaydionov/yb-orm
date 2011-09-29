@@ -197,11 +197,12 @@ inline bool operator>=(const Value &x, const Value &y) { return x.cmp(y) >= 0; }
 inline bool operator>(const Value &x, const Value &y) { return x.cmp(y) > 0; }
 inline bool operator<=(const Value &x, const Value &y) { return x.cmp(y) <= 0; }
 
+typedef std::vector<std::string> Strings;
+typedef std::set<std::string> StringSet;
 typedef std::vector<Value> Values;
-typedef std::map<std::string, Value> ValuesMap;
-typedef std::pair<std::string, ValuesMap> Key;
-typedef std::set<std::string> NameSet;
-typedef std::vector<std::string> Names;
+typedef std::map<std::string, Value> ValueMap;
+typedef std::pair<std::string, ValueMap> Key;
+typedef std::vector<Key> Keys;
 
 } // namespace Yb
 

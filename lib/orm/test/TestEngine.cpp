@@ -95,7 +95,7 @@ public:
 
     void test_strlist_one()
     {
-        FieldSet fields;
+        StringSet fields;
         fields.insert("A");
         StrList list(fields);
         CPPUNIT_ASSERT_EQUAL(string("A"), list.get_str());
@@ -103,7 +103,7 @@ public:
 
     void test_strlist_two()
     {
-        FieldSet fields;
+        StringSet fields;
         fields.insert("B");
         fields.insert("A");
         StrList list(fields);
@@ -191,7 +191,7 @@ public:
         row.insert(make_pair(string("A"), Value("a")));
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_insert(sql, params, param_nums, "T", row, FieldSet());
+        engine.do_gen_sql_insert(sql, params, param_nums, "T", row, StringSet());
         CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (A, ID) VALUES (?, ?)"), sql);
         CPPUNIT_ASSERT_EQUAL(2, (int)params.size());
         CPPUNIT_ASSERT_EQUAL(string("a"), params[0].as_string());
@@ -205,7 +205,7 @@ public:
         Row row;
         row.insert(make_pair(string("ID"), Value(1)));
         row.insert(make_pair(string("A"), Value("a")));
-        FieldSet exclude;
+        StringSet exclude;
         exclude.insert("ID");
         Values params;
         ParamNums param_nums;
@@ -220,7 +220,7 @@ public:
         string sql;
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_insert(sql, params, param_nums, "A", Row(), FieldSet());
+        engine.do_gen_sql_insert(sql, params, param_nums, "A", Row(), StringSet());
     }
 
     void test_update_where()
@@ -232,7 +232,7 @@ public:
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
-                "T", row, FieldSet(), FieldSet(), filter_eq("B", Value("b")));
+                "T", row, StringSet(), StringSet(), filter_eq("B", Value("b")));
         CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET A = ? WHERE (B = ?)"), sql);
         CPPUNIT_ASSERT(2 == params.size()
                 && Value("a") == params[0] && Value("b") == params[1]);
@@ -250,7 +250,7 @@ public:
         row["D"] = Value("d");
         row["E"] = Value("e");
         row["F"] = Value(2);
-        FieldSet key, exclude;
+        StringSet key, exclude;
         key.insert("B");
         key.insert("D");
         exclude.insert("A");
@@ -276,7 +276,7 @@ public:
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
-                "A", Row(), FieldSet(), FieldSet(), Filter());
+                "A", Row(), StringSet(), StringSet(), Filter());
     }
 
     void test_update_wo_clause()
@@ -288,7 +288,7 @@ public:
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
-                "T", row, FieldSet(), FieldSet(), Filter());
+                "T", row, StringSet(), StringSet(), Filter());
     }
 
     void test_delete()
@@ -369,7 +369,7 @@ public:
         row["C"] = Value(Decimal("1.3"));
         row["ID"] = Value(record_id_);
         rows.push_back(row);
-        FieldSet key, exclude;
+        StringSet key, exclude;
         key.insert("ID");
         exclude.insert("B");
         engine.update("T_ORM_TEST", rows, key, exclude);
@@ -391,7 +391,7 @@ public:
     void test_update_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
-        engine.update("", Rows(), FieldSet(), FieldSet());
+        engine.update("", Rows(), StringSet(), StringSet());
     }
     
     void test_selforupdate_ro_mode()

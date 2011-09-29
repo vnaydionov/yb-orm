@@ -56,10 +56,10 @@ public:
         return true;
     }
 
-    const Names list_items()
+    const Strings list_items()
     {
         boost::mutex::scoped_lock lock(mutex_);
-        Names names;
+        Strings names;
         typename Map::const_iterator it = map_.begin(), end = map_.end();
         for (; it != end; ++it)
             names.push_back(it->first);
@@ -143,9 +143,9 @@ public:
 
 SqlDialect *sql_dialect(const std::string &name);
 bool register_sql_dialect(std::auto_ptr<SqlDialect> dialect);
-const Names list_sql_dialects();
+const Strings list_sql_dialects();
 
-typedef std::map<std::string, Value> Row;
+typedef ValueMap Row;
 typedef std::auto_ptr<Row> RowPtr;
 typedef std::vector<Row> Rows;
 typedef std::auto_ptr<Rows> RowsPtr;
@@ -184,7 +184,7 @@ public:
 
 SqlDriver *sql_driver(const std::string &name);
 bool register_sql_driver(std::auto_ptr<SqlDriver> driver);
-const Names list_sql_drivers();
+const Strings list_sql_drivers();
 
 class SqlConnect;
 

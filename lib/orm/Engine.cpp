@@ -56,7 +56,7 @@ Engine::select(const StrList &what,
 
 const vector<LongInt>
 Engine::insert(const string &table_name,
-        const Rows &rows, const FieldSet &exclude_fields,
+        const Rows &rows, const StringSet &exclude_fields,
         bool collect_new_ids)
 {
     if (mode_ == READ_ONLY)
@@ -68,8 +68,8 @@ Engine::insert(const string &table_name,
 
 void
 Engine::update(const string &table_name,
-        const Rows &rows, const FieldSet &key_fields,
-        const FieldSet &exclude_fields, const Filter &where)
+        const Rows &rows, const StringSet &key_fields,
+        const StringSet &exclude_fields, const Filter &where)
 {
     if (mode_ == READ_ONLY)
         throw BadOperationInMode(
@@ -85,6 +85,18 @@ Engine::delete_from(const string &table_name, const Filter &where)
         throw BadOperationInMode(
                 "Using DELETE operation in read-only mode");
     on_delete(table_name, where);
+    touched_ = true;
+}
+
+void
+Engine::delete_from(const string &table_name, const Keys &keys)
+{
+    if (mode_ == READ_ONLY)
+        throw BadOperationInMode(
+                "Using DELETE operation in read-only mode");
+    Keys::const_iterator i = keys.begin(), iend = keys.end();
+    for (; i != iend; ++i)
+        on_delete(table_name, KeyFilter(*i));
     touched_ = true;
 }
 
@@ -176,7 +188,7 @@ Engine::on_select(const StrList &what,
 
 const vector<LongInt>
 Engine::on_insert(const string &table_name,
-        const Rows &rows, const FieldSet &exclude_fields,
+        const Rows &rows, const StringSet &exclude_fields,
         bool collect_new_ids)
 {
     vector<LongInt> ids;
@@ -193,7 +205,7 @@ Engine::on_insert(const string &table_name,
         for (; it != end; ++it) {
             Row::const_iterator f = it->begin(), fend = it->end();
             for (; f != fend; ++f) {
-                FieldSet::const_iterator x = exclude_fields.find(f->first);
+                StringSet::const_iterator x = exclude_fields.find(f->first);
                 if (x == exclude_fields.end())
                     params[param_nums[f->first]] = f->second;
             }
@@ -206,7 +218,7 @@ Engine::on_insert(const string &table_name,
             conn_->prepare(sql);
             Row::const_iterator f = it->begin(), fend = it->end();
             for (; f != fend; ++f) {
-                FieldSet::const_iterator x = exclude_fields.find(f->first);
+                StringSet::const_iterator x = exclude_fields.find(f->first);
                 if (x == exclude_fields.end())
                     params[param_nums[f->first]] = f->second;
             }
@@ -221,8 +233,8 @@ Engine::on_insert(const string &table_name,
 
 void
 Engine::on_update(const string &table_name,
-        const Rows &rows, const FieldSet &key_fields,
-        const FieldSet &exclude_fields, const Filter &where)
+        const Rows &rows, const StringSet &key_fields,
+        const StringSet &exclude_fields, const Filter &where)
 {
     if (!rows.size())
         return;
@@ -236,7 +248,7 @@ Engine::on_update(const string &table_name,
     for (; it != end; ++it) {
         Row::const_iterator f = it->begin(), fend = it->end();
         for (; f != fend; ++f) {
-            FieldSet::const_iterator x = exclude_fields.find(f->first);
+            StringSet::const_iterator x = exclude_fields.find(f->first);
             if (x == exclude_fields.end())
                 params[param_nums[f->first]] = f->second;
         }
@@ -304,7 +316,7 @@ Engine::do_gen_sql_select(string &sql, Values &params,
 void
 Engine::do_gen_sql_insert(string &sql, Values &params,
         ParamNums &param_nums, const string &table_name,
-        const Row &row, const FieldSet &exclude_fields) const
+        const Row &row, const StringSet &exclude_fields) const
 {
     if (row.empty())
         throw BadSQLOperation("Can't do INSERT with empty row");
@@ -315,7 +327,7 @@ Engine::do_gen_sql_insert(string &sql, Values &params,
     vector_string pholders;
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it) {
-        FieldSet::const_iterator x = exclude_fields.find(it->first);
+        StringSet::const_iterator x = exclude_fields.find(it->first);
         if (x == exclude_fields.end()) {
             param_nums[it->first] = params.size();
             params.push_back(it->second);
@@ -333,8 +345,8 @@ Engine::do_gen_sql_insert(string &sql, Values &params,
 void
 Engine::do_gen_sql_update(string &sql, Values &params,
         ParamNums &param_nums, const string &table_name,
-        const Row &row, const FieldSet &key_fields,
-        const FieldSet &exclude_fields, const Filter &where) const
+        const Row &row, const StringSet &key_fields,
+        const StringSet &exclude_fields, const Filter &where) const
 {
     if (key_fields.empty() && (where.get_sql() == Filter().get_sql()))
         throw BadSQLOperation(
@@ -347,7 +359,7 @@ Engine::do_gen_sql_update(string &sql, Values &params,
     sql_query << "UPDATE " << table_name << " SET ";
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it) {
-        FieldSet::const_iterator x = exclude_fields.find(it->first),
+        StringSet::const_iterator x = exclude_fields.find(it->first),
             y = key_fields.find(it->first);
         if ((x == exclude_fields.end()) && (y == key_fields.end()))
             excluded_row.insert(make_pair(it->first, it->second));
@@ -374,9 +386,9 @@ Engine::do_gen_sql_update(string &sql, Values &params,
         if (!key_fields.empty())
             where_sql << " AND ";
     }
-    FieldSet::const_iterator it_where = key_fields.begin(),
+    StringSet::const_iterator it_where = key_fields.begin(),
         end_where = key_fields.end();
-    FieldSet::const_iterator it_last =
+    StringSet::const_iterator it_last =
         (key_fields.empty()) ? key_fields.end() : --key_fields.end();
     for (; it_where != end_where; ++it_where) {
         Row::const_iterator it_find = row.find(*it_where);

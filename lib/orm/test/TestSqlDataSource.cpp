@@ -11,7 +11,7 @@ class MockSqlEngine : public Engine
 public:
     size_t select_cnt_, insert_cnt_, update_cnt_, delete_cnt_;
     Rows stored_;
-    FieldSet excluded_, keys_;
+    StringSet excluded_, keys_;
     LongInt seq_;
 
     MockSqlEngine()
@@ -57,7 +57,7 @@ public:
     }
     const std::vector<LongInt>
         on_insert(const std::string &/* table_name */,
-            const Rows &rows, const FieldSet &exclude_fields,
+            const Rows &rows, const StringSet &exclude_fields,
             bool collect_new_ids)
     {
         stored_ = rows;
@@ -67,8 +67,8 @@ public:
         return ids;
     }
     void on_update(const std::string &/* table_name */,
-            const Rows &rows, const FieldSet &key_fields,
-            const FieldSet &exclude_fields, const Filter &/* where */)
+            const Rows &rows, const StringSet &key_fields,
+            const StringSet &exclude_fields, const Filter &/* where */)
     {
         stored_ = rows;
         keys_ = key_fields;
