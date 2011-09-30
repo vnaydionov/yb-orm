@@ -1,3 +1,4 @@
+// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__DOMAIN_OBJ__INCLUDED
 #define YB__ORM__DOMAIN_OBJ__INCLUDED
 
@@ -5,6 +6,7 @@
 #include <boost/shared_ptr.hpp>
 #include "Session.h"
 #include "XMLNode.h"
+#include "DataObject.h"
 
 namespace Yb {
 
@@ -51,6 +53,88 @@ public:
     InvalidIterator()
         : std::runtime_error("Trying to use an invalid iterator")
     {}
+};
+
+//class ManagedList;
+
+class DomainObjectV2: public XMLizable
+{
+    DataObject::Ptr d_;
+    void check_ptr() const {
+        if (!d_.get())
+            throw NoRawData();
+    }
+public:
+    DomainObjectV2()
+    {}
+    DomainObjectV2(DataObject::Ptr d)
+        : d_(d)
+    {}
+    DomainObjectV2(const Schema &schema, const std::string &table_name)
+        : d_(DataObject::create_new(schema.get_table(table_name)))
+    {}
+    DomainObjectV2(SessionV2 &session, const Key &key)
+        : d_(session.get_lazy(key))
+    {}
+    virtual ~DomainObjectV2() {}
+    void save(SessionV2 &session) { check_ptr(); session.save(d_); }
+    void detach(SessionV2 &session) { check_ptr(); session.detach(d_); }
+    bool empty() const { return !d_.get(); }
+    SessionV2 *session() const {
+        check_ptr();
+        return d_->session();
+    }
+    DataObject::Ptr data_object() { return d_; }
+    const Value &get(const std::string &col_name) const {
+        check_ptr();
+        return d_->get(col_name);
+    }
+    void set(const std::string &col_name, const Value &value) {
+        check_ptr();
+        d_->set(col_name, value);
+    }
+    const DomainObjectV2 get_master(const std::string &relation_name = "") const {
+        check_ptr();
+        return DomainObjectV2(DataObject::get_master(d_, relation_name));
+    }
+    void link_to_master(DomainObjectV2 &master, const std::string relation_name = "") {
+        check_ptr();
+        master.check_ptr();
+        DataObject::link_slave_to_master(d_, master.d_, relation_name);
+    }
+    void link_to_slave(DomainObjectV2 &slave, const std::string relation_name = "") {
+        check_ptr();
+        slave.check_ptr();
+        DataObject::link_master_to_slave(d_, slave.d_, relation_name);
+    }
+    void delete_object() {
+        check_ptr();
+        d_->delete_object();
+    }
+    DataObject::Status status() const {
+        check_ptr();
+        return d_->status();
+    }
+    const Table &table() const {
+        check_ptr();
+        return d_->table();
+    }
+    int cmp(const DomainObjectV2 &x) const {
+        if (d_ == x.d_)
+            return 0;
+        if (!d_.get())
+            return -1;
+        if (!x.d_.get())
+            return 1;
+        if (d_->values() == x.d_->values())
+            return 0;
+        return d_->values() < x.d_->values()? -1: 1;
+    }
+    const XMLNode xmlize(int depth = 0, const std::string &alt_name = "") const {
+        if (!session())
+            throw NoSessionBaseGiven();
+        return deep_xmlize(*session(), d_, depth, alt_name);
+    }
 };
 
 class DomainObject: public XMLizable

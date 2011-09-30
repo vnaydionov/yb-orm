@@ -311,42 +311,42 @@ void DataObject::load()
     fill_from_row(*result->begin());
 }
 
-void DataObject::calc_depth(int d)
+void DataObject::calc_depth(int d, DataObject *parent)
 {
-    if (status_ == New && d > depth_) {
+    if (d > depth_) {
         depth_ = d;
         MasterRelations::iterator i = master_relations_.begin(),
             iend = master_relations_.end();
         for (; i != iend; ++i)
-            (*i)->calc_depth(d + 1);
+            (*i)->calc_depth(d + 1, parent);
     }
 }
 
-void DataObject::link(DataObject *master, DataObject *slave,
-                      const Relation *r)
+void DataObject::link(DataObject *master, DataObject::Ptr slave,
+                      const Relation &r)
 {
-    YB_ASSERT(r != NULL);
     // Try to find relation object in master's relations
     RelationObject *ro = NULL;
     MasterRelations::iterator j = master->master_relations().begin(),
         jend = master->master_relations().end();
     for (; j != jend; ++j)
-        if ((*j)->relation_info() == *r) {
+        if ((*j)->relation_info() == r) {
             ro = (*j).get();
             break;
         }
     // Create one if it doesn't exist, master will own it
     if (!ro) {
-        RelationObject::Ptr new_ro = RelationObject::create_new(*r, master);
+        RelationObject::Ptr new_ro = RelationObject::create_new(r, master);
         master->master_relations().insert(new_ro);
         ro = new_ro.get();
     }
     // Register slave in the relation
     ro->slave_objects().insert(slave);
     slave->slave_relations().insert(ro);
+    slave->calc_depth(master->depth() + 1, master);
 }
 
-void DataObject::link(DataObject *master, DataObject *slave,
+void DataObject::link(DataObject *master, DataObject::Ptr slave,
                       const string &relation_name, int mode)
 {
     // Find relation in metadata.
@@ -354,20 +354,21 @@ void DataObject::link(DataObject *master, DataObject *slave,
     const Relation *r = schema.find_relation
         (master->table().get_class(), relation_name,
          slave->table().get_class(), mode);
-    link(master, slave, r);
+    link(master, slave, *r);
 }
 
 DataObject::Ptr DataObject::get_master(
-    const string &relation_name)
+    DataObject::Ptr obj, const std::string &relation_name)
 {
-    YB_ASSERT(session_);
+    YB_ASSERT(obj.get());
+    YB_ASSERT(obj->session_);
     // Find relation in metadata.
-    Schema &schema(table_.schema());
+    Schema &schema(obj->table_.schema());
     const Relation *r = schema.find_relation
-        (table_.get_class(), relation_name, "", 1);
+        (obj->table_.get_class(), relation_name, "", 1);
     YB_ASSERT(r != NULL);
     // Find FK value.
-    string fk = table_.get_fk_for(r);
+    string fk = obj->table_.get_fk_for(r);
     Strings parts;
     StrUtils::split_str(fk, ",", parts);
     ValueMap fk_values;
@@ -377,10 +378,10 @@ DataObject::Ptr DataObject::get_master(
     // TODO: support compound foreign keys
     //for (; i != end; ++i)
     //    fk_values[*i] = get(*i);
-    fk_values[master_tbl.get_unique_pk()] = get(*i);
+    fk_values[master_tbl.get_unique_pk()] = obj->get(*i);
     Key fkey(master_tbl.get_name(), fk_values);
-    DataObject::Ptr master = session_->get_lazy(fkey);
-    link(master.get(), this, r);
+    DataObject::Ptr master = obj->session_->get_lazy(fkey);
+    link(master.get(), obj, *r);
     return master;
 }
 
@@ -480,12 +481,15 @@ void DataObject::set_free_from(RelationObject *rel)
         set(*i, Value());
 }
 
-void RelationObject::calc_depth(int d)
+void RelationObject::calc_depth(int d, DataObject *parent)
 {
     SlaveObjects::iterator i = slave_objects_.begin(),
         iend = slave_objects_.end();
-    for (; i != iend; ++i)
-        (*i)->calc_depth(d);
+    for (; i != iend; ++i) {
+        if (parent && i->get() == parent)
+            throw CycleDetected();
+        (*i)->calc_depth(d, parent);
+    }
 }
 
 void RelationObject::delete_master(DeletionMode mode, int depth)
@@ -573,7 +577,7 @@ void RelationObject::lazy_load_slaves()
         Key pkey(slave_tbl.get_name(), pk_values);
         DataObject::Ptr o = session.get_lazy(pkey);
         o->fill_from_row(*k);
-        DataObject::link(master_object_, o.get(), &relation_info_);
+        DataObject::link(master_object_, o, relation_info_);
     }
     status_ = Sync;
 }
@@ -596,8 +600,12 @@ void RelationObject::refresh_slaves_fkeys()
 
 void RelationObject::exclude_slave(DataObject *obj)
 {
-    SlaveObjects::iterator i =
-        find(slave_objects_.begin(), slave_objects_.end(), obj);
+    SlaveObjects::iterator i = slave_objects_.begin(),
+        iend = slave_objects_.end();
+    for (; i != iend; ++i) {
+        if (i->get() == obj)
+            break;
+    }
     YB_ASSERT(i != slave_objects_.end());
     slave_objects_.erase(i);
 }

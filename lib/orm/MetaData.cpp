@@ -340,7 +340,8 @@ Schema::find_relation(const string &class1,
                 }
             }
             else {
-                YB_ASSERT(!it->second.has_attr(prop_side, "property"));
+                YB_ASSERT(it->second.has_attr(prop_side, "property") &&
+                          it->second.attr(prop_side, "property") != relation_name);
             }
         }
     return r;
