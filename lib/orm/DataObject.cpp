@@ -13,9 +13,15 @@ namespace Yb {
 SessionV2::~SessionV2()
 {
     Objects objects_copy = objects_;
+#if 0
     using namespace boost::lambda;
     for_each(objects_copy.begin(), objects_copy.end(),
              bind(&SessionV2::detach, this, _1));
+#else
+    Objects::iterator i = objects_copy.begin(), iend = objects_copy.end();
+    for (; i != iend; ++i)
+        detach(*i);
+#endif
 }
 
 void SessionV2::save(DataObjectPtr obj)
