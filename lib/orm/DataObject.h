@@ -15,6 +15,9 @@
 #include <orm/MetaData.h>
 #include <orm/Engine.h>
 
+class TestDataObject;
+class TestDataObjectSaveLoad;
+
 namespace Yb {
 
 class DataObject;
@@ -23,12 +26,17 @@ typedef boost::shared_ptr<DataObject> DataObjectPtr;
 typedef boost::shared_ptr<RelationObject> RelationObjectPtr;
 
 class SessionV2: boost::noncopyable {
+    friend class ::TestDataObject;
+    friend class ::TestDataObjectSaveLoad;
     typedef std::set<DataObjectPtr> Objects;
     typedef std::map<Key, DataObjectPtr> IdentityMap;
     Objects objects_;
     IdentityMap identity_map_;
     const Schema *schema_;
     EngineBase *engine_;
+    void add_to_identity_map(DataObjectPtr obj);
+    void flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs);
+    void flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs);
     void flush_new();
     void flush_update(IdentityMap &idmap_copy);
     void flush_delete(IdentityMap &idmap_copy);
@@ -138,18 +146,7 @@ public:
     Value &get(const std::string &name) {
         return get(table_.idx_by_name(name));
     }
-    void set(int i, const Value &v) {
-        const Column &c = table_.get_column(i);
-        lazy_load(c);
-        values_[i] = v;
-        if (c.is_pk()) {
-            update_key();
-        }
-        else {
-            if (status_ == Sync)
-                status_ = Dirty;
-        }
-    }
+    void set(int i, const Value &v);
     void set(const std::string &name, const Value &v) {
         set(table_.idx_by_name(name), v);
     }

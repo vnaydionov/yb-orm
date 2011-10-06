@@ -24,7 +24,7 @@ SessionV2::~SessionV2()
 #endif
 }
 
-void SessionV2::save(DataObjectPtr obj)
+void SessionV2::add_to_identity_map(DataObjectPtr obj)
 {
     if (obj->assigned_key()) {
         const Key &key = obj->key();
@@ -33,6 +33,11 @@ void SessionV2::save(DataObjectPtr obj)
             return;
         identity_map_[key] = obj;
     }
+}
+
+void SessionV2::save(DataObjectPtr obj)
+{
+    add_to_identity_map(obj);
     Objects::iterator i = objects_.find(obj);
     if (i == objects_.end()) {
         objects_.insert(obj);
@@ -89,6 +94,46 @@ void add_row_to_rows_by_table(RowsByTable &rows_by_table,
     }
 }
 
+void SessionV2::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
+{
+    Rows rows;
+    Objects::iterator i, iend = keyed_objs.end();
+    for (i = keyed_objs.begin(); i != iend; ++i)
+        rows.push_back((*i)->values());
+    engine_->insert(tbl.get_name(), rows, StringSet());
+}
+
+void SessionV2::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
+{
+    bool sql_seq = engine_->get_dialect()->has_sequences();
+    bool use_seq = sql_seq && !tbl.get_seq_name().empty();
+    bool use_autoinc = !sql_seq &&
+        (tbl.get_autoinc() || !tbl.get_seq_name().empty());
+    Objects::iterator i, iend = unkeyed_objs.end();
+    if (use_seq) {
+        string pk = tbl.get_synth_pk();
+        for (i = unkeyed_objs.begin(); i != iend; ++i)
+            (*i)->set(pk, engine_->get_next_value(tbl.get_seq_name()));
+    }
+    Rows rows;
+    for (i = unkeyed_objs.begin(); i != iend; ++i)
+        rows.push_back((*i)->values(!use_autoinc));
+    vector<LongInt> ids = engine_->insert
+        (tbl.get_name(), rows, StringSet(), use_autoinc);
+    if (use_autoinc) {
+        string pk = tbl.get_synth_pk();
+        i = unkeyed_objs.begin();
+        for (int p = 0; i != iend; ++i, ++p)
+            (*i)->set(pk, ids[p]);
+    }
+    // Refresh fk values for all slaves and
+    // add flushed objects to the identity_map_
+    for (i = unkeyed_objs.begin(); i != iend; ++i) {
+        (*i)->refresh_slaves_fkeys();
+        add_to_identity_map(*i);
+    }
+}
+
 void SessionV2::flush_new()
 {
     SqlDialect *dialect = engine_->get_dialect();
@@ -136,30 +181,16 @@ void SessionV2::flush_new()
         for (; j != jend; ++j) {
             const string &tbl_name = j->first;
             const Table &tbl = schema_->get_table(tbl_name);
-            bool use_seq = sql_seq && !tbl.get_seq_name().empty();
-            bool use_autoinc = !sql_seq &&
-                (tbl.get_autoinc() || !tbl.get_seq_name().empty());
-            Rows rows;
-            Objects &objs = j->second;
+            Objects &objs = j->second, unkeyed_objs, keyed_objs;
             Objects::iterator l, lend = objs.end();
-            if (use_seq) {
-                string pk = tbl.get_synth_pk();
-                for (l = objs.begin(); l != lend; ++l)
-                    (*l)->set(pk, engine_->get_next_value(tbl.get_seq_name()));
+            for (l = objs.begin(); l != lend; ++l) {
+                if ((*l)->assigned_key())
+                    keyed_objs.insert(*l);
+                else
+                    unkeyed_objs.insert(*l);
             }
-            for (l = objs.begin(); l != lend; ++l)
-                rows.push_back((*l)->values(!use_autoinc));
-            vector<LongInt> ids = engine_->insert
-                (tbl_name, rows, StringSet(), use_autoinc);
-            if (use_autoinc) {
-                string pk = tbl.get_synth_pk();
-                l = objs.begin();
-                for (int p = 0; l != lend; ++l, ++p)
-                    (*l)->set(pk, ids[p]);
-            }
-            // Refresh fk values for all slaves
-            for (l = objs.begin(); l != lend; ++l)
-                (*l)->refresh_slaves_fkeys();
+            flush_tbl_new_keyed(tbl, keyed_objs);
+            flush_tbl_new_unkeyed(tbl, unkeyed_objs);
         }
     }
     for (i = objects_.begin(); i != iend; ++i)
@@ -258,6 +289,25 @@ void DataObject::forget_session()
 {
     YB_ASSERT(session_);
     session_ = NULL;
+}
+
+void DataObject::set(int i, const Value &v)
+{
+    const Column &c = table_.get_column(i);
+    lazy_load(c);
+    if (c.is_pk() && session_ != NULL
+        && values_[i] != v && !values_[i].is_null())
+    {
+        throw ReadOnlyColumn(table_.get_name(), c.get_name());
+    }
+    values_[i] = v;
+    if (c.is_pk()) {
+        update_key();
+    }
+    else {
+        if (status_ == Sync)
+            status_ = Dirty;
+    }
 }
 
 void DataObject::update_key()
@@ -450,7 +500,6 @@ void DataObject::delete_object(DeletionMode mode, int depth)
             status_ = Deleted;
         }
         else {
-            cerr << table_.get_name() << ":" << depth << "\n";
             depth_ = depth;
             status_ = ToBeDeleted;
         }

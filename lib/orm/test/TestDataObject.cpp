@@ -3,6 +3,7 @@
 #include <cppunit/TestAssert.h>
 #include <util/str_utils.hpp>
 #include <orm/DataObject.h>
+#include <orm/DomainObj.h>
 #include <orm/XMLMetaDataConfig.h>
 
 using namespace std;
@@ -17,6 +18,8 @@ class TestDataObject : public CppUnit::TestFixture
     CPPUNIT_TEST(test_data_object_key);
     CPPUNIT_TEST(test_data_object_save_no_id);
     CPPUNIT_TEST(test_data_object_save_id);
+    CPPUNIT_TEST_EXCEPTION(test_data_object_cant_change_key_if_saved,
+                           ReadOnlyColumn);
     CPPUNIT_TEST(test_data_object_link);
     CPPUNIT_TEST(test_data_object_delete);
     CPPUNIT_TEST(test_data_object_delete_cascade);
@@ -117,6 +120,15 @@ public:
         session.detach(d);
         CPPUNIT_ASSERT_EQUAL((SessionV2 *)NULL, d->session());
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)d->status());
+    }
+
+    void test_data_object_cant_change_key_if_saved()
+    {
+        DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
+        d->set("X", 10);
+        SessionV2 session(r_);
+        session.save(d);
+        d->set("X", 110);
     }
 
     void test_data_object_link()
@@ -247,8 +259,10 @@ class TestDataObjectSaveLoad : public CppUnit::TestFixture
     CPPUNIT_TEST(test_lazy_load_slaves);
     CPPUNIT_TEST(test_flush_dirty);
     CPPUNIT_TEST(test_flush_new);
+    CPPUNIT_TEST(test_flush_new_with_id);
     CPPUNIT_TEST(test_flush_new_linked);
     CPPUNIT_TEST(test_flush_deleted);
+    CPPUNIT_TEST(test_domain_object);
     CPPUNIT_TEST_SUITE_END();
 
     Schema r_;
@@ -407,7 +421,11 @@ public:
             DataObject::Ptr d = DataObject::create_new(r_.get_table("T_ORM_TEST"));
             d->set("A", Value("abc"));
             session.save(d);
+            CPPUNIT_ASSERT_EQUAL((size_t)0, session.identity_map_.size());
+            CPPUNIT_ASSERT_EQUAL((size_t)1, session.objects_.size());
             session.flush();
+            CPPUNIT_ASSERT_EQUAL((size_t)1, session.identity_map_.size());
+            CPPUNIT_ASSERT_EQUAL((size_t)1, session.objects_.size());
             CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d->status());
             k = d->key();
             engine.commit();
@@ -419,6 +437,32 @@ public:
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("abc"), d->get("A").as_string());
             CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
+        }
+    }
+
+    void test_flush_new_with_id()
+    {
+        Key k;
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            SessionV2 session(r_, &engine);
+            DataObject::Ptr d = DataObject::create_new
+                (r_.get_table("T_ORM_TEST"));
+            d->set("ID", Value(-40));
+            d->set("A", Value("qwerty"));
+            CPPUNIT_ASSERT(d->assigned_key());
+            k = d->key();
+            session.save(d);
+            session.flush();
+            engine.commit();
+        }
+        {
+            Engine engine(Engine::READ_ONLY);
+            engine.get_connect()->set_echo(ECHO_SQL);
+            SessionV2 session(r_, &engine);
+            DataObject::Ptr d = session.get_lazy(k);
+            CPPUNIT_ASSERT_EQUAL(string("qwerty"), d->get("A").as_string());
         }
     }
 
@@ -494,6 +538,30 @@ public:
             catch (const ObjectNotFoundByKey &) { ++count; }
             CPPUNIT_ASSERT_EQUAL(3, count);
         }
+    }
+
+    void test_domain_object(void)
+    {
+        Engine engine(Engine::READ_ONLY);
+        engine.get_connect()->set_echo(ECHO_SQL);
+        SessionV2 session(r_, &engine);
+        DomainObjectV2 d(session, r_.get_table("T_ORM_TEST").mk_key(-10));
+        CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d.status());
+        DomainObjectV2 e = d;
+        CPPUNIT_ASSERT_EQUAL(0, e.cmp(d));
+        CPPUNIT_ASSERT_EQUAL(string("item"), d.get("A").as_string());
+        CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)e.status());
+        typedef ManagedListV2<DomainObjectV2> MList;
+        MList slaves = d.get_slaves();
+        MList::iterator it = slaves.begin();
+        CPPUNIT_ASSERT_EQUAL((LongInt)-20, it->get("ID").as_longint());
+        ++it;
+        CPPUNIT_ASSERT_EQUAL((LongInt)-30, it->get("ID").as_longint());
+        ++it;
+        CPPUNIT_ASSERT(slaves.end() == it);
+        DomainObjectV2 f(r_, "T_ORM_XML");
+        f.save(session);
+        f.link_to_master(d);
     }
 };
 

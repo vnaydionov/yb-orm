@@ -55,7 +55,120 @@ public:
     {}
 };
 
-//class ManagedList;
+template <class T>
+class ManagedListV2 {
+    RelationObject *ro_;
+
+    void check_ptr()
+    {
+        if (!ro_)
+            throw NoRawData();
+    }
+    void load_if_needed()
+    {
+        check_ptr();
+        if (ro_->master_object()->status() != DataObject::New &&
+            ro_->status() != RelationObject::Sync)
+        {
+            ro_->lazy_load_slaves();
+        }
+    }
+public:
+    template <class U, class V>
+    class Iter {
+        friend class ManagedListV2;
+        U it_;
+        mutable std::auto_ptr<V> d_;
+        Iter(U it): it_(it) {}
+    public:
+        Iter(const Iter &obj): it_(obj.it_) {}
+        Iter &operator=(const Iter &obj) {
+            if (this != &obj) {
+                it_ = obj.it_;
+                d_.reset(NULL);
+            }
+            return *this;
+        }
+        bool operator==(const Iter &obj) const {
+            return it_ == obj.it_;
+        }
+        bool operator!=(const Iter &obj) const {
+            return it_ != obj.it_;
+        }
+        V &operator*() const {
+            if (!d_.get())
+                d_.reset(new V(*it_));
+            return *d_;
+        }
+        V *operator->() const {
+            if (!d_.get())
+                d_.reset(new V(*it_));
+            return d_.get();
+        }
+        Iter &operator++() { ++it_; d_.reset(NULL); return *this; }
+        Iter &operator--() { --it_; d_.reset(NULL); return *this; }
+        Iter operator++(int) { Iter t(*this); ++it_; d_.reset(NULL); return t; }
+        Iter operator--(int) { Iter t(*this); --it_; d_.reset(NULL); return t; }
+    };
+
+    typedef Iter<RelationObject::SlaveObjects::iterator, T> iterator;
+    typedef Iter<RelationObject::SlaveObjects::const_iterator, const T> const_iterator;
+
+    ManagedListV2(RelationObject *ro): ro_(ro) {}
+
+    iterator begin() {
+        load_if_needed();
+        return iterator(ro_->slave_objects().begin());
+    }
+    iterator end() {
+        load_if_needed();
+        return iterator(ro_->slave_objects().end());
+    }
+    iterator find(const T &x) {
+        load_if_needed();
+        RelationObject::SlaveObjects::iterator
+            it = ro_->slave_objects().find(x.data_object());
+        return iterator(it);
+    }
+    const_iterator begin() const {
+        load_if_needed();
+        return const_iterator
+            (((const RelationObject::SlaveObjects &)(ro_->slave_objects())).begin());
+    }
+    const_iterator end() const {
+        load_if_needed();
+        return const_iterator
+            (((const RelationObject::SlaveObjects &)(ro_->slave_objects())).end());
+    }
+    size_t size() const {
+        check_ptr();
+        if (ro_->status() == RelationObject::Sync ||
+                ro_->master_object()->status() == DataObject::New)
+            return ro_->slave_objects().size();
+        ///
+        return ro_->count_slaves();
+    }
+#if 0
+    iterator insert(const T &x) {
+        load_if_needed();
+        iterator it = find(x);
+        if (it != end())
+            return it;
+        d_.push_back(boost::shared_ptr<DomainObject> (new T(x)));
+        // do some magic
+        return iterator(d_, d_.size() - 1, 1);
+    }
+    void erase(iterator it) {
+        check_ptr();
+        load_if_needed();
+        if (&it.d_ != &d_)
+            throw InvalidIterator();
+        it.check_pos();
+        // do some magic
+        d_.erase(d_.begin() + it.pos_);
+    }
+#endif
+};
 
 class DomainObjectV2: public XMLizable
 {
@@ -96,6 +209,10 @@ public:
     const DomainObjectV2 get_master(const std::string &relation_name = "") const {
         check_ptr();
         return DomainObjectV2(DataObject::get_master(d_, relation_name));
+    }
+    ManagedListV2<DomainObjectV2> get_slaves(const std::string &relation_name = "") const {
+        check_ptr();
+        return ManagedListV2<DomainObjectV2>(d_->get_slaves(relation_name));
     }
     void link_to_master(DomainObjectV2 &master, const std::string relation_name = "") {
         check_ptr();
