@@ -89,38 +89,33 @@ in future.
 If you wonder what example1 should produce on stdout here is sample
 (for MySQL).
 
-$ sh example1.sh
+$ sh example1.sh 
 Enter name, email: 
-Peter peter@yahoo.com
+Vaclav vaclav@yandex.ru
 Enter order amount: 
-123.45
-prepare: INSERT INTO T_CLIENT (DT, EMAIL, IS_AGENCY, NAME, PHONE, URL) VALUES (?, ?, ?, ?, ?, ?)
-exec: p[1]="'2011-04-19 18:55:47'"
-exec: p[2]="'peter@yahoo.com'"
-exec: p[3]="0"
-exec: p[4]="'Peter'"
-exec: p[5]="NULL"
-exec: p[6]="NULL"
-exec_direct: SELECT LAST_INSERT_ID() LID
-fetch:
-LID='2' 
-prepare: INSERT INTO T_ORDER (CLIENT_ID, RECEIPT_DT, RECEIPT_SUM, TOTAL_SUM) VALUES (?, ?, ?, ?)
-exec: p[1]="2"
-exec: p[2]="NULL"
-exec: p[3]="0"
-exec: p[4]="123.45"
-exec_direct: SELECT LAST_INSERT_ID() LID
-fetch:
-LID='2' 
-client created: 2
-order created: 2
-prepare: SELECT * FROM T_ORDER WHERE 1=1 AND ID = ?
-exec: p[1]="2"
-fetch:
-CLIENT_ID='2' DT='2011-04-19 18:55:52' ID='2' RECEIPT_DT='2011-04-19 18:55:52' RECEIPT_SUM='0.000000' TOTAL_SUM='123.450000' 
-prepare: SELECT * FROM T_CLIENT WHERE 1=1 AND ID = ?
-exec: p[1]="2"
-fetch:
-DT='2011-04-19 18:55:47' EMAIL='peter@yahoo.com' ID='2' IS_AGENCY='0' NAME='Peter' PHONE=NULL URL=NULL 
-<order><client><dt>2011-04-19T18:55:47</dt><email>peter@yahoo.com</email><id>2</id><is-agency>0</is-agency><name>Peter</name><phone is_null="1"/><url is_null="1"/></client><dt>2011-04-19T18:55:52</dt><id>2</id><receipt-dt>2011-04-19T18:55:52</receipt-dt><receipt-sum>0</receipt-sum><total-sum>123.45</total-sum></order>
+234.56
+Mon Oct 10 11:10:14 2011: prepare: INSERT INTO T_CLIENT (DT, EMAIL, IS_AGENCY, NAME, PHONE, URL) VALUES (?, ?, ?, ?, ?, ?)
+Mon Oct 10 11:10:14 2011: exec prepared: p1="'2011-10-10 11:10:00'" p2="'vaclav@yandex.ru'" p3="0" p4="'Vaclav'" p5="NULL" p6="NULL"
+Mon Oct 10 11:10:14 2011: exec_direct: SELECT LAST_INSERT_ID() LID
+Mon Oct 10 11:10:14 2011: fetch: LID='34' 
+Mon Oct 10 11:10:14 2011: fetch: no more rows
+Mon Oct 10 11:10:14 2011: prepare: INSERT INTO T_ORDER (CLIENT_ID, DT, RECEIPT_DT, RECEIPT_SUM, TOTAL_SUM) VALUES (?, ?, ?, ?, ?)
+Mon Oct 10 11:10:14 2011: exec prepared: p1="34" p2="'2011-10-10 11:10:07'" p3="NULL" p4="0" p5="234.56"
+Mon Oct 10 11:10:14 2011: exec_direct: SELECT LAST_INSERT_ID() LID
+Mon Oct 10 11:10:14 2011: fetch: LID='45' 
+Mon Oct 10 11:10:14 2011: fetch: no more rows
+client created: 34
+order created: 45
+Mon Oct 10 11:10:14 2011: commit
+Mon Oct 10 11:10:14 2011: prepare: SELECT ID, DT, RECEIPT_SUM, RECEIPT_DT, CLIENT_ID, TOTAL_SUM FROM T_ORDER WHERE 1=1 AND ID = ?
+Mon Oct 10 11:10:14 2011: exec prepared: p1="45"
+Mon Oct 10 11:10:14 2011: fetch: CLIENT_ID='34' DT='2011-10-10 11:10:07' ID='45' RECEIPT_DT='2011-10-10 11:10:14' RECEIPT_SUM='0.000000' TOTAL_SUM='234.560000' 
+Mon Oct 10 11:10:14 2011: fetch: no more rows
+Mon Oct 10 11:10:14 2011: prepare: SELECT ID, DT, NAME, EMAIL, PHONE, URL, IS_AGENCY FROM T_CLIENT WHERE 1=1 AND ID = ?
+Mon Oct 10 11:10:14 2011: exec prepared: p1="34"
+Mon Oct 10 11:10:14 2011: fetch: DT='2011-10-10 11:10:00' EMAIL='vaclav@yandex.ru' ID='34' IS_AGENCY='0' NAME='Vaclav' PHONE=NULL URL=NULL 
+Mon Oct 10 11:10:14 2011: fetch: no more rows
+<order><id>45</id><dt>2011-10-10T11:10:07</dt><receipt-sum>0</receipt-sum><receipt-dt>2011-10-10T11:10:14</receipt-dt><owner><id>34</id><dt>2011-10-10T11:10:00</dt><name>Vaclav</name><email>vaclav@yandex.ru</email><phone is_null="1"/><url is_null="1"/><agency-flag>0</agency-flag></owner><total-sum>234.56</total-sum></order>
 
+Mon Oct 10 11:10:14 2011: rollback
+$ 
