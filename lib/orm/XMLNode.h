@@ -4,8 +4,6 @@
 
 #include <vector>
 #include <util/xml_writer.h>
-#include "Session.h"
-#include "RowData.h"
 #include "DataObject.h"
 #include "SqlDriver.h"
 
@@ -20,18 +18,12 @@ public:
     XMLNode(const std::string &name, const Value &val)
         : name_(name), value_(val)
     {}
-    XMLNode(const RowData &data, const std::string &alt_name = "")
-    {
-        init_by_row_data(data, alt_name);
-    }
     XMLNode(DataObject::Ptr data, const std::string &alt_name = "")
     {
         init_by_data_object(data, alt_name);
     }
 public:
-    void init_by_row_data(const RowData &data, const std::string &alt_name = "");
     void init_by_data_object(DataObject::Ptr data, const std::string &alt_name = "");
-    void replace_child_object_by_field(const std::string &field_name, const RowData &data);
     void replace_child_object_by_field(const std::string &field_name, DataObject::Ptr data);
     void replace_child_object_by_field(const std::string &field_name, const XMLNode &node);
     const std::string get_xml() const;
@@ -53,9 +45,7 @@ private:
  *              >= 1 nested levels
  * @return XMLNode
  */
-const XMLNode deep_xmlize(SessionBase &session,
-    const RowData &d, int depth = 0, const std::string &alt_name = "");
-const XMLNode deep_xmlize(SessionV2 &session,
+const XMLNode deep_xmlize(Session &session,
     DataObject::Ptr d, int depth = 0, const std::string &alt_name = "");
 
 const XMLNode xmlize_row(const Row &row, const std::string &entry_name);

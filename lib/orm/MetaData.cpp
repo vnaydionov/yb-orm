@@ -10,7 +10,7 @@ using namespace Yb::StrUtils;
 namespace Yb {
 
 MetaDataError::MetaDataError(const string &msg)
-    : logic_error(msg)
+    : BaseError(msg)
 {}
 
 BadAttributeName::BadAttributeName(const string &obj, const string &attr)

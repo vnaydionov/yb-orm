@@ -10,13 +10,28 @@ using namespace std;
 
 namespace Yb {
 
-SessionV2::~SessionV2()
+StringTooLong::StringTooLong(
+        const string &table_name, const string &field_name,
+        int max_len, const string &value)
+    : ORMError("Can't set value of " + table_name + "." + field_name +
+            " with '" + value + "', having max length " +
+            boost::lexical_cast<string>(max_len))
+{}
+
+BadTypeCast::BadTypeCast(
+        const string &table_name, const string &field_name,
+        const string &str_value, const string &type)
+    : ORMError("Can't cast field " + table_name + "." + field_name +
+            " = \"" + str_value + "\" to type " + type)
+{}
+
+Session::~Session()
 {
     Objects objects_copy = objects_;
 #if 0
     using namespace boost::lambda;
     for_each(objects_copy.begin(), objects_copy.end(),
-             bind(&SessionV2::detach, this, _1));
+             bind(&Session::detach, this, _1));
 #else
     Objects::iterator i = objects_copy.begin(), iend = objects_copy.end();
     for (; i != iend; ++i)
@@ -24,7 +39,7 @@ SessionV2::~SessionV2()
 #endif
 }
 
-void SessionV2::add_to_identity_map(DataObjectPtr obj)
+void Session::add_to_identity_map(DataObjectPtr obj)
 {
     if (obj->assigned_key()) {
         const Key &key = obj->key();
@@ -35,7 +50,7 @@ void SessionV2::add_to_identity_map(DataObjectPtr obj)
     }
 }
 
-void SessionV2::save(DataObjectPtr obj)
+void Session::save(DataObjectPtr obj)
 {
     add_to_identity_map(obj);
     Objects::iterator i = objects_.find(obj);
@@ -45,7 +60,7 @@ void SessionV2::save(DataObjectPtr obj)
     }
 }
 
-void SessionV2::detach(DataObjectPtr obj)
+void Session::detach(DataObjectPtr obj)
 {
     if (obj->assigned_key()) {
         const Key &key = obj->key();
@@ -60,7 +75,32 @@ void SessionV2::detach(DataObjectPtr obj)
     }
 }
 
-DataObject::Ptr SessionV2::get_lazy(const Key &key)
+void Session::load_collection(ObjectList &out,
+                                const string &table_name,
+                                const Filter &filter, 
+                                const StrList &order_by,
+                                int max,
+                                const string &table_alias)
+{
+    const Table &table = schema_->get_table(table_name);
+    Strings cols;
+    Columns::const_iterator it = table.begin(), end = table.end();
+    for (; it != end; ++it)
+        cols.push_back(it->get_name());
+    RowsPtr result = engine_->select
+        (StrList(cols), table.get_name(), filter,
+         StrList(), Filter(), order_by, max);
+    Rows::iterator i = result->begin(), iend = result->end();
+    for (; i != iend; ++i) {
+        DataObject::Ptr d = DataObject::create_new
+            (table.get_name(), DataObject::Sync);
+        d->fill_from_row(*i);
+        save(d);
+        out.push_back(d);
+    }
+}
+
+DataObject::Ptr Session::get_lazy(const Key &key)
 {
     IdentityMap::iterator i = identity_map_.find(key);
     if (i != identity_map_.end())
@@ -94,7 +134,7 @@ void add_row_to_rows_by_table(RowsByTable &rows_by_table,
     }
 }
 
-void SessionV2::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
+void Session::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
 {
     Rows rows;
     Objects::iterator i, iend = keyed_objs.end();
@@ -103,7 +143,7 @@ void SessionV2::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
     engine_->insert(tbl.get_name(), rows, StringSet());
 }
 
-void SessionV2::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
+void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
 {
     bool sql_seq = engine_->get_dialect()->has_sequences();
     bool use_seq = sql_seq && !tbl.get_seq_name().empty();
@@ -134,7 +174,7 @@ void SessionV2::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
     }
 }
 
-void SessionV2::flush_new()
+void Session::flush_new()
 {
     SqlDialect *dialect = engine_->get_dialect();
     bool sql_seq = dialect->has_sequences();
@@ -198,7 +238,7 @@ void SessionV2::flush_new()
             (*i)->set_status(DataObject::Ghost);
 }
 
-void SessionV2::flush_update(IdentityMap &idmap_copy)
+void Session::flush_update(IdentityMap &idmap_copy)
 {
     typedef map<string, Rows> RowsByTable;
     RowsByTable rows_by_table;
@@ -218,7 +258,7 @@ void SessionV2::flush_update(IdentityMap &idmap_copy)
     }
 }
 
-void SessionV2::flush_delete(IdentityMap &idmap_copy)
+void Session::flush_delete(IdentityMap &idmap_copy)
 {
     typedef vector<Key> Keys;
     typedef map<string, Keys> KeysByTable;
@@ -261,7 +301,7 @@ void SessionV2::flush_delete(IdentityMap &idmap_copy)
     }
 }
 
-void SessionV2::flush()
+void Session::flush()
 {
     IdentityMap idmap_copy = identity_map_;
     flush_new();
@@ -279,7 +319,7 @@ void SessionV2::flush()
         }
 }
 
-void DataObject::set_session(SessionV2 *session)
+void DataObject::set_session(Session *session)
 {
     YB_ASSERT(!session_);
     session_ = session;
@@ -291,6 +331,18 @@ void DataObject::forget_session()
     session_ = NULL;
 }
 
+const Value DataObject::get_typed_value(const Column &col, const Value &v)
+{
+    try {
+        return v.get_typed_value(col.get_type());
+    }
+    catch (ValueBadCast &) {
+        throw BadTypeCast(table_.get_name(), col.get_name(),
+                          v.as_string(),
+                          Value::get_type_name(col.get_type()));
+    }
+}
+
 void DataObject::set(int i, const Value &v)
 {
     const Column &c = table_.get_column(i);
@@ -300,7 +352,19 @@ void DataObject::set(int i, const Value &v)
     {
         throw ReadOnlyColumn(table_.get_name(), c.get_name());
     }
-    values_[i] = v;
+    if (c.is_ro() && !c.is_pk())
+        throw ReadOnlyColumn(table_.get_name(), c.get_name());
+    if (c.get_type() == Value::STRING) {
+        string s = v.as_string();
+        if (c.get_size() && c.get_size() < s.size())
+            throw StringTooLong(table_.get_name(), c.get_name(),
+                                c.get_size(), s);
+        values_[i] = Value(s);
+    }
+    else {
+        values_[i] = get_typed_value(c, v);
+    }
+    //values_[i] = v;
     if (c.is_pk()) {
         update_key();
     }
@@ -473,11 +537,13 @@ DataObject::~DataObject()
 
 void DataObject::fill_from_row(const Row &r)
 {
-    status_ = Sync;
     Row::const_iterator i = r.begin(), iend = r.end();
     for (; i != iend; ++i) {
-        set(i->first, i->second);
+        int j = table_.idx_by_name(i->first);
+        const Column &c = table_.get_column(j);
+        values_[j] = get_typed_value(c, i->second);
     }
+    update_key();
     status_ = Sync;
 }
 
@@ -592,7 +658,7 @@ size_t RelationObject::count_slaves()
     if (status_ == Sync)
         return slave_objects_.size();
     YB_ASSERT(master_object_->session());
-    SessionV2 &session = *master_object_->session();
+    Session &session = *master_object_->session();
     Schema &schema = master_object_->table().schema();
     const Table &master_tbl = schema.get_table(relation_info_.table(0)),
         &slave_tbl = schema.get_table(relation_info_.table(1));
@@ -612,7 +678,7 @@ void RelationObject::lazy_load_slaves()
     if (status_ != Incomplete)
         return;
     YB_ASSERT(master_object_->session());
-    SessionV2 &session = *master_object_->session();
+    Session &session = *master_object_->session();
     Schema &schema = master_object_->table().schema();
     const Table &master_tbl = schema.get_table(relation_info_.table(0)),
         &slave_tbl = schema.get_table(relation_info_.table(1));

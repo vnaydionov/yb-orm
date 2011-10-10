@@ -24,8 +24,9 @@ class DataObject;
 class RelationObject;
 typedef boost::shared_ptr<DataObject> DataObjectPtr;
 typedef boost::shared_ptr<RelationObject> RelationObjectPtr;
+typedef std::vector<DataObjectPtr> ObjectList;
 
-class SessionV2: boost::noncopyable {
+class Session: boost::noncopyable {
     friend class ::TestDataObject;
     friend class ::TestDataObjectSaveLoad;
     typedef std::set<DataObjectPtr> Objects;
@@ -41,16 +42,23 @@ class SessionV2: boost::noncopyable {
     void flush_update(IdentityMap &idmap_copy);
     void flush_delete(IdentityMap &idmap_copy);
 public:
-    SessionV2(const Schema &schema, EngineBase *engine = NULL):
+    Session(const Schema &schema, EngineBase *engine = NULL):
         schema_(&schema),
         engine_(engine)
     {}
-    ~SessionV2();
+    ~Session();
+    const Schema &schema() const { return *schema_; }
     void save(DataObjectPtr obj);
     void detach(DataObjectPtr obj);
     DataObjectPtr get_lazy(const Key &key);
     void flush();
     EngineBase *engine() { return engine_; }
+    void load_collection(ObjectList &out,
+                         const std::string &table_name,
+                         const Filter &filter, 
+                         const StrList &order_by = StrList(),
+                         int max = -1,
+                         const std::string &table_alias = "");
 };
 
 class CascadeDeleteError: public BaseError {
@@ -68,6 +76,32 @@ public:
     {}
 };
 
+class FieldNotFoundInFetchedRow : public ORMError
+{
+public:
+    FieldNotFoundInFetchedRow(const std::string &table_name, const std::string &field_name);
+};
+
+class BadTypeCast : public ORMError
+{
+public:
+    BadTypeCast(const std::string &table_name, const std::string &field_name,
+            const std::string &str_value, const std::string &type);
+};
+
+class TableDoesNotMatchRow : public ORMError
+{
+public:
+    TableDoesNotMatchRow(const std::string &table_name, const std::string &table_name_from_row);
+};
+
+class StringTooLong : public ORMError
+{
+public:
+    StringTooLong(const std::string &table_name, const std::string &field_name,
+                  int max_len, const std::string &value);
+};
+
 enum DeletionMode { DelNormal, DelDryRun, DelUnchecked };
 
 class DataObject: boost::noncopyable {
@@ -82,7 +116,7 @@ class DataObject: boost::noncopyable {
     //             a) master  b) slave
     //    Each relation is a pointer to a RelationObject instance.
 
-    friend class SessionV2;
+    friend class Session;
 public:
     typedef DataObjectPtr Ptr;
     typedef Values::iterator iterator;
@@ -95,7 +129,7 @@ private:
     Status status_;
     SlaveRelations slave_relations_;
     MasterRelations master_relations_;
-    SessionV2 *session_;
+    Session *session_;
     Key key_;
     bool assigned_key_;
     int depth_;
@@ -128,8 +162,8 @@ public:
     const Table &table() const { return table_; }
     
     Status status() const { return status_; }
-    SessionV2 *session() const { return session_; }
-    void set_session(SessionV2 *session);
+    Session *session() const { return session_; }
+    void set_session(Session *session);
     void forget_session();
     iterator begin() {
         if (status_ == Ghost)
@@ -146,6 +180,7 @@ public:
     Value &get(const std::string &name) {
         return get(table_.idx_by_name(name));
     }
+    const Value get_typed_value(const Column &col, const Value &v);
     void set(int i, const Value &v);
     void set(const std::string &name, const Value &v) {
         set(table_.idx_by_name(name), v);

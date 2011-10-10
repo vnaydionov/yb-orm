@@ -15,6 +15,9 @@ using Yb::StrUtils::xgetenv;
 class TestDataObject : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestDataObject);
+    CPPUNIT_TEST_EXCEPTION(test_init_wrong_val, BadTypeCast);
+    CPPUNIT_TEST_EXCEPTION(test_init_ro, ReadOnlyColumn);
+    CPPUNIT_TEST_EXCEPTION(test_init_long_string, StringTooLong);
     CPPUNIT_TEST(test_data_object_key);
     CPPUNIT_TEST(test_data_object_save_no_id);
     CPPUNIT_TEST(test_data_object_save_id);
@@ -30,6 +33,8 @@ class TestDataObject : public CppUnit::TestFixture
     CPPUNIT_TEST(test_traverse_up_down);
     CPPUNIT_TEST(test_calc_depth);
     CPPUNIT_TEST_EXCEPTION(test_cycle_detected, CycleDetected);
+    CPPUNIT_TEST(test_filter_by_key);
+    CPPUNIT_TEST(test_bad_type_cast_format);
     CPPUNIT_TEST_SUITE_END();
 
     Schema r_;
@@ -43,6 +48,7 @@ public:
         t.add_column(Column("X", Value::LONGINT, 0, Column::PK));
         t.add_column(Column("Y", Value::STRING, 4));
         t.add_column(Column("P", Value::LONGINT));
+        t.add_column(Column("R", Value::LONGINT, 0, Column::RO));
         t.set_seq_name("S_A_X");
         r_.set_table(t);
         Table u("B", "", "B");
@@ -70,6 +76,24 @@ public:
         r_.fill_fkeys();
     }
 
+    void test_init_wrong_val()
+    {
+        DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
+        d->set("X", Decimal(1.2));
+    }
+
+    void test_init_ro()
+    {
+        DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
+        d->set("R", 123);
+    }
+
+    void test_init_long_string()
+    {
+        DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
+        d->set("Y", "zrzzz");
+    }
+
     void test_data_object_key()
     {
         DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
@@ -87,14 +111,14 @@ public:
     {
         DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
         CPPUNIT_ASSERT(DataObject::New == d->status());
-        CPPUNIT_ASSERT_EQUAL((SessionV2 *)NULL, d->session());
-        SessionV2 session(r_);
+        CPPUNIT_ASSERT_EQUAL((Session *)NULL, d->session());
+        Session session(r_);
         session.save(d);
         session.save(d);
         CPPUNIT_ASSERT_EQUAL(&session, d->session());
         session.detach(d);
         session.detach(d);
-        CPPUNIT_ASSERT_EQUAL((SessionV2 *)NULL, d->session());
+        CPPUNIT_ASSERT_EQUAL((Session *)NULL, d->session());
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)d->status());
     }
 
@@ -103,8 +127,8 @@ public:
         DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
         d->set("X", 10);
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)d->status());
-        CPPUNIT_ASSERT_EQUAL((SessionV2 *)NULL, d->session());
-        SessionV2 session(r_);
+        CPPUNIT_ASSERT_EQUAL((Session *)NULL, d->session());
+        Session session(r_);
         session.save(d);
         session.save(d);
         CPPUNIT_ASSERT_EQUAL(&session, d->session());
@@ -118,7 +142,7 @@ public:
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)e->status());
         session.detach(d);
         session.detach(d);
-        CPPUNIT_ASSERT_EQUAL((SessionV2 *)NULL, d->session());
+        CPPUNIT_ASSERT_EQUAL((Session *)NULL, d->session());
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)d->status());
     }
 
@@ -126,7 +150,7 @@ public:
     {
         DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
         d->set("X", 10);
-        SessionV2 session(r_);
+        Session session(r_);
         session.save(d);
         d->set("X", 110);
     }
@@ -208,7 +232,7 @@ public:
     {
         DataObject::Ptr e = DataObject::create_new(r_.get_table("B"));
         e->set("X", 10);
-        SessionV2 session(r_);
+        Session session(r_);
         session.save(e);
         DataObject::Ptr d = DataObject::get_master(e, "MasterA");
         DataObject::Ptr c = DataObject::get_master(e);
@@ -219,7 +243,7 @@ public:
     void test_traverse_up_down()
     {
         DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
-        SessionV2 session(r_);
+        Session session(r_);
         session.save(d);
         RelationObject *ro = d->get_slaves("SlaveBs");
         CPPUNIT_ASSERT_EQUAL((int)RelationObject::Incomplete,
@@ -246,6 +270,35 @@ public:
         DataObject::link_slave_to_master(e, d, "ParA");
         DataObject::link_slave_to_master(f, e, "ParA");
         DataObject::link_slave_to_master(d, f, "ParA");
+    }
+
+    void test_filter_by_key()
+    {
+        ValueMap values;
+        values["X"] = Value(10);
+        Session session(r_);
+        DataObject::Ptr d = session.get_lazy(Key("A", values));
+        KeyFilter kf(d->key());
+        CPPUNIT_ASSERT_EQUAL(string("1=1 AND X = 10"), kf.get_sql());
+    }
+
+    void test_bad_type_cast_format()
+    {
+        try {
+            DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
+            const Column &c = r_.get_table("A").get_column("P");
+            d->get_typed_value(c, Value("100")); // should be OK
+            d->get_typed_value(c, Value("#"));
+            CPPUNIT_FAIL("Exception BadTypeCast not thrown!");
+        }
+        catch (const BadTypeCast &e) {
+            string err = e.what();
+            size_t pos = err.find("\nBacktrace");
+            if (pos != string::npos)
+                err = string(err, 0, pos);
+            CPPUNIT_ASSERT_EQUAL(
+                string("Can't cast field A.P = \"#\" to type LongInt"), err);
+        }
     }
 };
 
@@ -352,7 +405,7 @@ public:
     {
         Engine engine(Engine::READ_ONLY);
         engine.get_connect()->set_echo(ECHO_SQL);
-        SessionV2 session(r_, &engine);
+        Session session(r_, &engine);
         DataObject::Ptr e = session.get_lazy
             (r_.get_table("T_ORM_XML").mk_key(-20));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)e->status());
@@ -373,7 +426,7 @@ public:
     {
         Engine engine(Engine::READ_ONLY);
         engine.get_connect()->set_echo(ECHO_SQL);
-        SessionV2 session(r_, &engine);
+        Session session(r_, &engine);
         DataObject::Ptr d = session.get_lazy
             (r_.get_table("T_ORM_TEST").mk_key(-10));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d->status());
@@ -392,7 +445,7 @@ public:
         {
             Engine engine;
             engine.get_connect()->set_echo(ECHO_SQL);
-            SessionV2 session(r_, &engine);
+            Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(r_.get_table("T_ORM_TEST").mk_key(-10));
             CPPUNIT_ASSERT_EQUAL(string("item"), d->get("A").as_string());
             d->set("A", Value("xyz"));
@@ -404,7 +457,7 @@ public:
         {
             Engine engine;
             engine.get_connect()->set_echo(ECHO_SQL);
-            SessionV2 session(r_, &engine);
+            Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(r_.get_table("T_ORM_TEST").mk_key(-10));
             CPPUNIT_ASSERT_EQUAL(string("xyz"), d->get("A").as_string());
             CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
@@ -417,7 +470,7 @@ public:
         {
             Engine engine;
             engine.get_connect()->set_echo(ECHO_SQL);
-            SessionV2 session(r_, &engine);
+            Session session(r_, &engine);
             DataObject::Ptr d = DataObject::create_new(r_.get_table("T_ORM_TEST"));
             d->set("A", Value("abc"));
             session.save(d);
@@ -433,7 +486,7 @@ public:
         {
             Engine engine;
             engine.get_connect()->set_echo(ECHO_SQL);
-            SessionV2 session(r_, &engine);
+            Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("abc"), d->get("A").as_string());
             CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
@@ -446,7 +499,7 @@ public:
         {
             Engine engine;
             engine.get_connect()->set_echo(ECHO_SQL);
-            SessionV2 session(r_, &engine);
+            Session session(r_, &engine);
             DataObject::Ptr d = DataObject::create_new
                 (r_.get_table("T_ORM_TEST"));
             d->set("ID", Value(-40));
@@ -460,7 +513,7 @@ public:
         {
             Engine engine(Engine::READ_ONLY);
             engine.get_connect()->set_echo(ECHO_SQL);
-            SessionV2 session(r_, &engine);
+            Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("qwerty"), d->get("A").as_string());
         }
@@ -472,7 +525,7 @@ public:
         {
             Engine engine;
             engine.get_connect()->set_echo(ECHO_SQL);
-            SessionV2 session(r_, &engine);
+            Session session(r_, &engine);
             DataObject::Ptr e = DataObject::create_new(r_.get_table("T_ORM_XML"));
             e->set("B", Value(Decimal("0.01")));
             DataObject::Ptr d = DataObject::create_new(r_.get_table("T_ORM_TEST"));
@@ -494,7 +547,7 @@ public:
         {
             Engine engine;
             engine.get_connect()->set_echo(ECHO_SQL);
-            SessionV2 session(r_, &engine);
+            Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("abc"), d->get("A").as_string());
             CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
@@ -509,7 +562,7 @@ public:
         {
             Engine engine;
             engine.get_connect()->set_echo(ECHO_SQL);
-            SessionV2 session(r_, &engine);
+            Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy
                 (r_.get_table("T_ORM_TEST").mk_key(-10));
             RelationObject *ro = d->get_slaves();
@@ -522,7 +575,7 @@ public:
         {
             Engine engine;
             engine.get_connect()->set_echo(ECHO_SQL);
-            SessionV2 session(r_, &engine);
+            Session session(r_, &engine);
             int count = 0;
             DataObject::Ptr d = session.get_lazy
                 (r_.get_table("T_ORM_TEST").mk_key(-10));
@@ -544,22 +597,26 @@ public:
     {
         Engine engine(Engine::READ_ONLY);
         engine.get_connect()->set_echo(ECHO_SQL);
-        SessionV2 session(r_, &engine);
-        DomainObjectV2 d(session, r_.get_table("T_ORM_TEST").mk_key(-10));
+        Session session(r_, &engine);
+        DomainObject d(session, r_.get_table("T_ORM_TEST").mk_key(-10));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d.status());
-        DomainObjectV2 e = d;
+        DomainObject e = d;
         CPPUNIT_ASSERT_EQUAL(0, e.cmp(d));
         CPPUNIT_ASSERT_EQUAL(string("item"), d.get("A").as_string());
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)e.status());
-        typedef ManagedListV2<DomainObjectV2> MList;
+        typedef ManagedList<DomainObject> MList;
         MList slaves = d.get_slaves();
+        CPPUNIT_ASSERT_EQUAL((size_t)2, slaves.size());
         MList::iterator it = slaves.begin();
-        CPPUNIT_ASSERT_EQUAL((LongInt)-20, it->get("ID").as_longint());
+        int a = it->get("ID").as_longint();
+        CPPUNIT_ASSERT(-20 == a || -30 == a);
         ++it;
-        CPPUNIT_ASSERT_EQUAL((LongInt)-30, it->get("ID").as_longint());
+        a += it->get("ID").as_longint();
+        CPPUNIT_ASSERT_EQUAL(-50, a);
         ++it;
         CPPUNIT_ASSERT(slaves.end() == it);
-        DomainObjectV2 f(r_, "T_ORM_XML");
+        CPPUNIT_ASSERT_EQUAL((size_t)2, slaves.size());
+        DomainObject f(r_, "T_ORM_XML");
         f.save(session);
         f.link_to_master(d);
     }

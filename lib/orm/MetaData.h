@@ -8,13 +8,14 @@
 #include <set>
 #include <stdexcept>
 #include <list>
-#include "orm/Value.h"
+#include <orm/Value.h>
+#include <util/Exception.h>
 
 class TestMetaData;
 
 namespace Yb {
 
-class MetaDataError : public std::logic_error
+class MetaDataError : public BaseError
 {
 public:
     MetaDataError(const std::string &msg);

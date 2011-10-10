@@ -24,10 +24,7 @@ AM_CXXFLAGS = \
 
 H_FILES = \
 	Filters.h \
-	Session.h \
 	MetaData.h \
-	RowData.h \
-	SqlDataSource.h \
 	Value.h \
 	Engine.h \
 	SqlDriver.h \
@@ -43,10 +40,7 @@ H_FILES = \
 CPP_FILES = \
 	$(H_FILES) \
 	Filters.cpp \
-	Session.cpp \
 	MetaData.cpp \
-	RowData.cpp \
-	SqlDataSource.cpp \
 	Value.cpp \
 	Engine.cpp \
 	SqlDriver.cpp \

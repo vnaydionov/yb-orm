@@ -15,23 +15,23 @@ class NoCreator: public std::logic_error
 public:
     NoCreator(const std::string &entity_name) :
         std::logic_error("Domain object creator for entity '" +
-                entity_name + "' not found")
+                         entity_name + "' not found")
     {}
 };
 
 class ICreator
 {
 public:
-    virtual DomainObjectPtr create(SessionBase &session, LongInt id) const = 0;  
+    virtual DomainObjectPtr create(Session &session, LongInt id) const = 0;
 };
 
 template <typename T>
 class DomainCreator: public ICreator
 {
 public:
-    virtual DomainObjectPtr create(SessionBase &session, LongInt id) const
+    virtual DomainObjectPtr create(Session &session, LongInt id) const
     {
-        return boost::shared_ptr<DomainObject>(new T(session, id));
+        return DomainObjectPtr(new T(session, id));
     }
 };
 
@@ -47,7 +47,7 @@ public:
         creator_map_.insert(Map::value_type(name, creator));
     }
     
-    DomainObjectPtr create_object(SessionBase &session, 
+    DomainObjectPtr create_object(Session &session, 
             const std::string &entity_name, LongInt id) const
     {
         Map::const_iterator it = creator_map_.find(entity_name);
@@ -58,6 +58,7 @@ public:
 private:
     Map creator_map_;
 };
+    
     
 } // namespace Yb
 

@@ -7,7 +7,6 @@
 #include <util/str_utils.hpp>
 #include "Value.h"
 #include "MetaData.h"
-#include "Session.h"
 
 using namespace std;
 using namespace Yb::StrUtils;
@@ -135,78 +134,6 @@ const string ValueDataImpl<DateTime>::to_sql_str() const
     return "'" + t + "'";
 }
 
-template <>
-const string ValueDataImpl<PKIDValue>::to_sql_str() const
-{
-    if (x_.is_temp())
-        return "NULL";
-    return boost::lexical_cast<string>(x_.as_longint());
-}
-
-template <>
-const string ValueDataImpl<PKIDValue>::to_str() const
-{
-    return to_sql_str();
-}
-
-PKIDValue::PKIDValue()
-    : table_(NULL)
-    , key_(pair<string, LongInt>(string(), 0))
-    , pkid_(0)
-{}
-
-PKIDValue::PKIDValue(const Table &table,
-        boost::shared_ptr<PKIDRecord> temp)
-    : table_(&table)
-    , key_(pair<string, LongInt>("-" + table.get_name(), temp->pkid_))
-    , pkid_(0)
-    , temp_(temp)
-{}
-
-PKIDValue::PKIDValue(const Table &table, LongInt pkid)
-    : table_(&table)
-    , key_(pair<string, LongInt>("+" + table.get_name(), pkid))
-    , pkid_(pkid)
-{}
-
-const Table &PKIDValue::get_table() const
-{
-    if (!table_)
-        throw PKIDInvalid();
-    return *table_;
-}
-
-int PKIDValue::cmp(const PKIDValue &x) const
-{
-    return key_ == x.key_? 0: (key_ < x.key_? -1: 1);
-}
-
-bool PKIDValue::is_temp() const
-{
-    return temp_.get() && temp_->is_temp_;
-}
-
-LongInt PKIDValue::as_longint() const
-{
-    if (!table_)
-        throw PKIDInvalid();
-    if (!temp_.get())
-        return pkid_;
-    if (temp_->is_temp_)
-        throw PKIDNotSynced(table_->get_name(), temp_->pkid_);
-    return temp_->pkid_;
-}
-
-void PKIDValue::sync(LongInt pkid) const
-{
-    if (!table_)
-        throw PKIDInvalid();
-    if (!is_temp())
-        throw PKIDAlreadySynced(table_->get_name(), as_longint());
-    temp_->pkid_ = pkid;
-    temp_->is_temp_ = false;
-}
-
 Value::Value()
     : type_(INVALID)
 {}
@@ -234,11 +161,6 @@ Value::Value(const Decimal &x)
 Value::Value(const DateTime &x)
     : data_(new ValueDataImpl<DateTime>(x))
     , type_(DATETIME)
-{}
-
-Value::Value(const PKIDValue &x)
-    : data_(new ValueDataImpl<PKIDValue>(x))
-    , type_(PKID)
 {}
 
 bool
@@ -319,16 +241,6 @@ Value::as_date_time() const
     return d.get();
 }
 
-const PKIDValue
-Value::as_pkid() const
-{
-    if (type_ != PKID)
-        throw ValueBadCast(check_null().to_str(), "PKID");
-    const ValueDataImpl<PKIDValue> &d =
-        dynamic_cast<const ValueDataImpl<PKIDValue> &>(check_null());
-    return d.get();
-}
-
 const string
 Value::as_string() const
 {
@@ -384,8 +296,6 @@ Value::get_typed_value(int type) const
             return as_date_time();
         case Value::STRING:
             return as_string();
-        case Value::PKID:
-            return as_pkid();
         default:
             throw ValueBadCast(check_null().to_str(), Value::get_type_name(type));
     }
@@ -403,7 +313,7 @@ const char *
 Value::get_type_name(int type)
 {
     static const char *type_names[] =
-        { "Invalid", "LongInt", "String", "Decimal", "DateTime", "PKID" };
+        { "Invalid", "LongInt", "String", "Decimal", "DateTime" };
     if (type < 0 || type >= sizeof(type_names)/sizeof(const char *))
         return "Unknown";
     return type_names[type];

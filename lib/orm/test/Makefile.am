@@ -13,14 +13,10 @@ check_PROGRAMS = unit_tests
 
 unit_tests_SOURCES = \
 	TestFilters.cpp \
-	TestSession.cpp \
 	TestMetaData.cpp \
-	TestRowData.cpp \
 	TestValue.cpp \
 	TestEngine.cpp \
-	TestSqlDataSource.cpp \
 	TestXMLConfig.cpp \
-	TestIntegrMapper.cpp \
 	TestXMLNode.cpp \
 	TestDataObject.cpp
 

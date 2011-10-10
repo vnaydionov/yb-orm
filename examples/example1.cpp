@@ -1,8 +1,7 @@
 #include <memory>
 #include <iostream>
 #include <util/str_utils.hpp>
-#include <orm/Session.h>
-#include <orm/SqlDataSource.h>
+#include <orm/DataObject.h>
 #include <orm/MetaDataSingleton.h>
 #include <orm/XMLMetaDataConfig.h>
 #include "domain/Client.h"
@@ -34,9 +33,7 @@ int main()
 #else
     Yb::Engine engine(Yb::Engine::MANUAL);
 #endif
-    Yb::Session session(Yb::theMetaData::instance(),
-            auto_ptr<Yb::DataSource>(
-                new Yb::SqlDataSource(Yb::theMetaData::instance(), engine)));
+    Yb::Session session(Yb::theMetaData::instance(), &engine);
     engine.get_connect()->set_echo(true);
     Domain::Client client(session);
     string name, email;
@@ -44,7 +41,7 @@ int main()
     cin >> name >> email;
     client.set_name(name);
     client.set_email(email);
-    client.set_dt(Yb::now());
+    //client.set_dt(Yb::now());
     Domain::Order order(session);
     string value;
     cout << "Enter order amount: \n";
@@ -52,8 +49,8 @@ int main()
     order.set_total_sum(Yb::Decimal(value));
     order.set_owner(client);
     session.flush();
-    cout << "client created: " << client.get_id().as_longint() << endl;
-    cout << "order created: " << order.get_id().as_longint() << endl;
+    cout << "client created: " << client.get_id() << endl;
+    cout << "order created: " << order.get_id() << endl;
     engine.commit();
     cout << order.xmlize(1).get_xml() << endl;
     return 0;

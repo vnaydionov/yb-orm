@@ -87,96 +87,23 @@ public:
     {}
 };
 
-class PKIDInvalid: public ValueError
-{
-public:
-    PKIDInvalid(): ValueError("Invalid PKID object") {}
-};
-
-class PKIDAlreadySynced: public ValueError
-{
-public:
-    PKIDAlreadySynced(const std::string &table_name, LongInt id)
-        : ValueError("PKID is already synchronized: " + 
-                table_name + "(" +
-                boost::lexical_cast<std::string>(id) + ")")
-    {}
-};
-
-class PKIDNotSynced: public ValueError
-{
-public:
-    PKIDNotSynced(const std::string &table_name, LongInt id)
-        : ValueError("PKID is temporary: " + table_name + "(" +
-                boost::lexical_cast<std::string>(id) + ")")
-    {}
-};
-
-class Table;
-
-struct PKIDRecord
-{
-    const Table *table_;
-    LongInt pkid_;
-    bool is_temp_;
-    PKIDRecord(const Table *table,
-            LongInt pkid, bool is_temp)
-        : table_(table)
-        , pkid_(pkid)
-        , is_temp_(is_temp)
-    {}
-};
-
-class PKIDValue
-{
-    const Table *table_;
-    std::pair<std::string, LongInt> key_;
-    mutable LongInt pkid_;
-    mutable boost::shared_ptr<PKIDRecord> temp_;
-public:
-    PKIDValue();
-    PKIDValue(const Table &table,
-            boost::shared_ptr<PKIDRecord> temp);
-    PKIDValue(const Table &table, LongInt pkid);
-    const Table &get_table() const;
-    const std::pair<std::string, LongInt> &get_key() const { return key_; }
-    bool is_temp() const;
-    LongInt as_longint() const;
-    void sync(LongInt pkid) const;
-    int cmp(const PKIDValue &x) const;
-};
-
-inline bool operator==(const PKIDValue &x, const PKIDValue &y) { return !x.cmp(y); }
-inline bool operator!=(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) != 0; }
-inline bool operator<(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) < 0; }
-inline bool operator>=(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) >= 0; }
-inline bool operator>(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) > 0; }
-inline bool operator<=(const PKIDValue &x, const PKIDValue &y) { return x.cmp(y) <= 0; }
-
-inline std::string to_string(const PKIDValue &x)
-{
-    return boost::lexical_cast<std::string>(x.as_longint());
-}
-
 class ValueData;
 
 class Value
 {
 public:
-    enum Type { INVALID, LONGINT, STRING, DECIMAL, DATETIME, PKID };
+    enum Type { INVALID, LONGINT, STRING, DECIMAL, DATETIME };
     Value();
     Value(LongInt x);
     Value(const char *x);
     Value(const std::string &x);
     Value(const Decimal &x);
     Value(const DateTime &x);
-    Value(const PKIDValue &x);
     bool is_null() const;
     LongInt as_longint() const;
     const std::string as_string() const;
     const Decimal as_decimal() const;
     const DateTime as_date_time() const;
-    const PKIDValue as_pkid() const;
     const std::string sql_str() const;
     const Value nvl(const Value &def_value) const { return is_null()? def_value: *this; }
     int cmp(const Value &x) const;

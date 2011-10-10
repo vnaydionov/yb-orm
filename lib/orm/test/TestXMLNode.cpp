@@ -5,8 +5,6 @@
 #include "orm/MetaDataSingleton.h"
 #include "orm/DomainFactorySingleton.h"
 #include "orm/DomainObj.h"
-#include "orm/Session.h"
-#include "orm/SqlDataSource.h"
 #include "orm/Engine.h"
 
 #define TEST_TBL1 "T_ORM_TEST"
@@ -19,7 +17,7 @@ using namespace Yb::StrUtils;
 class OrmTestDomainSimple: public DomainObject
 {
 public:
-    OrmTestDomainSimple(SessionBase &session, LongInt id)
+    OrmTestDomainSimple(Session &session, LongInt id)
         : DomainObject(session, "T_ORM_TEST", id)
     {}
 };
@@ -34,7 +32,7 @@ public:
 class OrmXMLDomainSimple: public DomainObject
 {
 public:
-    OrmXMLDomainSimple(SessionBase &session, LongInt id)
+    OrmXMLDomainSimple(Session &session, LongInt id)
         : DomainObject(session, "T_ORM_XML", id)
     {}
 };
@@ -42,7 +40,7 @@ public:
 class TestXMLNode : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestXMLNode);
-    CPPUNIT_TEST(test_xmlize_row_data);
+    CPPUNIT_TEST(test_xmlize_data_object);
     CPPUNIT_TEST(test_replace_child_object);
     CPPUNIT_TEST(test_add_node);
     CPPUNIT_TEST(test_xmlize_null_value);
@@ -95,13 +93,13 @@ public:
         Table t("A");
         t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
         t.add_column(Column("Y", Value::STRING, 0, 0));
-        t.add_column(Column("Z", Value::DECIMAL, 0, Column::RO));
+        t.add_column(Column("Z", Value::DECIMAL, 0, 0));
         Schema r;
         r.set_table(t);
         Table t2("XX");
         t2.add_column(Column("XA", Value::LONGINT, 0, Column::PK | Column::RO));
         t2.add_column(Column("XB", Value::STRING, 0, 0));
-        t2.add_column(Column("XC", Value::DECIMAL, 0, Column::RO));
+        t2.add_column(Column("XC", Value::DECIMAL, 0, 0));
         r.set_table(t2);
         Table t3("N");
         t3.add_column(Column("A", Value::LONGINT, 0, Column::PK | Column::RO));
@@ -144,26 +142,26 @@ public:
         conn.commit();
     }
 
-    void test_xmlize_row_data()
+    void test_xmlize_data_object()
     {
-        RowData data(r_, "A");
-        data.set("x", 10);
-        data.set("y", "zzz");
-        data.set("z", Decimal("1.20"));
+        DataObject::Ptr data = DataObject::create_new(r_.get_table("A"));
+        data->set("x", 10);
+        data->set("y", "zzz");
+        data->set("z", Decimal("1.20"));
         XMLNode node(data);
         CPPUNIT_ASSERT_EQUAL(string("<a><x>10</x><y>zzz</y><z>1.2</z></a>\n"), node.get_xml());
     }
 
     void test_replace_child_object()
     {
-        RowData data(r_, "A");
-        data.set("x", 10);
-        data.set("y", "zzz");
-        data.set("z", Decimal(1.2));
-        RowData datax(r_, "XX");
-        datax.set("xa", 20);
-        datax.set("xb", "aaa");
-        datax.set("xc", Decimal("1.1"));
+        DataObject::Ptr data = DataObject::create_new(r_.get_table("A"));
+        data->set("x", 10);
+        data->set("y", "zzz");
+        data->set("z", Decimal(1.2));
+        DataObject::Ptr datax = DataObject::create_new(r_.get_table("XX"));
+        datax->set("xa", 20);
+        datax->set("xb", "aaa");
+        datax->set("xc", Decimal("1.1"));
         XMLNode node(data);
         node.replace_child_object_by_field("x", datax);
         CPPUNIT_ASSERT_EQUAL(string(
@@ -173,14 +171,14 @@ public:
 
     void test_add_node()
     {
-        RowData data(r_, "A");
-        data.set("x", 10);
-        data.set("y", "zzz");
-        data.set("z", Decimal("1.2"));
-        RowData datax(r_, "XX");
-        datax.set("xa", 20);
-        datax.set("xb", "aaa");
-        datax.set("xc", Decimal("1.1"));
+        DataObject::Ptr data = DataObject::create_new(r_.get_table("A"));
+        data->set("x", 10);
+        data->set("y", "zzz");
+        data->set("z", Decimal("1.2"));
+        DataObject::Ptr datax = DataObject::create_new(r_.get_table("XX"));
+        datax->set("xa", 20);
+        datax->set("xb", "aaa");
+        datax->set("xc", Decimal("1.1"));
         XMLNode node(data);
         XMLNode child(datax);
         node.add_node(datax);
@@ -192,8 +190,8 @@ public:
 
     void test_xmlize_null_value()
     {
-        RowData data(r_, "N");
-        data.set("a", Value());
+        DataObject::Ptr data = DataObject::create_new(r_.get_table("N"));
+        data->set("a", Value());
         XMLNode node(data);
         CPPUNIT_ASSERT_EQUAL(std::string("<n><a is_null=\"1\"/></n>\n"), node.get_xml());
     }
@@ -202,8 +200,7 @@ public:
     {
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
-        Session session(theMetaData::instance(), auto_ptr<DataSource>(
-                    new SqlDataSource(theMetaData::instance(), engine)));
+        Session session(theMetaData::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
         XMLNode node = test.xmlize();
         CPPUNIT_ASSERT_EQUAL(string(
@@ -215,8 +212,7 @@ public:
     {
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
-        Session session(theMetaData::instance(), auto_ptr<DataSource>(
-                    new SqlDataSource(theMetaData::instance(), engine)));
+        Session session(theMetaData::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
         XMLNode node = test.xmlize(1);
         CPPUNIT_ASSERT_EQUAL(string(
@@ -229,8 +225,7 @@ public:
     {
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
-        Session session(theMetaData::instance(), auto_ptr<DataSource>(
-                    new SqlDataSource(theMetaData::instance(), engine)));
+        Session session(theMetaData::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
         XMLNode node = test.xmlize(-1);
         CPPUNIT_ASSERT_EQUAL(string(

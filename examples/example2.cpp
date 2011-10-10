@@ -1,8 +1,7 @@
 #include <memory>
 #include <iostream>
 #include <util/str_utils.hpp>
-#include <orm/Session.h>
-#include <orm/SqlDataSource.h>
+#include <orm/DataObject.h>
 #include <orm/MetaDataSingleton.h>
 #include <orm/XMLMetaDataConfig.h>
 #include "domain/Client.h"
@@ -34,9 +33,7 @@ int main()
 #else
     Yb::Engine engine(Yb::Engine::MANUAL);
 #endif
-    Yb::Session session(Yb::theMetaData::instance(),
-            auto_ptr<Yb::DataSource>(
-                new Yb::SqlDataSource(Yb::theMetaData::instance(), engine)));
+    Yb::Session session(Yb::theMetaData::instance(), &engine);
     engine.get_connect()->set_echo(true);
     Domain::Client client(session);
     string name, email;
@@ -65,21 +62,25 @@ int main()
     order.set_owner(client);
     cout << "orders size: " << client.get_orders().size() << endl;
     session.flush();
-    cout << "client created: " << client.get_id().as_longint() << endl;
-    cout << "order created: " << order.get_id().as_longint() << endl;
+    cout << "client created: " << client.get_id() << endl;
+    cout << "order created: " << order.get_id() << endl;
     engine.commit();
     cout << order.xmlize(1).get_xml() << endl;
     }
-    Domain::Client c2(session, client.get_id().as_longint());
+    Domain::Client c2(session, client.get_id());
     cout << "c2.orders size: " << c2.get_orders().size() << endl;
-    Yb::ManagedList<Domain::Client> lst;
-    lst.insert(client);
-    Yb::ManagedList<Domain::Client>::iterator it = lst.begin(), end = lst.end();
+    Yb::ManagedList<Domain::Order> &lst = c2.get_orders();
+    Yb::ManagedList<Domain::Order>::iterator it = lst.begin(), end = lst.end();
     for (; it != end; ++it)
-        cout << "client in list: " << it->get_id().as_longint() << endl;
+        cout << "order in list: " << it->get_id() << endl;
     cout << "list size: " << lst.size() << endl;
     lst.erase(lst.begin());
     cout << "list size: " << lst.size() << endl;
+    session.flush();
+    engine.commit();
+    c2.delete_object();
+    session.flush();
+    engine.commit();
     return 0;
 }
 // vim:ts=4:sts=4:sw=4:et:

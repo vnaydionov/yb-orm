@@ -249,7 +249,9 @@ Also <column> may contain nested elements to describe additional constraints:
             <primary-key />
         </column>
         <column name="DT" type="datetime" default="sysdate">
+            <!--
             <read-only />
+            -->
         </column>
         <column name="RECEIPT_SUM" type="decimal" default="0" />
         <column name="RECEIPT_DT" type="datetime" />

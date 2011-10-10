@@ -71,21 +71,24 @@ private:
             << "\t// static method 'find'\n"
             << "\ttypedef std::vector<" << t.get_class_name() << "> List;\n"
             << "\ttypedef std::auto_ptr<List> ListPtr;\n"
-            << "\tstatic ListPtr find(Yb::SessionBase &session,\n"
+            << "\tstatic ListPtr find(Yb::Session &session,\n"
             << "\t\t\tconst Yb::Filter &filter, const Yb::StrList order_by = \"\", int max_n = -1);\n";
 
         str << "\t// constructors\n"
             << "\t" << t.get_class_name() << "();\n"
-            << "\t" << t.get_class_name() << "(Yb::SessionBase &session);\n";
-        str << "\t" << t.get_class_name() << "(Yb::SessionBase &session, const Yb::RowData &key)\n"
+            << "\texplicit " << t.get_class_name() << "(Yb::Session &session);\n";
+        str << "\texplicit " << t.get_class_name() << "(Yb::DataObject::Ptr d)\n"
+            << "\t\t: Yb::DomainObject(d)\n"
+            << "\t{}\n"
+            << "\t" << t.get_class_name() << "(Yb::Session &session, const Yb::Key &key)\n"
             << "\t\t: Yb::DomainObject(session, key)\n";
-        write_rel_one2many_managed_lists_init(t, str, "key.get_id()"); // FIXME
+        //write_rel_one2many_managed_lists_init(t, str, "key.get_id()"); // FIXME
         str << "\t" << "{}\n";
         try {
             string mega_key = reg_.get_table(t.get_name()).get_unique_pk();
-            str << "\t" << t.get_class_name() << "(Yb::SessionBase &session, Yb::LongInt id)\n"
+            str << "\t" << t.get_class_name() << "(Yb::Session &session, Yb::LongInt id)\n"
                 << "\t\t: Yb::DomainObject(session, \"" << t.get_name() << "\", id)\n";
-            write_rel_one2many_managed_lists_init(t, str, "id");
+            //write_rel_one2many_managed_lists_init(t, str, "id");
             str << "\t{}\n";
         }
         catch (const AmbiguousPK &) {}
@@ -98,11 +101,20 @@ private:
         else {
             str << "\tconst Yb::Value get_attr_ex(const std::string &field) const {\n"
                 << "\t\ttry {\n"
-                << "\t\t\treturn get_attr(field);\n"
+                << "\t\t\treturn get(field);\n"
                 << "\t\t}\n"
                 << "\t\tcatch (const Yb::ObjectNotFoundByKey &) {\n"
                 << "\t\t\tthrow " << t.get_class_name() << "NotFoundByID("
-                << "get_attr(\"ID\").as_longint());\n"
+                << "get(\"ID\").as_longint());\n"
+                << "\t\t}\n"
+                << "\t}\n";
+            str << "\tvoid set_attr_ex(const std::string &field, const Yb::Value &x) {\n"
+                << "\t\ttry {\n"
+                << "\t\t\tset(field, x);\n"
+                << "\t\t}\n"
+                << "\t\tcatch (const Yb::ObjectNotFoundByKey &) {\n"
+                << "\t\t\tthrow " << t.get_class_name() << "NotFoundByID("
+                << "get(\"ID\").as_longint());\n"
                 << "\t\t}\n"
                 << "\t}\n";
         }
@@ -130,7 +142,7 @@ private:
             << "#endif\n";
     }
 
-    void write_cpp_ctor_body(const Table &t, ostream &str)
+    void write_cpp_ctor_body(const Table &t, ostream &str, bool save_to_session = false)
     {
         if(mem_weak) {
             str << "{}\n";
@@ -144,17 +156,19 @@ private:
                 if (!def_val.is_null()) {
                     switch (it->get_type()) {
                         case Value::LONGINT:
-                            str << "\tset_attr(\"" << it->get_name() << "\", Yb::Value((Yb::LongInt)" << def_val.as_string() << "));\n";
+                            str << "\tset(\"" << it->get_name() << "\", Yb::Value((Yb::LongInt)" << def_val.as_string() << "));\n";
                             break;
                         case Value::DECIMAL:
-                            str << "\tset_attr(\"" << it->get_name() << "\", Yb::Value(Yb::Decimal(" << def_val.as_string() << ")));\n"; 
+                            str << "\tset(\"" << it->get_name() << "\", Yb::Value(Yb::Decimal(" << def_val.as_string() << ")));\n"; 
                             break;
                         case Value::DATETIME:
-                            str << "\tset_attr(\"" << it->get_name() << "\", Yb::Value(Yb::now()));\n"; 
+                            str << "\tset(\"" << it->get_name() << "\", Yb::Value(Yb::now()));\n"; 
                             break;
                     }
                 }
             }
+            if (save_to_session)
+                str << "\tsave(session);\n";
             str << "}\n";
         }
     }
@@ -174,22 +188,22 @@ private:
         write_cpp_ctor_body(t, str);
         str << "\n"
             << t.get_class_name() << "::" 
-            << t.get_class_name() << "(Yb::SessionBase &session)\n"
-            << "\t: Yb::DomainObject(session, \"" << t.get_name() << "\")\n";
-        write_cpp_ctor_body(t, str);
+            << t.get_class_name() << "(Yb::Session &session)\n"
+            << "\t: Yb::DomainObject(session.schema(), \"" << t.get_name() << "\")\n";
+        write_cpp_ctor_body(t, str, true);
 
         str << "\n" << t.get_class_name() << "::ListPtr\n"
-            << t.get_class_name() << "::find(Yb::SessionBase &session,\n"
+            << t.get_class_name() << "::find(Yb::Session &session,\n"
             << "\t\tconst Yb::Filter &filter, const Yb::StrList order_by, int max_n)\n"
             << "{\n"
             << "\t" << t.get_class_name() << "::ListPtr lst(new "
             << t.get_class_name() << "::List());\n"
-            << "\tYb::LoadedRows rows = session.load_collection(\""
-            << t.get_name() << "\", filter, order_by, max_n);\n"
-            << "\tif (rows.get()) {\n"
-            << "\t\tstd::vector<Yb::RowData * > ::const_iterator it = rows->begin(), end = rows->end();\n"
+            << "\tYb::ObjectList rows;\n"
+            << "\tsession.load_collection(rows, \"" << t.get_name() << "\", filter, order_by, max_n);\n"
+            << "\tif (rows.size()) {\n"
+            << "\t\tYb::ObjectList::iterator it = rows.begin(), end = rows.end();\n"
             << "\t\tfor (; it != end; ++it)\n"
-            << "\t\t\tlst->push_back(" << t.get_class_name() << "(session, **it));\n"
+            << "\t\t\tlst->push_back(" << t.get_class_name() << "(*it));\n"
             << "\t}\n"
             << "\treturn lst;\n"
             << "}\n\n"
@@ -266,7 +280,7 @@ private:
                         << "\t}\n";
                 } 
                 else {
-                    int type = it->get_name() == pk_name? Value::PKID: it->get_type();
+                    int type = it->get_type();
                     str << "\t" << type_by_handle(type)
                         << " get_" << it->get_prop_name() << "() const {\n"
                         << "\t\treturn " << "get_attr_ex(\"" << it->get_name() << "\")"
@@ -286,7 +300,7 @@ private:
                     << "(" << type_by_handle(it->get_type())
                     << (it->get_type() == Value::STRING ? " &" : " ")
                     << str_to_lower(it->get_prop_name()) << "__) {\n"
-                    << "\t\tset_attr(\"" << it->get_name() << "\", Yb::Value("
+                    << "\t\tset_attr_ex(\"" << it->get_name() << "\", Yb::Value("
                     << str_to_lower(it->get_prop_name()) << "__));\n"
                     << "\t}\n";
             }
@@ -303,8 +317,6 @@ private:
                 return "const std::string";
             case Value::DECIMAL:
                 return "Yb::Decimal";
-            case Value::PKID:
-                return "const Yb::PKIDValue";
             default:
                 throw runtime_error("Unknown type while parsing metadata");
         }
@@ -321,8 +333,6 @@ private:
                 return "as_string()";
             case Value::DECIMAL:
                 return "as_decimal()";
-            case Value::PKID:
-                return "as_pkid()";
             default:
                 throw runtime_error("Unknown type while parsing metadata");
         }
@@ -426,25 +436,20 @@ private:
                         << "\t}\n";
 
                     str << "\tvoid reset_" << prop << "() {\n"
-                        << "\t\tset_attr(\""
+                        << "\t\tset_attr_ex(\""
                         << fk_name << "\", Yb::Value());\n"
                         << "\t}\n";
                 }
                 str << "\tvoid set_" << prop << "("
                     << class_one << " &" << prop << "__) {\n"
-                    << "\t\tset_attr(\"" << fk_name << "\", Yb::Value("
-                    << prop << "__.get_" << fk_table_pk_prop << "()));\n";
-                if (i->second.has_attr(0, "property")) {
-                    string backref = i->second.attr(0, "property");
-                    str << "\t\t" << prop << "__.get_"
-                        << backref << "().insert(*this);\n";
-                }
-                str << "\t}\n"
+                    << "\t\tcheck_ptr();\n"
+                    << "\t\tlink_to_master(" << prop << "__, \"" << prop << "\");\n"
+                    << "\t}\n"
                     << "\t" << class_one <<  " get_"
                     << prop << "() const {\n"
-                    << "\t\treturn " << class_one
-                    << "(*get_session(), get_attr_ex(\""
-                    << fk_name << "\").as_longint());\n"
+                    << "\t\tcheck_ptr();\n"
+                    << "\t\treturn " << class_one << "(Yb::DataObject::get_master(d_, \""
+                    << prop << "\"));\n"
                     << "\t}\n";
             }
         }
@@ -458,7 +463,12 @@ private:
                 string prop = i->second.attr(0, "property"),
                        class_many = i->second.side(1);
                 str << "\tYb::ManagedList<" << class_many << "> &get_"
-                    << prop << "() { return " << prop << "_; }\n";
+                    << prop << "() {\n"
+                    << "\t\tif (!" << prop << "_.relation_object())\n"
+                    << "\t\t\t" << prop << "_ = Yb::ManagedList<" << class_many
+                    << ">(get_slaves_ro(\"" << prop << "\"), d_);\n"
+                    << "\t\treturn " << prop << "_;\n"
+                    << "\t}\n";
             }
         }
     }
