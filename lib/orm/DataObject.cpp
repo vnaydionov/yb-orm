@@ -2,8 +2,10 @@
 #include <orm/DataObject.h>
 #include <algorithm>
 #include <iostream>
+#if 0
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
+#endif
 #include <util/str_utils.hpp>
 
 using namespace std;

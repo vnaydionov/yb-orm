@@ -37,7 +37,7 @@ public:
         vector<string> parts;
         split_str("", ",", parts);
         CPPUNIT_ASSERT_EQUAL((size_t)1, parts.size());
-        CPPUNIT_ASSERT_EQUAL(string(), parts[0]);
+        CPPUNIT_ASSERT_EQUAL(string(""), parts[0]);
     }
 
     void testSplitStrSingle()

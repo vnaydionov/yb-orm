@@ -287,6 +287,7 @@ public:
         try {
             DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
             const Column &c = r_.get_table("A").get_column("P");
+            Value x; // !! this is required for bcc code not to fall !!
             d->get_typed_value(c, Value("100")); // should be OK
             d->get_typed_value(c, Value("#"));
             CPPUNIT_FAIL("Exception BadTypeCast not thrown!");

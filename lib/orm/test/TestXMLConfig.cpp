@@ -180,7 +180,7 @@ public:
         Table t;
         cfg_.parse_table(node.get(), t);
         CPPUNIT_ASSERT_EQUAL(string("ABC"), t.get_name());
-        CPPUNIT_ASSERT_EQUAL(string(), t.get_class_name());
+        CPPUNIT_ASSERT_EQUAL(string(""), t.get_class_name());
         CPPUNIT_ASSERT_EQUAL(string("abc"), t.get_xml_name());
     }
 
@@ -245,7 +245,7 @@ public:
         string xml = "<foreign-key table='T_INVOICE'></foreign-key>";
         string fk_table, fk_field;
         XMLMetaDataConfig::get_foreign_key_data(Xml::Parse(xml), fk_table, fk_field);
-        CPPUNIT_ASSERT_EQUAL(string(), fk_field);
+        CPPUNIT_ASSERT_EQUAL(string(""), fk_field);
     }
 
     void testAbsentForeignKeyTable()
