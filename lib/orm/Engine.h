@@ -21,6 +21,15 @@ class EngineBase
 {
 public:
     virtual ~EngineBase();
+    virtual SqlResultSet select_iter(
+        const StrList &what,
+        const StrList &from,
+        const Filter &where = Filter(),
+        const StrList &group_by = StrList(),
+        const Filter &having = Filter(),
+        const StrList &order_by = StrList(),
+        int max_rows = -1,
+        bool for_update = false) = 0;
     virtual RowsPtr select(
         const StrList &what,
         const StrList &from,
@@ -73,6 +82,15 @@ public:
     bool is_touched() const { return touched_; }
 
     // SQL operator wrappers
+    SqlResultSet select_iter(
+            const StrList &what,
+            const StrList &from,
+            const Filter &where = Filter(),
+            const StrList &group_by = StrList(),
+            const Filter &having = Filter(),
+            const StrList &order_by = StrList(),
+            int max_rows = -1,
+            bool for_update = false);
     RowsPtr select(const StrList &what,
             const StrList &from, const Filter &where = Filter(),
             const StrList &group_by = StrList(),

@@ -21,6 +21,9 @@ class TestDataObject : public CppUnit::TestFixture
     CPPUNIT_TEST(test_data_object_key);
     CPPUNIT_TEST(test_data_object_save_no_id);
     CPPUNIT_TEST(test_data_object_save_id);
+    CPPUNIT_TEST_EXCEPTION(test_data_object_already_saved,
+                           DataObjectAlreadyInSession);
+    CPPUNIT_TEST(test_save_or_update);
     CPPUNIT_TEST_EXCEPTION(test_data_object_cant_change_key_if_saved,
                            ReadOnlyColumn);
     CPPUNIT_TEST(test_data_object_link);
@@ -117,7 +120,6 @@ public:
         session.save(d);
         CPPUNIT_ASSERT_EQUAL(&session, d->session());
         session.detach(d);
-        session.detach(d);
         CPPUNIT_ASSERT_EQUAL((Session *)NULL, d->session());
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)d->status());
     }
@@ -130,7 +132,6 @@ public:
         CPPUNIT_ASSERT_EQUAL((Session *)NULL, d->session());
         Session session(r_);
         session.save(d);
-        session.save(d);
         CPPUNIT_ASSERT_EQUAL(&session, d->session());
         ValueMap values;
         values["X"] = Value(10);
@@ -141,18 +142,42 @@ public:
         CPPUNIT_ASSERT(d.get() != e.get());
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)e->status());
         session.detach(d);
-        session.detach(d);
         CPPUNIT_ASSERT_EQUAL((Session *)NULL, d->session());
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)d->status());
+    }
+
+    void test_data_object_already_saved()
+    {
+        DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
+        d->set("X", 10);
+        Session session(r_);
+        session.save(d);
+        session.save(d);
+    }
+
+    void test_save_or_update()
+    {
+        DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
+        d->set("X", 10);
+        d->set("Y", "abc");
+        Session session(r_);
+        session.save(d);
+        DataObject::Ptr e = DataObject::create_new(r_.get_table("A"));
+        e->set("X", 10);
+        e->set("Y", "xyz");
+        DataObject::Ptr f = session.save_or_update(e);
+        CPPUNIT_ASSERT(d.get() == f.get());
+        CPPUNIT_ASSERT_EQUAL(string("xyz"), f->get("Y").as_string());
     }
 
     void test_data_object_cant_change_key_if_saved()
     {
         DataObject::Ptr d = DataObject::create_new(r_.get_table("A"));
         d->set("X", 10);
+        d->set("Y", "abc");
         Session session(r_);
         session.save(d);
-        d->set("X", 110);
+        d->set("X", 100);
     }
 
     void test_data_object_link()

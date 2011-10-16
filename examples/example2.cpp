@@ -78,6 +78,15 @@ int main()
     cout << "list size: " << lst.size() << endl;
     session.flush();
     engine.commit();
+    Domain::Order::ListPtr olist = Domain::Order::find(
+        session, Yb::filter_eq("T_ORDER.CLIENT_ID", c2.get_id()));
+    Domain::Order::ResultSet rs = Yb::query<Domain::Order>(session,
+        Yb::filter_eq("T_ORDER.CLIENT_ID", c2.get_id()));
+    Domain::Order::ResultSet::iterator q = rs.begin(), qend = rs.end();
+    cout << "Order IDs: " << endl; 
+    for (; q != qend; ++q)
+        cout << q->get_id() << ",";
+    cout << endl;
     c2.delete_object();
     session.flush();
     engine.commit();

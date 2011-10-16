@@ -212,7 +212,7 @@ public:
                 if (f.is_null() != 1)
                     v = Value(val);
             }
-            (*row)[name] = v;
+            row->push_back(RowItem(name, v));
         }
         return row;
     }
@@ -301,6 +301,20 @@ const Strings list_sql_drivers()
     if (theDriverRegistry::instance().empty())
         register_std_drivers();
     return theDriverRegistry::instance().list_items();
+}
+
+Row::iterator find_in_row(Row &row, const string &name)
+{
+    Row::iterator i = row.begin(), iend = row.end();
+    for (; i != iend && i->first != name; ++i);
+    return i;
+}
+
+Row::const_iterator find_in_row(const Row &row, const string &name)
+{
+    Row::const_iterator i = row.begin(), iend = row.end();
+    for (; i != iend && i->first != name; ++i);
+    return i;
 }
 
 bool SqlResultSet::fetch(Row &row)

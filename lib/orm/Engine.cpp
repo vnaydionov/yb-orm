@@ -37,6 +37,27 @@ Engine::Engine(Mode work_mode, SqlDialect *dialect)
 Engine::~Engine()
 {}
 
+SqlResultSet
+Engine::select_iter(const StrList &what,
+        const StrList &from, const Filter &where,
+        const StrList &group_by, const Filter &having,
+        const StrList &order_by, int max_rows, bool for_update)
+{
+    bool select_mode = (mode_ == FORCE_SELECT_UPDATE) ? true : for_update;
+    if ((mode_ == READ_ONLY) && select_mode)
+        throw BadOperationInMode(
+                "Using SELECT FOR UPDATE in read-only mode");
+    string sql;
+    Values params;
+    do_gen_sql_select(sql, params,
+            what, from, where, group_by, having, order_by, for_update);
+    conn_->prepare(sql);
+    SqlResultSet rs = conn_->exec(params);
+    if (select_mode)
+        touched_ = true;
+    return rs;
+}
+
 RowsPtr
 Engine::select(const StrList &what,
         const StrList &from, const Filter &where,
@@ -46,7 +67,7 @@ Engine::select(const StrList &what,
     bool select_mode = (mode_ == FORCE_SELECT_UPDATE) ? true : for_update;
     if ((mode_ == READ_ONLY) && select_mode)
         throw BadOperationInMode(
-                "Using SELECT FOR UPDATE in read-only mode");  
+                "Using SELECT FOR UPDATE in read-only mode");
     RowsPtr rows = on_select(what, from, where,
                 group_by, having, order_by, max_rows, select_mode);
     if (select_mode)
@@ -225,7 +246,7 @@ Engine::on_insert(const string &table_name,
             conn_->exec(params);
             conn_->exec_direct("SELECT LAST_INSERT_ID() LID");
             RowsPtr id_rows = conn_->fetch_rows();
-            ids.push_back((*id_rows)[0]["LID"].as_longint());
+            ids.push_back((*id_rows)[0][0].second.as_longint());
         }
     }
     return ids;
@@ -362,7 +383,7 @@ Engine::do_gen_sql_update(string &sql, Values &params,
         StringSet::const_iterator x = exclude_fields.find(it->first),
             y = key_fields.find(it->first);
         if ((x == exclude_fields.end()) && (y == key_fields.end()))
-            excluded_row.insert(make_pair(it->first, it->second));
+            excluded_row.push_back(make_pair(it->first, it->second));
     }
 
     Row::const_iterator last = (excluded_row.empty() ?
@@ -391,7 +412,7 @@ Engine::do_gen_sql_update(string &sql, Values &params,
     StringSet::const_iterator it_last =
         (key_fields.empty()) ? key_fields.end() : --key_fields.end();
     for (; it_where != end_where; ++it_where) {
-        Row::const_iterator it_find = row.find(*it_where);
+        Row::const_iterator it_find = find_in_row(row, *it_where);
         if (it_find != row.end()) {
             param_nums[it_find->first] = params.size();
             params.push_back(it_find->second);

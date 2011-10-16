@@ -261,6 +261,44 @@ public:
     }
 };
 
+template <class T>
+class DomainObjectResultSet: public ResultSetBase<T>
+{
+    DataObjectResultSet rs_;
+    std::auto_ptr<DataObjectResultSet::iterator> it_;
+
+    bool fetch(T &row) {
+        if (!it_.get())
+            it_ = std::auto_ptr<DataObjectResultSet::iterator> 
+                (new DataObjectResultSet::iterator(rs_.begin()));
+        if (rs_.end() == *it_)
+            return false;
+        row = T((**it_)[0]);
+        ++*it_;
+        return true;
+    }
+    DomainObjectResultSet();
+public:
+    DomainObjectResultSet(const DataObjectResultSet &rs)
+        : rs_(rs)
+    {}
+    DomainObjectResultSet(const DomainObjectResultSet &obj)
+        : rs_(obj.rs_)
+    {
+        YB_ASSERT(!obj.it_.get());
+    }
+};
+
+template <class T>
+DomainObjectResultSet<T> query(Session &session, const Filter &filter,
+        const StrList &order_by = StrList(), int max = -1)
+{
+    Strings tables(1);
+    tables[0] = T::get_table_name();
+    return DomainObjectResultSet<T>(session.load_collection(
+            tables, filter, order_by, max));
+}
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

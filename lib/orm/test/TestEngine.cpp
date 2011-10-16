@@ -49,8 +49,8 @@ class TestEngine : public CppUnit::TestFixture
     {
         if (db_type_ == "MYSQL") {
             RowsPtr ptr = engine.select("MAX(ID) MAX_ID", "T_ORM_TEST", Filter());
-            CPPUNIT_ASSERT(1 == ptr->size() && 1 == (*ptr)[0].size());
-            Value x = (*ptr)[0]["MAX_ID"];
+            CPPUNIT_ASSERT(1 == ptr->size() && 1 == ptr->begin()->size());
+            Value x = find_in_row(*ptr->begin(), "MAX_ID")->second;
             return x.is_null()? 1: x.as_longint() + 1;
         }
         else {
@@ -187,15 +187,15 @@ public:
         Engine engine(Engine::READ_ONLY);
         string sql;
         Row row;
-        row.insert(make_pair(string("ID"), Value(1)));
-        row.insert(make_pair(string("A"), Value("a")));
+        row.push_back(make_pair(string("ID"), Value(1)));
+        row.push_back(make_pair(string("A"), Value("a")));
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_insert(sql, params, param_nums, "T", row, StringSet());
-        CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (A, ID) VALUES (?, ?)"), sql);
+        CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (ID, A) VALUES (?, ?)"), sql);
         CPPUNIT_ASSERT_EQUAL(2, (int)params.size());
-        CPPUNIT_ASSERT_EQUAL(string("a"), params[0].as_string());
-        CPPUNIT_ASSERT_EQUAL(1, (int)params[1].as_longint());
+        CPPUNIT_ASSERT_EQUAL(string("a"), params[1].as_string());
+        CPPUNIT_ASSERT_EQUAL(1, (int)params[0].as_longint());
     }
 
     void test_insert_exclude()
@@ -203,8 +203,8 @@ public:
         Engine engine(Engine::READ_ONLY);
         string sql;
         Row row;
-        row.insert(make_pair(string("ID"), Value(1)));
-        row.insert(make_pair(string("A"), Value("a")));
+        row.push_back(make_pair(string("ID"), Value(1)));
+        row.push_back(make_pair(string("A"), Value("a")));
         StringSet exclude;
         exclude.insert("ID");
         Values params;
@@ -228,7 +228,7 @@ public:
         Engine engine(Engine::READ_ONLY);
         string sql;
         Row row;
-        row["A"] = Value("a");
+        row.push_back(make_pair(string("A"), Value("a")));
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
@@ -244,12 +244,12 @@ public:
         Engine engine(Engine::READ_ONLY);
         string sql;
         Row row;
-        row["A"] = Value("a");
-        row["B"] = Value(1);
-        row["C"] = Value("c");
-        row["D"] = Value("d");
-        row["E"] = Value("e");
-        row["F"] = Value(2);
+        row.push_back(make_pair(string("A"), Value("a")));
+        row.push_back(make_pair(string("B"), Value(1)));
+        row.push_back(make_pair(string("C"), Value("c")));
+        row.push_back(make_pair(string("D"), Value("d")));
+        row.push_back(make_pair(string("E"), Value("e")));
+        row.push_back(make_pair(string("F"), Value(2)));
         StringSet key, exclude;
         key.insert("B");
         key.insert("D");
@@ -284,7 +284,7 @@ public:
         Engine engine(Engine::READ_ONLY);
         string sql;
         Row row;
-        row["A"] = Value("a");
+        row.push_back(make_pair(string("A"), Value("a")));
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
@@ -317,8 +317,10 @@ public:
         RowsPtr ptr = engine.select("*", "T_ORM_TEST", filter_eq("ID", Value(record_id_)));
         CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
-        CPPUNIT_ASSERT_EQUAL(string("item"), (ptr->begin())->find("A")->second.as_string());
-        CPPUNIT_ASSERT_EQUAL(Decimal("1.2"), (ptr->begin())->find("C")->second.as_decimal());
+        CPPUNIT_ASSERT_EQUAL(string("item"),
+                             find_in_row(*ptr->begin(), "A")->second.as_string());
+        CPPUNIT_ASSERT_EQUAL(Decimal("1.2"),
+                             find_in_row(*ptr->begin(), "C")->second.as_decimal());
         finish_sql();
     }
 
@@ -342,17 +344,19 @@ public:
         Rows rows;
         LongInt id = get_next_test_id(engine, "S_ORM_TEST_ID");
         Row row;
-        row.insert(make_pair(string("ID"), Value(id)));
-        row.insert(make_pair(string("A"), Value("inserted")));
-        row.insert(make_pair(string("B"), Value(now())));
-        row.insert(make_pair(string("C"), Value(Decimal("1.1"))));
+        row.push_back(make_pair(string("ID"), Value(id)));
+        row.push_back(make_pair(string("A"), Value("inserted")));
+        row.push_back(make_pair(string("B"), Value(now())));
+        row.push_back(make_pair(string("C"), Value(Decimal("1.1"))));
         rows.push_back(row);
         engine.insert("T_ORM_TEST", rows);
         CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
         RowsPtr ptr = engine.select("*", "T_ORM_TEST", filter_eq("ID", Value(id)));
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
-        CPPUNIT_ASSERT_EQUAL(string("inserted"), (ptr->begin())->find("A")->second.as_string());
-        CPPUNIT_ASSERT(Decimal("1.1") == (ptr->begin())->find("C")->second.as_decimal());
+        CPPUNIT_ASSERT_EQUAL(string("inserted"),
+                             find_in_row(*ptr->begin(), "A")->second.as_string());
+        CPPUNIT_ASSERT_EQUAL(Decimal("1.1"),
+                             find_in_row(*ptr->begin(), "C")->second.as_decimal());
         engine.commit();
         finish_sql();
     }
@@ -365,9 +369,9 @@ public:
         Rows rows;
         LongInt id = get_next_test_id(engine, "S_ORM_TEST_ID");
         Row row;
-        row["A"] = Value("updated");
-        row["C"] = Value(Decimal("1.3"));
-        row["ID"] = Value(record_id_);
+        row.push_back(make_pair(string("A"), Value("updated")));
+        row.push_back(make_pair(string("C"), Value(Decimal("1.3"))));
+        row.push_back(make_pair(string("ID"), Value(record_id_)));
         rows.push_back(row);
         StringSet key, exclude;
         key.insert("ID");
@@ -376,8 +380,10 @@ public:
         CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
         RowsPtr ptr = engine.select("*", "T_ORM_TEST", filter_eq("ID", Value(record_id_)));
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
-        CPPUNIT_ASSERT_EQUAL(string("updated"), (ptr->begin())->find("A")->second.as_string());
-        CPPUNIT_ASSERT_EQUAL(Decimal("1.3"), (ptr->begin())->find("C")->second.as_decimal());
+        CPPUNIT_ASSERT_EQUAL(string("updated"),
+                             find_in_row(*ptr->begin(), "A")->second.as_string());
+        CPPUNIT_ASSERT_EQUAL(Decimal("1.3"),
+                             find_in_row(*ptr->begin(), "C")->second.as_decimal());
         engine.commit();
         finish_sql();
     }

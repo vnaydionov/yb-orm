@@ -297,9 +297,9 @@ public:
             for (int i = 0; i < row.size(); ++i) {
                 const string name = str_to_upper(row[i].getName());
                 if (row[i].isNull())
-                    (*orm_row)[name] = Value();
+                    orm_row->push_back(RowItem(name, Value()));
                 else
-                    (*orm_row)[name] = Value(row[i].asString());
+                    orm_row->push_back(RowItem(name, Value(row[i].asString())));
             }
             return orm_row;
         }

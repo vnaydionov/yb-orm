@@ -50,7 +50,7 @@ private:
         string name = "ORM_DOMAIN__" + str_to_upper(t.get_name().substr(2)) + "__INCLUDED";
         str << "#ifndef " << name << "\n"
             << "#define " << name << "\n\n";
-        str << "#include \"orm/DomainObj.h\"\n";
+        str << "#include <orm/DomainObj.h>\n";
         write_include_dependencies(t, str);
         str << "\nnamespace Domain {\n\n";
         if (!mem_weak) {
@@ -68,6 +68,10 @@ private:
             << "{\n";
         write_rel_one2many_managed_lists(t, str);
         str << "public:\n"
+            << "\tstatic const std::string get_table_name() { return \""
+            << t.get_name() << "\"; }\n"
+            << "\ttypedef Yb::DomainObjectResultSet<"
+            << t.get_class_name() << "> ResultSet;\n"
             << "\t// static method 'find'\n"
             << "\ttypedef std::vector<" << t.get_class_name() << "> List;\n"
             << "\ttypedef std::auto_ptr<List> ListPtr;\n"
@@ -176,8 +180,8 @@ private:
     void write_cpp_data(const Table &t, ostream &str)
     {
         str << "#include \"domain/" << t.get_class_name() << ".h\"\n"
-            << "#include \"orm/DomainFactorySingleton.h\"\n"
-            << "#include \"orm/MetaDataSingleton.h\"\n\n"
+            << "#include <orm/DomainFactorySingleton.h>\n"
+            << "#include <orm/MetaDataSingleton.h>\n\n"
             << "namespace Domain {\n\n";
 
 // Constructor for creating new objects

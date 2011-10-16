@@ -145,10 +145,13 @@ SqlDialect *sql_dialect(const std::string &name);
 bool register_sql_dialect(std::auto_ptr<SqlDialect> dialect);
 const Strings list_sql_dialects();
 
-typedef ValueMap Row;
+typedef std::pair<std::string, Value> RowItem;
+typedef std::vector<RowItem > Row;
 typedef std::auto_ptr<Row> RowPtr;
 typedef std::vector<Row> Rows;
 typedef std::auto_ptr<Rows> RowsPtr;
+Row::iterator find_in_row(Row &row, const std::string &name);
+Row::const_iterator find_in_row(const Row &row, const std::string &name);
 
 class SqlConnectBackend
 {

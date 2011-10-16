@@ -26,6 +26,31 @@ typedef boost::shared_ptr<DataObject> DataObjectPtr;
 typedef boost::shared_ptr<RelationObject> RelationObjectPtr;
 typedef std::vector<DataObjectPtr> ObjectList;
 
+const std::string key2str(const Key &key);
+
+class Session;
+
+class DataObjectResultSet: public ResultSetBase<ObjectList>
+{
+    SqlResultSet rs_;
+    std::auto_ptr<SqlResultSet::iterator> it_;
+    std::vector<const Table *> tables_;
+    Session &session_;
+
+    bool fetch(ObjectList &row);
+    DataObjectResultSet();
+public:
+    DataObjectResultSet(const SqlResultSet &rs, Session &session,
+                        const Strings &tables);
+    DataObjectResultSet(const DataObjectResultSet &obj)
+        : rs_(obj.rs_)
+        , tables_(obj.tables_)
+        , session_(obj.session_)
+    {
+        YB_ASSERT(!obj.it_.get());
+    }
+};
+
 class Session: boost::noncopyable {
     friend class ::TestDataObject;
     friend class ::TestDataObjectSaveLoad;
@@ -35,7 +60,7 @@ class Session: boost::noncopyable {
     IdentityMap identity_map_;
     const Schema *schema_;
     EngineBase *engine_;
-    void add_to_identity_map(DataObjectPtr obj);
+    DataObjectPtr add_to_identity_map(DataObjectPtr obj, bool return_found);
     void flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs);
     void flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs);
     void flush_new();
@@ -49,6 +74,7 @@ public:
     ~Session();
     const Schema &schema() const { return *schema_; }
     void save(DataObjectPtr obj);
+    DataObjectPtr save_or_update(DataObjectPtr obj);
     void detach(DataObjectPtr obj);
     DataObjectPtr get_lazy(const Key &key);
     void flush();
@@ -59,6 +85,9 @@ public:
                          const StrList &order_by = StrList(),
                          int max = -1,
                          const std::string &table_alias = "");
+    DataObjectResultSet load_collection(
+            const Strings &tables, const Filter &filter,
+            const StrList &order_by = StrList(), int max = -1);
 };
 
 class CascadeDeleteError: public BaseError {
@@ -100,6 +129,12 @@ class StringTooLong : public ORMError
 public:
     StringTooLong(const std::string &table_name, const std::string &field_name,
                   int max_len, const std::string &value);
+};
+
+class DataObjectAlreadyInSession : public ORMError
+{
+public:
+    DataObjectAlreadyInSession(const Key &key);
 };
 
 enum DeletionMode { DelNormal, DelDryRun, DelUnchecked };
@@ -186,7 +221,7 @@ public:
         set(table_.idx_by_name(name), v);
     }
     const Key &key();
-    const ValueMap values(bool include_key=true);
+    const Row values(bool include_key=true);
     bool assigned_key();
     SlaveRelations &slave_relations() {
         return slave_relations_;
@@ -194,7 +229,7 @@ public:
     MasterRelations &master_relations() {
         return master_relations_;
     }
-    void fill_from_row(const Row &r);
+    size_t fill_from_row(const Row &r, size_t pos = 0);
     void refresh_slaves_fkeys();
 
     void delete_object(DeletionMode mode = DelNormal, int depth = 0);
