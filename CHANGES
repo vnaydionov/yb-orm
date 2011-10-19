@@ -1,4 +1,19 @@
 
+0.2.1
+    Row becomes a vector of named values.
+    Diffenetiate save() and save_or_update().
+    Implement load_collection() using DataObjectResultSet with iterator.
+    Three levels of lazy result sets: SqlResultSet, DataObjectResultSet and
+    DomainObjectResultSet template class.
+
+0.2.0
+    The Big Change: new internal weak-typed row representation DataObject class
+    replaces old RowData class.  Session class has been also rewritten from
+    scratch.
+    This solves old big problems with how object relations are represented and
+    who shall be responsible for holding object reference.
+    Now deletion (including cascading) works for objects and relations.
+
 0.1.2
     Document XML metadata format, add 'relation' element for relations
         between classes.
