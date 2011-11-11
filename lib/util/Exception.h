@@ -3,17 +3,18 @@
 
 #include <string>
 #include <stdexcept>
+#include "UnicodeSupport.h"
 
 namespace Yb {
 
 class BaseError: public std::logic_error {
-    static const std::string format_base(const std::string &msg);
+    static const String format_base(const String &msg);
 public:
-    BaseError(const std::string &msg);
+    BaseError(const String &msg);
 };
 
 class AssertError: public BaseError {
-    static const std::string format_assert(const char *file,
+    static const String format_assert(const char *file,
         int line, const char *expr);
 public:
     AssertError(const char *file, int line, const char *expr);

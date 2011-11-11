@@ -29,6 +29,7 @@
 #include "tiodbc.hpp"
 #include <cstring>
 #include <memory>
+#include <util/UnicodeSupport.h>
 
 // Macro for easy return code check
 #define TIODBC_SUCCESS_CODE(rc) \
@@ -70,8 +71,8 @@ namespace tiodbc
 			return true;
 		}
 
-		_error_desc = "Can't get error message";
-		_status_code = "UNKNOWN";
+		_error_desc = _T("Can't get error message");
+		_status_code = _T("UNKNOWN");
 		return false;
 	}
 
@@ -235,7 +236,7 @@ namespace tiodbc
 		// Get error message
 		__get_error(SQL_HANDLE_DBC, conn_h, error, state);
 
-		return state + ":" + error;
+		return state + _T(":") + error;
 	}
 
 	// Get last error code
@@ -270,7 +271,7 @@ namespace tiodbc
 
 	// Not direct contructable
 	field_impl::field_impl(HSTMT _stmt, int _col_num,
-			const std::string _name, int _type)
+			const _tstring _name, int _type)
 		: stmt_h(_stmt)
 		, col_num(_col_num)
 		, name(_name)
@@ -708,7 +709,7 @@ namespace tiodbc
 	const field_impl statement::field(int _num) const
 	{	
 		return field_impl(stmt_h, _num,
-				(char *)m_cols[_num - 1].name, m_cols[_num - 1].type);
+				(TCHAR *)m_cols[_num - 1].name, m_cols[_num - 1].type);
 	}
 
 	// Count columns of the result
@@ -745,7 +746,7 @@ namespace tiodbc
 		// Get error message
 		__get_error(SQL_HANDLE_STMT, stmt_h, error, state);
 
-		return state + ":" + error;
+		return state + _T(":") + error;
 	}
 
 	// Get last error code

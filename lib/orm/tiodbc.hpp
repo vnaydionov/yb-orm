@@ -278,14 +278,14 @@ namespace tiodbc
 	private:
 		HSTMT stmt_h;			//!< Handle of statement that field exists
 		int col_num;			//!< Column number that field exists.
-		std::string name;		//!< Column name
+		_tstring name;		//!< Column name
 		int type;				//!< Column data type code
 		mutable int is_null_flag;	//!< Column is null (0=no, 1=yes, -1=unknown yet)
 		mutable _tstring str_buf;   //!< Column value buffer
 
 		// Not direct constructible
 		field_impl(HSTMT _stmt, int _col_num,
-				const std::string _name, int _type);
+				const _tstring _name, int _type);
 
 	public:
 	
@@ -329,7 +329,7 @@ namespace tiodbc
 		int get_type() const { return type; }
 
 		//! Get field name
-		const std::string & get_name() const { return name; }
+		const _tstring & get_name() const { return name; }
 
 		//! Check if the field is null
 		bool is_null() const;
@@ -426,7 +426,7 @@ namespace tiodbc
 
 		struct col_descr
 		{
-			SQLCHAR name[256];
+			SQLTCHAR name[256];
 			SQLSMALLINT name_len, type, decimal_digits, nullable;
 			SQLULEN col_size;
 		};

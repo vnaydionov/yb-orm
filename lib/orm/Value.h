@@ -2,16 +2,21 @@
 #ifndef YB__ORM__VALUE__INCLUDED
 #define YB__ORM__VALUE__INCLUDED
 
+// Value class should not be implemented upon boost::any because of massive
+// copying of Value objects here and there.
+
 #include <string>
 #include <vector>
 #include <set>
 #include <map>
 #include <stdexcept>
 #include <utility>
+#include <sstream>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <util/decimal.h>
+#include <util/UnicodeSupport.h>
 
 namespace Yb {
 
@@ -36,7 +41,7 @@ inline const DateTime mk_datetime(time_t t)
     return boost::posix_time::from_time_t(t);
 }
 
-const DateTime mk_datetime(const std::string &s);
+const DateTime mk_datetime(const String &s);
 
 inline const DateTime mk_datetime(int year, int month, int day,
         int hour = 0, int minute = 0, int second = 0)
@@ -45,20 +50,20 @@ inline const DateTime mk_datetime(int year, int month, int day,
             boost::posix_time::time_duration(hour, minute, second));
 }
 
-const std::string ptime2str(const boost::posix_time::ptime &t);
+const String ptime2str(const boost::posix_time::ptime &t);
 
 template <typename T>
-inline const std::string to_string(const T &x)
+inline const String to_string(const T &x)
 {
-    return boost::lexical_cast<std::string>(x);
+    return boost::lexical_cast<String>(x);
 }
 
-inline const std::string to_string(const Decimal &x)
+inline const String to_string(const Decimal &x)
 {
     return x.str();
 }
 
-inline const std::string to_string(const DateTime &x)
+inline const String to_string(const DateTime &x)
 {
     return ptime2str(x);
 }
@@ -66,8 +71,8 @@ inline const std::string to_string(const DateTime &x)
 class ValueError : public std::logic_error
 {
 public:
-    ValueError(const std::string &msg) :
-        std::logic_error(msg)
+    ValueError(const String &msg) :
+        std::logic_error(NARROW(msg))
     {}
 };
 
@@ -75,19 +80,19 @@ class ValueIsNull : public ValueError
 {
 public:
     ValueIsNull()
-        :ValueError("Trying to get value of null")
+        :ValueError(_T("Trying to get value of null"))
     {}
 };
 
 class ValueBadCast : public ValueError
 {
 public:
-    ValueBadCast(const std::string &value, const std::string &type)
-        :ValueError("Can't cast value '" + value + "' to type " + type)
+    ValueBadCast(const String &value, const String &type)
+        :ValueError(_T("Can't cast value '") + value + _T("' to type ") + type)
     {}
 };
 
-class ValueData;
+struct ValueHolderBase;
 
 class Value
 {
@@ -95,26 +100,24 @@ public:
     enum Type { INVALID, LONGINT, STRING, DECIMAL, DATETIME };
     Value();
     Value(LongInt x);
-    Value(const char *x);
-    Value(const std::string &x);
+    Value(const Char *x);
+    Value(const String &x);
     Value(const Decimal &x);
     Value(const DateTime &x);
-    bool is_null() const;
+    bool is_null() const { return type_ == INVALID; }
     LongInt as_longint() const;
-    const std::string as_string() const;
+    const String as_string() const;
     const Decimal as_decimal() const;
     const DateTime as_date_time() const;
-    const std::string sql_str() const;
+    const String sql_str() const;
     const Value nvl(const Value &def_value) const { return is_null()? def_value: *this; }
     int cmp(const Value &x) const;
     int get_type() const { return type_; }
     const Value get_typed_value(int type) const;
-    static const char *get_type_name(int type);
+    static const Char *get_type_name(int type);
 private:
-    const ValueData &check_null() const;
-private:
-    boost::shared_ptr<ValueData> data_;
-    Type type_;
+    int type_;
+    boost::shared_ptr<ValueHolderBase> data_;
 };
 
 inline bool operator==(const Value &x, const Value &y) { return !x.cmp(y); }
@@ -124,11 +127,11 @@ inline bool operator>=(const Value &x, const Value &y) { return x.cmp(y) >= 0; }
 inline bool operator>(const Value &x, const Value &y) { return x.cmp(y) > 0; }
 inline bool operator<=(const Value &x, const Value &y) { return x.cmp(y) <= 0; }
 
-typedef std::vector<std::string> Strings;
-typedef std::set<std::string> StringSet;
+typedef std::vector<String> Strings;
+typedef std::set<String> StringSet;
 typedef std::vector<Value> Values;
-typedef std::map<std::string, Value> ValueMap;
-typedef std::pair<std::string, ValueMap> Key;
+typedef std::map<String, Value> ValueMap;
+typedef std::pair<String, ValueMap> Key;
 typedef std::vector<Key> Keys;
 
 } // namespace Yb

@@ -24,45 +24,45 @@ class TestMisc: public CppUnit::TestFixture
 public:
     void testSplitStr()
     {
-        vector<string> parts;
-        split_str("a<-b<-c", "<-", parts);
+        vector<Yb::String> parts;
+        split_str(_T("a<-b<-c"), _T("<-"), parts);
         CPPUNIT_ASSERT_EQUAL((size_t)3, parts.size());
-        CPPUNIT_ASSERT_EQUAL(string("a"), parts[0]);
-        CPPUNIT_ASSERT_EQUAL(string("b"), parts[1]);
-        CPPUNIT_ASSERT_EQUAL(string("c"), parts[2]);
+        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(parts[0]));
+        CPPUNIT_ASSERT_EQUAL(string("b"), NARROW(parts[1]));
+        CPPUNIT_ASSERT_EQUAL(string("c"), NARROW(parts[2]));
     }
 
     void testSplitStrEmpty()
     {
-        vector<string> parts;
-        split_str("", ",", parts);
+        vector<Yb::String> parts;
+        split_str(_T(""), _T(","), parts);
         CPPUNIT_ASSERT_EQUAL((size_t)1, parts.size());
-        CPPUNIT_ASSERT_EQUAL(string(""), parts[0]);
+        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(parts[0]));
     }
 
     void testSplitStrSingle()
     {
-        vector<string> parts;
-        split_str("a", ",", parts);
+        vector<Yb::String> parts;
+        split_str(_T("a"), _T(","), parts);
         CPPUNIT_ASSERT_EQUAL((size_t)1, parts.size());
-        CPPUNIT_ASSERT_EQUAL(string("a"), parts[0]);
+        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(parts[0]));
     }
 
     void testSplitStrMargins()
     {
-        vector<string> parts;
-        split_str(",b,", ",", parts);
+        vector<Yb::String> parts;
+        split_str(_T(",b,"), _T(","), parts);
         CPPUNIT_ASSERT_EQUAL((size_t)3, parts.size());
-        CPPUNIT_ASSERT_EQUAL(string(""), parts[0]);
-        CPPUNIT_ASSERT_EQUAL(string("b"), parts[1]);
-        CPPUNIT_ASSERT_EQUAL(string(""), parts[2]);
+        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(parts[0]));
+        CPPUNIT_ASSERT_EQUAL(string("b"), NARROW(parts[1]));
+        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(parts[2]));
     }
 
     void testJoinStr()
     {
-        vector<string> parts(3);
-        parts[0] = "a"; parts[1] = "b"; parts[2] = "c";
-        CPPUNIT_ASSERT_EQUAL(string("a->b->c"), join_str("->", parts));
+        vector<Yb::String> parts(3);
+        parts[0] = _T("a"); parts[1] = _T("b"); parts[2] = _T("c");
+        CPPUNIT_ASSERT_EQUAL(string("a->b->c"), NARROW(join_str(_T("->"), parts)));
     }
 
 };

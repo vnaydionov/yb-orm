@@ -4,6 +4,7 @@
 #include <string>
 #include <boost/utility.hpp>
 #include <boost/lexical_cast.hpp>
+#include "UnicodeSupport.h"
 
 struct _xmlBuffer;
 typedef struct _xmlBuffer xmlBuffer;
@@ -30,23 +31,23 @@ class Document: private boost::noncopyable
 private:
     void write_raw (std::string const & value);
 
-    void write_attribute (std::string const & name, std::string const & value);
+    void write_attribute (Yb::String const & name, Yb::String const & value);
 
-    void write_string (std::string const & value);
+    void write_string (Yb::String const & value);
 
     template <class TValue>
-    void write_attribute (std::string const & name, TValue const & value)
+    void write_attribute (Yb::String const & name, TValue const & value)
     {
-        write_attribute (name, boost::lexical_cast<std::string> (value));
+        write_attribute (name, boost::lexical_cast<Yb::String> (value));
     }
 
     template <class TValue>
     void write_string (TValue const & value)
     {
-        write_string (boost::lexical_cast<std::string> (value));
+        write_string (boost::lexical_cast<Yb::String> (value));
     }
 
-    void start_element (std::string const & name);
+    void start_element (Yb::String const & name);
 
     void end_element ();
 
@@ -69,7 +70,7 @@ public:
 class Element: private boost::noncopyable
 {
     Document & doc_;
-    std::string name_;
+    Yb::String name_;
     bool closed_;
 
     void start_element ();
@@ -77,10 +78,10 @@ class Element: private boost::noncopyable
     void close_element ();
 
 public:
-    Element (Document & doc, std::string const & name);
+    Element (Document & doc, Yb::String const & name);
 
     template <class TValue>
-    Element (Document & doc, std::string const & name, TValue const & value)
+    Element (Document & doc, Yb::String const & name, TValue const & value)
         :doc_ (doc)
         ,name_ (name)
         ,closed_ (false)
@@ -91,16 +92,16 @@ public:
 
     ~Element ();
 
-    void set_content (std::string const & content);
+    void set_content (Yb::String const & content);
 
     template <class TValue>
-    void add_attribute (std::string const & name, TValue const & value)
+    void add_attribute (Yb::String const & name, TValue const & value)
     {
         doc_.write_attribute (name, value);
     }
 
     template <class TValue>
-    void add_element (std::string const & name, TValue const & value)
+    void add_element (Yb::String const & name, TValue const & value)
     {
         Element (doc_, name, value);
     }
@@ -110,7 +111,7 @@ class Attribute: private boost::noncopyable
 {
 public:
     template <class TValue>
-    Attribute (Element &element, std::string const & name, TValue const & value)
+    Attribute (Element &element, Yb::String const & name, TValue const & value)
     {
         element.add_attribute (name, value);
     }

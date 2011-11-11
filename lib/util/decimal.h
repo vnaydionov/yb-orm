@@ -4,6 +4,7 @@
 #include <exception>
 #include <string>
 #include <iosfwd>
+#include "UnicodeSupport.h"
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef __int64 decimal_numerator;
@@ -49,8 +50,8 @@ public:
 public:
     decimal(int x = 0, int p = 0);
     decimal(decimal_numerator x, int p = 0);
-    decimal(const char *s);
-    decimal(const std::string &s);
+    decimal(const Yb::Char *s);
+    decimal(const Yb::String &s);
     decimal(double x);
 
     decimal &operator += (const decimal &x);
@@ -71,7 +72,7 @@ public:
     decimal_numerator fpart(int p) const;
     inline int get_precision() const { return precision_; }
     inline decimal_numerator get_value() const { return value_; }
-    const std::string str() const;
+    const Yb::String str() const;
 
 private:
     decimal_numerator value_;
@@ -82,8 +83,8 @@ const decimal operator + (const decimal &, const decimal &);
 const decimal operator - (const decimal &, const decimal &);
 const decimal operator * (const decimal &, const decimal &);
 const decimal operator / (const decimal &, const decimal &);
-std::ostream &operator << (std::ostream &o, const decimal &x);
-std::istream &operator >> (std::istream &i, decimal &x);
+Yb::OStream &operator << (Yb::OStream &o, const decimal &x);
+Yb::IStream &operator >> (Yb::IStream &i, decimal &x);
 
 inline bool operator == (const decimal &x, const decimal &y) { return !x.cmp(y); }
 inline bool operator != (const decimal &x, const decimal &y) { return x.cmp(y) != 0; }
@@ -92,8 +93,8 @@ inline bool operator > (const decimal &x, const decimal &y) { return x.cmp(y) > 
 inline bool operator >= (const decimal &x, const decimal &y) { return x.cmp(y) >= 0; }
 inline bool operator <= (const decimal &x, const decimal &y) { return x.cmp(y) <= 0; }
 
-inline const decimal decimal2(const std::string &s) { return decimal(s).round(2); }
-inline const decimal decimal4(const std::string &s) { return decimal(s).round(4); }
+inline const decimal decimal2(const Yb::String &s) { return decimal(s).round(2); }
+inline const decimal decimal4(const Yb::String &s) { return decimal(s).round(4); }
 
 // vim:ts=4:sts=4:sw=4:et:
 #endif // YB__UTIL__DECIMAL__INCLUDED

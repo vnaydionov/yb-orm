@@ -146,30 +146,30 @@ scale::scale()
     }
 }
 
-void init_from_str(const char *s, decimal_numerator &value, int &precision)
+void init_from_str(const Yb::Char *s, decimal_numerator &value, int &precision)
 {
     while (is_space(*s)) ++s;
     value = 0;
     precision = 0;
     bool negative = false;
-    if (*s == '-')
+    if (*s == _T('-'))
     {
         negative = true;
         ++s;
     }
-    else if (*s == '+')
+    else if (*s == _T('+'))
         ++s;
     int digits = 0;
     for (bool decimal = false; ; ++s)
     {
         if (is_digit(*s))
         {
-            value = add(mul(value, 10), *s - '0');
+            value = add(mul(value, 10), *s - _T('0'));
             if (decimal)
                 ++precision;
             ++digits;
         }
-        else if ((*s == '.' || *s == ',') && !decimal) // RUSSIAN LOCALE SPECIFIC!
+        else if ((*s == _T('.') || *s == _T(',')) && !decimal) // RUSSIAN LOCALE SPECIFIC!
             decimal = true;
         else if (is_space(*s)) // RUSSIAN LOCALE SPECIFIC!
             continue;
@@ -227,7 +227,7 @@ decimal::decimal(decimal_numerator x, int p):
     normalize(value_, precision_);
 }
 
-decimal::decimal(const char *s):
+decimal::decimal(const Yb::Char *s):
     value_(0),
     precision_(0)
 {
@@ -236,7 +236,7 @@ decimal::decimal(const char *s):
     normalize(value_, precision_);
 }
 
-decimal::decimal(const std::string &s):
+decimal::decimal(const Yb::String &s):
     value_(0),
     precision_(0)
 {
@@ -249,7 +249,7 @@ decimal::decimal(double x):
     value_(0),
     precision_(0)
 {
-    std::ostringstream s;
+    Yb::OStringStream s;
     s << std::fixed << x;
     init_from_str(s.str().c_str(), value_, precision_);
     check_format(value_, precision_);
@@ -378,9 +378,9 @@ decimal_numerator decimal::fpart(int p) const
     return mul(x % SCALE.x[precision_], SCALE.x[p - precision_]);
 }
 
-const string decimal::str() const
+const Yb::String decimal::str() const
 {
-    string s;
+    Yb::String s;
     decimal_numerator x = value_;
     bool negative = false;
     if (x < 0)
@@ -391,14 +391,14 @@ const string decimal::str() const
     for (int n = 0; ; ++n)
     {
         if (n == precision_ && n > 0)
-            s = "." + s;
-        s = string(1, x % 10 + '0') + s;
+            s = _T(".") + s;
+        s = Yb::String(1, x % 10 + _T('0')) + s;
         x = x / 10;
         if (!x && n >= precision_)
             break;
     }
     if (negative)
-        s = "-" + s;
+        s = _T("-") + s;
     return s;
 }
 
@@ -430,7 +430,7 @@ const decimal operator / (const decimal &x, const decimal &y)
     return t;
 }
 
-ostream &operator << (ostream &o, const decimal &x)
+Yb::OStream &operator << (Yb::OStream &o, const decimal &x)
 {
     int prec = o.precision();
     if (prec < 0)
@@ -444,27 +444,27 @@ ostream &operator << (ostream &o, const decimal &x)
         y = x.round(prec);
         rounded = true;
     }
-    string s = y.str();
+    Yb::String s = y.str();
     if (o.flags() & ios_base::showpos)
     {
         if (x > decimal(0))
-            s = "+" + s;
+            s = _T("+") + s;
         if (x == decimal(0))
-            s = " " + s;
+            s = _T(" ") + s;
     }
     if (rounded && o.precision() > y.get_precision())
     {
         if (y.get_precision() == 0)
-            s += '.';
-        s += string(o.precision() - y.get_precision(), '0');
+            s += _T('.');
+        s += Yb::String(o.precision() - y.get_precision(), _T('0'));
     }
     o << s;
     return o;
 }
 
-istream &operator >> (istream &i, decimal &x)
+Yb::IStream &operator >> (Yb::IStream &i, decimal &x)
 {
-    string str;
+    Yb::String str;
     i >> str;
     try {
         x = decimal(str);

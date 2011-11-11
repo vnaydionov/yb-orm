@@ -11,20 +11,20 @@
 
 namespace Yb {
 
-typedef std::map<std::string, int> ParamNums;
+typedef std::map<String, int> ParamNums;
 
 class StrList
 {
-    std::string str_list_;
+    String str_list_;
     template <typename T>
-    static const std::string container_to_str(const T &cont)
+    static const String container_to_str(const T &cont)
     {
-        std::string r;
+        String r;
         typename T::const_iterator it = cont.begin(), end = cont.end();
         if (it != end)
             r = *it;
         for (++it; it != end; ++it)
-            r += ", " + *it;
+            r += _T(", ") + *it;
         return r;
     }
 public:
@@ -40,20 +40,20 @@ public:
     StrList(const T &fl)
         : str_list_(container_to_str<T>(fl))
     {}
-    StrList(const std::string &s)
+    StrList(const String &s)
         : str_list_(s)
     {}
-    StrList(const char *s)
+    StrList(const Char *s)
         : str_list_(s)
     {}
-    const std::string &get_str() const { return str_list_; }
+    const String &get_str() const { return str_list_; }
 };
 
 class FilterBackend
 {
 public:
-    virtual const std::string do_get_sql() const = 0;
-    virtual const std::string do_collect_params_and_build_sql(
+    virtual const String do_get_sql() const = 0;
+    virtual const String do_collect_params_and_build_sql(
             Values &seq) const = 0;
     virtual ~FilterBackend();
 };
@@ -61,31 +61,31 @@ public:
 class Filter
 {
     boost::shared_ptr<FilterBackend> backend_;
-    std::string sql_;
+    String sql_;
 public:
     Filter();
-    Filter(const std::string &sql);
+    Filter(const String &sql);
     Filter(FilterBackend *backend);
-    const std::string get_sql() const;
-    const std::string collect_params_and_build_sql(
+    const String get_sql() const;
+    const String collect_params_and_build_sql(
             Values &seq) const;
     const FilterBackend *get_backend() const { return backend_.get(); }
 };
 
 class FilterBackendEq : public FilterBackend
 {
-    std::string name_;
+    String name_;
     Value value_;
 public:
-    FilterBackendEq(const std::string &name, const Value &value);
-    const std::string do_get_sql() const;
-    const std::string do_collect_params_and_build_sql(
+    FilterBackendEq(const String &name, const Value &value);
+    const String do_get_sql() const;
+    const String do_collect_params_and_build_sql(
             Values &seq) const;
-    const std::string &get_name() const;
+    const String &get_name() const;
     const Value &get_value() const;
 };
 
-inline const Filter filter_eq(const std::string &name, const Value &value)
+inline const Filter filter_eq(const String &name, const Value &value)
 {
     return Filter(new FilterBackendEq(name, value));
 }
@@ -96,8 +96,8 @@ class FilterBackendAnd : public FilterBackend
     Filter f2_;
 public:
     FilterBackendAnd(const Filter &f1, const Filter &f2);
-    const std::string do_get_sql() const;
-    const std::string do_collect_params_and_build_sql(
+    const String do_get_sql() const;
+    const String do_collect_params_and_build_sql(
             Values &seq) const;
 };
 
@@ -107,8 +107,8 @@ class FilterBackendOr : public FilterBackend
     Filter f2_;
 public:
     FilterBackendOr(const Filter &f1, const Filter &f2);
-    const std::string do_get_sql() const;
-    const std::string do_collect_params_and_build_sql(
+    const String do_get_sql() const;
+    const String do_collect_params_and_build_sql(
             Values &seq) const;
 };
 
@@ -127,8 +127,8 @@ class FilterBackendByPK : public FilterBackend
     Key key_;
 public:
     FilterBackendByPK(const Key &key) : key_(key) {}
-    const std::string do_get_sql() const;
-    const std::string do_collect_params_and_build_sql(
+    const String do_get_sql() const;
+    const String do_collect_params_and_build_sql(
             Values &seq) const;
     const Key &get_key() const { return key_; }
 };
@@ -144,13 +144,13 @@ public:
 class ORMError : public BaseError
 {
 public:
-    ORMError(const std::string &msg);
+    ORMError(const String &msg);
 };
 
 class ObjectNotFoundByKey : public ORMError
 {
 public:
-    ObjectNotFoundByKey(const std::string &msg);
+    ObjectNotFoundByKey(const String &msg);
 };
 
 } // namespace Yb

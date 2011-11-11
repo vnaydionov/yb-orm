@@ -8,46 +8,46 @@ namespace StrUtils {
 
 using namespace std;
 
-bool is_lower(char c)
+bool is_lower(Yb::Char c)
 {
-    return c >= 'a' && c <= 'z';
+    return c >= _T('a') && c <= _T('z');
 }
 
-bool is_upper(char c)
+bool is_upper(Yb::Char c)
 {
-    return c >= 'A' && c <= 'Z';
+    return c >= _T('A') && c <= _T('Z');
 }
 
-bool is_alpha(char c)
+bool is_alpha(Yb::Char c)
 {
     return is_upper(c) || is_lower(c);
 }
 
-bool is_digit(char c)
+bool is_digit(Yb::Char c)
 {
-    return c >= '0' && c <= '9';
+    return c >= _T('0') && c <= _T('9');
 }
 
-bool is_space(char c)
+bool is_space(Yb::Char c)
 {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+    return c == _T(' ') || c == _T('\t') || c == _T('\n') || c == _T('\r');
 }
 
-bool is_start_symbol_of_id(char c)
+bool is_start_symbol_of_id(Yb::Char c)
 {
-    return is_alpha(c) || c == '_';
+    return is_alpha(c) || c == _T('_');
 }
 
-bool is_symbol_of_id(char c)
+bool is_symbol_of_id(Yb::Char c)
 {
     return is_start_symbol_of_id(c) || is_digit(c);
 }
 
-bool is_id(const string &s)
+bool is_id(const Yb::String &s)
 {
     if (s.empty())
         return false;
-    string::const_iterator it = s.begin(), end = s.end();
+    Yb::String::const_iterator it = s.begin(), end = s.end();
     if (!is_start_symbol_of_id(*it))
         return false;
     for (++it; it != end; ++it)
@@ -56,105 +56,105 @@ bool is_id(const string &s)
     return true;
 }
 
-bool starts_with(const string &s, const string &subs)
+bool starts_with(const Yb::String &s, const Yb::String &subs)
 {
     if (s.size() < subs.size())
         return false;
     return s.substr(0, subs.size()) == subs;
 }
 
-bool ends_with(const string &s, const string &subs)
+bool ends_with(const Yb::String &s, const Yb::String &subs)
 {
     if (s.size() < subs.size())
         return false;
     return s.substr(s.size() - subs.size()) == subs;
 }
 
-const string substr_after(const string &s, const string &subs)
+const Yb::String substr_after(const Yb::String &s, const Yb::String &subs)
 {
-    string::size_type pos = s.find(subs);
-    if (pos == string::npos)
-        return "";
+    Yb::String::size_type pos = s.find(subs);
+    if (pos == Yb::String::npos)
+        return Yb::String();
     return s.substr(pos + subs.size());
 }
 
-char to_lower(char c)
+Yb::Char to_lower(Yb::Char c)
 {
     if (!is_upper(c))
         return c;
-    return c + ('a' - 'A');
+    return c + (_T('a') - _T('A'));
 }
 
-char to_upper(char c)
+Yb::Char to_upper(Yb::Char c)
 {
     if (!is_lower(c))
         return c;
-    return c + ('A' - 'a');
+    return c + (_T('A') - _T('a'));
 }
 
-const string translate(const string &s, char (*f)(char))
+const Yb::String translate(const Yb::String &s, Yb::Char (*f)(Yb::Char))
 {
-    string r;
+    Yb::String r;
     r.reserve(s.size());
-    string::const_iterator it = s.begin(), end = s.end();
+    Yb::String::const_iterator it = s.begin(), end = s.end();
     for (; it != end; ++it)
         r.push_back(f(*it));
     return r;
 }
 
-const string str_to_lower(const string &s)
+const Yb::String str_to_lower(const Yb::String &s)
 {
     return translate(s, to_lower);
 }
 
-const string str_to_upper(const string &s)
+const Yb::String str_to_upper(const Yb::String &s)
 {
     return translate(s, to_upper);
 }
 
-const string trim_trailing_space(const string &s)
+const Yb::String trim_trailing_space(const Yb::String &s)
 {
     int i = 0, sz = (int)s.size();
     while (i < sz && is_space(s[i])) ++i;
     int j = sz - 1;
     while (j >= 0 && is_space(s[j])) --j;
     if (i > j)
-        return "";
+        return Yb::String();
     return s.substr(i, j - i + 1);
 }
 
-const string sql_string_escape(const string &s)
+const Yb::String sql_string_escape(const Yb::String &s)
 {
-    string r;
+    Yb::String r;
     r.reserve(s.size() * 2);
     for (size_t pos = 0; pos < s.size(); ++pos) {
-        if (s[pos] == '\'')
-            r.push_back('\'');
+        if (s[pos] == _T('\''))
+            r.push_back(_T('\''));
         r.push_back(s[pos]);
     }
     return r;
 }
 
-const string html_escape(const string &s)
+const Yb::String html_escape(const Yb::String &s)
 {
-    string r;
+    Yb::String r;
     r.reserve(s.size() * 2);
     for (size_t i = 0; i < s.size(); ++i)
     {
-        char c = s[i];
+        Yb::Char c = s[i];
         switch (c)
         {
-            case '<':
-                r += "&lt;";
+            case _T('<'):
+                r += _T("&lt;");
                 break;
-            case '>':
-                r += "&gt;";
+            case _T('>'):
+                r += _T("&gt;");
                 break;
-            case '&':
-                r += "&amp;";
+            case _T('&'):
+                r += _T("&amp;");
                 break;
-            case '"':
-                r += "&quot;";
+            case _T('"'):
+                r += _T("&quot;");
                 break;
             default:
                 r += c;
@@ -165,21 +165,21 @@ const string html_escape(const string &s)
 
 static inline
 void
-append_path_item(string &item, vector<string> &items)
+append_path_item(Yb::String &item, vector<Yb::String> &items)
 {
     if (!item.empty()) {
         items.push_back(item);
-        item = "";
+        item = Yb::String();
     }
 }
 
 void
-split_path(const string &path, vector<string> &items)
+split_path(const Yb::String &path, vector<Yb::String> &items)
 {
-    string item;
-    string::const_iterator it = path.begin(), end = path.end();
+    Yb::String item;
+    Yb::String::const_iterator it = path.begin(), end = path.end();
     for (; it != end; ++it) {
-        if (*it == '/')
+        if (*it == _T('/'))
             append_path_item(item, items);
         else
             item.push_back(*it);
@@ -187,25 +187,25 @@ split_path(const string &path, vector<string> &items)
     append_path_item(item, items);
 }
 
-vector<string> &split_str(const string &s,
-        const string &delim, vector<string> &parts)
+vector<Yb::String> &split_str(const Yb::String &s,
+        const Yb::String &delim, vector<Yb::String> &parts)
 {
     size_t start = 0;
     while (1) {
         size_t pos = s.find(delim, start);
-        if (pos == string::npos) {
-            parts.push_back(string(s, start));
+        if (pos == Yb::String::npos) {
+            parts.push_back(Yb::String(s, start));
             break;
         }
-        parts.push_back(string(s, start, pos - start));
+        parts.push_back(Yb::String(s, start, pos - start));
         start = pos + delim.size();
     }
     return parts;
 }
 
-const string join_str(const string &delim, const vector<string> &parts)
+const Yb::String join_str(const Yb::String &delim, const vector<Yb::String> &parts)
 {
-    string result;
+    Yb::String result;
     if (parts.size()) {
         result = parts[0];
         for (size_t i = 1; i < parts.size(); ++i) {
@@ -216,41 +216,41 @@ const string join_str(const string &delim, const vector<string> &parts)
     return result;
 }
 
-const string quote(const string &s)
+const Yb::String quote(const Yb::String &s)
 {
-    return "'" + s + "'";
+    return _T("'") + s + _T("'");
 }
 
-const string dquote(const string &s)
+const Yb::String dquote(const Yb::String &s)
 {
-    return "\"" + s + "\"";
+    return _T("\"") + s + _T("\"");
 }
 
-const string brackets(const string &s)
+const Yb::String brackets(const Yb::String &s)
 {
-    return "(" + s + ")";
+    return _T("(") + s + _T(")");
 }
 
-const string comma(const string &item1, const string &item2)
+const Yb::String comma(const Yb::String &item1, const Yb::String &item2)
 {
-    return item1 + ", " + item2;
+    return item1 + _T(", ") + item2;
 }
 
-const string xgetenv(const string &var_name)
+const Yb::String xgetenv(const Yb::String &var_name)
 {
     char *x;
-    string s;
+    Yb::String s;
 #if defined(_MSC_VER)
     size_t len;
-    errno_t err = _dupenv_s(&x, &len, var_name.c_str());
+    errno_t err = _dupenv_s(&x, &len, NARROW(var_name).c_str());
     if (!err) {
-        s = string(x);
+        s = Yb::String(WIDEN(x));
         free(x);
     }
 #else
-    x = getenv(var_name.c_str());
+    x = getenv(NARROW(var_name).c_str());
     if (x && *x)
-        s = string(x);
+        s = Yb::String(WIDEN(x));
 #endif
     return s;
 }

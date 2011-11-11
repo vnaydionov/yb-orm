@@ -23,7 +23,8 @@ ybutilinclude_HEADERS = \
 	xmlnode.h \
 	stacktrace.h \
 	Exception.h \
-	ResultSet.h
+	ResultSet.h \
+	UnicodeSupport.h
 
 libybutil_la_SOURCES = \
 	$(ybutilinclude_HEADERS) \
@@ -31,7 +32,8 @@ libybutil_la_SOURCES = \
 	decimal.cpp \
 	xml_writer.cpp \
 	xmlnode.cpp \
-	Exception.cpp
+	Exception.cpp \
+	UnicodeSupport.cpp
 
 libybutil_la_LDFLAGS = -version-info 0:0:0
 

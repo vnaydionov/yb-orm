@@ -4,6 +4,7 @@
 
 #include <iterator>
 #include <algorithm>
+#include <cstddef>
 #include <util/Exception.h>
 
 namespace Yb {

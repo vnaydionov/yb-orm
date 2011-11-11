@@ -20,11 +20,11 @@ class ItemRegistry
     ItemRegistry &operator=(const ItemRegistry &);
 public:
     typedef boost::shared_ptr<Item> ItemPtr;
-    typedef std::map<std::string, ItemPtr> Map;
+    typedef std::map<String, ItemPtr> Map;
 
     ItemRegistry() {}
 
-    Item *find_item(const std::string &name)
+    Item *find_item(const String &name)
     {
         boost::mutex::scoped_lock lock(mutex_);
         typename Map::const_iterator it = map_.find(name);
@@ -33,7 +33,7 @@ public:
         return NULL;
     }
 
-    bool register_item(const std::string &name, std::auto_ptr<Item> item)
+    bool register_item(const String &name, std::auto_ptr<Item> item)
     {
         boost::mutex::scoped_lock lock(mutex_);
         typename Map::const_iterator it = map_.find(name);
@@ -78,80 +78,80 @@ private:
 class DBError : public BaseError
 {
 public:
-    DBError(const std::string &msg);
+    DBError(const String &msg);
 };
 
 class GenericDBError: public DBError
 {
 public:
-    GenericDBError(const std::string &err);
+    GenericDBError(const String &err);
 };
 
 class NoDataFound : public DBError
 {
 public:
-    NoDataFound(const std::string &msg = "");
+    NoDataFound(const String &msg = _T(""));
 };
 
 class BadSQLOperation : public DBError
 {
 public:
-    BadSQLOperation(const std::string &msg);
+    BadSQLOperation(const String &msg);
 };
 
 class BadOperationInMode : public DBError
 {
 public:
-    BadOperationInMode(const std::string &msg);
+    BadOperationInMode(const String &msg);
 };
 
 class SqlDialectError : public DBError
 {
 public:
-    SqlDialectError(const std::string &msg);
+    SqlDialectError(const String &msg);
 };
 
 class SqlDriverError : public DBError
 {
 public:
-    SqlDriverError(const std::string &msg);
+    SqlDriverError(const String &msg);
 };
 
 class SqlDialect
 {
-    std::string name_, dual_;
+    String name_, dual_;
     bool has_sequences_;
     SqlDialect(const SqlDialect &);
     SqlDialect &operator=(const SqlDialect &);
 public:
-    SqlDialect(const std::string &name, const std::string &dual,
+    SqlDialect(const String &name, const String &dual,
             bool has_sequences)
         : name_(name)
         , dual_(dual)
         , has_sequences_(has_sequences)
     {}
     virtual ~SqlDialect();
-    const std::string &get_name() { return name_; }
-    const std::string &dual_name() { return dual_; }
+    const String &get_name() { return name_; }
+    const String &dual_name() { return dual_; }
     bool has_sequences() { return has_sequences_; }
-    virtual const std::string select_curr_value(
-            const std::string &seq_name) = 0;
-    virtual const std::string select_next_value(
-            const std::string &seq_name) = 0;
-    virtual const std::string sql_value(const Value &x) = 0;
+    virtual const String select_curr_value(
+            const String &seq_name) = 0;
+    virtual const String select_next_value(
+            const String &seq_name) = 0;
+    virtual const String sql_value(const Value &x) = 0;
 };
 
-SqlDialect *sql_dialect(const std::string &name);
+SqlDialect *sql_dialect(const String &name);
 bool register_sql_dialect(std::auto_ptr<SqlDialect> dialect);
 const Strings list_sql_dialects();
 
-typedef std::pair<std::string, Value> RowItem;
+typedef std::pair<String, Value> RowItem;
 typedef std::vector<RowItem > Row;
 typedef std::auto_ptr<Row> RowPtr;
 typedef std::vector<Row> Rows;
 typedef std::auto_ptr<Rows> RowsPtr;
-Row::iterator find_in_row(Row &row, const std::string &name);
-Row::const_iterator find_in_row(const Row &row, const std::string &name);
+Row::iterator find_in_row(Row &row, const String &name);
+Row::const_iterator find_in_row(const Row &row, const String &name);
 
 class SqlConnectBackend
 {
@@ -160,32 +160,32 @@ class SqlConnectBackend
 public:
     SqlConnectBackend() {}
     virtual ~SqlConnectBackend();
-    virtual void open(SqlDialect *dialect, const std::string &db,
-        const std::string &user, const std::string &passwd) = 0;
+    virtual void open(SqlDialect *dialect, const String &db,
+        const String &user, const String &passwd) = 0;
     virtual void close() = 0;
     virtual void commit() = 0;
     virtual void rollback() = 0;
-    virtual void exec_direct(const std::string &sql) = 0;
+    virtual void exec_direct(const String &sql) = 0;
     virtual RowPtr fetch_row() = 0;
-    virtual void prepare(const std::string &sql) = 0;
+    virtual void prepare(const String &sql) = 0;
     virtual void exec(const Values &params) = 0;
 };
 
 class SqlDriver
 {
-    std::string name_;
+    String name_;
     SqlDriver(const SqlDriver &);
     SqlDriver &operator=(const SqlDriver &);
 public:
-    SqlDriver(const std::string &name)
+    SqlDriver(const String &name)
         : name_(name)
     {}
     virtual ~SqlDriver();
-    const std::string &get_name() { return name_; }
+    const String &get_name() { return name_; }
     virtual std::auto_ptr<SqlConnectBackend> create_backend() = 0;
 };
 
-SqlDriver *sql_driver(const std::string &name);
+SqlDriver *sql_driver(const String &name);
 bool register_sql_driver(std::auto_ptr<SqlDriver> driver);
 const Strings list_sql_drivers();
 
@@ -205,25 +205,25 @@ class SqlConnect
 {
     SqlDriver *driver_;
     SqlDialect *dialect_;
-    std::string db_, user_;
+    String db_, user_;
     std::auto_ptr<SqlConnectBackend> backend_;
     bool activity_, echo_;
     SqlConnect(const SqlConnect &);
     SqlConnect &operator=(const SqlConnect &);
 public:
-    SqlConnect(const std::string &driver_name,
-            const std::string &dialect_name, const std::string &db,
-            const std::string &user = "", const std::string &passwd = "");
+    SqlConnect(const String &driver_name,
+            const String &dialect_name, const String &db,
+            const String &user = _T(""), const String &passwd = _T(""));
     ~SqlConnect();
     SqlDriver *get_driver() { return driver_; }
     SqlDialect *get_dialect() { return dialect_; }
-    const std::string &get_db() { return db_; }
-    const std::string &get_user() { return user_; }
+    const String &get_db() { return db_; }
+    const String &get_user() { return user_; }
     void set_echo(bool echo) { echo_ = echo; }
-    SqlResultSet exec_direct(const std::string &sql);
+    SqlResultSet exec_direct(const String &sql);
     RowPtr fetch_row();
     RowsPtr fetch_rows(int max_rows = -1); // -1 = all
-    void prepare(const std::string &sql);
+    void prepare(const String &sql);
     SqlResultSet exec(const Values &params);
     void commit();
     void rollback();

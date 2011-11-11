@@ -13,20 +13,20 @@ void Document::write_raw (string const & value)
         xmlTextWriterWriteRaw (writer_, BAD_CAST value.c_str ());
 }
 
-void Document::write_attribute (string const & name, string const & value)
+void Document::write_attribute (Yb::String const & name, Yb::String const & value)
 {
     xmlTextWriterWriteAttribute (writer_,
-            BAD_CAST name.c_str (), BAD_CAST value.c_str ());
+            BAD_CAST NARROW(name).c_str (), BAD_CAST NARROW(value).c_str ());
 }
 
-void Document::write_string (string const & value)
+void Document::write_string (Yb::String const & value)
 {
-    xmlTextWriterWriteString (writer_, BAD_CAST value.c_str ());
+    xmlTextWriterWriteString (writer_, BAD_CAST NARROW(value).c_str ());
 }
 
-void Document::start_element (string const & name)
+void Document::start_element (Yb::String const & name)
 {
-    xmlTextWriterStartElement (writer_, BAD_CAST name.c_str ());
+    xmlTextWriterStartElement (writer_, BAD_CAST NARROW(name).c_str ());
 }
 
 void Document::end_element ()
@@ -92,7 +92,7 @@ void Element::close_element ()
     }
 }
 
-Element::Element (Document & doc, string const & name)
+Element::Element (Document & doc, Yb::String const & name)
     :doc_ (doc)
     ,name_ (name)
     ,closed_ (false)
@@ -105,7 +105,7 @@ Element::~Element ()
     close_element ();
 }
 
-void Element::set_content (string const & content)
+void Element::set_content (Yb::String const & content)
 {
     doc_.write_string (content);
 }

@@ -8,10 +8,10 @@ FilterBackend::~FilterBackend()
 {}
 
 Filter::Filter()
-    : sql_("1=1")
+    : sql_(_T("1=1"))
 {}
 
-Filter::Filter(const string &sql)
+Filter::Filter(const String &sql)
     : sql_(sql)
 {}
 
@@ -19,7 +19,7 @@ Filter::Filter(FilterBackend *backend)
     : backend_(backend)
 {}
 
-const string
+const String
 Filter::get_sql() const
 {
     if (backend_.get())
@@ -27,7 +27,7 @@ Filter::get_sql() const
     return sql_;
 }
 
-const string
+const String
 Filter::collect_params_and_build_sql(Values &seq) const
 {
     if (backend_.get())
@@ -35,25 +35,25 @@ Filter::collect_params_and_build_sql(Values &seq) const
     return sql_;
 }
 
-FilterBackendEq::FilterBackendEq(const string &name, const Value &value)
+FilterBackendEq::FilterBackendEq(const String &name, const Value &value)
     : name_(name)
     , value_(value)
 {}
 
-const string
+const String
 FilterBackendEq::do_get_sql() const
 {
-    return name_ + " = " + value_.sql_str();
+    return name_ + _T(" = ") + value_.sql_str();
 }
 
-const string
+const String
 FilterBackendEq::do_collect_params_and_build_sql(Values &seq) const
 {
     seq.push_back(value_);
-    return name_ + " = ?";
+    return name_ + _T(" = ?");
 }
 
-const string &
+const String &
 FilterBackendEq::get_name() const
 {
     return name_;
@@ -70,18 +70,18 @@ FilterBackendAnd::FilterBackendAnd(const Filter &f1, const Filter &f2)
     , f2_(f2)
 {}
 
-const string
+const String
 FilterBackendAnd::do_get_sql() const
 {
-    return "(" + f1_.get_sql() + ") AND (" + f2_.get_sql() + ")";
+    return _T("(") + f1_.get_sql() + _T(") AND (") + f2_.get_sql() + _T(")");
 }
 
-const string
+const String
 FilterBackendAnd::do_collect_params_and_build_sql(Values &seq) const
 {
-    string p1 = f1_.collect_params_and_build_sql(seq);
-    string p2 = f2_.collect_params_and_build_sql(seq);
-    return "(" + p1 + ") AND (" + p2 + ")";
+    String p1 = f1_.collect_params_and_build_sql(seq);
+    String p2 = f2_.collect_params_and_build_sql(seq);
+    return _T("(") + p1 + _T(") AND (") + p2 + _T(")");
 }
 
 FilterBackendOr::FilterBackendOr(const Filter &f1, const Filter &f2)
@@ -89,51 +89,51 @@ FilterBackendOr::FilterBackendOr(const Filter &f1, const Filter &f2)
     , f2_(f2)
 {}
 
-const string
+const String
 FilterBackendOr::do_get_sql() const
 {
-    return "(" + f1_.get_sql() + ") OR (" + f2_.get_sql() + ")";
+    return _T("(") + f1_.get_sql() + _T(") OR (") + f2_.get_sql() + _T(")");
 }
 
-const string
+const String
 FilterBackendOr::do_collect_params_and_build_sql(Values &seq) const
 {
-    string p1 = f1_.collect_params_and_build_sql(seq);
-    string p2 = f2_.collect_params_and_build_sql(seq);
-    return "(" + p1 + ") OR (" + p2 + ")";
+    String p1 = f1_.collect_params_and_build_sql(seq);
+    String p2 = f2_.collect_params_and_build_sql(seq);
+    return _T("(") + p1 + _T(") OR (") + p2 + _T(")");
 }
 
-const string
+const String
 FilterBackendByPK::do_get_sql() const
 {
-    ostringstream sql;
-    sql << "1=1";
+    OStringStream sql;
+    sql << _T("1=1");
     ValueMap::const_iterator i = key_.second.begin(),
         iend = key_.second.end();
     for (; i != iend; ++i)
-        sql << " AND " << i->first << " = " << i->second.sql_str();
+        sql << _T(" AND ") << i->first << _T(" = ") << i->second.sql_str();
     return sql.str();
 }
 
-const string
+const String
 FilterBackendByPK::do_collect_params_and_build_sql(Values &seq) const
 {
-    ostringstream sql;
-    sql << "1=1";
+    OStringStream sql;
+    sql << _T("1=1");
     ValueMap::const_iterator i = key_.second.begin(),
         iend = key_.second.end();
     for (; i != iend; ++i) {
-        sql << " AND " << i->first << " = ?";
+        sql << _T(" AND ") << i->first << _T(" = ?");
         seq.push_back(i->second);
     }
     return sql.str();
 }
 
-ORMError::ORMError(const string &msg)
+ORMError::ORMError(const String &msg)
     : BaseError(msg)
 {}
 
-ObjectNotFoundByKey::ObjectNotFoundByKey(const string &msg)
+ObjectNotFoundByKey::ObjectNotFoundByKey(const String &msg)
     : ORMError(msg)
 {}
 

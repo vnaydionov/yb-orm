@@ -10,37 +10,37 @@
 using namespace std;
 using Yb::StrUtils::str_to_upper;
 
-#define DBG(x) do{ char __s[40]; ostringstream __log; time_t __t = time(NULL); \
+#define DBG(x) do{ char __s[40]; OStringStream __log; time_t __t = time(NULL); \
     strcpy(__s, ctime(&__t)); __s[strlen(__s) - 1] = 0; \
-    __log << __s << ": " << x << '\n'; cerr << __log.str(); }while(0)
+    __log << WIDEN(__s) << _T(": ") << x << '\n'; cerr << NARROW(__log.str()); }while(0)
 
 namespace Yb {
 
-DBError::DBError(const string &msg)
+DBError::DBError(const String &msg)
     : BaseError(msg)
 {}
 
-GenericDBError::GenericDBError(const string &err)
-    : DBError("Database error, details: " + err)
+GenericDBError::GenericDBError(const String &err)
+    : DBError(_T("Database error, details: ") + err)
 {}
 
-NoDataFound::NoDataFound(const string &msg)
-    : DBError("Data wasn't found, details: " + msg)
+NoDataFound::NoDataFound(const String &msg)
+    : DBError(_T("Data wasn't found, details: ") + msg)
 {}
 
-BadSQLOperation::BadSQLOperation(const string &msg)
+BadSQLOperation::BadSQLOperation(const String &msg)
     : DBError(msg)
 {}
 
-BadOperationInMode::BadOperationInMode(const string &msg)
+BadOperationInMode::BadOperationInMode(const String &msg)
     : DBError(msg)
 {}
 
-SqlDialectError::SqlDialectError(const string &msg)
+SqlDialectError::SqlDialectError(const String &msg)
     : DBError(msg)
 {}
 
-SqlDriverError::SqlDriverError(const string &msg)
+SqlDriverError::SqlDriverError(const String &msg)
     : DBError(msg)
 {}
 
@@ -50,17 +50,17 @@ class OracleDialect: public SqlDialect
 {
 public:
     OracleDialect()
-        : SqlDialect("ORACLE", "DUAL", true)
+        : SqlDialect(_T("ORACLE"), _T("DUAL"), true)
     {}
-    const string select_curr_value(const string &seq_name)
-    { return seq_name + ".CURRVAL"; }
-    const string select_next_value(const string &seq_name)
-    { return seq_name + ".NEXTVAL"; }
-    const string sql_value(const Value &x)
+    const String select_curr_value(const String &seq_name)
+    { return seq_name + _T(".CURRVAL"); }
+    const String select_next_value(const String &seq_name)
+    { return seq_name + _T(".NEXTVAL"); }
+    const String sql_value(const Value &x)
     {
         if (x.get_type() == Value::DATETIME) {
-            return "TO_DATE(" + x.sql_str()
-                + ", 'YYYY-MM-DD HH24:MI:SS')";
+            return _T("TO_DATE(") + x.sql_str()
+                + _T(", 'YYYY-MM-DD HH24:MI:SS')");
         }
         return x.sql_str();
     }
@@ -70,13 +70,13 @@ class InterbaseDialect: public SqlDialect
 {
 public:
     InterbaseDialect()
-        : SqlDialect("INTERBASE", "RDB$DATABASE", true)
+        : SqlDialect(_T("INTERBASE"), _T("RDB$DATABASE"), true)
     {}
-    const string select_curr_value(const string &seq_name)
-    { return "GEN_ID(" + seq_name + ", 0)"; }
-    const string select_next_value(const string &seq_name)
-    { return "GEN_ID(" + seq_name + ", 1)"; }
-    const string sql_value(const Value &x)
+    const String select_curr_value(const String &seq_name)
+    { return _T("GEN_ID(") + seq_name + _T(", 0)"); }
+    const String select_next_value(const String &seq_name)
+    { return _T("GEN_ID(") + seq_name + _T(", 1)"); }
+    const String sql_value(const Value &x)
     {
         return x.sql_str();
     }
@@ -86,13 +86,13 @@ class MysqlDialect: public SqlDialect
 {
 public:
     MysqlDialect()
-        : SqlDialect("MYSQL", "DUAL", false)
+        : SqlDialect(_T("MYSQL"), _T("DUAL"), false)
     {}
-    const string select_curr_value(const string &seq_name)
-    { throw SqlDialectError("No sequences, please"); }
-    const string select_next_value(const string &seq_name)
-    { throw SqlDialectError("No sequences, please"); }
-    const string sql_value(const Value &x)
+    const String select_curr_value(const String &seq_name)
+    { throw SqlDialectError(_T("No sequences, please")); }
+    const String select_next_value(const String &seq_name)
+    { throw SqlDialectError(_T("No sequences, please")); }
+    const String sql_value(const Value &x)
     {
         return x.sql_str();
     }
@@ -118,13 +118,13 @@ void register_std_dialects()
             p->get_name(), dialect);
 }
 
-SqlDialect *sql_dialect(const string &name)
+SqlDialect *sql_dialect(const String &name)
 {
     if (theDialectRegistry::instance().empty())
         register_std_dialects();
     SqlDialect *dialect = theDialectRegistry::instance().find_item(name);
     if (!dialect)
-        throw SqlDialectError("Unknown dialect: " + name);
+        throw SqlDialectError(_T("Unknown dialect: ") + name);
     return dialect;
 }
 
@@ -152,8 +152,8 @@ class OdbcConnectBackend: public SqlConnectBackend
     auto_ptr<tiodbc::connection> conn_;
     auto_ptr<tiodbc::statement> stmt_;
 public:
-    void open(SqlDialect *dialect, const string &dsn,
-            const string &user, const string &passwd)
+    void open(SqlDialect *dialect, const String &dsn,
+            const String &user, const String &passwd)
     {
         close();
         conn_.reset(new tiodbc::connection());
@@ -180,7 +180,7 @@ public:
             throw DBError(conn_->last_error_ex());
     }
 
-    void exec_direct(const string &sql)
+    void exec_direct(const String &sql)
     {
         stmt_.reset(new tiodbc::statement());
         if (!stmt_->execute_direct(*conn_, sql))
@@ -195,7 +195,7 @@ public:
         RowPtr row(new Row);
         for (int i = 0; i < col_count; ++i) {
             tiodbc::field_impl f = stmt_->field(i + 1);
-            string name = str_to_upper(f.get_name());
+            String name = str_to_upper(f.get_name());
             Value v;
             if (f.get_type() == SQL_DATE ||
                     f.get_type() == SQL_TIMESTAMP ||
@@ -208,7 +208,7 @@ public:
                 }
             }
             else {
-                string val = f.as_string();
+                String val = f.as_string();
                 if (f.is_null() != 1)
                     v = Value(val);
             }
@@ -217,7 +217,7 @@ public:
         return row;
     }
 
-    void prepare(const string &sql)
+    void prepare(const String &sql)
     {
         stmt_.reset(new tiodbc::statement());
         if (!stmt_->prepare(*conn_, sql))
@@ -243,7 +243,7 @@ public:
                         params[i].is_null());
             }
             else {
-                string value;
+                String value;
                 if (!params[i].is_null())
                     value = params[i].as_string();
                 stmt_->param(i + 1).set_as_string(value, params[i].is_null());
@@ -258,7 +258,7 @@ class OdbcDriver: public SqlDriver
 {
 public:
     OdbcDriver():
-        SqlDriver("ODBC")
+        SqlDriver(_T("ODBC"))
     {}
     auto_ptr<SqlConnectBackend> create_backend()
     {
@@ -277,13 +277,13 @@ void register_std_drivers()
     theDriverRegistry::instance().register_item(p->get_name(), driver);
 }
 
-SqlDriver *sql_driver(const string &name)
+SqlDriver *sql_driver(const String &name)
 {
     if (theDriverRegistry::instance().empty())
         register_std_drivers();
     SqlDriver *driver = theDriverRegistry::instance().find_item(name);
     if (!driver)
-        throw SqlDriverError("Unknown driver: " + name);
+        throw SqlDriverError(_T("Unknown driver: ") + name);
     return driver;
 }
 
@@ -303,14 +303,14 @@ const Strings list_sql_drivers()
     return theDriverRegistry::instance().list_items();
 }
 
-Row::iterator find_in_row(Row &row, const string &name)
+Row::iterator find_in_row(Row &row, const String &name)
 {
     Row::iterator i = row.begin(), iend = row.end();
     for (; i != iend && i->first != name; ++i);
     return i;
 }
 
-Row::const_iterator find_in_row(const Row &row, const string &name)
+Row::const_iterator find_in_row(const Row &row, const String &name)
 {
     Row::const_iterator i = row.begin(), iend = row.end();
     for (; i != iend && i->first != name; ++i);
@@ -326,9 +326,9 @@ bool SqlResultSet::fetch(Row &row)
     return true;
 }
 
-SqlConnect::SqlConnect(const string &driver_name,
-        const string &dialect_name, const string &db,
-        const string &user, const string &passwd)
+SqlConnect::SqlConnect(const String &driver_name,
+        const String &dialect_name, const String &db,
+        const String &user, const String &passwd)
     : driver_(sql_driver(driver_name))
     , dialect_(sql_dialect(dialect_name))
     , db_(db)
@@ -348,10 +348,10 @@ SqlConnect::~SqlConnect()
 }
 
 SqlResultSet
-SqlConnect::exec_direct(const string &sql)
+SqlConnect::exec_direct(const String &sql)
 {
     if (echo_) {
-        DBG("exec_direct: " + sql);
+        DBG(_T("exec_direct: ") + sql);
     }
     activity_ = true;
     backend_->exec_direct(sql);
@@ -364,15 +364,15 @@ SqlConnect::fetch_row()
     RowPtr row = backend_->fetch_row();
     if (echo_) {
         if (row.get()) {
-            ostringstream out;
-            out << "fetch: ";
+            OStringStream out;
+            out << _T("fetch: ");
             Row::const_iterator j = row->begin(), jend = row->end();
             for (; j != jend; ++j)
-                out << j->first << "=" << j->second.sql_str() << " ";
+                out << j->first << _T("=") << j->second.sql_str() << _T(" ");
             DBG(out.str());
         }
         else {
-            DBG("fetch: no more rows");
+            DBG(_T("fetch: no more rows"));
         }
     }
     return row;
@@ -389,10 +389,10 @@ SqlConnect::fetch_rows(int max_rows)
 }
 
 void
-SqlConnect::prepare(const string &sql)
+SqlConnect::prepare(const String &sql)
 {
     if (echo_) {
-        DBG("prepare: " + sql);
+        DBG(_T("prepare: ") + sql);
     }
     activity_ = true;
     backend_->prepare(sql);
@@ -402,10 +402,10 @@ SqlResultSet
 SqlConnect::exec(const Values &params)
 {
     if (echo_) {
-        ostringstream out;
-        out << "exec prepared:";
+        OStringStream out;
+        out << _T("exec prepared:");
         for (unsigned i = 0; i < params.size(); ++i)
-            out << " p" << (i + 1) << "=\"" << params[i].sql_str() << "\"";
+            out << _T(" p") << (i + 1) << _T("=\"") << params[i].sql_str() << _T("\"");
         DBG(out.str());
     }
     backend_->exec(params);
@@ -416,7 +416,7 @@ void
 SqlConnect::commit()
 {
     if (echo_)
-        DBG("commit");
+        DBG(_T("commit"));
     backend_->commit();
     activity_ = false;
 }
@@ -425,7 +425,7 @@ void
 SqlConnect::rollback()
 {
     if (echo_)
-        DBG("rollback");
+        DBG(_T("rollback"));
     backend_->rollback();
     activity_ = false;
 }

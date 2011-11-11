@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include "UnicodeSupport.h"
 
 namespace Yb {
 
@@ -13,68 +14,68 @@ namespace StrUtils {
 
 // NOTE: only '[a-zA-Z]' symbols are treated as alphabetical.
 
-bool is_lower(char c);
+bool is_lower(Yb::Char c);
 
-bool is_upper(char c);
+bool is_upper(Yb::Char c);
 
-bool is_alpha(char c);
+bool is_alpha(Yb::Char c);
 
-bool is_digit(char c);
+bool is_digit(Yb::Char c);
 
-bool is_space(char c);
+bool is_space(Yb::Char c);
 
 // NOTE: an ID is '[_a-zA-Z][_a-zA-Z0-9]*'
 
-bool is_start_symbol_of_id(char c);
+bool is_start_symbol_of_id(Yb::Char c);
 
-bool is_symbol_of_id(char c);
+bool is_symbol_of_id(Yb::Char c);
 
-bool is_id(const std::string &s);
+bool is_id(const Yb::String &s);
 
-bool starts_with(const std::string &s, const std::string &subs);
+bool starts_with(const Yb::String &s, const Yb::String &subs);
 
-bool ends_with(const std::string &s, const std::string &subs);
+bool ends_with(const Yb::String &s, const Yb::String &subs);
 
-const std::string substr_after(const std::string &s, const std::string &subs);
+const Yb::String substr_after(const Yb::String &s, const Yb::String &subs);
 
-char to_lower(char c);
+Yb::Char to_lower(Yb::Char c);
 
-char to_upper(char c);
+Yb::Char to_upper(Yb::Char c);
 
-const std::string translate(const std::string &s, char (*f)(char));
+const Yb::String translate(const Yb::String &s, Yb::Char (*f)(Yb::Char));
 
-const std::string str_to_lower(const std::string &s);
+const Yb::String str_to_lower(const Yb::String &s);
 
-const std::string str_to_upper(const std::string &s);
+const Yb::String str_to_upper(const Yb::String &s);
 
-const std::string trim_trailing_space(const std::string &s);
+const Yb::String trim_trailing_space(const Yb::String &s);
 
-const std::string sql_string_escape(const std::string &s);
+const Yb::String sql_string_escape(const Yb::String &s);
 
-const std::string html_escape(const std::string &s);
+const Yb::String html_escape(const Yb::String &s);
 
-void split_path(const std::string &path, std::vector<std::string> &items);
+void split_path(const Yb::String &path, std::vector<Yb::String> &items);
 
-std::vector<std::string> &split_str(const std::string &s,
-        const std::string &delim,
-        std::vector<std::string> &parts);
+std::vector<Yb::String> &split_str(const Yb::String &s,
+        const Yb::String &delim,
+        std::vector<Yb::String> &parts);
 
-const std::string join_str(const std::string &delim,
-        const std::vector<std::string> &parts);
+const Yb::String join_str(const Yb::String &delim,
+        const std::vector<Yb::String> &parts);
 
 // Code generation helpers
 
-const std::string quote(const std::string &s);
+const Yb::String quote(const Yb::String &s);
 
-const std::string dquote(const std::string &s);
+const Yb::String dquote(const Yb::String &s);
 
-const std::string brackets(const std::string &s);
+const Yb::String brackets(const Yb::String &s);
 
-const std::string comma(const std::string &item1, const std::string &item2);
+const Yb::String comma(const Yb::String &item1, const Yb::String &item2);
 
 // Misc
 
-const std::string xgetenv(const std::string &var_name);
+const Yb::String xgetenv(const Yb::String &var_name);
 
 } // end of namespace StrUtils
 

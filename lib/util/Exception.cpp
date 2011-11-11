@@ -6,26 +6,26 @@ using namespace std;
 
 namespace Yb {
 
-const string BaseError::format_base(const string &msg)
+const String BaseError::format_base(const String &msg)
 {
     ostringstream out;
     print_stacktrace(out, 100, 2);
     if (out.str().compare("<stack trace not implemented>\n") != 0)
-        return msg + "\nBacktrace:\n" + out.str();
+        return msg + _T("\nBacktrace:\n") + WIDEN(out.str());
     return msg;
 }
 
-BaseError::BaseError(const string &msg)
-    : logic_error(format_base(msg))
+BaseError::BaseError(const String &msg)
+    : logic_error(NARROW(format_base(msg)))
 {}
 
-const string AssertError::format_assert(const char *file, int line,
+const String AssertError::format_assert(const char *file, int line,
         const char *expr)
 {
     ostringstream out;
     out << "Assertion failed in file " << file << ":" << line
         << " (" << expr << ")";
-    return out.str();
+    return WIDEN(out.str());
 }
 
 AssertError::AssertError(const char *file, int line, const char *expr)
