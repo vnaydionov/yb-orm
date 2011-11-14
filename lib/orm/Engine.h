@@ -40,28 +40,28 @@ public:
         int max_rows = -1,
         bool for_update = false) = 0;
     virtual const std::vector<LongInt> insert(
-        const std::string &table_name,
+        const String &table_name,
         const Rows &rows,
         const StringSet &exclude_fields = StringSet(),
         bool collect_new_ids = false) = 0;
     virtual void update(
-        const std::string &table_name,
+        const String &table_name,
         const Rows &rows,
         const StringSet &key_fields,
         const StringSet &exclude_fields = StringSet(),
         const Filter &where = Filter()) = 0;
     virtual void delete_from(
-        const std::string &table_name,
+        const String &table_name,
         const Filter &where) = 0;
     virtual void delete_from(
-        const std::string &table_name,
+        const String &table_name,
         const Keys &keys) = 0;
     virtual void exec_proc(
-        const std::string &proc_code) = 0;
+        const String &proc_code) = 0;
     virtual void commit() = 0;
     virtual void rollback() = 0;
-    virtual LongInt get_curr_value(const std::string &seq_name) = 0;
-    virtual LongInt get_next_value(const std::string &seq_name) = 0;
+    virtual LongInt get_curr_value(const String &seq_name) = 0;
+    virtual LongInt get_next_value(const String &seq_name) = 0;
     virtual SqlDialect *get_dialect() = 0;
 };
 
@@ -98,16 +98,16 @@ public:
             const StrList &order_by = StrList(),
             int max_rows = -1,
             bool for_update = false);
-    const std::vector<LongInt> insert(const std::string &table_name,
+    const std::vector<LongInt> insert(const String &table_name,
             const Rows &rows, const StringSet &exclude_fields = StringSet(),
             bool collect_new_ids = false);
-    void update(const std::string &table_name,
+    void update(const String &table_name,
             const Rows &rows, const StringSet &key_fields,
             const StringSet &exclude_fields = StringSet(),
             const Filter &where = Filter());
-    void delete_from(const std::string &table_name, const Filter &where);
-    void delete_from(const std::string &table_name, const Keys &keys);
-    void exec_proc(const std::string &proc_code);
+    void delete_from(const String &table_name, const Filter &where);
+    void delete_from(const String &table_name, const Keys &keys);
+    void exec_proc(const String &proc_code);
     void commit();
     void rollback();
 
@@ -115,17 +115,17 @@ public:
     RowPtr select_row(const StrList &what,
             const StrList &from, const Filter &where);
     RowPtr select_row(const StrList &from, const Filter &where);
-    const Value select1(const std::string &what,
-            const std::string &from, const Filter &where);
-    LongInt get_curr_value(const std::string &seq_name);
-    LongInt get_next_value(const std::string &seq_name);
+    const Value select1(const String &what,
+            const String &from, const Filter &where);
+    LongInt get_curr_value(const String &seq_name);
+    LongInt get_next_value(const String &seq_name);
 
     /* Use cases:
     Yb::EngineBase db;
-    int count = db.select1("count(1)", "t_manager",
-        Yb::FilterEq("hidden", Yb::Value(1))).as_longint();
-    Yb::RowPtr row = db.select_row("v_ui_contract",
-        Yb::FilterEq("contract_id", Yb::Value(contract_id)));
+    int count = db.select1(_T("count(1)"), _T("t_manager"),
+        Yb::FilterEq(_T("hidden"), Yb::Value(1))).as_longint();
+    Yb::RowPtr row = db.select_row(_T("v_ui_contract"),
+        Yb::FilterEq(_T("contract_id"), Yb::Value(contract_id)));
     */
 
 private:
@@ -135,31 +135,31 @@ private:
             const StrList &order_by, int max_rows,
             bool for_update);
     virtual const std::vector<LongInt> on_insert(
-            const std::string &table_name,
+            const String &table_name,
             const Rows &rows, const StringSet &exclude_fields,
             bool collect_new_ids);
-    virtual void on_update(const std::string &table_name,
+    virtual void on_update(const String &table_name,
             const Rows &rows, const StringSet &key_fields,
             const StringSet &exclude_fields, const Filter &where);
-    virtual void on_delete(const std::string &table_name,
+    virtual void on_delete(const String &table_name,
             const Filter &where);
-    virtual void on_exec_proc(const std::string &proc_code);
+    virtual void on_exec_proc(const String &proc_code);
     virtual void on_commit();
     virtual void on_rollback();
 
-    virtual void do_gen_sql_insert(std::string &sql, Values &params,
-            ParamNums &param_nums, const std::string &table_name,
+    virtual void do_gen_sql_insert(String &sql, Values &params,
+            ParamNums &param_nums, const String &table_name,
             const Row &row, const StringSet &exclude_fields) const;
-    virtual void do_gen_sql_update(std::string &sql, Values &params,
-            ParamNums &param_nums, const std::string &table_name,
+    virtual void do_gen_sql_update(String &sql, Values &params,
+            ParamNums &param_nums, const String &table_name,
             const Row &row, const StringSet &key_fields,
             const StringSet &exclude_fields, const Filter &where) const;
-    virtual void do_gen_sql_select(std::string &sql, Values &params,
+    virtual void do_gen_sql_select(String &sql, Values &params,
             const StrList &what, const StrList &from, const Filter &where,
             const StrList &group_by, const Filter &having,
             const StrList &order_by, bool for_update) const;
-    virtual void do_gen_sql_delete(std::string &sql, Values &params,
-            const std::string &table, const Filter &where) const;
+    virtual void do_gen_sql_delete(String &sql, Values &params,
+            const String &table, const Filter &where) const;
 
 private:
     bool touched_;

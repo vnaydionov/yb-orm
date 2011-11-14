@@ -15,20 +15,20 @@ using namespace std;
 
 int main()
 {
-    string conf_dir = Yb::StrUtils::xgetenv("EX1_DIR");
+    Yb::String conf_dir = Yb::StrUtils::xgetenv(_T("EX1_DIR"));
     if (conf_dir.empty())
-        conf_dir = ".";
-    Yb::load_meta(conf_dir + "/ex1_schema.xml", Yb::theMetaData::instance());
+        conf_dir = _T(".");
+    Yb::load_meta(conf_dir + _T("/ex1_schema.xml"), Yb::theMetaData::instance());
     Domain::ClientRegistrator::register_domain();
     Domain::OrderRegistrator::register_domain();
 #ifdef HAVE_DBPOOL3
     auto_ptr<Yb::DBPoolConfig> conf(
-            new Yb::DBPoolConfig(conf_dir + "/dbpool.cfg.xml"));
+            new Yb::DBPoolConfig(conf_dir + _T("/dbpool.cfg.xml")));
     auto_ptr<Yb::SqlDriver> drv(
-            new Yb::DBPoolDriver(conf, "MY_DBPOOL"));
+            new Yb::DBPoolDriver(conf, _T("MY_DBPOOL")));
     Yb::register_sql_driver(drv);
     auto_ptr<Yb::SqlConnect> conn(
-            new Yb::SqlConnect("MY_DBPOOL", Yb::StrUtils::xgetenv("YBORM_DBTYPE"), "default"));
+            new Yb::SqlConnect(_T("MY_DBPOOL"), Yb::StrUtils::xgetenv(_T("YBORM_DBTYPE")), _T("default")));
     Yb::Engine engine(Yb::Engine::MANUAL, conn);
 #else
     Yb::Engine engine(Yb::Engine::MANUAL);
@@ -39,14 +39,14 @@ int main()
     string name, email;
     cout << "Enter name, email: \n";
     cin >> name >> email;
-    client.set_name(name);
-    client.set_email(email);
+    client.set_name(WIDEN(name));
+    client.set_email(WIDEN(email));
     //client.set_dt(Yb::now());
     Domain::Order order(session);
     string value;
     cout << "Enter order amount: \n";
     cin >> value;
-    order.set_total_sum(Yb::Decimal(value));
+    order.set_total_sum(Yb::Decimal(WIDEN(value)));
     order.set_owner(client);
     session.flush();
     cout << "client created: " << client.get_id() << endl;

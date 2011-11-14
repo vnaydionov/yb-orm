@@ -12,40 +12,40 @@ namespace Yb {
 
 class XMLConfigError: public std::logic_error {
 public:
-    XMLConfigError(const std::string &msg) : std::logic_error(msg) {}
+    XMLConfigError(const String &msg) : std::logic_error(NARROW(msg)) {}
 };
 
 class MandatoryAttributeAbsent: public XMLConfigError
 {
 public:
-    MandatoryAttributeAbsent(const std::string &element, const std::string &attr)
-        : XMLConfigError("Mandatory attribyte '" + attr +
-                "' not found or empty while parsing element '" + element + "'")
+    MandatoryAttributeAbsent(const String &element, const String &attr)
+        : XMLConfigError(_T("Mandatory attribyte '") + attr +
+                _T("' not found or empty while parsing element '") + element + _T("'"))
     {}
 };
 
 class WrongColumnType: public XMLConfigError
 {
 public:
-    WrongColumnType(const std::string &type, const std::string &field_name)
-        : XMLConfigError("Type '" + type +
-                "' is unknown and not supported while parsing field '" + field_name + "'")
+    WrongColumnType(const String &type, const String &field_name)
+        : XMLConfigError(_T("Type '") + type +
+                _T("' is unknown and not supported while parsing field '") + field_name + _T("'"))
     {}
 };
 
 class ParseError: public XMLConfigError
 {
 public:
-    ParseError(const std::string &msg)
-        : XMLConfigError("XML config parse error, details: " + msg)
+    ParseError(const String &msg)
+        : XMLConfigError(_T("XML config parse error, details: ") + msg)
     {}
 };
 
 class InvalidCombination: public XMLConfigError
 {
 public:
-    InvalidCombination(const std::string &msg)
-        : XMLConfigError("Invalid element-attribute combination, details: " + msg)
+    InvalidCombination(const String &msg)
+        : XMLConfigError(_T("Invalid element-attribute combination, details: ") + msg)
     {}
 };
 
@@ -54,54 +54,55 @@ class XMLMetaDataConfig
 public:
     XMLMetaDataConfig(const std::string &xml_string);
     void parse(Schema &reg);
-    bool need_generation(const std::string &table_name) const {
+    bool need_generation(const String &table_name) const {
         return std::find(skip_generation_.begin(), skip_generation_.end(), table_name) == skip_generation_.end();
     }
 private:
     friend class ::TestXMLConfig;
     void parse_table(xmlNodePtr p_node, Table &table_meta);
-    void parse_relation_side(xmlNodePtr p_node, const char **attr_names,
-            size_t attr_count, std::string &cname, Relation::AttrMap &attrs);
+    void parse_relation_side(xmlNodePtr p_node, const Char **attr_names,
+            size_t attr_count, String &cname, Relation::AttrMap &attrs);
     bool parse_relation(xmlNodePtr p_node, Relation &rel);
     template <typename T>
     static void get_node_ptr_value(xmlNodePtr p_node, T &t);
     template <typename T> 
-    static bool get_value_of(xmlNodePtr p_node, const std::string &field, T &t);
-    static int string_type_to_int(const std::string &type, const std::string &field_name);
-    static bool is_current_child_name(xmlNodePtr p_node, const std::string &field);
+    static bool get_value_of(xmlNodePtr p_node, const String &field, T &t);
+    static int string_type_to_int(const String &type, const String &field_name);
+    static bool is_current_child_name(xmlNodePtr p_node, const String &field);
     static void parse_column(const xmlNodePtr p_node, Table &table_meta);
     static Column fill_column_meta(xmlNodePtr p_node);
-    static void get_foreign_key_data(xmlNodePtr p_node, std::string &fk_table, std::string &fk_field);
-    std::vector<std::string> skip_generation_;
+    static void get_foreign_key_data(xmlNodePtr p_node, String &fk_table, String &fk_field);
+    std::vector<String> skip_generation_;
     Xml::Node node_;
 };
  
 template <typename T>
 void XMLMetaDataConfig::get_node_ptr_value(xmlNodePtr p_node, T &t) {
-    std::string str;
+    String str;
     Xml::Node node(p_node, false);
     str = node.GetContent();
     try {
         t = boost::lexical_cast<T>(str);  
     } 
-    catch(const boost::bad_lexical_cast &) {
-        throw ParseError(std::string("Wrong element value for '")+ (const char*)node.get()->name + "'");
+    catch (const boost::bad_lexical_cast &) {
+        throw ParseError(String(_T("Wrong element value for '")) +
+                WIDEN((const char*)node.get()->name) + _T("'"));
     }
 }
 
 template <typename T> 
-bool XMLMetaDataConfig::get_value_of(xmlNodePtr p_node, const std::string &field, T &t)
+bool XMLMetaDataConfig::get_value_of(xmlNodePtr p_node, const String &field, T &t)
 {
-    if(std::string((const char *)p_node->name) == field) {
+    if (WIDEN((const char *)p_node->name) == field) {
         get_node_ptr_value(p_node, t);
         return true;
     }
     return false;
 }
 
-bool load_xml_file(const std::string &name, std::string &where);
+bool load_xml_file(const String &name, std::string &where);
 
-void load_meta(const std::string &name, Schema &reg);
+void load_meta(const String &name, Schema &reg);
 
 } // namespace Yb
 

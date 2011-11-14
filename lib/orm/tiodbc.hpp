@@ -33,12 +33,6 @@
 // System headers
 #if defined(__WIN32__) || defined(_WIN32)
 #include <windows.h>
-#else
-#ifdef _UNICODE
-typedef wchar_t TCHAR;
-#else
-typedef char TCHAR;
-#endif
 #endif
 #include <sql.h>
 #include <sqlext.h>
@@ -278,7 +272,7 @@ namespace tiodbc
 	private:
 		HSTMT stmt_h;			//!< Handle of statement that field exists
 		int col_num;			//!< Column number that field exists.
-		_tstring name;		//!< Column name
+		_tstring name;			//!< Column name
 		int type;				//!< Column data type code
 		mutable int is_null_flag;	//!< Column is null (0=no, 1=yes, -1=unknown yet)
 		mutable _tstring str_buf;   //!< Column value buffer
@@ -354,7 +348,7 @@ namespace tiodbc
 	private:
 		HSTMT stmt_h;			//!< Handle of statement that parameter is set
 		int par_num;			//!< Order number of the parameter
-		_tstring _int_string;	//!< Internal string buffer
+		SQLTCHAR *_int_string;	//!< Internal string buffer
 		char _int_buffer[64];	//!< Internal buffer for small built-in types (64byte ... quite large)
 		SQLLEN _int_SLOIP;	//!< Internal Str Length Or Indicator Pointer
 		
@@ -376,8 +370,7 @@ namespace tiodbc
 		//! @{
 
 		//! Set parameter as string
-		const _tstring & set_as_string(
-				const _tstring & _str, bool _is_null = false);
+		void set_as_string(const _tstring & _str, bool _is_null = false);
 		
 		//! Set parameter as long
 		const long & set_as_long(

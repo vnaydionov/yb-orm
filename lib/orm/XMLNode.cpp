@@ -5,19 +5,19 @@ using namespace std;
 
 namespace Yb {
 
-void XMLNode::init_by_data_object(DataObject::Ptr data, const string &alt_name)
+void XMLNode::init_by_data_object(DataObject::Ptr data, const String &alt_name)
 {
     const Table &table = data->table();
     name_ = alt_name.empty()? table.get_xml_name(): alt_name;
     Columns::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it) {
-        const string col_name = it->get_xml_name();
+        const String col_name = it->get_xml_name();
         if (!col_name.empty())
             children_.push_back(XMLNode(col_name, data->get(it->get_name())));
     }
 }
 
-void XMLNode::replace_child_object_by_field(const string &field_name, DataObject::Ptr data) 
+void XMLNode::replace_child_object_by_field(const String &field_name, DataObject::Ptr data) 
 {
     NodeList::iterator it = children_.begin(), end = children_.end();
     for (; it != end; ++it)
@@ -27,7 +27,7 @@ void XMLNode::replace_child_object_by_field(const string &field_name, DataObject
         }
 }
 
-void XMLNode::replace_child_object_by_field(const string &field_name, const XMLNode &node) 
+void XMLNode::replace_child_object_by_field(const String &field_name, const XMLNode &node) 
 {
     NodeList::iterator it = children_.begin(), end = children_.end();
     for (; it != end; ++it)
@@ -51,7 +51,7 @@ void XMLNode::xmlize(Yb::Writer::Document &doc) const
     Yb::Writer::Element elem(doc, name_);
 
     if (value_.is_null() && children_.empty())
-        elem.add_attribute("is_null", true);
+        elem.add_attribute(_T("is_null"), true);
     if (!value_.is_null())
         elem.set_content(value_.as_string());
 
@@ -69,12 +69,12 @@ void XMLNode::xmlize(Yb::Writer::Document &doc) const
  */
 const XMLNode
 deep_xmlize(Session &session, DataObject::Ptr d,
-    int depth, const string &alt_name)
+    int depth, const String &alt_name)
 {
     XMLNode node(d, alt_name);
     if (depth == -1 || depth > 0) {
         const Table &table = d->table();
-        const string &cname = table.get_class_name();
+        const String &cname = table.get_class_name();
         Columns::const_iterator it = table.begin(), end = table.end();
         for (; it != end; ++it)
             if (it->has_fk() && !d->get(it->get_name()).is_null()) {
@@ -93,7 +93,7 @@ deep_xmlize(Session &session, DataObject::Ptr d,
                                 d->get(it->get_name()).as_longint());
                         XMLNode ref_node(domain_obj->xmlize(
                             depth == -1? -1: depth - 1, mk_xml_name(
-                                j->second.attr(1, "property"), ""
+                                j->second.attr(1, _T("property")), _T("")
                             )));
                         node.replace_child_object_by_field(
                             it->get_xml_name(), ref_node);
@@ -106,20 +106,20 @@ deep_xmlize(Session &session, DataObject::Ptr d,
 }
 
 const XMLNode
-xmlize_row(const Row &row, const string &entry_name)
+xmlize_row(const Row &row, const String &entry_name)
 {
-    XMLNode entry(entry_name, "");
+    XMLNode entry(entry_name, _T(""));
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it)
-        entry.add_node(XMLNode(mk_xml_name(it->first, ""),
-                    it->second.nvl("").as_string()));
+        entry.add_node(XMLNode(mk_xml_name(it->first, _T("")),
+                    it->second.nvl(_T("")).as_string()));
     return entry;
 }
 
 const XMLNode
-xmlize_rows(const Rows &rows, const string &entries_name, const string &entry_name)
+xmlize_rows(const Rows &rows, const String &entries_name, const String &entry_name)
 {
-    XMLNode entries(entries_name, "");
+    XMLNode entries(entries_name, _T(""));
     Rows::const_iterator it = rows.begin(), end = rows.end();
     for (; it != end; ++it)
         entries.add_node(xmlize_row(*it, entry_name));

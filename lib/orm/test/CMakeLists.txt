@@ -1,4 +1,4 @@
- 
+
 include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES} ${BOOST_INCLUDES}
     ${CPPUNIT_INCLUDES} ${PROJECT_SOURCE_DIR}/lib)
 

@@ -12,45 +12,45 @@ namespace Yb {
 class NoRawData: public ORMError {
 public:
     NoRawData()
-        : ORMError("No ROW data is associated with DomainObject")
+        : ORMError(_T("No ROW data is associated with DomainObject"))
     {}
 };
 
 class NoSessionBaseGiven: public ORMError {
 public:
     NoSessionBaseGiven()
-        : ORMError("No session given to the WeakObject")
+        : ORMError(_T("No session given to the WeakObject"))
     {}
 };
 
 class AlreadySavedInAnotherSession: public ORMError {
 public:
     AlreadySavedInAnotherSession()
-        : ORMError("Object has been already saved in some other session")
+        : ORMError(_T("Object has been already saved in some other session"))
     {}
 };
 
 class CouldNotSaveEmptyObject: public ORMError {
 public:
     CouldNotSaveEmptyObject()
-        : ORMError("Attempt to save an empty object failed")
+        : ORMError(_T("Attempt to save an empty object failed"))
     {}
 };
 
 class OutOfManagedList: public std::runtime_error {
 public:
     OutOfManagedList(int pos, int sz)
-        : std::runtime_error("Trying to access index " +
-            boost::lexical_cast<std::string>(pos) + 
-            " that falls out of ManagedList of size " +
-            boost::lexical_cast<std::string>(sz))
+        : std::runtime_error(NARROW(_T("Trying to access index ") +
+            boost::lexical_cast<String>(pos) + 
+            _T(" that falls out of ManagedList of size ") +
+            boost::lexical_cast<String>(sz)))
     {}
 };
 
 class InvalidIterator: public std::runtime_error {
 public:
     InvalidIterator()
-        : std::runtime_error("Trying to use an invalid iterator")
+        : std::runtime_error(NARROW(_T("Trying to use an invalid iterator")))
     {}
 };
 
@@ -160,7 +160,7 @@ public:
         if (it != end())
             return it;
         DataObject::link_master_to_slave(master_, x.data_object(),
-                                         ro_->relation_info().attr(0, "property"));
+                                         ro_->relation_info().attr(0, _T("property")));
         return find(x);
     }
     void erase(iterator it) {
@@ -183,13 +183,13 @@ public:
     DomainObject(DataObject::Ptr d)
         : d_(d)
     {}
-    DomainObject(const Schema &schema, const std::string &table_name)
+    DomainObject(const Schema &schema, const String &table_name)
         : d_(DataObject::create_new(schema.get_table(table_name)))
     {}
     DomainObject(Session &session, const Key &key)
         : d_(session.get_lazy(key))
     {}
-    DomainObject(Session &session, const std::string &tbl_name, LongInt id)
+    DomainObject(Session &session, const String &tbl_name, LongInt id)
         : d_(session.get_lazy(session.schema().get_table(tbl_name).mk_key(id)))
     {}
     virtual ~DomainObject() {}
@@ -201,32 +201,32 @@ public:
         return d_->session();
     }
     DataObject::Ptr data_object() const { return d_; }
-    const Value &get(const std::string &col_name) const {
+    const Value &get(const String &col_name) const {
         check_ptr();
         return d_->get(col_name);
     }
-    void set(const std::string &col_name, const Value &value) {
+    void set(const String &col_name, const Value &value) {
         check_ptr();
         d_->set(col_name, value);
     }
-    const DomainObject get_master(const std::string &relation_name = "") const {
+    const DomainObject get_master(const String &relation_name = _T("")) const {
         check_ptr();
         return DomainObject(DataObject::get_master(d_, relation_name));
     }
-    RelationObject *get_slaves_ro(const std::string &relation_name = "") const {
+    RelationObject *get_slaves_ro(const String &relation_name = _T("")) const {
         check_ptr();
         return d_->get_slaves(relation_name);
     }
-    ManagedList<DomainObject> get_slaves(const std::string &relation_name = "") const {
+    ManagedList<DomainObject> get_slaves(const String &relation_name = _T("")) const {
         check_ptr();
         return ManagedList<DomainObject>(d_->get_slaves(relation_name), d_);
     }
-    void link_to_master(DomainObject &master, const std::string relation_name = "") {
+    void link_to_master(DomainObject &master, const String relation_name = _T("")) {
         check_ptr();
         master.check_ptr();
         DataObject::link_slave_to_master(d_, master.d_, relation_name);
     }
-    void link_to_slave(DomainObject &slave, const std::string relation_name = "") {
+    void link_to_slave(DomainObject &slave, const String relation_name = _T("")) {
         check_ptr();
         slave.check_ptr();
         DataObject::link_master_to_slave(d_, slave.d_, relation_name);
@@ -254,7 +254,7 @@ public:
             return 0;
         return d_->values() < x.d_->values()? -1: 1;
     }
-    const XMLNode xmlize(int depth = 0, const std::string &alt_name = "") const {
+    const XMLNode xmlize(int depth = 0, const String &alt_name = _T("")) const {
         if (!session())
             throw NoSessionBaseGiven();
         return deep_xmlize(*session(), d_, depth, alt_name);

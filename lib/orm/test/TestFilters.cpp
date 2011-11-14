@@ -17,26 +17,26 @@ class TestFilters : public CppUnit::TestFixture
 public:
     void testFilterAll()
     {
-        CPPUNIT_ASSERT_EQUAL(string("1=1"), Filter().get_sql());
+        CPPUNIT_ASSERT_EQUAL(string("1=1"), NARROW(Filter().get_sql()));
     }
 
     void testFilterEq()
     {
-        CPPUNIT_ASSERT_EQUAL(string("ID = 1"), filter_eq("ID", Value(1)).get_sql());
+        CPPUNIT_ASSERT_EQUAL(string("ID = 1"), NARROW(filter_eq(_T("ID"), Value(1)).get_sql()));
     }
 
     void testOperatorOr()
     {
         CPPUNIT_ASSERT_EQUAL(string("(ID = 1) OR (A = 'a')"), 
-                (filter_eq("ID", Value(1)) ||
-                 filter_eq("A", Value("a"))).get_sql());
+                             NARROW((filter_eq(_T("ID"), Value(1)) ||
+                                     filter_eq(_T("A"), Value(_T("a")))).get_sql()));
     }
 
     void testOperatorAnd()
     {
         CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A = 'a')"), 
-                (filter_eq("ID", Value(1)) &&
-                 filter_eq("A", Value("a"))).get_sql());
+                             NARROW((filter_eq(_T("ID"), Value(1)) &&
+                                     filter_eq(_T("A"), Value(_T("a")))).get_sql()));
     }
 };
 

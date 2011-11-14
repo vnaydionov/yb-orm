@@ -71,7 +71,7 @@ const std::string narrow(const std::wstring &wide, const std::locale &loc)
     typedef std::wstring::traits_type::state_type state_type;
     typedef std::codecvt<wchar_t, char, state_type> CVT;
 
-    static const CVT& cvt = std::use_facet<CVT>(loc);
+    const CVT& cvt = std::use_facet<CVT>(loc);
     //std::string narrow(cvt.max_length()*wide.size(), '\0');
     state_type state = state_type();
 

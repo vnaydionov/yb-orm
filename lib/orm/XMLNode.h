@@ -15,17 +15,17 @@ class XMLNode
 public:
     XMLNode()
     {}
-    XMLNode(const std::string &name, const Value &val)
+    XMLNode(const String &name, const Value &val)
         : name_(name), value_(val)
     {}
-    XMLNode(DataObject::Ptr data, const std::string &alt_name = "")
+    XMLNode(DataObject::Ptr data, const String &alt_name = _T(""))
     {
         init_by_data_object(data, alt_name);
     }
 public:
-    void init_by_data_object(DataObject::Ptr data, const std::string &alt_name = "");
-    void replace_child_object_by_field(const std::string &field_name, DataObject::Ptr data);
-    void replace_child_object_by_field(const std::string &field_name, const XMLNode &node);
+    void init_by_data_object(DataObject::Ptr data, const String &alt_name = _T(""));
+    void replace_child_object_by_field(const String &field_name, DataObject::Ptr data);
+    void replace_child_object_by_field(const String &field_name, const XMLNode &node);
     const std::string get_xml() const;
     void xmlize(Yb::Writer::Document &doc) const;
     void add_node(const XMLNode & node)
@@ -33,7 +33,7 @@ public:
         children_.push_back(node);
     }
 private:
-    std::string name_;
+    String name_;
     Value value_;
     NodeList children_;
 };
@@ -46,18 +46,18 @@ private:
  * @return XMLNode
  */
 const XMLNode deep_xmlize(Session &session,
-    DataObject::Ptr d, int depth = 0, const std::string &alt_name = "");
+    DataObject::Ptr d, int depth = 0, const String &alt_name = _T(""));
 
-const XMLNode xmlize_row(const Row &row, const std::string &entry_name);
+const XMLNode xmlize_row(const Row &row, const String &entry_name);
 const XMLNode xmlize_rows(const Rows &rows,
-        const std::string &entries_name, const std::string &entry_name);
+        const String &entries_name, const String &entry_name);
 
 class XMLizable
 {
 public:
     virtual ~XMLizable() {}
     virtual const XMLNode xmlize(int depth,
-        const std::string &alt_name = "") const = 0;
+        const String &alt_name = _T("")) const = 0;
 };
 
 } // namespace Yb

@@ -11,7 +11,7 @@ using Yb::StrUtils::str_to_upper;
 
 namespace Yb {
 
-DBPoolConfig::DBPoolConfig(const string &xml_file_name)
+DBPoolConfig::DBPoolConfig(const String &xml_file_name)
     : pool_size_(DBPOOL_DEFAULT_SIZE)
 {
     if (!xml_file_name.empty())
@@ -19,7 +19,7 @@ DBPoolConfig::DBPoolConfig(const string &xml_file_name)
 }
 
 void
-DBPoolConfig::register_data_source(const string &ds_name,
+DBPoolConfig::register_data_source(const String &ds_name,
         const DBPoolDataSource &ds)
 {
     ds_map_[ds_name] = ds;
@@ -28,69 +28,69 @@ DBPoolConfig::register_data_source(const string &ds_name,
 static void parse_dbpool_config(xmlNodePtr node,
         DBPoolConfig::Map &ds_map, int &pool_size)
 {
-    set<string> drivers_to_load;
+    set<String> drivers_to_load;
     DBPoolConfig::Map empty_map;
     empty_map.swap(ds_map);
     pool_size = DBPOOL_DEFAULT_SIZE;
-    xmlNodePtr backend = Xml::Child(node, "DbBackend");
-    for (; backend; backend = Xml::Sibling(backend, "DbBackend"))
+    xmlNodePtr backend = Xml::Child(node, _T("DbBackend"));
+    for (; backend; backend = Xml::Sibling(backend, _T("DbBackend")))
     {
-        if (!Xml::HasAttr(backend, "id"))
-            throw DBPoolConfigParseError("DbBackend w/o @id");
-        string key = Xml::GetAttr(backend, "id");
+        if (!Xml::HasAttr(backend, _T("id")))
+            throw DBPoolConfigParseError(_T("DbBackend w/o @id"));
+        String key = Xml::GetAttr(backend, _T("id"));
         DBPoolDataSource ds;
         xmlNodePtr field;
-        field = Xml::Child(backend, "Driver");
+        field = Xml::Child(backend, _T("Driver"));
         if (!field)
             throw DBPoolConfigParseError(
-                    "DbBackend " + key + ": missing Driver field");
+                    _T("DbBackend ") + key + _T(": missing Driver field"));
         ds.driver = Xml::GetContent(field);
         drivers_to_load.insert(ds.driver);
-        field = Xml::Child(backend, "Name");
+        field = Xml::Child(backend, _T("Name"));
         if (!field)
             throw DBPoolConfigParseError(
-                    "DbBackend " + key + ": missing Db field");
+                    _T("DbBackend ") + key + _T(": missing Db field"));
         ds.db = Xml::GetContent(field);
-        field = Xml::Child(backend, "User");
+        field = Xml::Child(backend, _T("User"));
         if (!field)
             throw DBPoolConfigParseError(
-                    "DbBackend " + key + ": missing User field");
+                    _T("DbBackend ") + key + _T(": missing User field"));
         ds.user = Xml::GetContent(field);
-        field = Xml::Child(backend, "Pass");
+        field = Xml::Child(backend, _T("Pass"));
         if (!field)
             throw DBPoolConfigParseError(
-                    "DbBackend " + key + ": missing Pass field");
+                    _T("DbBackend ") + key + _T(": missing Pass field"));
         ds.pass = Xml::GetContent(field);
-        field = Xml::Child(backend, "Host");
+        field = Xml::Child(backend, _T("Host"));
         if (field)
             ds.host = Xml::GetContent(field);
-        field = Xml::Child(backend, "Port");
+        field = Xml::Child(backend, _T("Port"));
         if (field)
             ds.port = boost::lexical_cast<int>(Xml::GetContent(field));
-        field = Xml::Child(backend, "Timeout");
+        field = Xml::Child(backend, _T("Timeout"));
         if (field)
             ds.timeout = boost::lexical_cast<int>(Xml::GetContent(field));
         ds_map[key] = ds;
     }
-    xmlNodePtr item = Xml::Child(node, "DbPoolSize");
+    xmlNodePtr item = Xml::Child(node, _T("DbPoolSize"));
     if (item)
         pool_size = boost::lexical_cast<int>(Xml::GetContent(item));
     // preload drivers
-    set<string> ::const_iterator i = drivers_to_load.begin(),
+    set<String> ::const_iterator i = drivers_to_load.begin(),
         iend = drivers_to_load.end();
     for (; i != iend; ++i)
-        mypp::Driver::load_driver(*i);
+        mypp::Driver::load_driver(NARROW(*i));
 }
 
 void
-DBPoolConfig::parse_from_xml_string(const string &xml_data)
+DBPoolConfig::parse_from_xml_string(const std::string &xml_data)
 {
     Xml::Node node(Xml::Parse(xml_data));
     parse_dbpool_config(node.get(), ds_map_, pool_size_);
 }
 
 void
-DBPoolConfig::load_from_xml_file(const string &xml_file_name)
+DBPoolConfig::load_from_xml_file(const String &xml_file_name)
 {
     Xml::Node node(Xml::ParseFile(xml_file_name));
     parse_dbpool_config(node.get(), ds_map_, pool_size_);
@@ -98,7 +98,7 @@ DBPoolConfig::load_from_xml_file(const string &xml_file_name)
 
 const DBPoolDataSource &
 DBPoolConfig::get_data_source(
-        const string &ds_name) const
+        const String &ds_name) const
 {
     Map::const_iterator i = ds_map_.find(ds_name);
     if (ds_map_.end() == i)
@@ -116,7 +116,7 @@ DBPoolConfig::list_data_sources() const
     return names;
 }
 
-bool find_subst_signs(const string &sql, vector<int> &pos_list)
+bool find_subst_signs(const String &sql, vector<int> &pos_list)
 {
     enum { NORMAL, MINUS_FOUND, LINE_COMMENT, SLASH_FOUND, COMMENT,
         COMMENT_ASTER_FOUND, IN_QUOT, IN_QUOT_QFOUND, IN_DQUOT } st;
@@ -192,8 +192,8 @@ bool find_subst_signs(const string &sql, vector<int> &pos_list)
                || st == LINE_COMMENT || st == SLASH_FOUND;
 }
 
-void split_by_subst_sign(const string &sql,
-        const vector<int> &pos_list, vector<string> &parts)
+void split_by_subst_sign(const String &sql,
+        const vector<int> &pos_list, vector<String> &parts)
 {
     int prev_pos = -1;
     for (int i = 0; i < pos_list.size(); ++i) {
@@ -204,10 +204,10 @@ void split_by_subst_sign(const string &sql,
     parts.push_back(sql.substr(prev_pos + 1, sql.size() - prev_pos - 1));
 }
 
-const string format_sql(const vector<string> &parts,
+const String format_sql(const vector<String> &parts,
         const Values &values, SqlDialect *dialect)
 {
-    string sql;
+    String sql;
     sql += parts[0];
     for (int i = 1; i < parts.size(); ++i) {
         sql += dialect->sql_value(values[i - 1]);
@@ -223,8 +223,8 @@ class DBPoolConnectBackend: public SqlConnectBackend
     SqlDialect *dialect_;
     mypp::Handle *handle_;
     auto_ptr<mypp::Statement> stmt_;
-    string saved_sql_;
-    vector<string> sql_parts_;
+    String saved_sql_;
+    vector<String> sql_parts_;
 public:
     DBPoolConnectBackend(const DBPoolConfig &conf, mypp::DBPool &pool)
         : conf_(conf)
@@ -238,16 +238,16 @@ public:
         close();
     }
 
-    void open(SqlDialect *dialect, const string &dsn,
-            const string & /* user */, const string & /* passwd */)
+    void open(SqlDialect *dialect, const String &dsn,
+            const String & /* user */, const String & /* passwd */)
     {
         close();
         DBPoolDataSource ds(conf_.get_data_source(dsn));
-        mypp::DSN mypp_dsn(ds.driver, ds.host, ds.port,
-                ds.user, ds.pass, ds.db);
+        mypp::DSN mypp_dsn(NARROW(ds.driver), NARROW(ds.host), ds.port,
+                NARROW(ds.user), NARROW(ds.pass), NARROW(ds.db));
         handle_ = pool_.get(mypp_dsn, ds.timeout);
         if (!handle_)
-            throw DBError("Can't get connection from pool");
+            throw DBError(_T("Can't get connection from pool"));
         handle_->Clear();
         dialect_ = dialect;
     }
@@ -263,24 +263,24 @@ public:
 
     void commit()
     {
-        exec_direct("COMMIT");
+        exec_direct(_T("COMMIT"));
     }
 
     void rollback()
     {
-        exec_direct("ROLLBACK");
+        exec_direct(_T("ROLLBACK"));
     }
 
-    void exec_direct(const string &sql)
+    void exec_direct(const String &sql)
     {
         try {
             saved_sql_ = sql;
             stmt_.reset(NULL);
-            stmt_.reset(new mypp::Statement(handle_, sql));
+            stmt_.reset(new mypp::Statement(handle_, NARROW(sql)));
             stmt_->Execute();
         }
         catch (const mypp::Exception &e) {
-            throw GenericDBError(e.error());
+            throw GenericDBError(WIDEN(e.error()));
         }
     }
 
@@ -288,32 +288,32 @@ public:
     {
         if (!stmt_.get())
             throw GenericDBError(
-                    "fetch_rows(): no statement. context: " + saved_sql_);
+                    _T("fetch_rows(): no statement. context: ") + saved_sql_);
         try {
             mypp::Row row;
             if (!stmt_->Fetch(row))
                 return RowPtr();
             RowPtr orm_row(new Row);
             for (int i = 0; i < row.size(); ++i) {
-                const string name = str_to_upper(row[i].getName());
+                const String name = str_to_upper(WIDEN(row[i].getName()));
                 if (row[i].isNull())
                     orm_row->push_back(RowItem(name, Value()));
                 else
-                    orm_row->push_back(RowItem(name, Value(row[i].asString())));
+                    orm_row->push_back(RowItem(name, Value(WIDEN(row[i].asString()))));
             }
             return orm_row;
         }
         catch (const mypp::Exception &e) {
-            throw GenericDBError(e.error());
+            throw GenericDBError(WIDEN(e.error()));
         }
     }
 
-    void prepare(const string &sql)
+    void prepare(const String &sql)
     {
         saved_sql_ = sql;
         vector<int> pos_list;
         find_subst_signs(sql, pos_list);
-        vector<string> empty;
+        vector<String> empty;
         sql_parts_.swap(empty);
         split_by_subst_sign(sql, pos_list, sql_parts_);
     }
@@ -344,7 +344,7 @@ public:
 };
 
 DBPoolDriver::DBPoolDriver(auto_ptr<DBPoolConfig> conf,
-        const string &name)
+        const String &name)
     : SqlDriver(name)
     , pimpl_(new DBPoolDriverImpl(conf))
 {}

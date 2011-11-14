@@ -13,9 +13,9 @@ typedef boost::shared_ptr<DomainObject> DomainObjectPtr;
 class NoCreator: public std::logic_error
 {
 public:
-    NoCreator(const std::string &entity_name) :
-        std::logic_error("Domain object creator for entity '" +
-                         entity_name + "' not found")
+    NoCreator(const String &entity_name) :
+        std::logic_error(NARROW(_T("Domain object creator for entity '") +
+                         entity_name + _T("' not found")))
     {}
 };
 
@@ -40,15 +40,15 @@ typedef boost::shared_ptr<ICreator> CreatorPtr;
 class DomainFactory
 {
 public:
-    typedef std::map<std::string, CreatorPtr> Map; 
+    typedef std::map<String, CreatorPtr> Map; 
 
-    void register_creator(const std::string &name, CreatorPtr creator)
+    void register_creator(const String &name, CreatorPtr creator)
     {
         creator_map_.insert(Map::value_type(name, creator));
     }
     
     DomainObjectPtr create_object(Session &session, 
-            const std::string &entity_name, LongInt id) const
+            const String &entity_name, LongInt id) const
     {
         Map::const_iterator it = creator_map_.find(entity_name);
         if (it == creator_map_.end())

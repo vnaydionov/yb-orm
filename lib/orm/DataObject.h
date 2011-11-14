@@ -26,7 +26,7 @@ typedef boost::shared_ptr<DataObject> DataObjectPtr;
 typedef boost::shared_ptr<RelationObject> RelationObjectPtr;
 typedef std::vector<DataObjectPtr> ObjectList;
 
-const std::string key2str(const Key &key);
+const String key2str(const Key &key);
 
 class Session;
 
@@ -80,11 +80,11 @@ public:
     void flush();
     EngineBase *engine() { return engine_; }
     void load_collection(ObjectList &out,
-                         const std::string &table_name,
+                         const String &table_name,
                          const Filter &filter, 
                          const StrList &order_by = StrList(),
                          int max = -1,
-                         const std::string &table_alias = "");
+                         const String &table_alias = _T(""));
     DataObjectResultSet load_collection(
             const Strings &tables, const Filter &filter,
             const StrList &order_by = StrList(), int max = -1);
@@ -93,42 +93,42 @@ public:
 class CascadeDeleteError: public BaseError {
 public:
     CascadeDeleteError(const Relation &rel):
-        BaseError("Cascade delete error: " +
-                rel.side(0) + "-" + rel.side(1))
+        BaseError(_T("Cascade delete error: ") +
+                rel.side(0) + _T("-") + rel.side(1))
     {}
 };
 
 class CycleDetected: public BaseError {
 public:
     CycleDetected():
-        BaseError("Cycle detected in the graph of objects")
+        BaseError(_T("Cycle detected in the graph of objects"))
     {}
 };
 
 class FieldNotFoundInFetchedRow : public ORMError
 {
 public:
-    FieldNotFoundInFetchedRow(const std::string &table_name, const std::string &field_name);
+    FieldNotFoundInFetchedRow(const String &table_name, const String &field_name);
 };
 
 class BadTypeCast : public ORMError
 {
 public:
-    BadTypeCast(const std::string &table_name, const std::string &field_name,
-            const std::string &str_value, const std::string &type);
+    BadTypeCast(const String &table_name, const String &field_name,
+            const String &str_value, const String &type);
 };
 
 class TableDoesNotMatchRow : public ORMError
 {
 public:
-    TableDoesNotMatchRow(const std::string &table_name, const std::string &table_name_from_row);
+    TableDoesNotMatchRow(const String &table_name, const String &table_name_from_row);
 };
 
 class StringTooLong : public ORMError
 {
 public:
-    StringTooLong(const std::string &table_name, const std::string &field_name,
-                  int max_len, const std::string &value);
+    StringTooLong(const String &table_name, const String &field_name,
+                  int max_len, const String &value);
 };
 
 class DataObjectAlreadyInSession : public ORMError
@@ -187,7 +187,7 @@ private:
     void depth(int d) { depth_ = d; }
 public:
     static void link(DataObject *master, Ptr slave,
-                     const std::string &relation_name, int mode);
+                     const String &relation_name, int mode);
     static void link(DataObject *master, Ptr slave,
                      const Relation &r);
     static Ptr create_new(const Table &table, Status status = New) {
@@ -212,12 +212,12 @@ public:
         lazy_load(table_.get_column(i));
         return values_[i];
     }
-    Value &get(const std::string &name) {
+    Value &get(const String &name) {
         return get(table_.idx_by_name(name));
     }
     const Value get_typed_value(const Column &col, const Value &v);
     void set(int i, const Value &v);
-    void set(const std::string &name, const Value &v) {
+    void set(const String &name, const Value &v) {
         set(table_.idx_by_name(name), v);
     }
     const Key &key();
@@ -237,17 +237,17 @@ public:
     void exclude_from_slave_relations();
     void set_free_from(RelationObject *rel);
     static void link_slave_to_master(Ptr slave, Ptr master,
-                                     const std::string relation_name = "")
+                                     const String relation_name = _T(""))
     {
         link(master.get(), slave, relation_name, 1);
     }
     static void link_master_to_slave(Ptr master, Ptr slave,
-                                     const std::string relation_name = "")
+                                     const String relation_name = _T(""))
     {
         link(master.get(), slave, relation_name, 0);
     }
-    static Ptr get_master(Ptr obj, const std::string &relation_name = "");
-    RelationObject *get_slaves(const std::string &relation_name = "");
+    static Ptr get_master(Ptr obj, const String &relation_name = _T(""));
+    RelationObject *get_slaves(const String &relation_name = _T(""));
     void calc_depth(int d, DataObject *parent = NULL);
 };
 

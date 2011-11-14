@@ -11,16 +11,16 @@ namespace Yb {
 class InvalidDBPoolDataSource: public DBError
 {
 public:
-    InvalidDBPoolDataSource(const std::string &ds_name):
-        DBError("Invalid DBPool data source: " + ds_name)
+    InvalidDBPoolDataSource(const String &ds_name):
+        DBError(_T("Invalid DBPool data source: ") + ds_name)
     {}
 };
 
 class DBPoolConfigParseError: public DBError
 {
 public:
-    DBPoolConfigParseError(const std::string &details):
-        DBError("DBPool config parse error: " + details)
+    DBPoolConfigParseError(const String &details):
+        DBError(_T("DBPool config parse error: ") + details)
     {}
 };
 
@@ -29,7 +29,7 @@ const int DBPOOL_DEFAULT_SIZE = 10;
 
 struct DBPoolDataSource
 {
-    std::string driver, host, user, pass, db;
+    String driver, host, user, pass, db;
     int port, timeout;
     DBPoolDataSource()
         : port(0)
@@ -40,15 +40,15 @@ struct DBPoolDataSource
 class DBPoolConfig
 {
 public:
-    typedef std::map<std::string, DBPoolDataSource> Map;
-    DBPoolConfig(const std::string &xml_file_name = "");
-    void register_data_source(const std::string &ds_name,
+    typedef std::map<String, DBPoolDataSource> Map;
+    DBPoolConfig(const String &xml_file_name = _T(""));
+    void register_data_source(const String &ds_name,
             const DBPoolDataSource &ds);
     void parse_from_xml_string(const std::string &xml_data);
-    void load_from_xml_file(const std::string &xml_file_name);
+    void load_from_xml_file(const String &xml_file_name);
     void set_pool_size(int pool_size) { pool_size_ = pool_size; }
     const DBPoolDataSource &get_data_source(
-            const std::string &ds_name) const;
+            const String &ds_name) const;
     const Strings list_data_sources() const;
     int get_pool_size() const { return pool_size_; }
 private:
@@ -63,7 +63,7 @@ class DBPoolDriver: public SqlDriver
     DBPoolDriverImpl *pimpl_;
 public:
     DBPoolDriver(std::auto_ptr<DBPoolConfig> conf,
-            const std::string &name = "DBPOOL3");
+            const String &name = _T("DBPOOL3"));
     ~DBPoolDriver();
     std::auto_ptr<SqlConnectBackend> create_backend();
 };

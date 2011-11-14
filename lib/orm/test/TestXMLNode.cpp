@@ -7,7 +7,7 @@
 #include "orm/DomainObj.h"
 #include "orm/Engine.h"
 
-#define TEST_TBL1 "T_ORM_TEST"
+#define TEST_TBL1 _T("T_ORM_TEST")
 #define NUM_STMT 6
 
 using namespace std;
@@ -18,7 +18,7 @@ class OrmTestDomainSimple: public DomainObject
 {
 public:
     OrmTestDomainSimple(Session &session, LongInt id)
-        : DomainObject(session, "T_ORM_TEST", id)
+        : DomainObject(session, _T("T_ORM_TEST"), id)
     {}
 };
 
@@ -33,7 +33,7 @@ class OrmXMLDomainSimple: public DomainObject
 {
 public:
     OrmXMLDomainSimple(Session &session, LongInt id)
-        : DomainObject(session, "T_ORM_XML", id)
+        : DomainObject(session, _T("T_ORM_XML"), id)
     {}
 };
 
@@ -50,37 +50,37 @@ class TestXMLNode : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE_END();
 
     Schema r_;
-    string db_type_;
+    String db_type_;
 
     void init_singleton_registry()
     {
         static bool registered = false;
         if (!registered) {
             registered = true;
-            theDomainFactory::instance().register_creator("T_ORM_XML",
+            theDomainFactory::instance().register_creator(_T("T_ORM_XML"),
                 CreatorPtr(new DomainCreator<OrmXMLDomainSimple>()));
-            theDomainFactory::instance().register_creator("T_ORM_TEST",
+            theDomainFactory::instance().register_creator(_T("T_ORM_TEST"),
                 CreatorPtr(new DomainCreator<OrmTestDomainSimple>()));
         }
 
         Schema &r = theMetaData::instance();
 //      if(r.size() == 0) {
-            Table t("T_ORM_TEST", "orm-test", "OrmTest");
-            t.set_seq_name("S_ORM_TEST_ID");
-            t.add_column(Column("ID", Value::LONGINT, 0, Column::PK | Column::RO));
-            t.add_column(Column("A", Value::STRING, 50, 0));
-            t.add_column(Column("B", Value::DATETIME, 0, 0));
-            t.add_column(Column("C", Value::DECIMAL, 0, 0));
+            Table t(_T("T_ORM_TEST"), _T("orm-test"), _T("OrmTest"));
+            t.set_seq_name(_T("S_ORM_TEST_ID"));
+            t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK | Column::RO));
+            t.add_column(Column(_T("A"), Value::STRING, 50, 0));
+            t.add_column(Column(_T("B"), Value::DATETIME, 0, 0));
+            t.add_column(Column(_T("C"), Value::DECIMAL, 0, 0));
             r.set_table(t);
-            Table t2("T_ORM_XML", "orm-xml", "OrmXml");
-            t2.set_seq_name("S_ORM_TEST_ID");
-            t2.add_column(Column("ID", Value::LONGINT, 0, Column::PK | Column::RO));
-            t2.add_column(Column("ORM_TEST_ID", Value::LONGINT, 0, 0, "T_ORM_TEST", "ID"));
-            t2.add_column(Column("B", Value::DECIMAL, 0, 0));
+            Table t2(_T("T_ORM_XML"), _T("orm-xml"), _T("OrmXml"));
+            t2.set_seq_name(_T("S_ORM_TEST_ID"));
+            t2.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK | Column::RO));
+            t2.add_column(Column(_T("ORM_TEST_ID"), Value::LONGINT, 0, 0, _T("T_ORM_TEST"), _T("ID")));
+            t2.add_column(Column(_T("B"), Value::DECIMAL, 0, 0));
             r.set_table(t2);
             Relation::AttrMap a1, a2;
-            a2["property"] = "orm_test";
-            Relation re(Relation::ONE2MANY, "OrmTest", a1, "OrmXml", a2);
+            a2[_T("property")] = _T("orm_test");
+            Relation re(Relation::ONE2MANY, _T("OrmTest"), a1, _T("OrmXml"), a2);
             r.add_relation(re);
 //      }
     }
@@ -88,55 +88,55 @@ class TestXMLNode : public CppUnit::TestFixture
 public:
     void setUp()
     {
-        db_type_ = xgetenv("YBORM_DBTYPE");
+        db_type_ = xgetenv(_T("YBORM_DBTYPE"));
 
-        Table t("A");
-        t.add_column(Column("X", Value::LONGINT, 0, Column::PK | Column::RO));
-        t.add_column(Column("Y", Value::STRING, 0, 0));
-        t.add_column(Column("Z", Value::DECIMAL, 0, 0));
+        Table t(_T("A"));
+        t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+        t.add_column(Column(_T("Y"), Value::STRING, 0, 0));
+        t.add_column(Column(_T("Z"), Value::DECIMAL, 0, 0));
         Schema r;
         r.set_table(t);
-        Table t2("XX");
-        t2.add_column(Column("XA", Value::LONGINT, 0, Column::PK | Column::RO));
-        t2.add_column(Column("XB", Value::STRING, 0, 0));
-        t2.add_column(Column("XC", Value::DECIMAL, 0, 0));
+        Table t2(_T("XX"));
+        t2.add_column(Column(_T("XA"), Value::LONGINT, 0, Column::PK | Column::RO));
+        t2.add_column(Column(_T("XB"), Value::STRING, 0, 0));
+        t2.add_column(Column(_T("XC"), Value::DECIMAL, 0, 0));
         r.set_table(t2);
-        Table t3("N");
-        t3.add_column(Column("A", Value::LONGINT, 0, Column::PK | Column::RO));
+        Table t3(_T("N"));
+        t3.add_column(Column(_T("A"), Value::LONGINT, 0, Column::PK | Column::RO));
         r.set_table(t3);
         r_ = r;
 
-        const char **st;
-        if (db_type_ == "ORACLE") {
-            static const char *st_data[NUM_STMT] = {
-                "DELETE FROM T_ORM_XML",
-                "DELETE FROM " TEST_TBL1,
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
-                    "'abc', TO_DATE('1981-05-30', 'YYYY-MM-DD'), 3.14)",
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
-                    "'xyz', TO_DATE('2006-11-22 09:54:00', 'YYYY-MM-DD HH24:MI:SS'), -0.5)",
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
-                    "'@#$', TO_DATE('2006-11-22', 'YYYY-MM-DD'), 0.01)",
-                "INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES(10, 1, 4)",
+        const Char **st;
+        if (db_type_ == _T("ORACLE")) {
+            static const Char *st_data[NUM_STMT] = {
+                _T("DELETE FROM T_ORM_XML"),
+                _T("DELETE FROM ") TEST_TBL1,
+                _T("INSERT INTO ") TEST_TBL1 _T("(ID, A, B, C) VALUES(1, ")
+                    _T("'abc', TO_DATE('1981-05-30', 'YYYY-MM-DD'), 3.14)"),
+                _T("INSERT INTO ") TEST_TBL1 _T("(ID, A, B, C) VALUES(2, ")
+                    _T("'xyz', TO_DATE('2006-11-22 09:54:00', 'YYYY-MM-DD HH24:MI:SS'), -0.5)"),
+                _T("INSERT INTO ") TEST_TBL1 _T("(ID, A, B, C) VALUES(3, ")
+                    _T("'@#$', TO_DATE('2006-11-22', 'YYYY-MM-DD'), 0.01)"),
+                _T("INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES(10, 1, 4)"),
             };
             st = st_data;
         }
         else {
-            static const char *st_data[NUM_STMT] = {
-                "DELETE FROM T_ORM_XML",
-                "DELETE FROM " TEST_TBL1,
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
-                    "'abc', '1981-05-30', 3.14)",
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
-                    "'xyz', '2006-11-22 09:54:00', -0.5)",
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
-                    "'@#$', '2006-11-22', 0.01)",
-                "INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES(10, 1, 4)",
+            static const Char *st_data[NUM_STMT] = {
+                _T("DELETE FROM T_ORM_XML"),
+                _T("DELETE FROM ") TEST_TBL1,
+                _T("INSERT INTO ") TEST_TBL1 _T("(ID, A, B, C) VALUES(1, ")
+                    _T("'abc', '1981-05-30', 3.14)"),
+                _T("INSERT INTO ") TEST_TBL1 _T("(ID, A, B, C) VALUES(2, ")
+                    _T("'xyz', '2006-11-22 09:54:00', -0.5)"),
+                _T("INSERT INTO ") TEST_TBL1 _T("(ID, A, B, C) VALUES(3, ")
+                    _T("'@#$', '2006-11-22', 0.01)"),
+                _T("INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES(10, 1, 4)"),
             };
             st = st_data;
         }
-        SqlConnect conn("ODBC", xgetenv("YBORM_DBTYPE"),
-                xgetenv("YBORM_DB"), xgetenv("YBORM_USER"), xgetenv("YBORM_PASSWD"));
+        SqlConnect conn(_T("ODBC"), xgetenv(_T("YBORM_DBTYPE")),
+                xgetenv(_T("YBORM_DB")), xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
         for (size_t i = 0; i < NUM_STMT; ++i)
             conn.exec_direct(st[i]);
         conn.commit();
@@ -144,26 +144,26 @@ public:
 
     void test_xmlize_data_object()
     {
-        DataObject::Ptr data = DataObject::create_new(r_.get_table("A"));
-        data->set("x", 10);
-        data->set("y", "zzz");
-        data->set("z", Decimal("1.20"));
+        DataObject::Ptr data = DataObject::create_new(r_.get_table(_T("A")));
+        data->set(_T("x"), 10);
+        data->set(_T("y"), _T("zzz"));
+        data->set(_T("z"), Decimal(_T("1.20")));
         XMLNode node(data);
         CPPUNIT_ASSERT_EQUAL(string("<a><x>10</x><y>zzz</y><z>1.2</z></a>\n"), node.get_xml());
     }
 
     void test_replace_child_object()
     {
-        DataObject::Ptr data = DataObject::create_new(r_.get_table("A"));
-        data->set("x", 10);
-        data->set("y", "zzz");
-        data->set("z", Decimal(1.2));
-        DataObject::Ptr datax = DataObject::create_new(r_.get_table("XX"));
-        datax->set("xa", 20);
-        datax->set("xb", "aaa");
-        datax->set("xc", Decimal("1.1"));
+        DataObject::Ptr data = DataObject::create_new(r_.get_table(_T("A")));
+        data->set(_T("x"), 10);
+        data->set(_T("y"), _T("zzz"));
+        data->set(_T("z"), Decimal(1.2));
+        DataObject::Ptr datax = DataObject::create_new(r_.get_table(_T("XX")));
+        datax->set(_T("xa"), 20);
+        datax->set(_T("xb"), _T("aaa"));
+        datax->set(_T("xc"), Decimal(_T("1.1")));
         XMLNode node(data);
-        node.replace_child_object_by_field("x", datax);
+        node.replace_child_object_by_field(_T("x"), datax);
         CPPUNIT_ASSERT_EQUAL(string(
                     "<a><xx><xa>20</xa><xb>aaa</xb><xc>1.1</xc></xx><y>zzz</y><z>1.2</z></a>\n"),
                 node.get_xml());
@@ -171,14 +171,14 @@ public:
 
     void test_add_node()
     {
-        DataObject::Ptr data = DataObject::create_new(r_.get_table("A"));
-        data->set("x", 10);
-        data->set("y", "zzz");
-        data->set("z", Decimal("1.2"));
-        DataObject::Ptr datax = DataObject::create_new(r_.get_table("XX"));
-        datax->set("xa", 20);
-        datax->set("xb", "aaa");
-        datax->set("xc", Decimal("1.1"));
+        DataObject::Ptr data = DataObject::create_new(r_.get_table(_T("A")));
+        data->set(_T("x"), 10);
+        data->set(_T("y"), _T("zzz"));
+        data->set(_T("z"), Decimal(_T("1.2")));
+        DataObject::Ptr datax = DataObject::create_new(r_.get_table(_T("XX")));
+        datax->set(_T("xa"), 20);
+        datax->set(_T("xb"), _T("aaa"));
+        datax->set(_T("xc"), Decimal(_T("1.1")));
         XMLNode node(data);
         XMLNode child(datax);
         node.add_node(datax);
@@ -190,8 +190,8 @@ public:
 
     void test_xmlize_null_value()
     {
-        DataObject::Ptr data = DataObject::create_new(r_.get_table("N"));
-        data->set("a", Value());
+        DataObject::Ptr data = DataObject::create_new(r_.get_table(_T("N")));
+        data->set(_T("a"), Value());
         XMLNode node(data);
         CPPUNIT_ASSERT_EQUAL(std::string("<n><a is_null=\"1\"/></n>\n"), node.get_xml());
     }

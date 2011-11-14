@@ -25,21 +25,21 @@ class TestValue : public CppUnit::TestFixture
 public:
     void test_type()
     {
-        CPPUNIT_ASSERT(Value::STRING == Value("z").get_type());
+        CPPUNIT_ASSERT(Value::STRING == Value(_T("z")).get_type());
         CPPUNIT_ASSERT(Value::LONGINT == Value(12).get_type());
-        CPPUNIT_ASSERT(Value::DECIMAL == Value(Decimal("1")).get_type());
+        CPPUNIT_ASSERT(Value::DECIMAL == Value(Decimal(_T("1"))).get_type());
         DateTime a(now());
         CPPUNIT_ASSERT(Value::DATETIME == Value(a).get_type());
     }
 
     void test_value()
     {
-        CPPUNIT_ASSERT_EQUAL(string("z"), Value("z").as_string());
-        CPPUNIT_ASSERT_EQUAL(12, (int)Value("12").as_longint());
-        CPPUNIT_ASSERT(Decimal("12.3") == Value("012.30").as_decimal());
+        CPPUNIT_ASSERT_EQUAL(string("z"), NARROW(Value(_T("z")).as_string()));
+        CPPUNIT_ASSERT_EQUAL(12, (int)Value(_T("12")).as_longint());
+        CPPUNIT_ASSERT(Decimal(_T("12.3")) == Value(_T("012.30")).as_decimal());
         DateTime a(mk_datetime(2006, 11, 16, 15, 5, 10));
-        CPPUNIT_ASSERT(a == Value("2006-11-16T15:05:10").as_date_time());
-        CPPUNIT_ASSERT(a == Value("2006-11-16 15:05:10").as_date_time());
+        CPPUNIT_ASSERT(a == Value(_T("2006-11-16T15:05:10")).as_date_time());
+        CPPUNIT_ASSERT(a == Value(_T("2006-11-16 15:05:10")).as_date_time());
         time_t t = time(NULL);
         tm stm;
         localtime_safe(&t, &stm);
@@ -52,7 +52,7 @@ public:
     {
         CPPUNIT_ASSERT(Value().is_null());
         CPPUNIT_ASSERT(!Value(1).is_null());
-        CPPUNIT_ASSERT(!Value("ab").is_null());
+        CPPUNIT_ASSERT(!Value(_T("ab")).is_null());
         CPPUNIT_ASSERT(!Value(Decimal(1)).is_null());
         CPPUNIT_ASSERT(!Value(now()).is_null());
     }
@@ -64,8 +64,8 @@ public:
         CPPUNIT_ASSERT(Value() != Value(1));
         CPPUNIT_ASSERT(Value(1) == Value(1));
         CPPUNIT_ASSERT(Value(1) != Value(2));
-        CPPUNIT_ASSERT(Value("ab") == Value("ab"));
-        CPPUNIT_ASSERT(Value("ab") != Value("ac"));
+        CPPUNIT_ASSERT(Value(_T("ab")) == Value(_T("ab")));
+        CPPUNIT_ASSERT(Value(_T("ab")) != Value(_T("ac")));
         CPPUNIT_ASSERT(Value(Decimal(1)) == Value(Decimal(1)));
         CPPUNIT_ASSERT(Value(Decimal(1)) != Value(Decimal(2)));
         time_t t = time(NULL);
@@ -81,8 +81,8 @@ public:
         CPPUNIT_ASSERT(!(Value(1) < Value()));
         CPPUNIT_ASSERT(Value(1) < Value(2));
         CPPUNIT_ASSERT(!(Value(1) < Value(1)));
-        CPPUNIT_ASSERT(Value("ab") < Value("ac"));
-        CPPUNIT_ASSERT(!(Value("ab") < Value("ab")));
+        CPPUNIT_ASSERT(Value(_T("ab")) < Value(_T("ac")));
+        CPPUNIT_ASSERT(!(Value(_T("ab")) < Value(_T("ab"))));
         CPPUNIT_ASSERT(Value(Decimal(1)) < Value(Decimal(2)));
         CPPUNIT_ASSERT(!(Value(Decimal(1)) < Value(Decimal(1))));
         time_t t = time(NULL);
@@ -93,10 +93,10 @@ public:
 
     void test_as_sql_string()
     {
-        CPPUNIT_ASSERT_EQUAL(string("NULL"), Value().sql_str());
-        CPPUNIT_ASSERT_EQUAL(string("123"), Value(123).sql_str());
-        CPPUNIT_ASSERT_EQUAL(string("'a''sd'"), Value("a'sd").sql_str());
-        CPPUNIT_ASSERT_EQUAL(string("123.45"), Value(Decimal("0123.450")).sql_str());
+        CPPUNIT_ASSERT_EQUAL(string("NULL"), NARROW(Value().sql_str()));
+        CPPUNIT_ASSERT_EQUAL(string("123"), NARROW(Value(123).sql_str()));
+        CPPUNIT_ASSERT_EQUAL(string("'a''sd'"), NARROW(Value(_T("a'sd")).sql_str()));
+        CPPUNIT_ASSERT_EQUAL(string("123.45"), NARROW(Value(Decimal(_T("0123.450"))).sql_str()));
         Value t(now());
         //CPPUNIT_ASSERT_EQUAL(
         //        "TO_DATE('" + t.as_string() + "', 'YYYY-MM-DD\"T\"HH24:MI:SS')",
@@ -105,11 +105,11 @@ public:
 
     void test_as_string()
     {
-        CPPUNIT_ASSERT_EQUAL(string("123"), Value(123).as_string());
-        CPPUNIT_ASSERT_EQUAL(string("a'sd"), Value("a'sd").as_string());
-        CPPUNIT_ASSERT_EQUAL(string("123.45"), Value(Decimal("0123.450")).as_string());
+        CPPUNIT_ASSERT_EQUAL(string("123"), NARROW(Value(123).as_string()));
+        CPPUNIT_ASSERT_EQUAL(string("a'sd"), NARROW(Value(_T("a'sd")).as_string()));
+        CPPUNIT_ASSERT_EQUAL(string("123.45"), NARROW(Value(Decimal(_T("0123.450"))).as_string()));
         DateTime a(mk_datetime(2006, 11, 16, 15, 5, 10));
-        CPPUNIT_ASSERT_EQUAL(string("2006-11-16T15:05:10"), Value(a).as_string());
+        CPPUNIT_ASSERT_EQUAL(string("2006-11-16T15:05:10"), NARROW(Value(a).as_string()));
     }
 
     void test_value_is_null()
@@ -119,17 +119,17 @@ public:
 
     void test_value_bad_cast_long_long()
     {
-        Value("ab").as_longint();
+        Value(_T("ab")).as_longint();
     }
 
     void test_value_bad_cast_Decimal()
     {
-        Value("ab").as_decimal();
+        Value(_T("ab")).as_decimal();
     }
 
     void test_value_bad_cast_date_time()
     {
-        Value("ab").as_date_time();
+        Value(_T("ab")).as_date_time();
     }
 };
 

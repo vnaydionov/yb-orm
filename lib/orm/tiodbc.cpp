@@ -31,6 +31,75 @@
 #include <memory>
 #include <util/UnicodeSupport.h>
 
+namespace {
+
+#if defined(_UNICODE)
+#define CHAR_MASK 0xFFFF
+typedef wchar_t MY_TCHAR;
+#else
+#define CHAR_MASK 0xFF
+typedef char MY_TCHAR;
+#endif
+
+template <class T>
+size_t str_length(const T *s) {
+	const T *s0 = s;
+	while (*s)
+		++s;
+	return s - s0;
+}
+
+template <class T>
+T *str_copy(T *dst, const T *src) {
+	T *dst0 = dst;
+	while (*src)
+		*dst++ = *src++;
+	return dst0;
+}
+
+template <class T>
+T *str_duplicate(const T *s) {
+	size_t n = str_length(s);
+	T *t = new T[n + 1];
+	return str_copy(t, s);
+}
+
+template <class T, class U>
+T *str_convert(T *dst, const U *src)
+{
+	T *dst0 = dst;
+	for (; *src; ++src, ++dst) {
+		if ((*src & (U)CHAR_MASK) != *src)
+			*dst = (T)'?';
+		else
+			*dst = (T)*src;
+	}
+	*dst = *src;
+	return dst0;
+}
+
+template <class T>
+class CharBuf {
+	CharBuf(const CharBuf &x);
+	CharBuf &operator=(const CharBuf &x);
+public:
+	T *data;
+	CharBuf(size_t n): data(new T[n]) {}
+	template <class U>
+	CharBuf(const U *d): data(new T[str_length(d) + 1])
+	{
+		str_convert(data, d);
+	}
+	~CharBuf() { delete [] data; }
+	size_t length() const { return str_length(data); }
+	T *release() { T *d = data; data = NULL; return d; }
+};
+
+typedef CharBuf<MY_TCHAR> MY_TCHAR_buf;
+typedef CharBuf<SQLTCHAR> SQLTCHAR_buf;
+
+} // end of anonymous namespace
+
 // Macro for easy return code check
 #define TIODBC_SUCCESS_CODE(rc) \
 	((rc==SQL_SUCCESS)||(rc==SQL_SUCCESS_WITH_INFO))
@@ -47,8 +116,7 @@ namespace tiodbc
 	// Get an error of an ODBC handle
 	bool __get_error(SQLSMALLINT _handle_type, SQLHANDLE _handle, _tstring & _error_desc, _tstring & _status_code)
 	{
-		TCHAR status_code[64];
-		TCHAR error_message[512];
+		SQLTCHAR status_code[64], error_message[511];
 		SQLINTEGER i_native_error = 0;
 		SQLSMALLINT total_bytes = 0;
 		RETCODE rc;
@@ -58,16 +126,18 @@ namespace tiodbc
 			_handle_type,
 			_handle,
 			1,
-			(SQLTCHAR *)&status_code,
+			status_code,
 			&i_native_error,
-			(SQLTCHAR *)&error_message,
+			error_message,
 			sizeof(error_message),
 			&total_bytes);
 
 		if (TIODBC_SUCCESS_CODE(rc))
 		{
-			_error_desc = error_message;
-			_status_code = status_code;
+			MY_TCHAR_buf t_status_code(status_code),
+						 t_error_message(error_message);
+			_error_desc = t_error_message.data;
+			_status_code = t_status_code.data;
 			return true;
 		}
 
@@ -170,14 +240,12 @@ namespace tiodbc
 		}
 
 		// Connect!
-		rc = SQLConnect(conn_h, 
-			(SQLTCHAR *) _dsn.c_str(),
-			SQL_NTS,
-			(_user.size() > 0)?(SQLTCHAR *)_user.c_str():NULL,
-			SQL_NTS,
-			(_pass.size() > 0)?(SQLTCHAR *)_pass.c_str():NULL,
-			SQL_NTS
-			);
+		SQLTCHAR_buf s_dsn(_dsn.c_str()),
+					 s_user(_user.c_str()), s_pass(_pass.c_str());
+		rc = SQLConnect(conn_h,
+					    s_dsn.data, SQL_NTS,
+						s_user.data, SQL_NTS,
+				        s_pass.data, SQL_NTS);
 
 		if (!TIODBC_SUCCESS_CODE(rc))
 			b_connected = false;
@@ -310,7 +378,7 @@ namespace tiodbc
 			return str_buf;
 
 		SQLLEN sz_needed = 0;
-		TCHAR small_buff[256];
+		SQLTCHAR small_buff[256];
 		RETCODE rc;
 				
 		// Try with small buffer
@@ -323,16 +391,18 @@ namespace tiodbc
 				is_null_flag = 1;
 				return _tstring();
 			}
-			str_buf = _tstring(small_buff);
+			MY_TCHAR_buf t_small_buff(small_buff);
+			str_buf = _tstring(t_small_buff.data);
 			return str_buf;
 		}
 		else if (sz_needed > 0)
 		{
 			// A bigger buffer is needed
 			SQLINTEGER sz_buff = sz_needed + 1;
-			std::auto_ptr<TCHAR> p_data(new TCHAR[sz_buff]);
-			SQLGetData(stmt_h, col_num, SQL_C_TCHAR, (SQLTCHAR *)p_data.get(), sz_buff, &sz_needed);
-			str_buf = _tstring(p_data.get());
+			SQLTCHAR_buf buff(sz_buff);
+			SQLGetData(stmt_h, col_num, SQL_C_TCHAR, buff.data, sz_buff, &sz_needed);
+			MY_TCHAR_buf t_buff(buff.data);
+			str_buf = _tstring(t_buff.data);
 			return str_buf;
 		}
 
@@ -436,39 +506,51 @@ namespace tiodbc
 
 	// Constructor
 	param_impl::param_impl(HSTMT _stmt, int _par_num)
-		:stmt_h(_stmt),
-		par_num(_par_num)
+		: stmt_h(_stmt)
+		, par_num(_par_num)
+		, _int_string(NULL)
 	{}
 
 	// Copy constructor
 	param_impl::param_impl(const param_impl & r)
-		:stmt_h(r.stmt_h),
-		par_num(r.par_num)
-	{}
+		: stmt_h(r.stmt_h)
+		, par_num(r.par_num)
+		, _int_string(NULL)
+	{
+		if (r._int_string)
+			_int_string = str_duplicate(r._int_string);
+	}
 
 	// Destructor
 	param_impl::~param_impl()
-	{}
+	{
+		delete [] _int_string;
+	}
 
 	// Copy operator
 	param_impl & param_impl::operator=(const param_impl & r)
 	{
 		stmt_h = r.stmt_h;
 		par_num = r.par_num;
+		delete [] _int_string;
+		if (r._int_string)
+			_int_string = str_duplicate(r._int_string);
 		return *this;
 	}
 
 	// Set as string
-	const _tstring & param_impl::set_as_string(
-			const _tstring & _str, bool _is_null)
+	void param_impl::set_as_string(const _tstring & _str, bool _is_null)
 	{
+		delete [] _int_string;
 		if (_is_null) {
 			// Nullify buffer
-			_int_string = _tstring();
+			SQLTCHAR_buf s_str(_T(""));
+			_int_string = s_str.release();
 		}
 		else {
 			// Save buffer internally
-			_int_string = _str;
+			SQLTCHAR_buf s_str(_str.c_str());
+			_int_string = s_str.release();
 		}
 		// Bind on internal buffer		
 		_int_SLOIP = _is_null? SQL_NULL_DATA: SQL_NTS;
@@ -477,13 +559,11 @@ namespace tiodbc
 			SQL_PARAM_INPUT,
 			SQL_C_TCHAR,
 			SQL_CHAR,
-			(SQLUINTEGER)_int_string.size(),
+			(SQLUINTEGER)_str.size(),
 			0,
-			(SQLPOINTER *)_int_string.c_str(),
-			(SQLINTEGER)_int_string.size()+1,
+			(SQLPOINTER *)_int_string,
+			(SQLINTEGER)_str.size()+1,
 			&_int_SLOIP);
-
-		return _int_string;
 	}
 
 	// Set as long
@@ -611,7 +691,8 @@ namespace tiodbc
 			return false;
 
 		// Prepare statement
-		rc = SQLPrepare(stmt_h, (SQLTCHAR *)_stmt.c_str(), SQL_NTS);
+		SQLTCHAR_buf buff(_stmt.c_str());
+		rc = SQLPrepare(stmt_h, buff.data, SQL_NTS);
 
 		if (!TIODBC_SUCCESS_CODE(rc))
 			return false;
@@ -632,9 +713,12 @@ namespace tiodbc
 			return false;
 
 		// Execute directly statement
-		rc = SQLExecDirect(stmt_h, (SQLTCHAR *)_query.c_str(), SQL_NTS);
+		SQLTCHAR_buf buff(_query.c_str());
+		rc = SQLExecDirect(stmt_h, buff.data, SQL_NTS);
+
 		if (!TIODBC_SUCCESS_CODE(rc) && rc != SQL_NO_DATA)
 			return false;
+
 		b_col_info_needed = true;
 		return true;
 	}
@@ -708,8 +792,8 @@ namespace tiodbc
 	// Get a field by column number (1-based)
 	const field_impl statement::field(int _num) const
 	{	
-		return field_impl(stmt_h, _num,
-				(TCHAR *)m_cols[_num - 1].name, m_cols[_num - 1].type);
+		MY_TCHAR_buf name(m_cols[_num - 1].name);
+		return field_impl(stmt_h, _num, name.data, m_cols[_num - 1].type);
 	}
 
 	// Count columns of the result
