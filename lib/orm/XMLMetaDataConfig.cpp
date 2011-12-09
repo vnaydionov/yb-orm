@@ -56,12 +56,11 @@ void XMLMetaDataConfig::parse(Schema &reg)
         if (child->type != XML_ELEMENT_NODE)
             continue;
         if (!strcmp((const char *)child->name, "table")) {
-            Table t;
-            parse_table(child, t);
-            reg.set_table(t);
+            Table::Ptr t = parse_table(child);
+            reg.add_table(t);
         } else if (!strcmp((const char *)child->name, "relation")) {
-            Relation r;
-            if (parse_relation(child, r))
+            Relation::Ptr r = parse_relation(child);
+            if (r.get())
                 reg.add_relation(r);
         } else
             throw ParseError(String(_T("Unknown element '")) +
@@ -70,11 +69,9 @@ void XMLMetaDataConfig::parse(Schema &reg)
     }
 }
 
-void XMLMetaDataConfig::parse_table(xmlNodePtr p_node, Table &table_meta)
+Table::Ptr XMLMetaDataConfig::parse_table(xmlNodePtr p_node)
 {
-    String sequence_name;
-    String name;
-    String xml_name;
+    String sequence_name, name, xml_name, class_name;
     bool autoinc = false;
 
     Node node(p_node, false);
@@ -95,17 +92,17 @@ void XMLMetaDataConfig::parse_table(xmlNodePtr p_node, Table &table_meta)
     else
         xml_name = mk_xml_name(name, _T(""));
 
-    table_meta.set_name (name);
-    table_meta.set_xml_name(xml_name);
-    table_meta.set_seq_name(sequence_name);
-    table_meta.set_autoinc(autoinc);
-
     if (node.HasNotEmptyAttr(_T("class")))
-        table_meta.set_class_name(node.GetAttr(_T("class")));
+        class_name = node.GetAttr(_T("class"));
     else
         skip_generation_.push_back(name);
 
-    parse_column(node.get()->children, table_meta);
+    Table::Ptr table_meta(new Table(name, xml_name, class_name));
+    table_meta->set_seq_name(sequence_name);
+    table_meta->set_autoinc(autoinc);
+
+    parse_column(node.get()->children, *table_meta);
+    return table_meta;
 }
 
 void XMLMetaDataConfig::parse_relation_side(xmlNodePtr p_node,
@@ -123,7 +120,7 @@ void XMLMetaDataConfig::parse_relation_side(xmlNodePtr p_node,
     attrs.swap(new_attrs);
 }
 
-bool XMLMetaDataConfig::parse_relation(xmlNodePtr p_node, Relation &rel)
+Relation::Ptr XMLMetaDataConfig::parse_relation(xmlNodePtr p_node)
 {
     Node node(p_node, false);
     if (!node.HasNotEmptyAttr(_T("type")))
@@ -146,7 +143,7 @@ bool XMLMetaDataConfig::parse_relation(xmlNodePtr p_node, Relation &rel)
         rtype = Relation::ONE2MANY;
     else
         //throw MandatoryAttributeAbsent(_T("relation"), _T("type"));
-        return false;
+        return Relation::Ptr();
     String one, many;
     Relation::AttrMap a1, a2;
     static const Char
@@ -166,8 +163,8 @@ bool XMLMetaDataConfig::parse_relation(xmlNodePtr p_node, Relation &rel)
                     WIDEN((const char *)child->name) +
                     _T("' found during parse of element 'relation'"));
     }
-    rel = Relation(rtype, one, a1, many, a2);
-    return true;
+    Relation::Ptr rel(new Relation(rtype, one, a1, many, a2));
+    return rel;
 }
 
 int XMLMetaDataConfig::string_type_to_int(const String &type, const String &field_name)

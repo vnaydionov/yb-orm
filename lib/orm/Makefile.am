@@ -47,7 +47,9 @@ CPP_FILES = \
 	tiodbc.cpp \
 	XMLMetaDataConfig.cpp \
 	XMLNode.cpp \
-	DataObject.cpp
+	DomainFactory.cpp \
+	DataObject.cpp \
+	DomainObj.cpp
 
 lib_LTLIBRARIES = libyborm.la
 

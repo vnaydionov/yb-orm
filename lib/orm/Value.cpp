@@ -5,7 +5,6 @@
 #include <boost/thread/mutex.hpp>
 #include <util/str_utils.hpp>
 #include "Value.h"
-#include "MetaData.h"
 
 using namespace std;
 using namespace Yb::StrUtils;

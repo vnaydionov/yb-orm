@@ -73,19 +73,19 @@ deep_xmlize(Session &session, DataObject::Ptr d,
 {
     XMLNode node(d, alt_name);
     if (depth == -1 || depth > 0) {
-        const Table &table = d->table();
-        const String &cname = table.get_class_name();
-        Columns::const_iterator it = table.begin(), end = table.end();
+        const Table &tbl = d->table();
+        const String &cname = tbl.get_class_name();
+        Columns::const_iterator it = tbl.begin(), end = tbl.end();
         for (; it != end; ++it)
             if (it->has_fk() && !d->get(it->get_name()).is_null()) {
-                const Table &fk_table = table.schema().
-                    get_table(it->get_fk_table_name());
+                const Table &fk_table = tbl.schema().
+                    table(it->get_fk_table_name());
                 Schema::RelMap::const_iterator
-                    j = table.schema().rels_lower_bound(cname),
-                    jend = table.schema().rels_upper_bound(cname);
+                    j = tbl.schema().rels_lower_bound(cname),
+                    jend = tbl.schema().rels_upper_bound(cname);
                 for (; j != jend; ++j) {
-                    if (j->second.type() == Relation::ONE2MANY &&
-                        j->second.side(0) == fk_table.get_class_name())
+                    if (j->second->type() == Relation::ONE2MANY &&
+                        j->second->side(0) == fk_table.get_class_name())
                     {
                         boost::shared_ptr<XMLizable> domain_obj = 
                             theDomainFactory::instance().create_object(
@@ -93,7 +93,7 @@ deep_xmlize(Session &session, DataObject::Ptr d,
                                 d->get(it->get_name()).as_longint());
                         XMLNode ref_node(domain_obj->xmlize(
                             depth == -1? -1: depth - 1, mk_xml_name(
-                                j->second.attr(1, _T("property")), _T("")
+                                j->second->attr(1, _T("property")), _T("")
                             )));
                         node.replace_child_object_by_field(
                             it->get_xml_name(), ref_node);

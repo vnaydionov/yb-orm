@@ -37,7 +37,7 @@ public:
     void test_column()
     {
         Column c(_T("x"), Value::LONGINT, 0, Column::PK | Column::RO);
-        CPPUNIT_ASSERT_EQUAL(string("X"), NARROW(c.get_name()));
+        CPPUNIT_ASSERT_EQUAL(string("x"), NARROW(c.get_name()));
         CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, c.get_type());
         CPPUNIT_ASSERT_EQUAL(0, (int)c.get_size());
         CPPUNIT_ASSERT_EQUAL((int)(Column::PK | Column::RO), c.get_flags());
@@ -58,20 +58,17 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("xYz"), NARROW(d.get_xml_name()));
         CPPUNIT_ASSERT(!d.has_fk());
         Column e(_T("X_Y"), Value::LONGINT, 0, 0, _T("b"), _T("z"));
-        CPPUNIT_ASSERT_EQUAL(string("B"), NARROW(e.get_fk_table_name()));
-        CPPUNIT_ASSERT_EQUAL(string("Z"), NARROW(e.get_fk_name()));
+        CPPUNIT_ASSERT_EQUAL(string("b"), NARROW(e.get_fk_table_name()));
+        CPPUNIT_ASSERT_EQUAL(string("z"), NARROW(e.get_fk_name()));
         CPPUNIT_ASSERT(e.has_fk());
     }
 
     void test_table_cons()
     {
-        Table t;
-        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t.get_name()));
-        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t.get_xml_name()));
         Table u(_T("a"));
-        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(u.get_name()));
+        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(u.get_name()));
         CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(u.get_xml_name()));
-        Table v(_T("a_a"));
+        Table v(_T("A_A"));
         CPPUNIT_ASSERT_EQUAL(string("A_A"), NARROW(v.get_name()));
         CPPUNIT_ASSERT_EQUAL(string("a-a"), NARROW(v.get_xml_name()));
         Table w(_T("a"), _T("b"));
@@ -85,10 +82,10 @@ public:
         CPPUNIT_ASSERT_EQUAL(0, (int)t.size());
         t.add_column(Column(_T("x"), Value::LONGINT, 0, 0));
         CPPUNIT_ASSERT_EQUAL(1, (int)t.size());
-        CPPUNIT_ASSERT_EQUAL(string("X"), NARROW(t.begin()->get_name()));
-        t.add_column(Column(_T("Y"), Value::LONGINT, 0, 0));
+        CPPUNIT_ASSERT_EQUAL(string("x"), NARROW(t.begin()->get_name()));
+        t.add_column(Column(_T("y"), Value::LONGINT, 0, 0));
         CPPUNIT_ASSERT_EQUAL(2, (int)t.size());
-        CPPUNIT_ASSERT_EQUAL(string("Y"), NARROW(t.get_column(_T("y")).get_name()));
+        CPPUNIT_ASSERT_EQUAL(string("y"), NARROW(t.get_column(_T("Y")).get_name()));
     }
 
     void test_table_seq()
@@ -96,7 +93,7 @@ public:
         Table t(_T("A"));
         CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t.get_seq_name()));
         t.set_seq_name(_T("s_a_id"));
-        CPPUNIT_ASSERT_EQUAL(string("S_A_ID"), NARROW(t.get_seq_name()));
+        CPPUNIT_ASSERT_EQUAL(string("s_a_id"), NARROW(t.get_seq_name()));
     }
 
     void test_table_synth_pk()
@@ -135,79 +132,80 @@ public:
 
     void test_meta_data_bad_column_name()
     {
-        Table t;
+        Table t(_T("A"));
         t.add_column(Column());
     }
 
     void test_meta_data_bad_column_name2()
     {
-        Table t;
+        Table t(_T("A"));
         t.add_column(Column(_T("1"), 0, 0, 0));
     }
 
     void test_meta_data_column_not_found()
     {
-        Table t;
+        Table t(_T("A"));
         t.get_column(_T("Y"));
     }
 
     void test_md_registry()
     {
-        Table t(_T("A"));
-        t.add_column(Column(_T("X"), Value::LONGINT, 0, 0));
+        Table::Ptr t(new Table(_T("A")));
+        t->add_column(Column(_T("X"), Value::LONGINT, 0, 0));
         Schema tmd_reg;
-        CPPUNIT_ASSERT_EQUAL(0, (int)tmd_reg.size());
-        CPPUNIT_ASSERT(tmd_reg.begin() == tmd_reg.end());
-        tmd_reg.set_table(t);
-        CPPUNIT_ASSERT_EQUAL(1, (int)tmd_reg.size());
-        const Table &d1 = tmd_reg.begin()->second;
-        const Table &d2 = tmd_reg.get_table(_T("a"));
+        CPPUNIT_ASSERT_EQUAL(0, (int)tmd_reg.tbl_count());
+        CPPUNIT_ASSERT(tmd_reg.tbl_begin() == tmd_reg.tbl_end());
+        tmd_reg.add_table(t);
+        CPPUNIT_ASSERT_EQUAL(1, (int)tmd_reg.tbl_count());
+        const Table &d1 = *tmd_reg.tbl_begin()->second;
+        const Table &d2 = tmd_reg.table(_T("a"));
         CPPUNIT_ASSERT_EQUAL(NARROW(d1.get_name()), NARROW(d2.get_name()));
     }
 
     void test_meta_data_empty_table()
     {
         Schema r;
-        r.set_table(Table(_T("A")));
+        Table::Ptr t(new Table(_T("A")));
+        r.add_table(t);
     }
 
     void test_meta_data_bad_table_name()
     {
-        Table t;
-        t.add_column(Column(_T("Z"), 0, 0, 0));
+        Table::Ptr t(new Table(_T("@#$")));
+        t->add_column(Column(_T("Z"), 0, 0, 0));
         Schema r;
-        r.set_table(t);
+        r.add_table(t);
     }
 
     void test_meta_data_table_not_found()
     {
         Schema r;
-        r.get_table(_T("Y"));
+        r.table(_T("Y"));
     }
 
     void test_registry_check()
     {
         Schema r;
         {
-            Table t(_T("A"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("A")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            r.add_table(t);
         }
         {
-            Table t(_T("C"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t.add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("C")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            t->add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
+            r.add_table(t);
         }
         {
-            Table t(_T("B"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t.add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
-            t.add_column(Column(_T("CX"), Value::LONGINT, 0, 0, _T("C"), _T("X")));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("B")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            t->add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
+            t->add_column(Column(_T("CX"), Value::LONGINT, 0, 0, _T("C"), _T("X")));
+            r.add_table(t);
         }
 
-        CPPUNIT_ASSERT_EQUAL(3, (int)r.size());
+        CPPUNIT_ASSERT_EQUAL(3, (int)r.tbl_count());
 
         set<String> tables;
         r.fill_unique_tables(tables);
@@ -252,18 +250,18 @@ public:
         CPPUNIT_ASSERT_EQUAL(2, depths[_T("C")]);
 
         r.set_absolute_depths(depths);    
-        CPPUNIT_ASSERT_EQUAL(1, r.get_table(_T("A")).get_depth());
-        CPPUNIT_ASSERT_EQUAL(3, r.get_table(_T("B")).get_depth());
-        CPPUNIT_ASSERT_EQUAL(2, r.get_table(_T("C")).get_depth());
+        CPPUNIT_ASSERT_EQUAL(1, r.table(_T("A")).get_depth());
+        CPPUNIT_ASSERT_EQUAL(3, r.table(_T("B")).get_depth());
+        CPPUNIT_ASSERT_EQUAL(2, r.table(_T("C")).get_depth());
     }
 
     void test_registry_check_absent_fk_table()
     {
         Schema r;
-        Table t(_T("C"));
-        t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-        t.add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
-        r.set_table(t);
+        Table::Ptr t(new Table(_T("C")));
+        t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+        t->add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
+        r.add_table(t);
         r.check();
     }
     
@@ -271,15 +269,15 @@ public:
     {
        Schema r;
         {
-            Table t(_T("A"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("A")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            r.add_table(t);
         }
         {
-            Table t(_T("C"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t.add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("Y")));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("C")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            t->add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("Y")));
+            r.add_table(t);
         }
         r.check();
     }
@@ -288,22 +286,22 @@ public:
     {
         Schema r;
         {
-            Table t(_T("A"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t.add_column(Column(_T("BX"), Value::LONGINT, 0, 0, _T("B"), _T("X")));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("A")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            t->add_column(Column(_T("BX"), Value::LONGINT, 0, 0, _T("B"), _T("X")));
+            r.add_table(t);
         }
         {
-            Table t(_T("C"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t.add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("C")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            t->add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
+            r.add_table(t);
         }
         {
-            Table t(_T("B"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t.add_column(Column(_T("CX"), Value::LONGINT, 0, 0, _T("C"), _T("X")));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("B")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            t->add_column(Column(_T("CX"), Value::LONGINT, 0, 0, _T("C"), _T("X")));
+            r.add_table(t);
         }
         r.check();
     }
@@ -312,28 +310,28 @@ public:
     {
         Schema r;
         {
-            Table t(_T("D"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("D")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            r.add_table(t);
         }
         {
-            Table t(_T("A"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t.add_column(Column(_T("BX"), Value::LONGINT, 0, 0, _T("B"), _T("X")));
-            t.add_column(Column(_T("DX"), Value::LONGINT, 0, 0, _T("D"), _T("X")));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("A")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            t->add_column(Column(_T("BX"), Value::LONGINT, 0, 0, _T("B"), _T("X")));
+            t->add_column(Column(_T("DX"), Value::LONGINT, 0, 0, _T("D"), _T("X")));
+            r.add_table(t);
         }
         {
-            Table t(_T("C"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t.add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("C")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            t->add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
+            r.add_table(t);
         }
         {
-            Table t(_T("B"));
-            t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t.add_column(Column(_T("CX"), Value::LONGINT, 0, 0, _T("C"), _T("X")));
-            r.set_table(t);
+            Table::Ptr t(new Table(_T("B")));
+            t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+            t->add_column(Column(_T("CX"), Value::LONGINT, 0, 0, _T("C"), _T("X")));
+            r.add_table(t);
         }
         r.check();
     }

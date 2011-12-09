@@ -18,7 +18,7 @@
         <column name="ID" type="longint">
             <primary-key />
         </column>
-        <column name="DT" type="datetime" default="sysdate" />
+        <column name="DT" type="datetime" default="sysdate"/>
         <column name="RECEIPT_SUM" type="decimal" default="0" />
         <column name="RECEIPT_DT" type="datetime" />
         <column name="CLIENT_ID" type="longint" null="false">

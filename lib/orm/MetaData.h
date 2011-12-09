@@ -126,7 +126,7 @@ public:
     void set_default_value(const Value &value) {
         default_value_ = value;
     }
-    const Value get_default_value() const {
+    const Value &get_default_value() const {
         return default_value_;
     }
     const String &get_name() const { return name_; }
@@ -163,15 +163,18 @@ typedef std::map<String, int> IndexMap;
 class Schema;
 class Relation;
 
-class Table
+class Table: private boost::noncopyable
 {
+    Table();
 public:
-    const String &get_unique_pk() const;
-    Table(const String &name = _T(""), const String &xml_name = _T(""),
+    typedef boost::shared_ptr<Table> Ptr;
+    Table(const String &name, const String &xml_name = _T(""),
         const String &class_name = _T(""));
-    Schema &schema() const {
-        return *check_not_null(schema_, _T("get table's parent schema")); }
-    void schema(Schema &s) { schema_ = &s; }
+    void set_schema(Schema *s) { schema_ = s; }
+    Schema *get_schema() const { return schema_; }
+    const Schema &schema() const {
+        return *check_not_null(schema_, _T("get table's schema"));
+    }
     const String &get_name() const { return name_; }
     const String &get_xml_name() const { return xml_name_; }
     const String &get_class_name() const { return get_class(); }
@@ -186,6 +189,7 @@ public:
         { return cols_[idx]; }
     const String get_seq_name() const;
     bool get_autoinc() const;
+    const String &get_unique_pk() const;
     const String find_synth_pk() const;
     const String get_synth_pk() const;
     const String get_fk_for(const Relation *rel) const;
@@ -214,90 +218,106 @@ private:
     Schema *schema_;
 };
 
-class Relation {
+typedef std::vector<Table::Ptr> Tables;
+
+class Relation: private boost::noncopyable
+{
+    Relation();
 public:
+    typedef boost::shared_ptr<Relation> Ptr;
     typedef std::map<String, String> AttrMap;
     enum { UNKNOWN = 0, ONE2MANY, MANY2MANY, PARENT2CHILD };
     enum { Restrict = 0, Nullify, Delete };
-    Relation()
-        : type_(UNKNOWN), cascade_(Restrict) {}
     Relation(int _type,
             const String &_side1, const AttrMap &_attr1,
             const String &_side2, const AttrMap &_attr2,
             int cascade_delete_action = Restrict)
-        : type_(_type), side1_(_side1), side2_(_side2),
-        attr1_(_attr1), attr2_(_attr2),
-        cascade_(cascade_delete_action)
+        : type_(_type)
+        , cascade_(cascade_delete_action)
+        , side1_(_side1)
+        , side2_(_side2)
+        , attr1_(_attr1)
+        , attr2_(_attr2)
+        , table1_(NULL)
+        , table2_(NULL)
     {}
     int type() const { return type_; }
     int cascade() const { return cascade_; }
     void set_cascade(int cascade_mode) { cascade_ = cascade_mode; }
     const String &side(int n) const { return n == 0? side1_: side2_; }
-    const String &table(int n) const { return n == 0? table1_: table2_; }
     bool has_attr(int n, const String &name) const;
     const String &attr(int n, const String &name) const;
-    void set_tables(const String &table1, const String &table2) {
+    const AttrMap &attr_map(int n) const { return n == 0? attr1_: attr2_; }
+    void set_tables(Table *table1, Table *table2) {
         table1_ = table1;
         table2_ = table2;
     }
-    bool operator==(const Relation &o) const {
-        if (this == &o)
-            return true;
-        return type_ == o.type_ && cascade_ == o.cascade_ &&
-            side1_ == o.side1_ && side2_ == o.side2_ &&
-            attr1_ == o.attr1_ && attr2_ == o.attr2_;
+    Table *get_table(int n) const { return n == 0? table1_: table2_; }
+    const Table &table(int n) const {
+        return *check_not_null(n == 0? table1_: table2_,
+                _T("get relation's table"));
     }
-    bool operator!=(const Relation &o) const {
-        return !((*this) == o);
+    bool eq(const Relation &o) {
+        return type_ == o.type_ && cascade_ == o.cascade_ 
+            && side1_ == o.side1_ && side2_ == o.side2_
+            && attr1_ == o.attr1_ && attr2_ == o.attr2_;
     }
 private:
     int type_, cascade_;
     String side1_, side2_;
-    String table1_, table2_;
     AttrMap attr1_, attr2_;
+    Table *table1_, *table2_;
 };
 
-typedef std::vector<Relation> Relations;
+typedef std::vector<Relation::Ptr> Relations;
 
 class Schema
 {
     friend class ::TestMetaData;
-    typedef std::multimap<String, String> StrMap;    
+    typedef std::multimap<String, String> StrMap;
+    Schema(const Schema &);
 public:
-    typedef std::map<String, Table> Map;
-    typedef std::multimap<String, Relation> RelMap;
-    Map::const_iterator begin() const { return tables_.begin(); }
-    Map::const_iterator end() const { return tables_.end(); }
-    size_t size() const { return tables_.size(); }
+    typedef std::map<String, Table::Ptr> TblMap;
+    typedef std::multimap<String, Relation::Ptr> RelMap;
+    typedef Relations RelVect;
+
+    Schema() {}
+    ~Schema();
+    Schema &operator=(Schema &x);
+    TblMap::const_iterator tbl_begin() const { return tables_.begin(); }
+    TblMap::const_iterator tbl_end() const { return tables_.end(); }
+    size_t tbl_count() const { return tables_.size(); }
     RelMap::const_iterator rels_lower_bound(const String &key) const {
         return rels_.lower_bound(key);
     };
     RelMap::const_iterator rels_upper_bound(const String &key) const {
         return rels_.upper_bound(key);
     };
-    Relations::const_iterator rel_begin() const { return relations_.begin(); }
-    Relations::const_iterator rel_end() const { return relations_.end(); }
+    RelVect::const_iterator rel_begin() const { return relations_.begin(); }
+    RelVect::const_iterator rel_end() const { return relations_.end(); }
     size_t rel_count() const { return relations_.size(); }
-    void set_table(const Table &table_meta_data);
-    const Table &get_table(const String &name) const;
+    void add_table(Table::Ptr table);
+    const Table &table(const String &name) const;
     const Table &find_table_by_class(const String &class_name) const;
-    void add_relation(const Relation &rel);
-    void fill_fkeys();
-    void check();
+    void add_relation(Relation::Ptr rel);
     const Relation *find_relation(const String &class1,
                             const String &relation_name = _T(""),
                             const String &class2 = _T(""),
                             int prop_side = 0) const;
+    void fill_fkeys();
+    void check();
 private:
-    void CheckForeignKey(const String &table, const String &fk_table, const String &fk_field);
+    void clear_backrefs();
+    void fix_backrefs();
+    void check_foreign_key(const String &table, const String &fk_table, const String &fk_field);
     void set_absolute_depths(const std::map<String, int> &depths);
     void fill_unique_tables(std::set<String> &unique_tables);
     void zero_depths(const std::set<String> &unique_tables, std::map<String, int> &depths);
     void fill_map_tree_by_meta(const std::set<String> &unique_tables, StrMap &tree_map);
     void traverse_children(const StrMap &parent_child, std::map<String, int> &depths);
-    Map tables_;
+    TblMap tables_;
     RelMap rels_;
-    Relations relations_;
+    RelVect relations_;
 };
 
 const String mk_xml_name(const String &name, const String &xml_name);

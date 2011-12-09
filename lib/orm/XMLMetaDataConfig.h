@@ -59,10 +59,10 @@ public:
     }
 private:
     friend class ::TestXMLConfig;
-    void parse_table(xmlNodePtr p_node, Table &table_meta);
+    Table::Ptr parse_table(xmlNodePtr p_node);
     void parse_relation_side(xmlNodePtr p_node, const Char **attr_names,
             size_t attr_count, String &cname, Relation::AttrMap &attrs);
-    bool parse_relation(xmlNodePtr p_node, Relation &rel);
+    Relation::Ptr parse_relation(xmlNodePtr p_node);
     template <typename T>
     static void get_node_ptr_value(xmlNodePtr p_node, T &t);
     template <typename T> 

@@ -40,6 +40,9 @@ AC_OUTPUT(Makefile
     examples/Makefile
     examples/example1.sh
     examples/example2.sh
-    examples/domain/Makefile)
+    examples/domain/Makefile
+    tutorial/Makefile
+    tutorial/domain/Makefile
+    )
 
 # vim:ts=4:sts=4:sw=4:et:

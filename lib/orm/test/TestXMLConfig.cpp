@@ -55,32 +55,30 @@ public:
         XMLMetaDataConfig cfg(xml);
         Schema reg;
         cfg.parse(reg);
-        CPPUNIT_ASSERT_EQUAL(2, (int)reg.size());
-        const Table &t = reg.get_table(_T("A"));
+        CPPUNIT_ASSERT_EQUAL(2, (int)reg.tbl_count());
+        const Table &t = reg.table(_T("A"));
         CPPUNIT_ASSERT_EQUAL(1, (int)t.size());
         CPPUNIT_ASSERT_EQUAL(string("AA"), NARROW(t.begin()->get_name()));
         CPPUNIT_ASSERT_EQUAL(10, (int)t.begin()->get_size());
         CPPUNIT_ASSERT_EQUAL((int)Value::STRING, t.begin()->get_type());
-        const Table &t2 = reg.get_table(_T("B"));
+        const Table &t2 = reg.table(_T("B"));
         CPPUNIT_ASSERT_EQUAL(1, (int)t2.size());
         CPPUNIT_ASSERT_EQUAL(string("BA"), NARROW(t2.begin()->get_name()));
         CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, t2.begin()->get_type());
 
         CPPUNIT_ASSERT_EQUAL(1, (int)reg.rel_count());
-        CPPUNIT_ASSERT_EQUAL((int)Relation::ONE2MANY, reg.rel_begin()->type());
+        CPPUNIT_ASSERT_EQUAL((int)Relation::ONE2MANY, (*reg.rel_begin())->type());
     }
     
     void testWrongElementTable()
     {
-        Table t;
         string xml =  "<table name='A' sequence='S'><col></col></table>";
         Xml::Node node(Xml::Parse(xml));
-        cfg_.parse_table(node.get(), t);
+        Table::Ptr t = cfg_.parse_table(node.get());
     }
 
     void testParseTable()
     {
-        Table t;
         string xml = 
             "<table name='A' sequence='S'>"
             "<column type='string' name='ASTR' size='10' />"
@@ -88,11 +86,11 @@ public:
             "<foreign-key table='T_B' key='ID'/></column>"
             "</table>";
         Xml::Node node(Xml::Parse(xml));
-        cfg_.parse_table(node.get(), t);
-        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(t.get_name()));
-        CPPUNIT_ASSERT_EQUAL(string("S"), NARROW(t.get_seq_name()));
-        CPPUNIT_ASSERT_EQUAL(2, (int)t.size());
-        Columns::const_iterator it = t.begin();
+        Table::Ptr t = cfg_.parse_table(node.get());
+        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(t->get_name()));
+        CPPUNIT_ASSERT_EQUAL(string("S"), NARROW(t->get_seq_name()));
+        CPPUNIT_ASSERT_EQUAL(2, (int)t->size());
+        Columns::const_iterator it = t->begin();
         CPPUNIT_ASSERT_EQUAL(string("ASTR"), NARROW(it->get_name()));
         CPPUNIT_ASSERT_EQUAL(10, (int)it->get_size());
         CPPUNIT_ASSERT_EQUAL((int)Value::STRING, it->get_type());
@@ -112,10 +110,9 @@ public:
             "</column>"
             "</table>"
         ));
-        Table t;
-        cfg_.parse_table(node.get(), t);
-        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t.get_seq_name()));
-        CPPUNIT_ASSERT_EQUAL(false, t.get_autoinc());
+        Table::Ptr t = cfg_.parse_table(node.get());
+        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->get_seq_name()));
+        CPPUNIT_ASSERT_EQUAL(false, t->get_autoinc());
     }
 
     void testAutoInc()
@@ -127,10 +124,9 @@ public:
             "</column>"
             "</table>"
         ));
-        Table t;
-        cfg_.parse_table(node.get(), t);
-        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t.get_seq_name()));
-        CPPUNIT_ASSERT_EQUAL(true, t.get_autoinc());
+        Table::Ptr t = cfg_.parse_table(node.get());
+        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->get_seq_name()));
+        CPPUNIT_ASSERT_EQUAL(true, t->get_autoinc());
     }
 
     void testNullable()
@@ -144,11 +140,10 @@ public:
             "<column type='decimal' name='D' null='false'/>"
             "</table>"
         ));
-        Table t;
-        cfg_.parse_table(node.get(), t);
-        CPPUNIT_ASSERT_EQUAL(false, t.get_column(_T("B")).is_nullable());
-        CPPUNIT_ASSERT_EQUAL(true, t.get_column(_T("C")).is_nullable());
-        CPPUNIT_ASSERT_EQUAL(false, t.get_column(_T("D")).is_nullable());
+        Table::Ptr t = cfg_.parse_table(node.get());
+        CPPUNIT_ASSERT_EQUAL(false, t->get_column(_T("B")).is_nullable());
+        CPPUNIT_ASSERT_EQUAL(true, t->get_column(_T("C")).is_nullable());
+        CPPUNIT_ASSERT_EQUAL(false, t->get_column(_T("D")).is_nullable());
     }
 
     void testClassName()
@@ -159,15 +154,14 @@ public:
             "<column type='longint' name='C' xml-name='dd'/>"
             "</table>"
         ));
-        Table t;
-        cfg_.parse_table(node.get(), t);
-        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(t.get_name()));
-        CPPUNIT_ASSERT_EQUAL(string("bb"), NARROW(t.get_xml_name()));
-        CPPUNIT_ASSERT_EQUAL(string("aa"), NARROW(t.get_class_name()));
-        CPPUNIT_ASSERT_EQUAL(string("b"), NARROW(t.get_column(_T("B")).get_xml_name()));
-        CPPUNIT_ASSERT_EQUAL(string("c"), NARROW(t.get_column(_T("C")).get_prop_name()));
-        CPPUNIT_ASSERT_EQUAL(string("xx"), NARROW(t.get_column(_T("B")).get_prop_name()));
-        CPPUNIT_ASSERT_EQUAL(string("dd"), NARROW(t.get_column(_T("C")).get_xml_name()));
+        Table::Ptr t = cfg_.parse_table(node.get());
+        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(t->get_name()));
+        CPPUNIT_ASSERT_EQUAL(string("bb"), NARROW(t->get_xml_name()));
+        CPPUNIT_ASSERT_EQUAL(string("aa"), NARROW(t->get_class_name()));
+        CPPUNIT_ASSERT_EQUAL(string("b"), NARROW(t->get_column(_T("B")).get_xml_name()));
+        CPPUNIT_ASSERT_EQUAL(string("c"), NARROW(t->get_column(_T("C")).get_prop_name()));
+        CPPUNIT_ASSERT_EQUAL(string("xx"), NARROW(t->get_column(_T("B")).get_prop_name()));
+        CPPUNIT_ASSERT_EQUAL(string("dd"), NARROW(t->get_column(_T("C")).get_xml_name()));
     }
 
     void testClassNameDefault()
@@ -177,11 +171,10 @@ public:
             "<column type='longint' name='B'/>"
             "</table>"
         ));
-        Table t;
-        cfg_.parse_table(node.get(), t);
-        CPPUNIT_ASSERT_EQUAL(string("ABC"), NARROW(t.get_name()));
-        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t.get_class_name()));
-        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(t.get_xml_name()));
+        Table::Ptr t = cfg_.parse_table(node.get());
+        CPPUNIT_ASSERT_EQUAL(string("ABC"), NARROW(t->get_name()));
+        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->get_class_name()));
+        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(t->get_xml_name()));
     }
 
     void testGetWrongNodeValue()
@@ -307,16 +300,15 @@ public:
             "<many class='Def' property='abc'/>"
             "</relation>"
         ));
-        Relation r;
-        cfg_.parse_relation(node.get(), r);
-        CPPUNIT_ASSERT_EQUAL((int)Relation::ONE2MANY, r.type());
-        CPPUNIT_ASSERT_EQUAL(string("Abc"), NARROW(r.side(0)));
-        CPPUNIT_ASSERT_EQUAL(string("Def"), NARROW(r.side(1)));
-        CPPUNIT_ASSERT(r.has_attr(0, _T("property")));
-        CPPUNIT_ASSERT(r.has_attr(1, _T("property")));
-        CPPUNIT_ASSERT(!r.has_attr(1, _T("xxx")));
-        CPPUNIT_ASSERT_EQUAL(string("defs"), NARROW(r.attr(0, _T("property"))));
-        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(r.attr(1, _T("property"))));
+        Relation::Ptr r = cfg_.parse_relation(node.get());
+        CPPUNIT_ASSERT_EQUAL((int)Relation::ONE2MANY, r->type());
+        CPPUNIT_ASSERT_EQUAL(string("Abc"), NARROW(r->side(0)));
+        CPPUNIT_ASSERT_EQUAL(string("Def"), NARROW(r->side(1)));
+        CPPUNIT_ASSERT(r->has_attr(0, _T("property")));
+        CPPUNIT_ASSERT(r->has_attr(1, _T("property")));
+        CPPUNIT_ASSERT(!r->has_attr(1, _T("xxx")));
+        CPPUNIT_ASSERT_EQUAL(string("defs"), NARROW(r->attr(0, _T("property"))));
+        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(r->attr(1, _T("property"))));
     }
 
 };

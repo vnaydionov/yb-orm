@@ -171,6 +171,7 @@ public:
 
 class DomainObject: public XMLizable
 {
+    static char init_[16];
 protected:
     DataObject::Ptr d_;
     void check_ptr() const {
@@ -183,14 +184,17 @@ public:
     DomainObject(DataObject::Ptr d)
         : d_(d)
     {}
+    DomainObject(const Table &table)
+        : d_(DataObject::create_new(table))
+    {}
     DomainObject(const Schema &schema, const String &table_name)
-        : d_(DataObject::create_new(schema.get_table(table_name)))
+        : d_(DataObject::create_new(schema.table(table_name)))
     {}
     DomainObject(Session &session, const Key &key)
         : d_(session.get_lazy(key))
     {}
     DomainObject(Session &session, const String &tbl_name, LongInt id)
-        : d_(session.get_lazy(session.schema().get_table(tbl_name).mk_key(id)))
+        : d_(session.get_lazy(session.schema().table(tbl_name).mk_key(id)))
     {}
     virtual ~DomainObject() {}
     void save(Session &session) { check_ptr(); session.save(d_); }
@@ -259,6 +263,9 @@ public:
             throw NoSessionBaseGiven();
         return deep_xmlize(*session(), d_, depth, alt_name);
     }
+    static bool register_table_meta(Table::Ptr tbl);
+    static bool register_relation_meta(Relation::Ptr rel);
+    static void save_registered(Schema &schema);
 };
 
 template <class T>
@@ -298,6 +305,21 @@ DomainObjectResultSet<T> query(Session &session, const Filter &filter,
     return DomainObjectResultSet<T>(session.load_collection(
             tables, filter, order_by, max));
 }
+
+template <class Obj>
+class DomainMetaDataCreator {
+public:
+    DomainMetaDataCreator(Tables &tbls, Relations &rels) {
+        Obj::create_tables_meta(tbls);
+        Obj::create_relations_meta(rels);
+        Tables::iterator i = tbls.begin(), iend = tbls.end();
+        for (; i != iend; ++i)
+            DomainObject::register_table_meta(*i);
+        Relations::iterator j = rels.begin(), jend = rels.end();
+        for (; j != jend; ++j)
+            DomainObject::register_relation_meta(*j);
+    }
+};
 
 } // namespace Yb
 

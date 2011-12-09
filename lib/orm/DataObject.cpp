@@ -57,7 +57,7 @@ DataObjectResultSet::DataObjectResultSet(const SqlResultSet &rs, Session &sessio
     const Schema &schema = session.schema();
     Strings::const_iterator i = tables.begin(), iend = tables.end();
     for (; i != iend; ++i)
-        tables_.push_back(&schema.get_table(*i));
+        tables_.push_back(&schema.table(*i));
 }
                                              
 Session::~Session()
@@ -171,7 +171,7 @@ DataObjectResultSet Session::load_collection(
     Strings cols;
     Strings::const_iterator i = tables.begin(), iend = tables.end();
     for (; i != iend; ++i) {
-        const Table &table = schema_->get_table(*i);
+        const Table &table = schema_->table(*i);
         Columns::const_iterator j = table.begin(), jend = table.end();
         for (; j != jend; ++j)
             cols.push_back(table.get_name() + _T(".") + j->get_name());
@@ -188,7 +188,7 @@ DataObject::Ptr Session::get_lazy(const Key &key)
     if (i != identity_map_.end())
         return i->second;
     DataObjectPtr new_obj =
-        DataObject::create_new(schema_->get_table(key.first),
+        DataObject::create_new(schema_->table(key.first),
                                DataObject::Ghost);
     ValueMap::const_iterator it = key.second.begin(),
         end = key.second.end();
@@ -302,7 +302,7 @@ void Session::flush_new()
         ObjectsByTable::iterator j = objs_by_table.begin(), jend = objs_by_table.end();
         for (; j != jend; ++j) {
             const String &tbl_name = j->first;
-            const Table &tbl = schema_->get_table(tbl_name);
+            const Table &tbl = schema_->table(tbl_name);
             Objects &objs = j->second, unkeyed_objs, keyed_objs;
             Objects::iterator l, lend = objs.end();
             for (l = objs.begin(); l != lend; ++l) {
@@ -336,7 +336,7 @@ void Session::flush_update(IdentityMap &idmap_copy)
         jend = rows_by_table.end();
     for (; j != jend; ++j) {
         engine_->update(j->first, j->second,
-                        schema_->get_table(j->first).pk_fields());
+                        schema_->table(j->first).pk_fields());
     }
 }
 
@@ -532,7 +532,7 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     MasterRelations::iterator j = master->master_relations().begin(),
         jend = master->master_relations().end();
     for (; j != jend; ++j)
-        if ((*j)->relation_info() == r) {
+        if (&(*j)->relation_info() == &r) {
             ro = (*j).get();
             break;
         }
@@ -552,7 +552,7 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
                       const String &relation_name, int mode)
 {
     // Find relation in metadata.
-    Schema &schema(master->table().schema());
+    const Schema &schema(master->table().schema());
     const Relation *r = schema.find_relation
         (master->table().get_class(), relation_name,
          slave->table().get_class(), mode);
@@ -565,7 +565,7 @@ DataObject::Ptr DataObject::get_master(
     YB_ASSERT(obj.get());
     YB_ASSERT(obj->session_);
     // Find relation in metadata.
-    Schema &schema(obj->table_.schema());
+    const Schema &schema(obj->table_.schema());
     const Relation *r = schema.find_relation
         (obj->table_.get_class(), relation_name, _T(""), 1);
     YB_ASSERT(r != NULL);
@@ -576,7 +576,7 @@ DataObject::Ptr DataObject::get_master(
     ValueMap fk_values;
     Strings::iterator i = parts.begin(),
         end = parts.end();
-    const Table &master_tbl = schema.get_table(r->table(0));
+    const Table &master_tbl = r->table(0);
     // TODO: support compound foreign keys
     //for (; i != end; ++i)
     //    fk_values[*i] = get(*i);
@@ -592,7 +592,7 @@ RelationObject *DataObject::get_slaves(
 {
     YB_ASSERT(session_);
     // Find relation in metadata.
-    Schema &schema(table_.schema());
+    const Schema &schema(table_.schema());
     const Relation *r = schema.find_relation
         (table_.get_class(), relation_name, _T(""), 0);
     YB_ASSERT(r != NULL);
@@ -601,7 +601,7 @@ RelationObject *DataObject::get_slaves(
     MasterRelations::iterator j = master_relations_.begin(),
         jend = master_relations_.end();
     for (; j != jend; ++j)
-        if ((*j)->relation_info() == *r) {
+        if (&(*j)->relation_info() == r) {
             ro = (*j).get();
             break;
         }
@@ -724,9 +724,8 @@ void RelationObject::delete_master(DeletionMode mode, int depth)
 
 const Key RelationObject::gen_fkey() const
 {
-    Schema &schema = master_object_->table().schema();
-    const Table &master_tbl = schema.get_table(relation_info_.table(0)),
-        &slave_tbl = schema.get_table(relation_info_.table(1));
+    const Table &master_tbl = relation_info_.table(0),
+        &slave_tbl = relation_info_.table(1);
     Strings parts;
     StrUtils::split_str(slave_tbl.get_fk_for(&relation_info_), _T(","), parts);
     // TODO: support compound foreign keys
@@ -741,9 +740,8 @@ size_t RelationObject::count_slaves()
         return slave_objects_.size();
     YB_ASSERT(master_object_->session());
     Session &session = *master_object_->session();
-    Schema &schema = master_object_->table().schema();
-    const Table &master_tbl = schema.get_table(relation_info_.table(0)),
-        &slave_tbl = schema.get_table(relation_info_.table(1));
+    const Table &master_tbl = relation_info_.table(0),
+        &slave_tbl = relation_info_.table(1);
     KeyFilter f(gen_fkey());
     Strings cols;
     cols.push_back(_T("COUNT(*) RCNT"));
@@ -761,9 +759,8 @@ void RelationObject::lazy_load_slaves()
         return;
     YB_ASSERT(master_object_->session());
     Session &session = *master_object_->session();
-    Schema &schema = master_object_->table().schema();
-    const Table &master_tbl = schema.get_table(relation_info_.table(0)),
-        &slave_tbl = schema.get_table(relation_info_.table(1));
+    const Table &master_tbl = relation_info_.table(0),
+        &slave_tbl = relation_info_.table(1);
     Strings cols;
     Columns::const_iterator j = slave_tbl.begin(), jend = slave_tbl.end();
     for (; j != jend; ++j)
@@ -787,9 +784,8 @@ void RelationObject::lazy_load_slaves()
 
 void RelationObject::refresh_slaves_fkeys()
 {
-    Schema &schema = master_object_->table().schema();
-    const Table &master_tbl = schema.get_table(relation_info_.table(0)),
-        &slave_tbl = schema.get_table(relation_info_.table(1));
+    const Table &master_tbl = relation_info_.table(0),
+        &slave_tbl = relation_info_.table(1);
     String pk = master_tbl.get_synth_pk();
     Value pk_val = master_object_->get(pk);
     Strings parts;

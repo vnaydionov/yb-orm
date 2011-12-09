@@ -15,12 +15,14 @@ using namespace std;
 
 int main()
 {
+#if 0
     Yb::String conf_dir = Yb::StrUtils::xgetenv(_T("EX1_DIR"));
     if (conf_dir.empty())
         conf_dir = _T(".");
     Yb::load_meta(conf_dir + _T("/ex1_schema.xml"), Yb::theMetaData::instance());
-    Domain::ClientRegistrator::register_domain();
-    Domain::OrderRegistrator::register_domain();
+#else
+    Yb::init_default_meta();
+#endif
 #ifdef HAVE_DBPOOL3
     auto_ptr<Yb::DBPoolConfig> conf(
             new Yb::DBPoolConfig(conf_dir + _T("/dbpool.cfg.xml")));

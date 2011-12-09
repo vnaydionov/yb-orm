@@ -44,19 +44,28 @@ public:
 
     void register_creator(const String &name, CreatorPtr creator)
     {
-        creator_map_.insert(Map::value_type(name, creator));
+        if (!add_pending_reg(name, creator))
+            do_register_creator(name, creator);
     }
-    
+
     DomainObjectPtr create_object(Session &session, 
-            const String &entity_name, LongInt id) const
+            const String &entity_name, LongInt id)
     {
+        process_pending();
         Map::const_iterator it = creator_map_.find(entity_name);
         if (it == creator_map_.end())
             throw NoCreator(entity_name);
         return it->second->create(session, id);
     }
 private:
+    static bool add_pending_reg(const String &name, CreatorPtr creator);
+    void process_pending();
+    void do_register_creator(const String &name, CreatorPtr creator)
+    {
+        creator_map_.insert(Map::value_type(name, creator));
+    }
     Map creator_map_;
+    static char init_[16];
 };
     
     
