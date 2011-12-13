@@ -50,7 +50,7 @@ int main()
     cout << "client created: " << client.get_id() << endl;
     cout << "order created: " << order.get_id() << endl;
     engine.commit();
-    cout << order.xmlize(1).get_xml() << endl;
+    cout << order.xmlize(0).get_xml() << endl;
     return 0;
 }
 // vim:ts=4:sts=4:sw=4:et:
