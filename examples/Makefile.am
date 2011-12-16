@@ -20,7 +20,8 @@ example1_LDFLAGS = \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS)
 
-example2_SOURCES=example2.cpp domain/Client.cpp domain/Order.cpp
+example2_SOURCES=example2.cpp domain/Client.cpp domain/Order.cpp \
+		 domain/Product.cpp domain/ProductGroup.cpp
 
 example2_LDFLAGS = \
 	$(top_builddir)/lib/orm/libyborm.la \

@@ -187,12 +187,17 @@ DataObject::Ptr Session::get_lazy(const Key &key)
     IdentityMap::iterator i = identity_map_.find(key);
     if (i != identity_map_.end())
         return i->second;
-    DataObjectPtr new_obj =
-        DataObject::create_new(schema_->table(key.first),
-                               DataObject::Ghost);
+    bool empty_key = true;
     ValueMap::const_iterator it = key.second.begin(),
         end = key.second.end();
     for (; it != end; ++it)
+        if (!it->second.is_null())
+            empty_key = false;
+    if (empty_key)
+        throw NullPK(key.first);
+    DataObjectPtr new_obj =
+        DataObject::create_new(schema_->table(key.first), DataObject::Ghost);
+    for (it = key.second.begin(); it != end; ++it)
         new_obj->set(it->first, it->second);
     new_obj->set_session(this);
     identity_map_[key] = new_obj;
@@ -220,8 +225,10 @@ void Session::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
 {
     Rows rows;
     Objects::iterator i, iend = keyed_objs.end();
-    for (i = keyed_objs.begin(); i != iend; ++i)
+    for (i = keyed_objs.begin(); i != iend; ++i) {
+        (*i)->refresh_master_fkeys();
         rows.push_back((*i)->values());
+    }
     engine_->insert(tbl.get_name(), rows, StringSet());
 }
 
@@ -238,8 +245,10 @@ void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
             (*i)->set(pk, engine_->get_next_value(tbl.get_seq_name()));
     }
     Rows rows;
-    for (i = unkeyed_objs.begin(); i != iend; ++i)
+    for (i = unkeyed_objs.begin(); i != iend; ++i) {
+        (*i)->refresh_master_fkeys();
         rows.push_back((*i)->values(!use_autoinc));
+    }
     vector<LongInt> ids = engine_->insert
         (tbl.get_name(), rows, StringSet(), use_autoinc);
     if (use_autoinc) {
@@ -330,6 +339,7 @@ void Session::flush_update(IdentityMap &idmap_copy)
             const String &tbl_name = i->first.first;
             add_row_to_rows_by_table(rows_by_table, tbl_name,
                                      i->second->values());
+            i->second->refresh_master_fkeys();
             i->second->set_status(DataObject::Ghost);
         }
     RowsByTable::iterator j = rows_by_table.begin(),
@@ -587,6 +597,18 @@ DataObject::Ptr DataObject::get_master(
     return master;
 }
 
+bool DataObject::has_master(
+    DataObject::Ptr obj, const String &relation_name)
+{
+    try {
+        Ptr p = get_master(obj, relation_name);
+        return true;
+    }
+    catch (const NullPK &) {
+        return false;
+    }
+}
+
 RelationObject *DataObject::get_slaves(
     const String &relation_name)
 {
@@ -633,6 +655,14 @@ void DataObject::refresh_slaves_fkeys()
 {
     MasterRelations::iterator i = master_relations_.begin(),
         iend = master_relations_.end();
+    for (; i != iend; ++i)
+        (*i)->refresh_slaves_fkeys();
+}
+
+void DataObject::refresh_master_fkeys()
+{
+    SlaveRelations::iterator i = slave_relations_.begin(),
+        iend = slave_relations_.end();
     for (; i != iend; ++i)
         (*i)->refresh_slaves_fkeys();
 }

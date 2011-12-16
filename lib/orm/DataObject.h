@@ -90,6 +90,12 @@ public:
             const StrList &order_by = StrList(), int max = -1);
 };
 
+class NullPK: public BaseError {
+public:
+    NullPK(const String &table_name):
+        BaseError(_T("Null PK given for table: ") + table_name) {}
+};
+
 class CascadeDeleteError: public BaseError {
 public:
     CascadeDeleteError(const Relation &rel):
@@ -231,6 +237,7 @@ public:
     }
     size_t fill_from_row(const Row &r, size_t pos = 0);
     void refresh_slaves_fkeys();
+    void refresh_master_fkeys();
 
     void delete_object(DeletionMode mode = DelNormal, int depth = 0);
     void delete_master_relations(DeletionMode mode, int depth);
@@ -247,6 +254,7 @@ public:
         link(master.get(), slave, relation_name, 0);
     }
     static Ptr get_master(Ptr obj, const String &relation_name = _T(""));
+    static bool has_master(Ptr obj, const String &relation_name = _T(""));
     RelationObject *get_slaves(const String &relation_name = _T(""));
     void calc_depth(int d, DataObject *parent = NULL);
 };

@@ -337,11 +337,13 @@ class TestDataObjectSaveLoad : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestDataObjectSaveLoad);
     CPPUNIT_TEST(test_lazy_load);
+    CPPUNIT_TEST_EXCEPTION(test_lazy_load_fail, NullPK);
     CPPUNIT_TEST(test_lazy_load_slaves);
     CPPUNIT_TEST(test_flush_dirty);
     CPPUNIT_TEST(test_flush_new);
     CPPUNIT_TEST(test_flush_new_with_id);
     CPPUNIT_TEST(test_flush_new_linked);
+    CPPUNIT_TEST(test_flush_new_linked_to_existing);
     CPPUNIT_TEST(test_flush_deleted);
     CPPUNIT_TEST(test_domain_object);
     CPPUNIT_TEST_SUITE_END();
@@ -449,6 +451,31 @@ public:
         d->set(_T("A"), _T("meti"));
         CPPUNIT_ASSERT_EQUAL(string("meti"), NARROW(d->get(_T("A")).as_string()));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Dirty, (int)d->status());
+    }
+
+    void test_lazy_load_fail()
+    {
+        Key k;
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            Session session(r_, &engine);
+            DataObject::Ptr e = DataObject::create_new(r_.table(_T("T_ORM_XML")));
+            e->set(_T("B"), Value(Decimal(_T("0.01"))));
+            session.save(e);
+            session.flush();
+            k = e->key();
+            engine.commit();
+        }
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            Session session(r_, &engine);
+            DataObject::Ptr e = session.get_lazy(k);
+            CPPUNIT_ASSERT(Decimal(_T("0.01")) == e->get(_T("B")).as_decimal());
+            CPPUNIT_ASSERT(Value() == e->get(_T("ORM_TEST_ID")));
+            DataObject::Ptr d = DataObject::get_master(e, _T("orm_test"));
+        }
     }
 
     void test_lazy_load_slaves()
@@ -582,6 +609,55 @@ public:
             CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
             RelationObject *ro = d->get_slaves();
             CPPUNIT_ASSERT_EQUAL((size_t)2, ro->count_slaves());
+        }
+    }
+
+    void test_flush_new_linked_to_existing()
+    {
+        Key k;
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            Session session(r_, &engine);
+            DataObject::Ptr d = DataObject::create_new(r_.table(_T("T_ORM_TEST")));
+            d->set(_T("A"), Value(_T("abc")));
+            session.save(d);
+            session.flush();
+            k = d->key();
+            engine.commit();
+        }
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            Session session(r_, &engine);
+            DataObject::Ptr d = session.get_lazy(k);
+            d->get(_T("A"));
+            DataObject::Ptr e = DataObject::create_new(r_.table(_T("T_ORM_XML")));
+            e->set(_T("B"), Value(Decimal(_T("0.01"))));
+            CPPUNIT_ASSERT_EQUAL((size_t)0, d->master_relations().size());
+            CPPUNIT_ASSERT_EQUAL((size_t)0, d->slave_relations().size());
+            CPPUNIT_ASSERT_EQUAL((size_t)0, e->master_relations().size());
+            CPPUNIT_ASSERT_EQUAL((size_t)0, e->slave_relations().size());
+            DataObject::link_slave_to_master(e, d);
+            CPPUNIT_ASSERT_EQUAL((size_t)1, d->master_relations().size());
+            CPPUNIT_ASSERT_EQUAL((size_t)0, d->slave_relations().size());
+            CPPUNIT_ASSERT_EQUAL((size_t)0, e->master_relations().size());
+            CPPUNIT_ASSERT_EQUAL((size_t)1, e->slave_relations().size());
+            RelationObject *ro = *e->slave_relations().begin();
+            CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
+            session.save(e);
+            session.flush();
+            engine.commit();
+        }
+        {
+            Engine engine;
+            engine.get_connect()->set_echo(ECHO_SQL);
+            Session session(r_, &engine);
+            DataObject::Ptr d = session.get_lazy(k);
+            CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(d->get(_T("A")).as_string()));
+            CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
+            RelationObject *ro = d->get_slaves();
+            CPPUNIT_ASSERT_EQUAL((size_t)1, ro->count_slaves());
         }
     }
 

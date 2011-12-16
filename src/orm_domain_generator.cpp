@@ -599,13 +599,9 @@ private:
                 const Column &c = t.get_column(fk_name);
                 if (c.is_nullable()) {
                     str << "\tbool has_" << NARROW(prop) << "() const {\n"
-                        << "\t\treturn !get_attr_ex(_T(\""
-                        << NARROW(fk_name) << "\")).is_null();\n"
-                        << "\t}\n";
-
-                    str << "\tvoid reset_" << NARROW(prop) << "() {\n"
-                        << "\t\tset_attr_ex(_T(\""
-                        << NARROW(fk_name) << "\"), Yb::Value());\n"
+                        << "\t\tcheck_ptr();\n"
+                        << "\t\treturn Yb::DataObject::has_master(d_, _T(\""
+                        << NARROW(prop) << "\"));\n"
                         << "\t}\n";
                 }
                 str << "\tvoid set_" << NARROW(prop) << "("
