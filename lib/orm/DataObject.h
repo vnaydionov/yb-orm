@@ -185,8 +185,8 @@ private:
     {}
     void update_key();
     void load();
-    void lazy_load(const Column &c) {
-        if (!c.is_pk() && status_ == Ghost)
+    void lazy_load(const Column *c = NULL) {
+        if ((!c || !c->is_pk()) && status_ == Ghost)
             load();
     }
     void set_status(Status st) { status_ = st; }
@@ -215,13 +215,14 @@ public:
     size_t size() const { return values_.size(); }
     int depth() const { return depth_; }
     Value &get(int i) {
-        lazy_load(table_.get_column(i));
+        lazy_load(&table_.get_column(i));
         return values_[i];
     }
     Value &get(const String &name) {
         return get(table_.idx_by_name(name));
     }
     const Value get_typed_value(const Column &col, const Value &v);
+    void touch();
     void set(int i, const Value &v);
     void set(const String &name, const Value &v) {
         set(table_.idx_by_name(name), v);

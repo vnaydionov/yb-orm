@@ -44,6 +44,10 @@ int main()
     client.set_name(WIDEN(name));
     client.set_email(WIDEN(email));
     client.set_dt(Yb::now());
+    Domain::Client client_x(session);
+    client_x.set_name(WIDEN(name + "x"));
+    client_x.set_email(WIDEN(email));
+    client_x.set_dt(Yb::now());
     {
     Domain::Order order(session);
     string value;
@@ -67,8 +71,13 @@ int main()
     cout << "client created: " << client.get_id() << endl;
     cout << "order created: " << order.get_id() << endl;
     engine.commit();
+    order.set_owner(client_x);
     cout << order.xmlize(1).get_xml() << endl;
+    session.flush();
+    cout << order.xmlize(1).get_xml() << endl;
+    engine.commit();
     }
+    
     Domain::Client c2(session, client.get_id());
     cout << "c2.orders size: " << c2.get_orders().size() << endl;
     Yb::ManagedList<Domain::Order> &lst = c2.get_orders();

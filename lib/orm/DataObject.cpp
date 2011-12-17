@@ -337,9 +337,9 @@ void Session::flush_update(IdentityMap &idmap_copy)
     for (; i != iend; ++i)
         if (i->second->status() == DataObject::Dirty) {
             const String &tbl_name = i->first.first;
+            i->second->refresh_master_fkeys();
             add_row_to_rows_by_table(rows_by_table, tbl_name,
                                      i->second->values());
-            i->second->refresh_master_fkeys();
             i->second->set_status(DataObject::Ghost);
         }
     RowsByTable::iterator j = rows_by_table.begin(),
@@ -435,10 +435,16 @@ const Value DataObject::get_typed_value(const Column &col, const Value &v)
     }
 }
 
+void DataObject::touch()
+{
+    if (status_ == Sync)
+        status_ = Dirty;
+}
+    
 void DataObject::set(int i, const Value &v)
 {
     const Column &c = table_.get_column(i);
-    lazy_load(c);
+    lazy_load(&c);
     if (c.is_pk() && session_ != NULL
         && values_[i] != v && !values_[i].is_null())
     {
@@ -460,10 +466,8 @@ void DataObject::set(int i, const Value &v)
     if (c.is_pk()) {
         update_key();
     }
-    else {
-        if (status_ == Sync)
-            status_ = Dirty;
-    }
+    else
+        touch();
 }
 
 void DataObject::update_key()
@@ -537,8 +541,20 @@ void DataObject::calc_depth(int d, DataObject *parent)
 void DataObject::link(DataObject *master, DataObject::Ptr slave,
                       const Relation &r)
 {
-    // Try to find relation object in master's relations
+    slave->lazy_load();
+    // Find existing relation in slave's relations
     RelationObject *ro = NULL;
+    SlaveRelations::iterator i = slave->slave_relations().begin(),
+        iend = slave->slave_relations().end();
+    for (; i != iend; ++i)
+        if (&(*i)->relation_info() == &r) {
+            ro = *i;
+            slave->slave_relations().erase(i);
+            ro->slave_objects().erase(slave);
+            break;
+        }
+    // Try to find relation object in master's relations
+    ro = NULL;
     MasterRelations::iterator j = master->master_relations().begin(),
         jend = master->master_relations().end();
     for (; j != jend; ++j)
@@ -556,6 +572,7 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     ro->slave_objects().insert(slave);
     slave->slave_relations().insert(ro);
     slave->calc_depth(master->depth() + 1, master);
+    slave->touch();
 }
 
 void DataObject::link(DataObject *master, DataObject::Ptr slave,

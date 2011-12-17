@@ -27,6 +27,7 @@ class TestDataObject : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_data_object_cant_change_key_if_saved,
                            ReadOnlyColumn);
     CPPUNIT_TEST(test_data_object_link);
+    CPPUNIT_TEST(test_data_object_relink);
     CPPUNIT_TEST(test_data_object_delete);
     CPPUNIT_TEST(test_data_object_delete_cascade);
     CPPUNIT_TEST(test_data_object_delete_set_null);
@@ -198,6 +199,34 @@ public:
         RelationObject *ro = *e->slave_relations().begin();
         CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
         CPPUNIT_ASSERT_EQUAL(d.get(), ro->master_object());
+    }
+
+    void test_data_object_relink()
+    {
+        DataObject::Ptr d = DataObject::create_new(r_.table(_T("A"))),
+            e = DataObject::create_new(r_.table(_T("B")));
+        CPPUNIT_ASSERT_EQUAL((size_t)0, d->master_relations().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)0, d->slave_relations().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)0, e->master_relations().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)0, e->slave_relations().size());
+        DataObject::link_slave_to_master(e, d, _T("MasterA"));
+        CPPUNIT_ASSERT_EQUAL((size_t)1, d->master_relations().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)0, d->slave_relations().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)0, e->master_relations().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)1, e->slave_relations().size());
+        RelationObject *ro = *e->slave_relations().begin();
+        CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
+        CPPUNIT_ASSERT_EQUAL(d.get(), ro->master_object());
+        DataObject::Ptr f = DataObject::create_new(r_.table(_T("A")));
+        DataObject::link_slave_to_master(e, f, _T("MasterA"));
+        CPPUNIT_ASSERT_EQUAL((size_t)1, d->master_relations().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)0, d->slave_relations().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)0, e->master_relations().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)1, e->slave_relations().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)0, ro->slave_objects().size());
+        ro = *e->slave_relations().begin();
+        CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
+        CPPUNIT_ASSERT_EQUAL(f.get(), ro->master_object());
     }
 
     void test_data_object_delete()
