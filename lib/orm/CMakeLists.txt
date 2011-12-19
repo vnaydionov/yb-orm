@@ -6,7 +6,7 @@ include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES} ${BOOST_INCLUDES}
 
 add_library (yborm Engine.cpp Filters.cpp MetaData.cpp
     tiodbc.cpp Value.cpp XMLMetaDataConfig.cpp XMLNode.cpp SqlDriver.cpp
-    DataObject.cpp)
+    DataObject.cpp DomainObj.cpp DomainFactory.cpp)
 
 target_link_libraries (yborm ybutil ${LIBXML2_LIBS}
     ${BOOST_DATE_TIME_LIBS} ${BOOST_THREAD_LIBS} ${ODBC_LIBS})
