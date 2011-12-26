@@ -276,8 +276,8 @@ class DomainObjectResultSet: public ResultSetBase<T>
 
     bool fetch(T &row) {
         if (!it_.get())
-            it_ = std::auto_ptr<DataObjectResultSet::iterator> 
-                (new DataObjectResultSet::iterator(rs_.begin()));
+            it_.reset(
+                    new DataObjectResultSet::iterator(rs_.begin()));
         if (rs_.end() == *it_)
             return false;
         row = T((**it_)[0]);

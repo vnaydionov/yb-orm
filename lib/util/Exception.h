@@ -7,6 +7,16 @@
 
 namespace Yb {
 
+class noncopyable {
+protected:
+    noncopyable() {}
+    ~noncopyable() {}
+private:
+    // emphasize the following members are private
+    noncopyable(const noncopyable &);
+    const noncopyable &operator=(const noncopyable &);
+};
+
 class BaseError: public std::logic_error {
     static const String format_base(const String &msg);
 public:

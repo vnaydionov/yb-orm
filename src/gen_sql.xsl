@@ -213,6 +213,9 @@
         <xsl:if test="$dbtype = 'MYSQL'">
             <xsl:text> AUTO_INCREMENT</xsl:text>
         </xsl:if>
+        <xsl:if test="$dbtype = 'MSSQL'">
+            <xsl:text> IDENTITY</xsl:text>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template match="column[@type = 'decimal']" mode="sql-type">
@@ -233,6 +236,9 @@
         <xsl:choose>
             <xsl:when test="$dbtype = 'ORACLE'">
                 <xsl:text>DATE</xsl:text>
+            </xsl:when>
+            <xsl:when test="$dbtype = 'MSSQL'">
+                <xsl:text>DATETIME</xsl:text>
             </xsl:when>
             <xsl:otherwise>
                 <xsl:text>TIMESTAMP</xsl:text>

@@ -2,7 +2,7 @@
 cmake_minimum_required (VERSION 2.6)
 project (yborm)
 
-add_definitions(-D_UNICODE -DUNICODE)
+#add_definitions(-D_UNICODE -DUNICODE)
 
 # find includes
 

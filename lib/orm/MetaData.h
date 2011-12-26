@@ -163,7 +163,7 @@ typedef std::map<String, int> IndexMap;
 class Schema;
 class Relation;
 
-class Table: private boost::noncopyable
+class Table: private noncopyable
 {
     Table();
 public:
@@ -220,7 +220,7 @@ private:
 
 typedef std::vector<Table::Ptr> Tables;
 
-class Relation: private boost::noncopyable
+class Relation: private noncopyable
 {
     Relation();
 public:

@@ -30,8 +30,7 @@ BadTypeCast::BadTypeCast(
 bool DataObjectResultSet::fetch(ObjectList &row)
 {
     if (!it_.get())
-        it_ = std::auto_ptr<SqlResultSet::iterator>
-            (new SqlResultSet::iterator(rs_.begin()));
+        it_.reset(new SqlResultSet::iterator(rs_.begin()));
     if (rs_.end() == *it_)
         return false;
     ObjectList new_row;

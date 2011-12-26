@@ -386,8 +386,9 @@ Engine::do_gen_sql_update(String &sql, Values &params,
             excluded_row.push_back(make_pair(it->first, it->second));
     }
 
-    Row::const_iterator last = (excluded_row.empty() ?
-            excluded_row.end() : --excluded_row.end());
+    Row::const_iterator last = excluded_row.end();
+    if (!excluded_row.empty())
+        --last;
     end = excluded_row.end();
     for (it = excluded_row.begin(); it != excluded_row.end(); ++it)
     {

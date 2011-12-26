@@ -26,6 +26,9 @@ class ResultSetBase
         return fetch(current_row_);
     }
 public:
+    class iterator;
+    friend class iterator;
+
     virtual ~ResultSetBase() {}
 
     class iterator: public std::iterator<std::input_iterator_tag,
