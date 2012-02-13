@@ -49,7 +49,7 @@ export NLS_LANG=AMERICAN_CIS.UTF8
 
 mk_tables.sql: $(srcdir)/test_schema.xml
 	xsltproc --stringparam dialect ${YBORM_DBTYPE} \
-		$(top_srcdir)/src/gen_sql.xsl $^ > $@
+		$(top_srcdir)/src/yborm_gen_sql.xsl $^ > $@
 
 clean-local:
 	-rm -f mk_tables.sql

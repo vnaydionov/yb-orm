@@ -24,6 +24,7 @@ ybutilinclude_HEADERS = \
 	stacktrace.h \
 	Exception.h \
 	ResultSet.h \
+	Singleton.h \
 	UnicodeSupport.h
 
 libybutil_la_SOURCES = \

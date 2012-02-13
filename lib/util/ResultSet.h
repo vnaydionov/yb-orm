@@ -16,8 +16,8 @@ class ResultSetBase
 
     virtual bool fetch(RowType &row) = 0;
 
-    const RowType &get_current_row() const { return current_row_; }
-    const RowType &get_previous_row() const { return previous_row_; }
+    RowType &get_current_row() { return current_row_; }
+    RowType &get_previous_row() { return previous_row_; }
 
     void step_forward() {
         std::swap(previous_row_, current_row_);
@@ -32,14 +32,14 @@ public:
     virtual ~ResultSetBase() {}
 
     class iterator: public std::iterator<std::input_iterator_tag,
-            RowType, ptrdiff_t, const RowType *, const RowType & >
+            RowType, ptrdiff_t, RowType *, RowType & >
     {
         ResultSetBase &result_set_;
-        mutable bool flag_end_, flag_ready_;
+        bool flag_end_, flag_ready_;
 
         iterator();
 
-        void lazy_fetch() const {
+        void lazy_fetch() {
             if (!flag_end_ && !flag_ready_) {
                 flag_end_ = !result_set_.fetch_current();
                 flag_ready_ = !flag_end_;
@@ -52,19 +52,19 @@ public:
             , flag_ready_(false)
         {}
 
-        const RowType &operator *() const {
+        RowType &operator *() {
             lazy_fetch();
             YB_ASSERT(!flag_end_);
             return result_set_.get_current_row();
         }
 
-        const RowType *operator ->() const {
+        RowType *operator ->() {
             lazy_fetch();
             YB_ASSERT(!flag_end_);
             return &result_set_.get_current_row();
         }
 
-        const RowType *operator ++(int) { // prefix
+        RowType *operator ++(int) { // prefix
             lazy_fetch();
             YB_ASSERT(!flag_end_);
             result_set_.step_forward();
@@ -80,14 +80,14 @@ public:
             return *this;
         }
 
-        bool operator ==(const iterator &other) const { 
+        bool operator ==(iterator &other) { 
             lazy_fetch();
             other.lazy_fetch();
             return (flag_end_ == other.flag_end_
                     ) && (&result_set_ == &other.result_set_);
         }
 
-        bool operator !=(const iterator &other) const {
+        bool operator !=(iterator &other) {
             lazy_fetch();
             other.lazy_fetch();
             return (flag_end_ != other.flag_end_
