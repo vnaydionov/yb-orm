@@ -9,6 +9,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 #include <util/ResultSet.h>
+#include <util/nlogger.h>
 #include <orm/Value.h>
 
 namespace Yb {
@@ -208,6 +209,7 @@ class SqlConnect
     String db_, user_;
     std::auto_ptr<SqlConnectBackend> backend_;
     bool activity_, echo_;
+    ILogger *log_;
     SqlConnect(const SqlConnect &);
     SqlConnect &operator=(const SqlConnect &);
 public:
@@ -220,6 +222,7 @@ public:
     const String &get_db() { return db_; }
     const String &get_user() { return user_; }
     void set_echo(bool echo) { echo_ = echo; }
+    void set_logger(ILogger *log) { log_ = log; }
     SqlResultSet exec_direct(const String &sql);
     RowPtr fetch_row();
     RowsPtr fetch_rows(int max_rows = -1); // -1 = all

@@ -10,7 +10,10 @@ using namespace std;
 using namespace Yb;
 using Yb::StrUtils::xgetenv;
 
-#define ECHO_SQL true
+LogAppender appender(cerr);
+Logger logger(&appender);
+#define SETUP_LOG(e) do{ e.get_connect()->set_echo(true); \
+    e.get_connect()->set_logger(&logger); }while(0)
 
 class TestDataObject : public CppUnit::TestFixture
 {
@@ -464,7 +467,7 @@ public:
     void test_lazy_load()
     {
         Engine engine(Engine::READ_ONLY);
-        engine.get_connect()->set_echo(ECHO_SQL);
+        SETUP_LOG(engine);
         Session session(r_, &engine);
         DataObject::Ptr e = session.get_lazy
             (r_.table(_T("T_ORM_XML")).mk_key(-20));
@@ -487,7 +490,7 @@ public:
         Key k;
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr e = DataObject::create_new(r_.table(_T("T_ORM_XML")));
             e->set(_T("B"), Value(Decimal(_T("0.01"))));
@@ -498,7 +501,7 @@ public:
         }
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr e = session.get_lazy(k);
             CPPUNIT_ASSERT(Decimal(_T("0.01")) == e->get(_T("B")).as_decimal());
@@ -510,7 +513,7 @@ public:
     void test_lazy_load_slaves()
     {
         Engine engine(Engine::READ_ONLY);
-        engine.get_connect()->set_echo(ECHO_SQL);
+        SETUP_LOG(engine);
         Session session(r_, &engine);
         DataObject::Ptr d = session.get_lazy
             (r_.table(_T("T_ORM_TEST")).mk_key(-10));
@@ -529,7 +532,7 @@ public:
     {
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(r_.table(_T("T_ORM_TEST")).mk_key(-10));
             CPPUNIT_ASSERT_EQUAL(string("item"), NARROW(d->get(_T("A")).as_string()));
@@ -541,7 +544,7 @@ public:
         }
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(r_.table(_T("T_ORM_TEST")).mk_key(-10));
             CPPUNIT_ASSERT_EQUAL(string("xyz"), NARROW(d->get(_T("A")).as_string()));
@@ -554,7 +557,7 @@ public:
         Key k;
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = DataObject::create_new(r_.table(_T("T_ORM_TEST")));
             d->set(_T("A"), Value(_T("abc")));
@@ -570,7 +573,7 @@ public:
         }
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(d->get(_T("A")).as_string()));
@@ -583,7 +586,7 @@ public:
         Key k;
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = DataObject::create_new
                 (r_.table(_T("T_ORM_TEST")));
@@ -597,7 +600,7 @@ public:
         }
         {
             Engine engine(Engine::READ_ONLY);
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("qwerty"), NARROW(d->get(_T("A")).as_string()));
@@ -609,7 +612,7 @@ public:
         Key k;
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr e = DataObject::create_new(r_.table(_T("T_ORM_XML")));
             e->set(_T("B"), Value(Decimal(_T("0.01"))));
@@ -631,7 +634,7 @@ public:
         }
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(d->get(_T("A")).as_string()));
@@ -646,7 +649,7 @@ public:
         Key k;
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = DataObject::create_new(r_.table(_T("T_ORM_TEST")));
             d->set(_T("A"), Value(_T("abc")));
@@ -657,7 +660,7 @@ public:
         }
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             d->get(_T("A"));
@@ -680,7 +683,7 @@ public:
         }
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(d->get(_T("A")).as_string()));
@@ -695,7 +698,7 @@ public:
         Key k;
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy
                 (r_.table(_T("T_ORM_TEST")).mk_key(-10));
@@ -708,7 +711,7 @@ public:
         }
         {
             Engine engine;
-            engine.get_connect()->set_echo(ECHO_SQL);
+            SETUP_LOG(engine);
             Session session(r_, &engine);
             int count = 0;
             DataObject::Ptr d = session.get_lazy
@@ -730,7 +733,7 @@ public:
     void test_domain_object(void)
     {
         Engine engine(Engine::READ_ONLY);
-        engine.get_connect()->set_echo(ECHO_SQL);
+        SETUP_LOG(engine);
         Session session(r_, &engine);
         DomainObject d(session, r_.table(_T("T_ORM_TEST")).mk_key(-10));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d.status());

@@ -10,9 +10,13 @@
 using namespace std;
 using Yb::StrUtils::str_to_upper;
 
+#if 0
 #define DBG(x) do{ char __s[40]; OStringStream __log; time_t __t = time(NULL); \
     strcpy(__s, ctime(&__t)); __s[strlen(__s) - 1] = 0; \
     __log << WIDEN(__s) << _T(": ") << x << '\n'; cerr << NARROW(__log.str()); }while(0)
+#else
+#define DBG(x) do{ if (log_) { log_->debug(NARROW(x)); } }while(0)
+#endif
 
 namespace Yb {
 
@@ -335,6 +339,7 @@ SqlConnect::SqlConnect(const String &driver_name,
     , user_(user)
     , activity_(false)
     , echo_(false)
+    , log_(NULL)
 {
     backend_.reset(driver_->create_backend().release());
     backend_->open(dialect_, db, user, passwd);

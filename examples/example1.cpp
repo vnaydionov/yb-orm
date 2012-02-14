@@ -12,6 +12,8 @@
 #endif
 
 using namespace std;
+Yb::LogAppender appender(cerr);
+Yb::Logger logger(&appender);
 
 int main()
 {
@@ -33,6 +35,7 @@ int main()
 #endif
     Yb::Session session(Yb::theMetaData::instance(), &engine);
     engine.get_connect()->set_echo(true);
+    engine.get_connect()->set_logger(&logger);
     Domain::Client client(session);
     string name, email;
     cout << "Enter name, email: \n";
