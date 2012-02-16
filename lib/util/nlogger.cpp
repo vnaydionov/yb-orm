@@ -62,6 +62,28 @@ MilliSec get_cur_time_millisec()
 #endif
 }
 
+struct tm *localtime_safe(const time_t *clock, struct tm *result)
+{
+    if (!clock || !result)
+        return NULL;
+#if defined(_MSC_VER)
+    errno_t err = localtime_s(result, clock);
+    if (err)
+        return NULL;
+#elif defined(__unix__)
+    if (!localtime_r(clock, result))
+        return NULL;
+#else
+    static boost::mutex m;
+    boost::mutex::scoped_lock lock(m);
+    struct tm *r = localtime(clock);
+    if (!r)
+        return NULL;
+    memcpy(result, r, sizeof(*result));
+#endif
+    return result;
+}
+
 InvalidLogLevel::InvalidLogLevel()
     : std::logic_error("Invalid log level")
 {}
@@ -168,7 +190,7 @@ void Logger::log(int level, const std::string &msg)
 
 const std::string Logger::get_name() const
 {
-    return name_.empty() ? "main" : name_;
+    return name_.empty()? std::string("main"): name_;
 }
 
 bool Logger::valid_name(const std::string &name)
@@ -208,7 +230,7 @@ void LogAppender::do_flush(time_t now)
         if (prev_time != it->get_sec()) {
             prev_time = it->get_sec();
             struct tm split_time;
-            localtime_r(&prev_time, &split_time);
+            localtime_safe(&prev_time, &split_time);
             strftime(time_str, sizeof(time_str),
                 "%y-%m-%d %H:%M:%S", &split_time);
         }

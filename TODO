@@ -5,7 +5,7 @@ Some things to keep in mind:
     - keep test coverage
 
 To be implemented:
-    - nice tutorial
+    - nice tutorial and samples
     - better relationship handling (many-to-many, inheritance)
     - object-based query language
     - connection pooling

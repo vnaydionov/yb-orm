@@ -8,6 +8,7 @@
 #include <map>
 #include <iostream>
 #include <stdexcept>
+#include <time.h>
 #include <boost/thread/mutex.hpp>
 
 namespace Yb {
@@ -35,6 +36,7 @@ typedef long long MilliSec;
 unsigned long get_process_id();
 unsigned long get_thread_id();
 MilliSec get_cur_time_millisec();
+struct tm *localtime_safe(const time_t *clock, struct tm *result);
 
 class LogRecord
 {
@@ -50,7 +52,7 @@ public:
     LogRecord(int level, const std::string &component, const std::string &msg);
 
     MilliSec get_t() const { return t_; }
-    unsigned get_sec() const { return t_ / 1000; }
+    time_t get_sec() const { return t_ / 1000; }
     unsigned long get_pid() const { return pid_; }
     unsigned long get_tid() const { return tid_; }
     int get_level() const { return level_; }

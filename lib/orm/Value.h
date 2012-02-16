@@ -26,8 +26,6 @@ typedef __int64 LongInt;
 typedef long long LongInt;
 #endif
 
-struct tm *localtime_safe(const time_t *clock, struct tm *result);
-
 typedef ::decimal Decimal;
 typedef ::boost::posix_time::ptime DateTime;
 
