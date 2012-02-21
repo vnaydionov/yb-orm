@@ -163,28 +163,10 @@ const Yb::String html_escape(const Yb::String &s)
     return r;
 }
 
-static inline
-void
-append_path_item(Yb::String &item, vector<Yb::String> &items)
-{
-    if (!item.empty()) {
-        items.push_back(item);
-        item = Yb::String();
-    }
-}
-
 void
 split_path(const Yb::String &path, vector<Yb::String> &items)
 {
-    Yb::String item;
-    Yb::String::const_iterator it = path.begin(), end = path.end();
-    for (; it != end; ++it) {
-        if (*it == _T('/'))
-            append_path_item(item, items);
-        else
-            item.push_back(*it);
-    }
-    append_path_item(item, items);
+    split_str_by_chars(path, _T("/"), items);
 }
 
 vector<Yb::String> &split_str(const Yb::String &s,
@@ -201,6 +183,28 @@ vector<Yb::String> &split_str(const Yb::String &s,
         start = pos + delim.size();
     }
     return parts;
+}
+
+void split_str_by_chars(const Yb::String &s, const Yb::Char *delim,
+        vector<Yb::String> &parts, int limit)
+{
+    const size_t sz0 = parts.size();
+    Yb::String p;
+    for (size_t i = 0; i < s.size(); ++i) {
+        if (Yb::StrChr(delim, s[i])) {
+            if (limit > 0 && !p.empty() &&
+                    parts.size() - sz0 >= (size_t)(limit - 1))
+                p.push_back(s[i]);
+            else if (!p.empty()) {
+                parts.push_back(p);
+                p.clear();
+            }
+        }
+        else
+            p.push_back(s[i]);
+    }
+    if (!p.empty())
+        parts.push_back(p);
 }
 
 const Yb::String join_str(const Yb::String &delim, const vector<Yb::String> &parts)

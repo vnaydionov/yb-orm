@@ -4,6 +4,7 @@
 
 #include <string>
 #include <sstream>
+#include <cstring>
 #include <cstdio>
 
 #undef _T
@@ -30,6 +31,7 @@ typedef std::wistream IStream;
 typedef std::wostream OStream;
 typedef std::wstringstream StringStream;
 typedef std::wostringstream OStringStream;
+inline Char *StrChr(const Char *s, Char c) { return ::std::wcschr((Char *)s, c); }
 #else
 typedef char Char;
 typedef std::string String;
@@ -37,6 +39,7 @@ typedef std::istream IStream;
 typedef std::ostream OStream;
 typedef std::stringstream StringStream;
 typedef std::ostringstream OStringStream;
+inline Char *StrChr(const Char *s, Char c) { return ::std::strchr((Char *)s, c); }
 #endif
 
 const std::string narrow(const std::wstring &wide, const std::locale &loc);
