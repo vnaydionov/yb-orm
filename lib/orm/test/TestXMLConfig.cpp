@@ -73,8 +73,8 @@ public:
     void testWrongElementTable()
     {
         string xml =  "<table name='A' sequence='S'><col></col></table>";
-        Xml::Node node(Xml::Parse(xml));
-        Table::Ptr t = cfg_.parse_table(node.get());
+        ElementTree::ElementPtr node(ElementTree::parse(xml));
+        Table::Ptr t = cfg_.parse_table(node);
     }
 
     void testParseTable()
@@ -85,8 +85,8 @@ public:
             "<column type='longint' name='B_ID'>"
             "<foreign-key table='T_B' key='ID'/></column>"
             "</table>";
-        Xml::Node node(Xml::Parse(xml));
-        Table::Ptr t = cfg_.parse_table(node.get());
+        ElementTree::ElementPtr node(ElementTree::parse(xml));
+        Table::Ptr t = cfg_.parse_table(node);
         CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(t->get_name()));
         CPPUNIT_ASSERT_EQUAL(string("S"), NARROW(t->get_seq_name()));
         CPPUNIT_ASSERT_EQUAL(2, (int)t->size());
@@ -103,35 +103,35 @@ public:
 
     void testNoAutoInc()
     {
-        Xml::Node node(Xml::Parse(
+        ElementTree::ElementPtr node(ElementTree::parse(
             "<table name='A'>"
             "<column type='longint' name='B'>"
             "<primary-key/>"
             "</column>"
             "</table>"
         ));
-        Table::Ptr t = cfg_.parse_table(node.get());
+        Table::Ptr t = cfg_.parse_table(node);
         CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->get_seq_name()));
         CPPUNIT_ASSERT_EQUAL(false, t->get_autoinc());
     }
 
     void testAutoInc()
     {
-        Xml::Node node(Xml::Parse(
+        ElementTree::ElementPtr node(ElementTree::parse(
             "<table name='A' autoinc='autoinc'>"
             "<column type='longint' name='B'>"
             "<primary-key/>"
             "</column>"
             "</table>"
         ));
-        Table::Ptr t = cfg_.parse_table(node.get());
+        Table::Ptr t = cfg_.parse_table(node);
         CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->get_seq_name()));
         CPPUNIT_ASSERT_EQUAL(true, t->get_autoinc());
     }
 
     void testNullable()
     {
-        Xml::Node node(Xml::Parse(
+        ElementTree::ElementPtr node(ElementTree::parse(
             "<table name='A'>"
             "<column type='longint' name='B'>"
             "<primary-key/>"
@@ -140,7 +140,7 @@ public:
             "<column type='decimal' name='D' null='false'/>"
             "</table>"
         ));
-        Table::Ptr t = cfg_.parse_table(node.get());
+        Table::Ptr t = cfg_.parse_table(node);
         CPPUNIT_ASSERT_EQUAL(false, t->get_column(_T("B")).is_nullable());
         CPPUNIT_ASSERT_EQUAL(true, t->get_column(_T("C")).is_nullable());
         CPPUNIT_ASSERT_EQUAL(false, t->get_column(_T("D")).is_nullable());
@@ -148,13 +148,13 @@ public:
 
     void testClassName()
     {
-        Xml::Node node(Xml::Parse(
+        ElementTree::ElementPtr node(ElementTree::parse(
             "<table name='A' class='aa' xml-name='bb'>"
             "<column type='longint' name='B' property='xx'/>"
             "<column type='longint' name='C' xml-name='dd'/>"
             "</table>"
         ));
-        Table::Ptr t = cfg_.parse_table(node.get());
+        Table::Ptr t = cfg_.parse_table(node);
         CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(t->get_name()));
         CPPUNIT_ASSERT_EQUAL(string("bb"), NARROW(t->get_xml_name()));
         CPPUNIT_ASSERT_EQUAL(string("aa"), NARROW(t->get_class_name()));
@@ -166,12 +166,12 @@ public:
 
     void testClassNameDefault()
     {
-        Xml::Node node(Xml::Parse(
+        ElementTree::ElementPtr node(ElementTree::parse(
             "<table name='ABC'>"
             "<column type='longint' name='B'/>"
             "</table>"
         ));
-        Table::Ptr t = cfg_.parse_table(node.get());
+        Table::Ptr t = cfg_.parse_table(node);
         CPPUNIT_ASSERT_EQUAL(string("ABC"), NARROW(t->get_name()));
         CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->get_class_name()));
         CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(t->get_xml_name()));
@@ -180,7 +180,8 @@ public:
     void testGetWrongNodeValue()
     {
         int a;
-        XMLMetaDataConfig::get_node_ptr_value(Xml::Parse("<size>a</size>"), a);
+        XMLMetaDataConfig::get_node_ptr_value(
+                ElementTree::parse("<size>a</size>"), a);
     }
     
     void testStrTypeToInt()
@@ -193,22 +194,21 @@ public:
         CPPUNIT_ASSERT_EQUAL((int)Value::DECIMAL,
                 XMLMetaDataConfig::string_type_to_int(String(_T("decimal")),a));
         CPPUNIT_ASSERT_EQUAL((int)Value::DATETIME,
-                    XMLMetaDataConfig::string_type_to_int(String(_T("datetime")),a));
+                XMLMetaDataConfig::string_type_to_int(String(_T("datetime")),a));
     }
     
     void testWrongColumnType()
     {
         string xml = "<column type='long' name='ID'></column>";
-        Column col = XMLMetaDataConfig::fill_column_meta(Xml::Parse(xml));
+        Column col = XMLMetaDataConfig::fill_column_meta(ElementTree::parse(xml));
     }
     
     void testParseColumn()
     {
         string xml = "<column type='longint' name='ID' xml-name='i-d'>"
                      "<read-only/><primary-key/></column>";
-        Xml::Node node(Xml::Parse(xml));
-        xmlNodePtr p_node = node.get();
-        Column col = XMLMetaDataConfig::fill_column_meta(p_node);
+        ElementTree::ElementPtr node(ElementTree::parse(xml));
+        Column col = XMLMetaDataConfig::fill_column_meta(node);
         CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(col.get_name()));
         CPPUNIT_ASSERT_EQUAL(true, col.is_pk());
         CPPUNIT_ASSERT_EQUAL(true, col.is_ro());
@@ -219,9 +219,9 @@ public:
     void testParseForeignKey()
     {
         string xml = "<foreign-key table='T_INVOICE' key='ID'></foreign-key>";
-        Xml::Node node(Xml::Parse(xml));
+        ElementTree::ElementPtr node(ElementTree::parse(xml));
         String fk_table, fk_field;
-        XMLMetaDataConfig::get_foreign_key_data(node.get(), fk_table, fk_field);
+        XMLMetaDataConfig::get_foreign_key_data(node, fk_table, fk_field);
         CPPUNIT_ASSERT_EQUAL(string("T_INVOICE"), NARROW(fk_table));
         CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(fk_field));
     }
@@ -229,15 +229,16 @@ public:
     void testInvalidCombination()
     {      
         string xml = "<column type='longint' name='ID' size='10' />";
-        Xml::Node node(Xml::Parse(xml));
-        Column col = XMLMetaDataConfig::fill_column_meta(node.get());
+        ElementTree::ElementPtr node(ElementTree::parse(xml));
+        Column col = XMLMetaDataConfig::fill_column_meta(node);
     }
 
     void testAbsentForeignKeyField()
     {
         string xml = "<foreign-key table='T_INVOICE'></foreign-key>";
         String fk_table, fk_field;
-        XMLMetaDataConfig::get_foreign_key_data(Xml::Parse(xml), fk_table, fk_field);
+        XMLMetaDataConfig::get_foreign_key_data(ElementTree::parse(xml),
+                fk_table, fk_field);
         CPPUNIT_ASSERT(fk_field.empty());
     }
 
@@ -245,21 +246,22 @@ public:
     {
         string xml = "<foreign-key key='ID'></foreign-key>";
         String fk_table, fk_field;
-        XMLMetaDataConfig::get_foreign_key_data(Xml::Parse(xml), fk_table, fk_field);
+        XMLMetaDataConfig::get_foreign_key_data(ElementTree::parse(xml),
+                fk_table, fk_field);
     }
     
     void testAbsentColumnName()
     {
         string xml = "<column type='longint'></column>";
-        Xml::Node node(Xml::Parse(xml));
-        Column col = XMLMetaDataConfig::fill_column_meta(node.get());
+        ElementTree::ElementPtr node(ElementTree::parse(xml));
+        Column col = XMLMetaDataConfig::fill_column_meta(node);
     }
 
     void testAbsentColumnType()
     {
         string xml = "<column name='ID'></column>";
-        Xml::Node node(Xml::Parse(xml));
-        Column col = XMLMetaDataConfig::fill_column_meta(node.get());
+        ElementTree::ElementPtr node(ElementTree::parse(xml));
+        Column col = XMLMetaDataConfig::fill_column_meta(node);
     }
 
     void testBadXML()
@@ -268,13 +270,13 @@ public:
     }
 
     void testRelationSide() {
-        Xml::Node node(Xml::Parse(
+        ElementTree::ElementPtr node(ElementTree::parse(
             "<one class='Abc' property='def' use-list='false' xxx='1'/>"));
         static const Char
             *anames[] = {_T("property"), _T("use-list"), _T("some-other")};
         String cname;
         Relation::AttrMap attrs;
-        cfg_.parse_relation_side(node.get(), anames, sizeof(anames)/sizeof(void*),
+        cfg_.parse_relation_side(node, anames, sizeof(anames)/sizeof(void*),
                 cname, attrs);
         CPPUNIT_ASSERT_EQUAL(string("Abc"), NARROW(cname));
         CPPUNIT_ASSERT_EQUAL(2, (int)attrs.size());
@@ -283,24 +285,24 @@ public:
     }
 
     void testRelationSideNoClass() {
-        Xml::Node node(Xml::Parse(
+        ElementTree::ElementPtr node(ElementTree::parse(
             "<one property='def' use-list='false' xxx='1'/>"));
         static const Char
             *anames[] = {_T("property"), _T("use-list"), _T("some-other")};
         String cname;
         Relation::AttrMap attrs;
-        cfg_.parse_relation_side(node.get(), anames, sizeof(anames)/sizeof(void*),
+        cfg_.parse_relation_side(node, anames, sizeof(anames)/sizeof(void*),
                 cname, attrs);
     }
 
     void testRelationOneToMany() {
-        Xml::Node node(Xml::Parse(
+        ElementTree::ElementPtr node(ElementTree::parse(
             "<relation type='one-to-many'>"
             "<one class='Abc' property='defs'/>"
             "<many class='Def' property='abc'/>"
             "</relation>"
         ));
-        Relation::Ptr r = cfg_.parse_relation(node.get());
+        Relation::Ptr r = cfg_.parse_relation(node);
         CPPUNIT_ASSERT_EQUAL((int)Relation::ONE2MANY, r->type());
         CPPUNIT_ASSERT_EQUAL(string("Abc"), NARROW(r->side(0)));
         CPPUNIT_ASSERT_EQUAL(string("Def"), NARROW(r->side(1)));

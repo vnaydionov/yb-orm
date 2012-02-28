@@ -59,42 +59,38 @@ public:
     }
 private:
     friend class ::TestXMLConfig;
-    Table::Ptr parse_table(xmlNodePtr p_node);
-    void parse_relation_side(xmlNodePtr p_node, const Char **attr_names,
+    Table::Ptr parse_table(ElementTree::ElementPtr node);
+    void parse_relation_side(ElementTree::ElementPtr node, const Char **attr_names,
             size_t attr_count, String &cname, Relation::AttrMap &attrs);
-    Relation::Ptr parse_relation(xmlNodePtr p_node);
+    Relation::Ptr parse_relation(ElementTree::ElementPtr node);
     template <typename T>
-    static void get_node_ptr_value(xmlNodePtr p_node, T &t);
+    static void get_node_ptr_value(ElementTree::ElementPtr node, T &t);
     template <typename T> 
-    static bool get_value_of(xmlNodePtr p_node, const String &field, T &t);
+    static bool get_value_of(ElementTree::ElementPtr node, const String &field, T &t);
     static int string_type_to_int(const String &type, const String &field_name);
-    static bool is_current_child_name(xmlNodePtr p_node, const String &field);
-    static void parse_column(const xmlNodePtr p_node, Table &table_meta);
-    static Column fill_column_meta(xmlNodePtr p_node);
-    static void get_foreign_key_data(xmlNodePtr p_node, String &fk_table, String &fk_field);
+    static void parse_column(ElementTree::ElementPtr node, Table &table_meta);
+    static Column fill_column_meta(ElementTree::ElementPtr node);
+    static void get_foreign_key_data(ElementTree::ElementPtr node, String &fk_table, String &fk_field);
     std::vector<String> skip_generation_;
-    Xml::Node node_;
+    ElementTree::ElementPtr node_;
 };
  
 template <typename T>
-void XMLMetaDataConfig::get_node_ptr_value(xmlNodePtr p_node, T &t) {
-    String str;
-    Xml::Node node(p_node, false);
-    str = node.GetContent();
+void XMLMetaDataConfig::get_node_ptr_value(ElementTree::ElementPtr node, T &t) {
+    String str = node->get_text();
     try {
         t = boost::lexical_cast<T>(str);  
     } 
     catch (const boost::bad_lexical_cast &) {
-        throw ParseError(String(_T("Wrong element value for '")) +
-                WIDEN((const char*)node.get()->name) + _T("'"));
+        throw ParseError(_T("Wrong element value for '") + node->name_ + _T("'"));
     }
 }
 
 template <typename T> 
-bool XMLMetaDataConfig::get_value_of(xmlNodePtr p_node, const String &field, T &t)
+bool XMLMetaDataConfig::get_value_of(ElementTree::ElementPtr node, const String &field, T &t)
 {
-    if (WIDEN((const char *)p_node->name) == field) {
-        get_node_ptr_value(p_node, t);
+    if (node->name_ == field) {
+        get_node_ptr_value(node, t);
         return true;
     }
     return false;

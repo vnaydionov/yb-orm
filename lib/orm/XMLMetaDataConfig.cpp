@@ -5,7 +5,6 @@
 #include "XMLMetaDataConfig.h"
 
 using namespace std;
-using namespace Xml;
 
 class TestXMLConfig;
 
@@ -35,10 +34,9 @@ void load_meta(const String &name, Schema &reg)
 }
 
 XMLMetaDataConfig::XMLMetaDataConfig(const string &xml_string)
-    :node_(NULL)
 {
     try {
-        node_.set(Parse(xml_string));
+        node_ = ElementTree::parse(xml_string);
     }
     catch (const exception &e) {
         throw ParseError(String(_T("XML tree parse error: ")) + WIDEN(e.what()));
@@ -47,53 +45,48 @@ XMLMetaDataConfig::XMLMetaDataConfig(const string &xml_string)
 
 void XMLMetaDataConfig::parse(Schema &reg)
 {
-    if (strcmp((const char *)node_.get()->name, "schema"))
-        throw ParseError(String(_T("Unknown element '")) + 
-                WIDEN((const char *)node_.get()->name) + 
+    if (node_->name_.compare(_T("schema")))
+        throw ParseError(String(_T("Unknown element '")) + node_->name_ + 
                 _T("' found during parse of root element, 'schema' expected"));
 
-    for (xmlNodePtr child = node_.get()->children; child; child = child->next) {
-        if (child->type != XML_ELEMENT_NODE)
-            continue;
-        if (!strcmp((const char *)child->name, "table")) {
-            Table::Ptr t = parse_table(child);
+    ElementTree::Elements::const_iterator child = node_->children_.begin(),
+        cend = node_->children_.end();
+    for (; child != cend; ++child) {
+        if (!(*child)->name_.compare(_T("table"))) {
+            Table::Ptr t = parse_table(*child);
             reg.add_table(t);
-        } else if (!strcmp((const char *)child->name, "relation")) {
-            Relation::Ptr r = parse_relation(child);
+        } else if (!(*child)->name_.compare(_T("relation"))) {
+            Relation::Ptr r = parse_relation(*child);
             if (r.get())
                 reg.add_relation(r);
         } else
-            throw ParseError(String(_T("Unknown element '")) +
-                    WIDEN((const char *)child->name) +
+            throw ParseError(String(_T("Unknown element '")) + (*child)->name_ +
                     _T("' found during parse of element 'schema'"));
     }
 }
 
-Table::Ptr XMLMetaDataConfig::parse_table(xmlNodePtr p_node)
+Table::Ptr XMLMetaDataConfig::parse_table(ElementTree::ElementPtr node)
 {
     String sequence_name, name, xml_name, class_name;
     bool autoinc = false;
 
-    Node node(p_node, false);
-
-    if(!node.HasNotEmptyAttr(_T("name")))
+    if (!node->has_attr(_T("name")))
         throw MandatoryAttributeAbsent(_T("table"), _T("name"));
+    name = node->get_attr(_T("name"));
 
-    if(node.HasNotEmptyAttr(_T("sequence")))
-        sequence_name = node.GetAttr(_T("sequence"));
+    if (node->has_attr(_T("sequence")))
+        sequence_name = node->get_attr(_T("sequence"));
 
-    if(node.HasAttr(_T("autoinc")))
+    if (node->has_attr(_T("autoinc")))
         autoinc = true;
 
-    name = node.GetAttr(_T("name"));
-
-    if(node.HasNotEmptyAttr(_T("xml-name")))
-        xml_name = node.GetAttr(_T("xml-name"));
+    if (node->has_attr(_T("xml-name")))
+        xml_name = node->get_attr(_T("xml-name"));
     else
         xml_name = mk_xml_name(name, _T(""));
 
-    if (node.HasNotEmptyAttr(_T("class")))
-        class_name = node.GetAttr(_T("class"));
+    if (node->has_attr(_T("class")))
+        class_name = node->get_attr(_T("class"));
     else
         skip_generation_.push_back(name);
 
@@ -101,34 +94,32 @@ Table::Ptr XMLMetaDataConfig::parse_table(xmlNodePtr p_node)
     table_meta->set_seq_name(sequence_name);
     table_meta->set_autoinc(autoinc);
 
-    parse_column(node.get()->children, *table_meta);
+    parse_column(node, *table_meta);
     return table_meta;
 }
 
-void XMLMetaDataConfig::parse_relation_side(xmlNodePtr p_node,
+void XMLMetaDataConfig::parse_relation_side(ElementTree::ElementPtr node,
         const Char **attr_names, size_t attr_count,
         String &cname, Relation::AttrMap &attrs)
 {
-    Node node(p_node, false);
-    if (!node.HasAttr(_T("class")))
-        throw MandatoryAttributeAbsent(WIDEN((const char *)node.get()->name), _T("class"));
-    cname = node.GetAttr(_T("class"));
+    if (!node->has_attr(_T("class")))
+        throw MandatoryAttributeAbsent(node->name_, _T("class"));
+    cname = node->get_attr(_T("class"));
     Relation::AttrMap new_attrs;
     for (size_t i = 0; i < attr_count; ++i)
-        if (node.HasAttr(attr_names[i]))
-            new_attrs[attr_names[i]] = node.GetAttr(attr_names[i]);
+        if (node->has_attr(attr_names[i]))
+            new_attrs[attr_names[i]] = node->get_attr(attr_names[i]);
     attrs.swap(new_attrs);
 }
 
-Relation::Ptr XMLMetaDataConfig::parse_relation(xmlNodePtr p_node)
+Relation::Ptr XMLMetaDataConfig::parse_relation(ElementTree::ElementPtr node)
 {
-    Node node(p_node, false);
-    if (!node.HasNotEmptyAttr(_T("type")))
+    if (!node->has_attr(_T("type")))
         throw MandatoryAttributeAbsent(_T("relation"), _T("type"));
-    String rtype_str = node.GetAttr(_T("type"));
+    String rtype_str = node->get_attr(_T("type"));
     String cascade = _T("restrict");
-    if (node.HasNotEmptyAttr(_T("cascade")))
-        cascade = node.GetAttr(_T("cascade"));
+    if (node->has_attr(_T("cascade")))
+        cascade = node->get_attr(_T("cascade"));
     int cascade_code = -1;
     if (cascade == _T("delete"))
         cascade_code = Relation::Delete;
@@ -149,18 +140,17 @@ Relation::Ptr XMLMetaDataConfig::parse_relation(xmlNodePtr p_node)
     static const Char
         *anames_one[] = {_T("property"), _T("use-list")},
         *anames_many[] = {_T("property"), _T("filter")};
-    for (xmlNodePtr child = node.get()->children; child; child = child->next) {
-        if (child->type != XML_ELEMENT_NODE)
-            continue;
-        if (!strcmp((const char *)child->name, "one")) {
-            parse_relation_side(child, anames_one,
+    ElementTree::Elements::const_iterator child = node->children_.begin(),
+        cend = node->children_.end();
+    for (; child != cend; ++child) {
+        if (!(*child)->name_.compare(_T("one"))) {
+            parse_relation_side(*child, anames_one,
                     sizeof(anames_one)/sizeof(void*), one, a1);
-        } else if (!strcmp((const char *)child->name, "many")) {
-            parse_relation_side(child, anames_many,
+        } else if (!(*child)->name_.compare(_T("many"))) {
+            parse_relation_side(*child, anames_many,
                     sizeof(anames_many)/sizeof(void*), many, a2);
         } else
-            throw ParseError(String(_T("Unknown element '")) +
-                    WIDEN((const char *)child->name) +
+            throw ParseError(String(_T("Unknown element '")) + (*child)->name_ +
                     _T("' found during parse of element 'relation'"));
     }
     Relation::Ptr rel(new Relation(rtype, one, a1, many, a2));
@@ -181,43 +171,38 @@ int XMLMetaDataConfig::string_type_to_int(const String &type, const String &fiel
         throw WrongColumnType(type, field_name);
 }
 
-bool XMLMetaDataConfig::is_current_child_name(xmlNodePtr p_node, const String &field)
+void XMLMetaDataConfig::parse_column(ElementTree::ElementPtr node, Table &table_meta)
 {
-    return (WIDEN((const char *)p_node->name) == field) ? true : false;
-}
-
-void XMLMetaDataConfig::parse_column(const xmlNodePtr p_node, Table &table_meta)
-{
-    for(xmlNodePtr col = p_node; col; col = col->next) {
-        if(col->type != XML_ELEMENT_NODE)
-            continue;
-        if(string((const char *)col->name) != "column")
-            throw ParseError(String(_T("Unknown element '")) + WIDEN((const char *)col->name)
+    ElementTree::Elements::const_iterator child = node->children_.begin(),
+        cend = node->children_.end();
+    for (; child != cend; ++child) {
+        ElementTree::ElementPtr col = *child;
+        if (col->name_.compare(_T("column")))
+            throw ParseError(String(_T("Unknown element '")) + col->name_
                     + _T("' found during parse of element 'table'"));
         table_meta.add_column(fill_column_meta(col));
     }
 }
 
-Column XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
+Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
 {
     String name, type, fk_table, fk_field, prop_name, xml_name;
     int flags = 0, size = 0, col_type = 0;
-    Xml::Node node(Xml::DupNode(p_node));
     Yb::Value default_val;
-    if (!node.HasNotEmptyAttr(_T("name")))
+    if (!node->has_attr(_T("name")))
         throw MandatoryAttributeAbsent(_T("column"), _T("name"));
     else
-        name = node.GetAttr(_T("name"));
+        name = node->get_attr(_T("name"));
 
-    if (!node.HasNotEmptyAttr(_T("type")))
+    if (!node->has_attr(_T("type")))
         throw MandatoryAttributeAbsent(_T("column"), _T("type"));
     else {
-        type = node.GetAttr(_T("type"));
+        type = node->get_attr(_T("type"));
         col_type = string_type_to_int(type, name);
     }
 
-    if (node.HasNotEmptyAttr(_T("default"))) {
-       String value = node.GetAttr(_T("default"));
+    if (node->has_attr(_T("default"))) {
+       String value = node->get_attr(_T("default"));
         switch (col_type) {
             case Value::DECIMAL:
             case Value::LONGINT:
@@ -228,40 +213,40 @@ Column XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
                 }
                 break;
             case Value::DATETIME:
-                if (Yb::StrUtils::str_to_lower(node.GetAttr(_T("default"))) != String(_T("sysdate")))
+                if (Yb::StrUtils::str_to_lower(node->get_attr(_T("default"))) != String(_T("sysdate")))
                     throw ParseError(String(_T("Wrong default value for datetime element '"))+ name + _T("'"));
                 default_val = Value(_T("sysdate"));
                 break;
             default:
-                default_val = Value(node.GetAttr(_T("default")));
+                default_val = Value(node->get_attr(_T("default")));
         }
     }
 
-    if (node.HasAttr(_T("size")))
-        size = node.GetLongAttr(_T("size"));
+    if (node->has_attr(_T("size")))
+        size = boost::lexical_cast<int>(node->get_attr(_T("size")));
 
-    if (node.HasAttr(_T("property")))
-        prop_name = node.GetAttr(_T("property"));
-    if (node.HasAttr(_T("xml-name")))
-        xml_name = node.GetAttr(_T("xml-name"));
+    if (node->has_attr(_T("property")))
+        prop_name = node->get_attr(_T("property"));
+    if (node->has_attr(_T("xml-name")))
+        xml_name = node->get_attr(_T("xml-name"));
 
-    for (xmlNode *child = node.get()->children; child; child = child->next) {
-        if (child->type != XML_ELEMENT_NODE)
-            continue;
-        if (is_current_child_name(child, _T("read-only")))
+    ElementTree::Elements::const_iterator child = node->children_.begin(),
+        cend = node->children_.end();
+    for (; child != cend; ++child) {
+        if (!(*child)->name_.compare(_T("read-only")))
             flags |= Column::RO;
-        if (is_current_child_name(child, _T("primary-key")))
+        if (!(*child)->name_.compare(_T("primary-key")))
             flags |= Column::PK;
-        if (string((const char *)child->name) == "foreign-key") {
-            get_foreign_key_data(child, fk_table, fk_field);
+        if (!(*child)->name_.compare(_T("foreign-key"))) {
+            get_foreign_key_data(*child, fk_table, fk_field);
         }
     }
 
     bool nullable = !(flags & Column::PK);
-    if (node.HasAttr(_T("null"))) {
+    if (node->has_attr(_T("null"))) {
         //if (col_type == Value::STRING)
         //    throw InvalidCombination(_T("nullable attribute cannot be used for strings"));
-        if (node.GetAttr(_T("null")) == _T("false"))
+        if (node->get_attr(_T("null")) == _T("false"))
             nullable = false;
     }
     if (nullable)
@@ -274,16 +259,15 @@ Column XMLMetaDataConfig::fill_column_meta(xmlNodePtr p_node)
     return result;
 }
 
-void XMLMetaDataConfig::get_foreign_key_data(xmlNodePtr p_node, String &fk_table, String &fk_field)
+void XMLMetaDataConfig::get_foreign_key_data(ElementTree::ElementPtr node, String &fk_table, String &fk_field)
 {
-    Node node(p_node, false);
-    if (!node.HasNotEmptyAttr(_T("table")))
+    if (!node->has_attr(_T("table")))
         throw MandatoryAttributeAbsent(_T("foreign-key"), _T("table"));
     else
-        fk_table = node.GetAttr(_T("table"));
+        fk_table = node->get_attr(_T("table"));
 
-    if (node.HasNotEmptyAttr(_T("key")))
-        fk_field = node.GetAttr(_T("key"));
+    if (node->has_attr(_T("key")))
+        fk_field = node->get_attr(_T("key"));
     else
         fk_field = String();
 }    

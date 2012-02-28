@@ -1,39 +1,28 @@
 #ifndef YB__UTIL__XML_WRITER__INCLUDED
 #define YB__UTIL__XML_WRITER__INCLUDED
 
-#include <string>
+#include <sstream>
 #include <boost/utility.hpp>
 #include <boost/lexical_cast.hpp>
 #include "UnicodeSupport.h"
-
-struct _xmlBuffer;
-typedef struct _xmlBuffer xmlBuffer;
-typedef xmlBuffer *xmlBufferPtr;
-
-struct _xmlTextWriter;
-typedef struct _xmlTextWriter xmlTextWriter;
-typedef xmlTextWriter *xmlTextWriterPtr;
 
 namespace Yb {
 
 namespace Writer {
 
-// Not thread-safe
-
 class Document: private boost::noncopyable
 {
     friend class Element;
+    std::ostringstream buffer_;
+    std::string xml_, text_;
+    int level_;
+    bool open_;
 
-    xmlBufferPtr buffer_;
-    xmlTextWriterPtr writer_;
-    std::string xml_;
-
-private:
     void write_raw (std::string const & value);
-
     void write_attribute (Yb::String const & name, Yb::String const & value);
-
     void write_string (Yb::String const & value);
+    void start_element (Yb::String const & name);
+    void end_element (Yb::String const & name);
 
     template <class TValue>
     void write_attribute (Yb::String const & name, TValue const & value)
@@ -47,24 +36,13 @@ private:
         write_string (boost::lexical_cast<Yb::String> (value));
     }
 
-    void start_element (Yb::String const & name);
-
-    void end_element ();
-
 public:
     Document (std::string const & xml = "");
     ~Document ();
-
-    void flush () const;
-
-    // insert content
-    void insert (Document const & doc);
-
+    void flush ();
+    void insert (Document & doc);
     std::string const & end_document ();
-
-    std::string const get_string () const;
-
-    xmlTextWriterPtr get_writer ();
+    std::string const & get_string ();
 };
 
 class Element: private boost::noncopyable
@@ -74,7 +52,6 @@ class Element: private boost::noncopyable
     bool closed_;
 
     void start_element ();
-
     void close_element ();
 
 public:

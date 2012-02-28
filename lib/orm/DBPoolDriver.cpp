@@ -1,4 +1,5 @@
 #include <set>
+#include <fstream>
 #include <boost/lexical_cast.hpp>
 #include <util/str_utils.hpp>
 #include <util/xmlnode.h>
@@ -25,56 +26,47 @@ DBPoolConfig::register_data_source(const String &ds_name,
     ds_map_[ds_name] = ds;
 }
 
-static void parse_dbpool_config(xmlNodePtr node,
+static void parse_dbpool_config(ElementTree::ElementPtr root,
         DBPoolConfig::Map &ds_map, int &pool_size)
 {
     set<String> drivers_to_load;
     DBPoolConfig::Map empty_map;
     empty_map.swap(ds_map);
     pool_size = DBPOOL_DEFAULT_SIZE;
-    xmlNodePtr backend = Xml::Child(node, _T("DbBackend"));
-    for (; backend; backend = Xml::Sibling(backend, _T("DbBackend")))
-    {
-        if (!Xml::HasAttr(backend, _T("id")))
+    ElementTree::ElementsPtr backends = root->find_all(_T("DbBackend"));
+    ElementTree::Elements::const_iterator j = backends->begin();
+    for (; j != backends->end(); ++j) {
+        ElementTree::ElementPtr backend = *j;
+        if (!backend->has_attr(_T("id")))
             throw DBPoolConfigParseError(_T("DbBackend w/o @id"));
-        String key = Xml::GetAttr(backend, _T("id"));
+        String key = backend->get_attr(_T("id"));
         DBPoolDataSource ds;
-        xmlNodePtr field;
-        field = Xml::Child(backend, _T("Driver"));
-        if (!field)
-            throw DBPoolConfigParseError(
-                    _T("DbBackend ") + key + _T(": missing Driver field"));
-        ds.driver = Xml::GetContent(field);
+        ds.driver = backend->find_first(_T("Driver"))->get_text();
         drivers_to_load.insert(ds.driver);
-        field = Xml::Child(backend, _T("Name"));
-        if (!field)
-            throw DBPoolConfigParseError(
-                    _T("DbBackend ") + key + _T(": missing Db field"));
-        ds.db = Xml::GetContent(field);
-        field = Xml::Child(backend, _T("User"));
-        if (!field)
-            throw DBPoolConfigParseError(
-                    _T("DbBackend ") + key + _T(": missing User field"));
-        ds.user = Xml::GetContent(field);
-        field = Xml::Child(backend, _T("Pass"));
-        if (!field)
-            throw DBPoolConfigParseError(
-                    _T("DbBackend ") + key + _T(": missing Pass field"));
-        ds.pass = Xml::GetContent(field);
-        field = Xml::Child(backend, _T("Host"));
-        if (field)
-            ds.host = Xml::GetContent(field);
-        field = Xml::Child(backend, _T("Port"));
-        if (field)
-            ds.port = boost::lexical_cast<int>(Xml::GetContent(field));
-        field = Xml::Child(backend, _T("Timeout"));
-        if (field)
-            ds.timeout = boost::lexical_cast<int>(Xml::GetContent(field));
+        ds.db = backend->find_first(_T("Name"))->get_text();
+        ds.user = backend->find_first(_T("User"))->get_text();
+        ds.pass = backend->find_first(_T("Pass"))->get_text();
+        try {
+            ds.host = backend->find_first(_T("Host"))->get_text();
+        }
+        catch (const ElementTree::ElementNotFound &) {}
+        try {
+            ds.port = boost::lexical_cast<int>(
+                    backend->find_first(_T("Port"))->get_text());
+        }
+        catch (const ElementTree::ElementNotFound &) {}
+        try {
+            ds.timeout = boost::lexical_cast<int>(
+                    backend->find_first(_T("Timeout"))->get_text());
+        }
+        catch (const ElementTree::ElementNotFound &) {}
         ds_map[key] = ds;
     }
-    xmlNodePtr item = Xml::Child(node, _T("DbPoolSize"));
-    if (item)
-        pool_size = boost::lexical_cast<int>(Xml::GetContent(item));
+    try {
+        pool_size = boost::lexical_cast<int>(
+                root->find_first(_T("DbPoolSize"))->get_text());
+    }
+    catch (const ElementTree::ElementNotFound &) {}
     // preload drivers
     set<String> ::const_iterator i = drivers_to_load.begin(),
         iend = drivers_to_load.end();
@@ -85,15 +77,18 @@ static void parse_dbpool_config(xmlNodePtr node,
 void
 DBPoolConfig::parse_from_xml_string(const std::string &xml_data)
 {
-    Xml::Node node(Xml::Parse(xml_data));
-    parse_dbpool_config(node.get(), ds_map_, pool_size_);
+    ElementTree::ElementPtr root = ElementTree::parse(xml_data);
+    parse_dbpool_config(root, ds_map_, pool_size_);
 }
 
 void
 DBPoolConfig::load_from_xml_file(const String &xml_file_name)
 {
-    Xml::Node node(Xml::ParseFile(xml_file_name));
-    parse_dbpool_config(node.get(), ds_map_, pool_size_);
+    std::ifstream f(NARROW(xml_file_name).c_str());
+    if (!f.good())
+        throw DBPoolConfigParseError(_T("file open error: ") + xml_file_name);
+    ElementTree::ElementPtr root = ElementTree::parse(f);
+    parse_dbpool_config(root, ds_map_, pool_size_);
 }
 
 const DBPoolDataSource &

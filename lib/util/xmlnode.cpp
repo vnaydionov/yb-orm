@@ -1,325 +1,180 @@
 
-#include <string.h>
-#include <stdexcept>
 #include "xmlnode.h"
-#include "Singleton.h"
+#include <libxml/tree.h>
+#include <libxml/parser.h>
+#include <sstream>
 
-namespace Xml {
+namespace Yb {
 
-using namespace std;
+namespace ElementTree {
 
-xmlNodePtr NewNode(const Yb::String &name)
+Element::Element(const Yb::String &name, const Yb::String &s)
+    : name_(name)
 {
-    return xmlNewNode(NULL, (const xmlChar *)NARROW(name).c_str());
+    if (s.size())
+        text_.push_back(s);
 }
 
-xmlNodePtr AddNode(xmlNodePtr node, xmlNodePtr child)
+ElementPtr
+Element::new_element(const Yb::String &name, const Yb::String &s)
 {
-    return xmlAddChild(node, child);
+    return ElementPtr(new Element(name, s));
 }
 
-xmlNodePtr DupNode(xmlNodePtr node)
+ElementPtr
+Element::sub_element(const Yb::String &name, const Yb::String &s)
 {
-    return xmlCopyNode(node, 1);    // do recursive copy
+    ElementPtr p = new_element(name, s);
+    children_.push_back(p);
+    return p;
 }
 
-void FreeNode(xmlNodePtr node)
+const Yb::String
+Element::get_text() const
 {
-    xmlUnlinkNode(node);            // unlink the child from the list
-    xmlFreeNode(node);              // all the children are freed too
-}
-
-// Previous version (see CVS) of the following two functions
-// did have obvious misbehavior.
-// Hint: where was "name" param used?
-
-xmlNodePtr Child(xmlNodePtr node, const Yb::String &wide_name)
-{
-    if (!node || !node->children)
-        return NULL;
-    std::string name = NARROW(wide_name);
-    if (XML_ELEMENT_NODE == node->children->type &&
-            (name.empty() || !name.compare("*") ||
-             !name.compare((const char *)node->children->name)))
-    {
-        return node->children;
+    Yb::String r;
+    size_t i = 0;
+    for (; i < children_.size(); ++i) {
+        if (i < text_.size())
+            r += text_[i];
+        r += children_[i]->get_text();
     }
-    return Sibling(node->children, wide_name);
+    for (; i < text_.size(); ++i)
+        r += text_[i];
+    return r;
 }
 
-xmlNodePtr Sibling(xmlNodePtr node, const Yb::String &wide_name)
+void
+Element::set_text(const Yb::String &s)
 {
-    if (!node)
-        return NULL;
-    std::string name = NARROW(wide_name);
-    for (xmlNodePtr cur = node->next; cur; cur = cur->next)
-    {
-        if (XML_ELEMENT_NODE == cur->type &&
-                (name.empty() || !name.compare("*") ||
-                 !name.compare((const char *)cur->name)))
-        {
-            return cur;
-        }
+    text_.resize(1);
+    text_[0] = s;
+}
+
+bool
+Element::has_attr(const Yb::String &name) const
+{
+    return attrib_.find(name) != attrib_.end();
+}
+
+const Yb::String
+Element::get_attr(const Yb::String &name) const
+{
+    AttribMap::const_iterator i = attrib_.find(name);
+    if (i != attrib_.end())
+        return i->second;
+    return Yb::String();
+}
+
+ElementPtr
+Element::find_first(const Yb::String &path)
+{
+    for (size_t i = 0; i < children_.size(); ++i)
+        if (path == children_[i]->name_)
+            return children_[i];
+    throw ElementNotFound(NARROW(path));
+}
+
+ElementsPtr
+Element::find_all(const Yb::String &path)
+{
+    ElementsPtr elems(new Elements);
+    for (size_t i = 0; i < children_.size(); ++i)
+        if (path == children_[i]->name_)
+            elems->push_back(children_[i]);
+    return elems;
+}
+
+void
+Element::serialize(Yb::Writer::Document &doc)
+{
+    Yb::Writer::Element e(doc, name_);
+    AttribMap::const_iterator q = attrib_.begin(),
+        qend = attrib_.end();
+    for (; q != qend; ++q) {
+        Yb::Writer::Attribute a(e, q->first, q->second);
     }
-    return NULL;
+    size_t i = 0;
+    for (; i < children_.size(); ++i) {
+        if (i < text_.size())
+            e.set_content(text_[i]);
+        children_[i]->serialize(doc);
+    }
+    for (; i < text_.size(); ++i)
+        e.set_content(text_[i]);
 }
 
-void SetContent(xmlNodePtr node, const Yb::String &content)
-{
-    xmlNodeAddContent(node, (const xmlChar *)NARROW(content).c_str());
-}
-
-const Yb::String GetContent(xmlNodePtr node)
+static Yb::String
+get_node_content(xmlNodePtr node)
 {
     Yb::String value;
     xmlChar *content = xmlNodeGetContent(node);
     if (content) {
-        value = WIDEN(std::string((char *)content));
+        value = WIDEN((const char *)content);
         xmlFree(content);
     }
     return value;
 }
 
-bool HasAttr(xmlNodePtr node, const Yb::String &name)
-{
-    return xmlHasProp(node, (const xmlChar *)NARROW(name).c_str()) != 0;
-}
-
-const Yb::String GetAttr(xmlNodePtr node, const Yb::String &name)
+static Yb::String
+get_attr(xmlNodePtr node, const xmlChar *name)
 {
     Yb::String value;
-    xmlChar *prop = xmlGetProp(node, (const xmlChar *)NARROW(name).c_str());
+    xmlChar *prop = xmlGetProp(node, name);
     if (prop) {
-        value = WIDEN(std::string((char *)prop));
+        value = WIDEN((const char *)prop);
         xmlFree(prop);
     }
     return value;
 }
 
-void SetAttr(xmlNodePtr node, const Yb::String &name, const Yb::String &value)
+static ElementPtr
+convert_node(xmlNodePtr node)
 {
-    xmlNewProp(node, (const xmlChar *)NARROW(name).c_str(), (const xmlChar *)NARROW(value).c_str());
-}
-
-// callback
-static int string_writer(void *context, const char *buffer, int len)
-{
-    if (!len)
-        return 0;
-    std::string *s = (std::string *)context;
-    *s += buffer;
-    return len;
-}
-
-string str(xmlNodePtr node, const Yb::String &enc) // NOTE: node is freed inside
-{
-    xmlDocPtr doc = xmlNewDoc(NULL);    // why not "1.0" ?
-    xmlDocSetRootElement(doc, node);
-    xmlOutputBufferPtr writer = xmlAllocOutputBuffer(0);
-    std::string s;
-    writer->context = &s;
-    writer->writecallback = string_writer;
-    xmlSaveFormatFileTo(writer, doc, NARROW(enc).c_str(), 0);
-    xmlFreeDoc(doc);
-    return s;
-}
-
-// XML parser wrapper class
-class Parser
-{
-public:
-    Parser() { xmlInitParser(); }
-    ~Parser() { xmlCleanupParser(); }
-    static Parser &instance() {
-        typedef Yb::SingletonHolder<Parser> Parser_t;
-        return Parser_t::instance();
-    }
-    xmlDocPtr Parse(const std::string &content)
+    ElementPtr p = Element::new_element(WIDEN((const char *)node->name));
+    for (xmlAttrPtr attr = node->properties; attr; attr = attr->next)
     {
-        xmlDocPtr doc = xmlParseMemory(content.c_str(), content.size());
-        if (!doc)
-            throw std::runtime_error("xmlParseMemory returned NULL.");
-        return doc;
+        p->attrib_[WIDEN((const char *)attr->name)] = get_attr(node, attr->name);
     }
-    xmlDocPtr ParseFile(const Yb::String &fname)
+    for (xmlNodePtr cur = node->children; cur; cur = cur->next)
     {
-        xmlDocPtr doc = xmlParseFile(NARROW(fname).c_str());
-        if (!doc)
-            throw std::runtime_error("xmlParseFile returned NULL.");
-        return doc;
+        if (XML_ELEMENT_NODE == cur->type)
+            p->children_.push_back(convert_node(cur));
+        else if (XML_TEXT_NODE == cur->type) {
+            Yb::String value = get_node_content(cur);
+            if (!value.empty())
+                p->text_.push_back(value);
+        }
     }
-};
+    return p;
+}
 
-xmlNodePtr Parse(const string &content)
+ElementPtr
+parse(const std::string &content)
 {
-    xmlDocPtr doc = Parser::instance().Parse(content);
-    xmlNodePtr node = xmlCopyNodeList(xmlDocGetRootElement(doc));
+    xmlDocPtr doc = xmlParseMemory(content.c_str(), content.size());
+    if (!doc)
+        throw ParseError("xmlParseMemory failed");
+    xmlNodePtr node = xmlDocGetRootElement(doc);
+    ElementPtr p = convert_node(node);
     xmlFreeDoc(doc);
-    return node;
+    return p;
 }
 
-xmlNodePtr ParseFile(const Yb::String &file_name)
+ElementPtr
+parse(std::istream &inp)
 {
-    xmlDocPtr doc = Parser::instance().ParseFile(file_name);
-    xmlNodePtr node = xmlCopyNodeList(xmlDocGetRootElement(doc));
-    xmlFreeDoc(doc);
-    return node;
-}
-
-// XML node wrapper class
-
-void Node::free_node()
-{
-    if (ptr_) {
-        Xml::FreeNode(ptr_);
-        ptr_ = NULL;
+    std::ostringstream out;
+    while (inp.good()) {
+        char c = inp.get();
+        if (inp.good())
+            out.put(c);
     }
+    return parse(out.str());
 }
 
-void Node::check_ptr()
-{
-    if (!ptr_)
-        throw std::runtime_error("libxml failed to allocate new node.");
-}
+} // end of namespace ElementTree
 
-Node::Node(xmlNodePtr p, bool free_on_destroy)
-    :ptr_(p)
-    ,auto_free_(free_on_destroy)
-{}
+} // end of namespace Yb
 
-Node::Node(const Yb::String &node_name)
-    :ptr_(NewNode(node_name))
-    ,auto_free_(true)
-{
-    check_ptr();
-}
-
-Node::Node(Node &obj)
-    :ptr_(obj.release())
-    ,auto_free_(obj.auto_free_)
-{}
-
-Node::~Node()
-{
-    if (auto_free_)
-        free_node();
-    else
-        release();
-}
-
-Node &Node::operator=(Node &obj)
-{
-    if (this != &obj) {
-        if (auto_free_)
-            free_node();
-        auto_free_ = obj.auto_free_;
-        ptr_ = obj.release();
-    }
-    return *this;
-}
-
-xmlNodePtr Node::release()
-{
-    xmlNodePtr t = ptr_;
-    ptr_ = NULL;
-    return t;
-}
-
-xmlNodePtr Node::set(xmlNodePtr p)
-{
-    free_node();
-    ptr_ = p;
-    return ptr_;
-}
-
-xmlNodePtr Node::set(const Yb::String &node_name)
-{
-    free_node();
-    ptr_ = NewNode(node_name);
-    return ptr_;
-}
-
-// Node methods
-
-xmlNodePtr Node::AddNode(xmlNodePtr child)
-{
-    return Xml::AddNode(ptr_, child);
-}
-
-xmlNodePtr Node::AddNode(const Yb::String &node_name)
-{
-    return Xml::AddNode(ptr_, NewNode(node_name));
-}
-
-xmlNodePtr Node::Child(const Yb::String &name)
-{
-    return Xml::Child(ptr_, name);
-}
-
-xmlNodePtr Node::Sibling(const Yb::String &name)
-{
-    return Xml::Sibling(ptr_, name);
-}
-
-const Yb::String Node::GetContent() const
-{
-    return Xml::GetContent(ptr_);
-}
-
-long Node::GetLongContent(long def) const
-{
-    return GetContent(def);
-}
-
-void Node::SetContent(const Yb::String &content)
-{
-    Xml::SetContent(ptr_, content);
-}
-
-bool Node::HasAttr(const Yb::String &name) const
-{
-    return Xml::HasAttr(ptr_, name);
-}
-
-bool Node::HasNotEmptyAttr(const Yb::String &name) const
-{
-    return HasAttr(name) && !GetAttr(name).empty();
-}
-
-const Yb::String Node::GetAttr(const Yb::String &name) const
-{
-    return Xml::GetAttr(ptr_, name);
-}
-
-long Node::GetLongAttr(const Yb::String &name, long def) const
-{
-    return GetAttr(name, def);
-}
-
-LongInt Node::GetLongLongAttr(const Yb::String &name, LongInt def) const
-{
-    return GetAttr(name, def);
-}
-
-bool Node::GetBoolAttr(const Yb::String &name) const
-{
-    if (!HasAttr(name))
-        return false;
-    Yb::String str_value = GetAttr(name);
-    return !str_value.empty() && str_value != _T("0");
-}
-
-void Node::SetAttr(const Yb::String &name, const Yb::String &value)
-{
-    Xml::SetAttr(ptr_, name, value);
-}
-
-const string Node::str(const Yb::String &enc)
-{
-    return Xml::str(release(), enc);
-}
-
-} // end of namespace Xml
-
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

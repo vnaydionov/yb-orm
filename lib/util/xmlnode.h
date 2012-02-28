@@ -1,130 +1,61 @@
-
 #ifndef YB__XMLNODE__INCLUDED
 #define YB__XMLNODE__INCLUDED
 
-#include <time.h>
-#include <string>
-#include <libxml/tree.h>
-#include <boost/lexical_cast.hpp>
+#include <stdexcept>
+#include <memory>
+#include <vector>
+#include <map>
+#include <iostream>
+#include <boost/shared_ptr.hpp>
 #include "UnicodeSupport.h"
+#include "xml_writer.h"
 
-namespace Xml {
+namespace Yb {
 
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-typedef __int64 LongInt;
-#else
-typedef long long LongInt;
-#endif
+namespace ElementTree {
 
-xmlNodePtr NewNode(const Yb::String &name);
-xmlNodePtr AddNode(xmlNodePtr node, xmlNodePtr child);
-xmlNodePtr DupNode(xmlNodePtr node);
-void FreeNode(xmlNodePtr node);
+typedef std::map<Yb::String, Yb::String> AttribMap;
+typedef std::vector<Yb::String> Strings;
+struct Element;
+typedef boost::shared_ptr<Element> ElementPtr;
+typedef std::vector<ElementPtr> Elements;
+typedef std::auto_ptr<Elements> ElementsPtr;
 
-xmlNodePtr Child(xmlNodePtr node, const Yb::String &name = _T(""));
-xmlNodePtr Sibling(xmlNodePtr node, const Yb::String &name = _T(""));
-
-void SetContent(xmlNodePtr node, const Yb::String &content);
-const Yb::String GetContent(xmlNodePtr node);
-
-bool HasAttr(xmlNodePtr node, const Yb::String &name);
-const Yb::String GetAttr(xmlNodePtr node, const Yb::String &name);
-void SetAttr(xmlNodePtr node, const Yb::String &name, const Yb::String &value);
-
-xmlNodePtr Parse(const std::string &content);
-xmlNodePtr ParseFile(const Yb::String &file_name);
-
-// NOTE: 'node' parameter is freed inside the following function
-std::string str(xmlNodePtr node, const Yb::String &enc = _T("UTF-8"));
-
-// XML node wrapper class
-
-template <class T>
-const T str2t_or_default(const Yb::String &str_value, const T &def)
-{
-    try { return boost::lexical_cast<T>(str_value); }
-    catch (const boost::bad_lexical_cast &) { }
-    return def;
-}
-
-class Node
-{
-    xmlNodePtr ptr_;
-    bool auto_free_;
-
-private:
-    void free_node();
-    void check_ptr();
-
-public:
-    explicit Node(xmlNodePtr p = NULL, bool free_on_destroy = true);
-    explicit Node(const Yb::String &node_name);
-    explicit Node(Node &obj);
-    ~Node();
-    Node &operator=(Node &obj);
-
-    // Getters / setters
-    xmlNodePtr release();
-    xmlNodePtr get() { return ptr_; }
-    xmlNodePtr set(xmlNodePtr p);
-    xmlNodePtr set(const Yb::String &node_name);
-
-    // Node methods
-    xmlNodePtr AddNode(xmlNodePtr child);
-    xmlNodePtr AddNode(const Yb::String &node_name);
-    xmlNodePtr Child(const Yb::String &name = _T(""));
-    xmlNodePtr Sibling(const Yb::String &name = _T(""));
-
-    // Manipulate text content
-
-    const Yb::String GetContent() const;
-
-    template <class T>
-    const T GetContent(const T &def) const
-    { return str2t_or_default(GetContent(), def); }
-
-    long GetLongContent(long def = 0) const;
-
-    void SetContent(const Yb::String &content);
-
-    template <class T>
-    void SetContent(const T &content)
-    { SetContent(boost::lexical_cast<Yb::String>(content)); }
-
-    // Manipulate attributes
-
-    bool HasAttr(const Yb::String &name) const;
-    bool HasNotEmptyAttr(const Yb::String &name) const;
-
-    const Yb::String GetAttr(const Yb::String &name) const;
-
-    template <class T>
-    const T GetAttr(const Yb::String &name, const T &def) const
-    {
-        if (!HasAttr(name))
-            return def;
-        return str2t_or_default(GetAttr(name), def);
-    }
-
-    long GetLongAttr(const Yb::String &name, long def = 0) const;
-    LongInt GetLongLongAttr(const Yb::String &name, LongInt def = 0) const;
-    bool GetBoolAttr(const Yb::String &name) const;
-
-    void SetAttr(const Yb::String &name, const Yb::String &value);
-
-    template <class T>
-    void SetAttr(const Yb::String &name, const T &value)
-    { SetAttr(name, boost::lexical_cast<Yb::String>(value)); }
-
-    // Serialize XML tree into text.
-    // NOTE: the pointer is released inside this method
-    // FIXME: not exception safe
-    const std::string str(const Yb::String &enc = _T("UTF-8"));
+class ElementNotFound: public std::runtime_error {
+public: ElementNotFound(const std::string &t): runtime_error(t) {}
 };
 
-} // end of namespace Xml
+class ParseError: public std::runtime_error {
+public: ParseError(const std::string &t): runtime_error(t) {}
+};
 
-// vim:ts=4:sts=4:sw=4:et
+struct Element
+{
+    Yb::String name_;
+    AttribMap attrib_;
+    Strings text_;
+    Elements children_;
+
+    Element(const Yb::String &name, const Yb::String &s = _T(""));
+    static ElementPtr new_element(const Yb::String &name,
+            const Yb::String &s = _T(""));
+    ElementPtr sub_element(const Yb::String &name,
+            const Yb::String &s = _T(""));
+    const Yb::String get_text() const;
+    void set_text(const Yb::String &s);
+    bool has_attr(const Yb::String &name) const;
+    const Yb::String get_attr(const Yb::String &name) const;
+    ElementPtr find_first(const Yb::String &path);
+    ElementsPtr find_all(const Yb::String &path);
+    void serialize(Yb::Writer::Document &doc);
+};
+
+ElementPtr parse(const std::string &content);
+ElementPtr parse(std::istream &inp);
+
+} // end of namespace ElementTree
+
+} // end of namespace Yb
 
 #endif // YB__XMLNODE__INCLUDED
-
+// vim:ts=4:sts=4:sw=4:et:

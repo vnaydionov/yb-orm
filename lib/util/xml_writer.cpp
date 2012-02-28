@@ -1,5 +1,4 @@
 #include "xml_writer.h"
-#include <libxml/xmlwriter.h>
 
 namespace Yb {
 
@@ -7,52 +6,98 @@ namespace Writer {
 
 using namespace std;
 
+static
+string const  
+armour (string const & s)
+{
+    string r;
+    r.reserve (s.size () + 20);
+    for (size_t i = 0; i < s.size (); ++i)
+    {
+        char c = s [i];
+        if ('<' == c)
+            r += "&lt;";
+        else if ('>' == c)
+            r += "&gt;";
+        else if ('&' == c)
+            r += "&amp;";
+        else
+            r += c;
+    }
+    return r;
+}
+
 void Document::write_raw (string const & value)
 {
-    if (value.size ())
-        xmlTextWriterWriteRaw (writer_, BAD_CAST value.c_str ());
+    buffer_ << value;
 }
 
 void Document::write_attribute (Yb::String const & name, Yb::String const & value)
 {
-    xmlTextWriterWriteAttribute (writer_,
-            BAD_CAST NARROW(name).c_str (), BAD_CAST NARROW(value).c_str ());
+    buffer_ << " " << armour (NARROW (name)) << "=\""
+        << armour (NARROW (value)) << "\"";
 }
 
 void Document::write_string (Yb::String const & value)
 {
-    xmlTextWriterWriteString (writer_, BAD_CAST NARROW(value).c_str ());
+    text_ += armour (NARROW (value));
 }
 
 void Document::start_element (Yb::String const & name)
 {
-    xmlTextWriterStartElement (writer_, BAD_CAST NARROW(name).c_str ());
+    if (open_) {
+        buffer_ << ">";
+        open_ = false;
+    }
+    if (!text_.empty ()) {
+        buffer_ << text_;
+        text_ = std::string ();
+    }
+    buffer_ << "<" << armour (NARROW (name));
+    open_ = true;
+    ++ level_;
 }
 
-void Document::end_element ()
+void Document::end_element (Yb::String const & name)
 {
-    xmlTextWriterEndElement (writer_);
+    if (open_) {
+        if (!text_.empty ()) {
+            buffer_ << ">" << text_ << "</" << armour (NARROW (name)) << ">";
+            text_ = std::string ();
+        }
+        else {
+            buffer_ << "/>";
+        }
+        open_ = false;
+    }
+    else {
+        if (!text_.empty ()) {
+            buffer_ << text_;
+            text_ = std::string ();
+        }
+        buffer_ << "</" << armour (NARROW (name)) << ">";
+    }
+    -- level_;
+    if (0 == level_)
+        buffer_ << "\n";
 }
 
 Document::Document (string const & xml)
-    :buffer_ (xmlBufferCreate ())
-    ,writer_ (xmlNewTextWriterMemory (buffer_, 0))
-{
-    write_raw (xml);
-}
+    :xml_ (xml)
+    ,level_ (0)
+    ,open_ (false)
+{}
 
 Document::~Document ()
+{}
+
+void Document::flush ()
 {
-    xmlFreeTextWriter (writer_);
-    xmlBufferFree (buffer_);
+    if (xml_.empty ())
+        xml_ = buffer_.str ();
 }
 
-void Document::flush () const
-{
-    xmlTextWriterFlush (writer_);
-}
-
-void Document::insert (Document const & doc)
+void Document::insert (Document & doc)
 {
     write_raw (doc.get_string ());
 }
@@ -60,24 +105,15 @@ void Document::insert (Document const & doc)
 string const &
 Document::end_document ()
 {
-    xmlTextWriterEndDocument (writer_);
-    xml_ = get_string ();
-    return xml_;
+    return get_string ();
 }
 
-string const
-Document::get_string () const
+string const &
+Document::get_string ()
 {
     flush ();
-    return (const char *)buffer_->content;
+    return xml_;
 }
-
-xmlTextWriterPtr
-Document::get_writer ()
-{
-    return writer_;
-}
-
 
 void Element::start_element ()
 {
@@ -87,7 +123,7 @@ void Element::start_element ()
 void Element::close_element ()
 {
     if (!closed_) {
-        doc_.end_element ();
+        doc_.end_element (name_);
         closed_ = true;
     }
 }
@@ -109,7 +145,6 @@ void Element::set_content (Yb::String const & content)
 {
     doc_.write_string (content);
 }
-
 
 Attribute::~Attribute ()
 {}
