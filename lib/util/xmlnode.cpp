@@ -16,7 +16,7 @@ Element::Element(const Yb::String &name, const Yb::String &s)
 }
 
 ElementPtr
-Element::new_element(const Yb::String &name, const Yb::String &s)
+new_element(const Yb::String &name, const Yb::String &s)
 {
     return ElementPtr(new Element(name, s));
 }
@@ -86,7 +86,7 @@ Element::find_all(const Yb::String &path)
 }
 
 void
-Element::serialize(Yb::Writer::Document &doc)
+Element::serialize(Yb::Writer::Document &doc) const
 {
     Yb::Writer::Element e(doc, name_);
     AttribMap::const_iterator q = attrib_.begin(),
@@ -102,6 +102,14 @@ Element::serialize(Yb::Writer::Document &doc)
     }
     for (; i < text_.size(); ++i)
         e.set_content(text_[i]);
+}
+
+const std::string
+Element::serialize() const
+{
+    Yb::Writer::Document doc;
+    serialize(doc);
+    return doc.end_document();
 }
 
 static Yb::String
@@ -131,7 +139,7 @@ get_attr(xmlNodePtr node, const xmlChar *name)
 static ElementPtr
 convert_node(xmlNodePtr node)
 {
-    ElementPtr p = Element::new_element(WIDEN((const char *)node->name));
+    ElementPtr p = new_element(WIDEN((const char *)node->name));
     for (xmlAttrPtr attr = node->properties; attr; attr = attr->next)
     {
         p->attrib_[WIDEN((const char *)attr->name)] = get_attr(node, attr->name);

@@ -258,7 +258,7 @@ public:
             return 0;
         return d_->values() < x.d_->values()? -1: 1;
     }
-    const XMLNode xmlize(int depth = 0, const String &alt_name = _T("")) const {
+    ElementTree::ElementPtr xmlize(int depth = 0, const String &alt_name = _T("")) const {
         if (!session())
             throw NoSessionBaseGiven();
         return deep_xmlize(*session(), d_, depth, alt_name);

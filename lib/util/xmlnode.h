@@ -37,8 +37,6 @@ struct Element
     Elements children_;
 
     Element(const Yb::String &name, const Yb::String &s = _T(""));
-    static ElementPtr new_element(const Yb::String &name,
-            const Yb::String &s = _T(""));
     ElementPtr sub_element(const Yb::String &name,
             const Yb::String &s = _T(""));
     const Yb::String get_text() const;
@@ -47,9 +45,11 @@ struct Element
     const Yb::String get_attr(const Yb::String &name) const;
     ElementPtr find_first(const Yb::String &path);
     ElementsPtr find_all(const Yb::String &path);
-    void serialize(Yb::Writer::Document &doc);
+    void serialize(Yb::Writer::Document &doc) const;
+    const std::string serialize() const;
 };
 
+ElementPtr new_element(const Yb::String &name, const Yb::String &s = _T(""));
 ElementPtr parse(const std::string &content);
 ElementPtr parse(std::istream &inp);
 

@@ -31,6 +31,8 @@ class TestXMLConfig : public CppUnit::TestFixture
     CPPUNIT_TEST(testRelationSide);
     CPPUNIT_TEST_EXCEPTION(testRelationSideNoClass, MandatoryAttributeAbsent);
     CPPUNIT_TEST(testRelationOneToMany);
+    CPPUNIT_TEST(testSerialize);
+    CPPUNIT_TEST(testSerialize2);
     CPPUNIT_TEST_SUITE_END();
 
     XMLMetaDataConfig cfg_;
@@ -313,8 +315,29 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(r->attr(1, _T("property"))));
     }
 
+    void testSerialize() {
+        string xml =
+            "<relation type=\"one-to-many\">"
+            "<one class=\"Abc\" property=\"defs\"/>"
+            "<many class=\"Def\" property=\"abc\"/>"
+            "</relation>\n";
+        ElementTree::ElementPtr node(ElementTree::parse(xml));
+        CPPUNIT_ASSERT_EQUAL(xml, node->serialize());
+    }
+
+    void testSerialize2() {
+        string xml =
+            "<list aaa=\"&lt;\" bbb=\"&amp;\">qwerty"
+            "<li ccc=\"x&gt;\"/>asdfg"
+            "<li>zxcvb</li>"
+            "<li><nested n=\"n\">111</nested></li>"
+            "</list>\n";
+        ElementTree::ElementPtr node(ElementTree::parse(xml));
+        CPPUNIT_ASSERT_EQUAL(string("qwertyasdfgzxcvb111"), node->get_text());
+        CPPUNIT_ASSERT_EQUAL(xml, node->serialize());
+    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestXMLConfig);
 
-// vim:ts=4:sts=4:sw=4:et:
+// vim:ts=6:sts=4:sw=4:et:

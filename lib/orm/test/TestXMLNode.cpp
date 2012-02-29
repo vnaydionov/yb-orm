@@ -148,8 +148,8 @@ public:
         data->set(_T("x"), 10);
         data->set(_T("y"), _T("zzz"));
         data->set(_T("z"), Decimal(_T("1.20")));
-        XMLNode node(data);
-        CPPUNIT_ASSERT_EQUAL(string("<a><x>10</x><y>zzz</y><z>1.2</z></a>\n"), node.get_xml());
+        ElementTree::ElementPtr node = data_object_to_etree(data);
+        CPPUNIT_ASSERT_EQUAL(string("<a><x>10</x><y>zzz</y><z>1.2</z></a>\n"), node->serialize());
     }
 
     void test_replace_child_object()
@@ -162,11 +162,11 @@ public:
         datax->set(_T("xa"), 20);
         datax->set(_T("xb"), _T("aaa"));
         datax->set(_T("xc"), Decimal(_T("1.1")));
-        XMLNode node(data);
-        node.replace_child_object_by_field(_T("x"), datax);
+        ElementTree::ElementPtr node = data_object_to_etree(data);
+        replace_child_object_by_field(node, _T("x"), datax);
         CPPUNIT_ASSERT_EQUAL(string(
                     "<a><xx><xa>20</xa><xb>aaa</xb><xc>1.1</xc></xx><y>zzz</y><z>1.2</z></a>\n"),
-                node.get_xml());
+                node->serialize());
     }
 
     void test_add_node()
@@ -179,21 +179,22 @@ public:
         datax->set(_T("xa"), 20);
         datax->set(_T("xb"), _T("aaa"));
         datax->set(_T("xc"), Decimal(_T("1.1")));
-        XMLNode node(data);
-        XMLNode child(datax);
-        node.add_node(datax);
+        ElementTree::ElementPtr node = data_object_to_etree(data);
+        ElementTree::ElementPtr child = data_object_to_etree(datax);
+        node->children_.push_back(child);
         CPPUNIT_ASSERT_EQUAL(string(
                     "<a><x>10</x><y>zzz</y><z>1.2</z>"
                     "<xx><xa>20</xa><xb>aaa</xb><xc>1.1</xc></xx></a>\n"),
-                node.get_xml());
+                node->serialize());
     }
 
     void test_xmlize_null_value()
     {
         DataObject::Ptr data = DataObject::create_new(r_.table(_T("N")));
         data->set(_T("a"), Value());
-        XMLNode node(data);
-        CPPUNIT_ASSERT_EQUAL(std::string("<n><a is_null=\"1\"/></n>\n"), node.get_xml());
+        ElementTree::ElementPtr node = data_object_to_etree(data);
+        CPPUNIT_ASSERT_EQUAL(std::string("<n><a is_null=\"1\"/></n>\n"),
+                node->serialize());
     }
 
     void test_deep_xmlize1()
@@ -202,10 +203,10 @@ public:
         Engine engine(Engine::READ_ONLY);
         Session session(theMetaData::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
-        XMLNode node = test.xmlize();
+        ElementTree::ElementPtr node = test.xmlize();
         CPPUNIT_ASSERT_EQUAL(string(
             "<orm-xml><id>10</id><orm-test-id>1</orm-test-id><b>4</b></orm-xml>\n"),
-            node.get_xml());
+            node->serialize());
     }
 
     void test_deep_xmlize2()
@@ -214,11 +215,11 @@ public:
         Engine engine(Engine::READ_ONLY);
         Session session(theMetaData::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
-        XMLNode node = test.xmlize(1);
+        ElementTree::ElementPtr node = test.xmlize(1);
         CPPUNIT_ASSERT_EQUAL(string(
             "<orm-xml><id>10</id><orm-test><id>1</id><a>abc</a>"
             "<b>1981-05-30T00:00:00</b><c>3.14</c></orm-test><b>4</b></orm-xml>\n"),
-            node.get_xml());
+            node->serialize());
     }
 
     void test_deep_xmlize3()
@@ -227,11 +228,11 @@ public:
         Engine engine(Engine::READ_ONLY);
         Session session(theMetaData::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
-        XMLNode node = test.xmlize(-1);
+        ElementTree::ElementPtr node = test.xmlize(-1);
         CPPUNIT_ASSERT_EQUAL(string(
             "<orm-xml><id>10</id><orm-test><id>1</id><a>abc</a>"
             "<b>1981-05-30T00:00:00</b><c>3.14</c></orm-test><b>4</b></orm-xml>\n"),
-            node.get_xml());
+            node->serialize());
     }
 };
 

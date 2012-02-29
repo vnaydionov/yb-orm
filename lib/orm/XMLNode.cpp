@@ -5,59 +5,45 @@ using namespace std;
 
 namespace Yb {
 
-void XMLNode::init_by_data_object(DataObject::Ptr data, const String &alt_name)
+ElementTree::ElementPtr
+data_object_to_etree(DataObject::Ptr data, const String &alt_name)
 {
     const Table &table = data->table();
-    name_ = alt_name.empty()? table.get_xml_name(): alt_name;
+    String name = alt_name.empty()? table.get_xml_name(): alt_name;
+    ElementTree::ElementPtr node = ElementTree::new_element(name);
     Columns::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it) {
         const String col_name = it->get_xml_name();
-        if (!col_name.empty())
-            children_.push_back(XMLNode(col_name, data->get(it->get_name())));
+        if (!col_name.empty() && _T("!") != col_name) {
+            Value value = data->get(it->get_name());
+            ElementTree::ElementPtr sub_el = node->sub_element(col_name);
+            if (value.is_null())
+                sub_el->attrib_[_T("is_null")] = _T("1");
+            else
+                sub_el->set_text(value.as_string());
+        }
     }
+    return node;
 }
 
-void XMLNode::replace_child_object_by_field(const String &field_name, DataObject::Ptr data) 
+void
+replace_child_object_by_field(ElementTree::ElementPtr node,
+        const String &field_name, ElementTree::ElementPtr sub_node)
 {
-    NodeList::iterator it = children_.begin(), end = children_.end();
+    ElementTree::Elements::iterator it = node->children_.begin(),
+        end = node->children_.end();
     for (; it != end; ++it)
-        if (it->name_ == field_name) {
-            it->value_ = Value(); // reset the value
-            it->init_by_data_object(data);
+        if ((*it)->name_ == field_name) {
+            *it = sub_node;
+            break;
         }
 }
 
-void XMLNode::replace_child_object_by_field(const String &field_name, const XMLNode &node) 
+void
+replace_child_object_by_field(ElementTree::ElementPtr node,
+        const String &field_name, DataObject::Ptr data)
 {
-    NodeList::iterator it = children_.begin(), end = children_.end();
-    for (; it != end; ++it)
-        if (it->name_ == field_name) {
-            it->value_ = Value(); // reset the value
-            *it = node;
-        }
-}
-
-const string XMLNode::get_xml()  const
-{ 
-    Yb::Writer::Document doc;
-    xmlize(doc);
-    return doc.end_document();
-}
-
-void XMLNode::xmlize(Yb::Writer::Document &doc) const
-{
-    if(name_.empty())
-        return;
-    Yb::Writer::Element elem(doc, name_);
-
-    if (value_.is_null() && children_.empty())
-        elem.add_attribute(_T("is_null"), true);
-    if (!value_.is_null())
-        elem.set_content(value_.as_string());
-
-    NodeList::const_iterator it = children_.begin(), end = children_.end();
-    for (; it != end; ++it)
-        it->xmlize(doc);
+    replace_child_object_by_field(node, field_name, data_object_to_etree(data));
 }
 
 /**
@@ -65,13 +51,13 @@ void XMLNode::xmlize(Yb::Writer::Document &doc) const
  * @param d start point
  * @param depth == -1 recursion not limited
  *              >= 0 nested levels
- * @return XMLNode
+ * @return ElementTree::ElementPtr
  */
-const XMLNode
+ElementTree::ElementPtr
 deep_xmlize(Session &session, DataObject::Ptr d,
     int depth, const String &alt_name)
 {
-    XMLNode node(d, alt_name);
+    ElementTree::ElementPtr node = data_object_to_etree(d, alt_name);
     if (depth == -1 || depth > 0) {
         const Table &tbl = d->table();
         const String &cname = tbl.get_class_name();
@@ -91,12 +77,12 @@ deep_xmlize(Session &session, DataObject::Ptr d,
                             theDomainFactory::instance().create_object(
                                 session, it->get_fk_table_name(),
                                 d->get(it->get_name()).as_longint());
-                        XMLNode ref_node(domain_obj->xmlize(
+                        ElementTree::ElementPtr ref_node = domain_obj->xmlize(
                             depth == -1? -1: depth - 1, mk_xml_name(
                                 j->second->attr(1, _T("property")), _T("")
-                            )));
-                        node.replace_child_object_by_field(
-                            it->get_xml_name(), ref_node);
+                            ));
+                        replace_child_object_by_field(node,
+                                it->get_xml_name(), ref_node);
                     }
                     break;
                 }
@@ -105,24 +91,24 @@ deep_xmlize(Session &session, DataObject::Ptr d,
     return node;
 }
 
-const XMLNode
+ElementTree::ElementPtr
 xmlize_row(const Row &row, const String &entry_name)
 {
-    XMLNode entry(entry_name, _T(""));
+    ElementTree::ElementPtr entry = ElementTree::new_element(entry_name);
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it)
-        entry.add_node(XMLNode(mk_xml_name(it->first, _T("")),
-                    it->second.nvl(_T("")).as_string()));
+        entry->sub_element(mk_xml_name(it->first, _T("")),
+                it->second.nvl(_T("")).as_string());
     return entry;
 }
 
-const XMLNode
+ElementTree::ElementPtr
 xmlize_rows(const Rows &rows, const String &entries_name, const String &entry_name)
 {
-    XMLNode entries(entries_name, _T(""));
+    ElementTree::ElementPtr entries = ElementTree::new_element(entries_name);
     Rows::const_iterator it = rows.begin(), end = rows.end();
     for (; it != end; ++it)
-        entries.add_node(xmlize_row(*it, entry_name));
+        entries->children_.push_back(xmlize_row(*it, entry_name));
     return entries;
 }
 

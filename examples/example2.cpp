@@ -75,9 +75,9 @@ int main()
     cout << "order created: " << order.get_id() << endl;
     engine.commit();
     order.set_owner(client_x);
-    cout << order.xmlize(1).get_xml() << endl;
+    cout << order.xmlize(1)->serialize() << endl;
     session.flush();
-    cout << order.xmlize(1).get_xml() << endl;
+    cout << order.xmlize(1)->serialize() << endl;
     engine.commit();
     }
     
