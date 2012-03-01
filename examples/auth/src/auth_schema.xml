@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<schema>
+    <table name="T_USERS" class="User" sequence="S_USERS" xml-name="user">
+        <column name="ID" type="longint">
+            <primary-key />
+        </column>
+        <column name="NAME" type="string" size="100" null="false" />
+        <column name="PASS" type="string" size="100" null="false" xml-name="!" />
+        <column name="STATUS" type="longint" null="false" default="1" />
+        <column name="FACULT" type="longint" null="false" default="1" />
+    </table>
+    <table name="T_SESSIONS" class="LoginSession" sequence="S_SESSIONS" xml-name="login-session">
+        <column name="ID" type="longint">
+            <primary-key />
+        </column>
+        <column name="USR_ID" type="longint">
+            <foreign-key table="T_USERS" />
+        </column>
+        <column name="BEGIN_SESSION" type="datetime" default="sysdate" null="false" />
+        <column name="END_SESSION" type="datetime" />
+        <column name="TOKEN" type="string" size="100" />
+    </table>
+    <relation type="one-to-many">
+        <one class="User" property="login_sessions" />
+        <many class="LoginSession" property="user" />
+    </relation>
+</schema>

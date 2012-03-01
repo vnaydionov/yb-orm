@@ -52,8 +52,9 @@ MilliSec get_cur_time_millisec()
 #elif defined(__unix__)
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    MilliSec r = tv.tv_usec / 1000;
-    r += tv.tv_sec * 1000;
+    MilliSec r = tv.tv_sec;
+    r *= 1000;
+    r += tv.tv_usec / 1000;
     return r;
 #else
     MilliSec r = time(NULL);
