@@ -1,7 +1,7 @@
 
 add_custom_command (
     OUTPUT LoginSession.cpp User.cpp
-    COMMAND yborm_gen_domain ${PROJECT_SOURCE_DIR}/src/auth_schema.xml
+    COMMAND ${YBORM_ROOT}/bin/yborm_gen_domain ${PROJECT_SOURCE_DIR}/src/auth_schema.xml
         ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${PROJECT_SOURCE_DIR}/src/auth_schema.xml
 )
