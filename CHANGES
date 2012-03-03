@@ -1,3 +1,12 @@
+0.2.3
+    Simple logger implementation.
+    Reimplemented xml Writer classes from scratch (not using libxml2).
+    Replaced Xml::Node with more convenient class ElementTree::Element,
+    still depending on libxml2, but not exposing any of its internals.
+    Auth is a separate demo project contributed by Nikita Buyvich,
+    the project is a minimal HTTP server, which implements a toy auth
+    ptotocol using XML.  Look in examples/auth.
+    Many bugfixes.
 
 0.2.2
     Build in schema pieces into generated classes.
