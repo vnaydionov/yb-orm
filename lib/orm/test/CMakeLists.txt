@@ -12,3 +12,5 @@ target_link_libraries (yborm_unit_tests testmain ybutil yborm ${LIBXML2_LIBS}
 
 add_test (yborm_unit_tests yborm_unit_tests)
 
+install (TARGETS yborm_unit_tests DESTINATION examples)
+install (FILES yborm_unit_tests.bat test_schema.xml DESTINATION examples)

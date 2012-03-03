@@ -5,6 +5,10 @@ if [ $# != 2 ] ; then
 fi
 XSLT_FILE="`dirname $0`/yborm_gen_sql.xsl"
 if ! [ -r "$XSLT_FILE" ] ; then
-    XSLT_FILE="@prefix@/share/yborm/yborm_gen_sql.xsl"
+    XSLT_FILE="`dirname $0`/../share/yborm/yborm_gen_sql.xsl"
+    if ! [ -r "$XSLT_FILE" ] ; then
+        echo "Can't find file yborm_gen_sql.xsl"
+        exit 1
+    fi
 fi
 xsltproc --stringparam dialect "$1" "$XSLT_FILE" "$2"

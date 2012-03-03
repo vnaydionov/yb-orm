@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
-#include "nlogger.h"
+#include <util/nlogger.h>
 
 namespace Yb {
 

@@ -1,6 +1,6 @@
 
 #include <stdlib.h>
-#include "str_utils.hpp"
+#include <util/str_utils.hpp>
 
 namespace Yb {
 

@@ -1,5 +1,5 @@
-#include "XMLNode.h"
-#include "DomainFactorySingleton.h"
+#include <orm/XMLNode.h>
+#include <orm/DomainFactorySingleton.h>
 
 using namespace std;
 

@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <util/xmlnode.h>
 #include <util/str_utils.hpp>
-#include "MetaData.h"
+#include <orm/MetaData.h>
 
 class TestXMLConfig;
 

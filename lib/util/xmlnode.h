@@ -7,8 +7,8 @@
 #include <map>
 #include <iostream>
 #include <boost/shared_ptr.hpp>
-#include "UnicodeSupport.h"
-#include "xml_writer.h"
+#include <util/UnicodeSupport.h>
+#include <util/xml_writer.h>
 
 namespace Yb {
 
@@ -22,11 +22,11 @@ typedef std::vector<ElementPtr> Elements;
 typedef std::auto_ptr<Elements> ElementsPtr;
 
 class ElementNotFound: public std::runtime_error {
-public: ElementNotFound(const std::string &t): runtime_error(t) {}
+public: ElementNotFound(const std::string &t): std::runtime_error(t) {}
 };
 
 class ParseError: public std::runtime_error {
-public: ParseError(const std::string &t): runtime_error(t) {}
+public: ParseError(const std::string &t): std::runtime_error(t) {}
 };
 
 struct Element

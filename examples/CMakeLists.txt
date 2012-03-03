@@ -28,5 +28,7 @@ target_link_libraries (example2 ybutil yborm ${LIBXML2_LIBS}
     ${BOOST_DATE_TIME_LIBS} ${BOOST_THREAD_LIBS} ${ODBC_LIBS})
 
 install (TARGETS example1 example2 DESTINATION examples)
+install (FILES ex1_schema.xml ex2_schema.xml 
+	example1.bat example2.bat DESTINATION examples)
 
 

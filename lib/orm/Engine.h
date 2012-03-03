@@ -9,9 +9,9 @@
 #include <set>
 #include <stdexcept>
 #include <boost/utility.hpp>
-#include "Value.h"
-#include "Filters.h"
-#include "SqlDriver.h"
+#include <orm/Value.h>
+#include <orm/Filters.h>
+#include <orm/SqlDriver.h>
 
 class TestEngine;
 

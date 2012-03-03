@@ -11,3 +11,5 @@ target_link_libraries (ybutil_unit_tests testmain ybutil ${LIBXML2_LIBS}
 
 add_test (ybutil_unit_tests ybutil_unit_tests)
 
+install (TARGETS ybutil_unit_tests DESTINATION examples)
+install (FILES ybutil_unit_tests.bat DESTINATION examples)

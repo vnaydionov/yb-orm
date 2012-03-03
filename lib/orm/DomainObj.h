@@ -4,8 +4,8 @@
 
 #include <stdexcept>
 #include <boost/shared_ptr.hpp>
-#include "XMLNode.h"
-#include "DataObject.h"
+#include <orm/XMLNode.h>
+#include <orm/DataObject.h>
 
 namespace Yb {
 

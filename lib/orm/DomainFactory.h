@@ -4,7 +4,7 @@
 #include <map>
 #include <stdexcept>
 #include <boost/shared_ptr.hpp>
-#include "DomainObj.h"
+#include <orm/DomainObj.h>
 
 namespace Yb {
 

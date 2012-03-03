@@ -19,7 +19,7 @@ typedef int SockOpt;
 
 class SocketEx: public std::runtime_error {
 public: SocketEx(const std::string &ctx, const std::string &msg)
-    : runtime_error(ctx + ": " + msg) {}
+    : std::runtime_error(ctx + ": " + msg) {}
 };
 
 class TcpSocket {

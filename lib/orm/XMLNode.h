@@ -4,8 +4,8 @@
 
 #include <vector>
 #include <util/xmlnode.h>
-#include "DataObject.h"
-#include "SqlDriver.h"
+#include <orm/DataObject.h>
+#include <orm/SqlDriver.h>
 
 namespace Yb {
 

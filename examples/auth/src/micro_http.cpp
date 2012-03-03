@@ -10,7 +10,7 @@ using namespace Yb::StrUtils;
 HttpServer::HttpServer(int port, const HttpHandlerMap &handlers)
     : port_(port)
     , handlers_(handlers)
-    , log_(g_log->new_logger("http_serv"))
+    , log_(g_log->new_logger("http_serv").release())
 {}
 
 bool
@@ -38,7 +38,7 @@ void
 HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *handlers)
 {
     TcpSocket cl_sock(cl_s);
-    Yb::ILogger::Ptr logger(log_ptr->new_logger("worker"));
+    Yb::ILogger::Ptr logger = log_ptr->new_logger("worker");
     // read and process request
     try {
         // read request header
@@ -102,6 +102,23 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
     }
 }
 
+typedef void (*WorkerFunc)(SOCKET, Yb::ILogger *, const HttpHandlerMap *);
+
+class WorkerCall {
+    SOCKET s_;
+    Yb::ILogger *log_;
+    const HttpHandlerMap *handlers_;
+    WorkerFunc worker_;
+public:
+    WorkerCall(SOCKET s, Yb::ILogger *log, const HttpHandlerMap *handlers,
+            WorkerFunc worker)
+        : s_(s), log_(log), handlers_(handlers), worker_(worker)
+    {}
+    void operator ()() {
+        worker_(s_, log_, handlers_);
+    }
+};
+
 void
 HttpServer::serve()
 {
@@ -116,9 +133,8 @@ HttpServer::serve()
         try {
             SOCKET cl_sock = sock_.accept();
             log_->info("accepted");
-            //process(cl_sock, log_.get(), &handlers_);
-            boost::thread worker(HttpServer::process,
-                    cl_sock, log_.get(), &handlers_);
+            WorkerCall wcall(cl_sock, log_.get(), &handlers_, HttpServer::process);
+            boost::thread worker(wcall);
         }
         catch (const std::exception &ex) {
             log_->error(string("exception: ") + ex.what());

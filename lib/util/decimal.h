@@ -4,7 +4,7 @@
 #include <exception>
 #include <string>
 #include <iosfwd>
-#include "UnicodeSupport.h"
+#include <util/UnicodeSupport.h>
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef __int64 decimal_numerator;

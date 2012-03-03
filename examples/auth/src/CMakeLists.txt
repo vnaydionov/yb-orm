@@ -30,5 +30,6 @@ target_link_libraries (auth ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
     ${SOCKET_LIB} ${UUID_LIB})
 endif ()
 
-install (TARGETS auth DESTINATION bin)
+install (TARGETS auth DESTINATION examples)
+install (FILES auth.bat auth_schema.xml DESTINATION examples)
 

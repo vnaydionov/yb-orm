@@ -3,9 +3,9 @@
 #include <fstream>
 #include <util/str_utils.hpp>
 //#include <util/logger.hpp>
-#include "orm/MetaData.h"
-#include "orm/Value.h"
-#include "orm/XMLMetaDataConfig.h"
+#include <orm/MetaData.h>
+#include <orm/Value.h>
+#include <orm/XMLMetaDataConfig.h>
 
 //#define ORM_LOG(x) LOG(LogLevel::INFO, "ORM Domain generator: " << x)
 #define ORM_LOG(x) cout << "ORM Domain generator: " << x << "\n";

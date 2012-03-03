@@ -1,8 +1,8 @@
 #include <fstream>
 #include <util/xmlnode.h>
 #include <util/str_utils.hpp>
-#include "Value.h"
-#include "XMLMetaDataConfig.h"
+#include <orm/Value.h>
+#include <orm/XMLMetaDataConfig.h>
 
 using namespace std;
 

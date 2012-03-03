@@ -4,7 +4,7 @@
 #include <sstream>
 #include <boost/utility.hpp>
 #include <boost/lexical_cast.hpp>
-#include "UnicodeSupport.h"
+#include <util/UnicodeSupport.h>
 
 namespace Yb {
 

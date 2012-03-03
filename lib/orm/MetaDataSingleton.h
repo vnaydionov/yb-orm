@@ -2,8 +2,8 @@
 #define YB__ORM__META_DATA_SINGLETON__INCLUDED
 
 #include <util/Singleton.h>
-#include "MetaData.h"
-#include "DomainObj.h"
+#include <orm/MetaData.h>
+#include <orm/DomainObj.h>
 
 namespace Yb {
 typedef SingletonHolder<Schema> theMetaData;

@@ -5,7 +5,7 @@
 #include <boost/thread/mutex.hpp>
 #include <util/str_utils.hpp>
 #include <util/nlogger.h>
-#include "Value.h"
+#include <orm/Value.h>
 
 using namespace std;
 using namespace Yb::StrUtils;

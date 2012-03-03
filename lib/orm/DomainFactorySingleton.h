@@ -2,7 +2,7 @@
 #define YB__ORM__DOMAIN_FACTORY_SINGLETON__INCLUDED
 
 #include <util/Singleton.h>
-#include "DomainFactory.h"
+#include <orm/DomainFactory.h>
 
 namespace Yb {
 typedef SingletonHolder<DomainFactory> theDomainFactory;

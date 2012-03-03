@@ -8,4 +8,5 @@ target_link_libraries (yborm_gen_domain yborm ybutil ${LIBXML2_LIBS}
     ${BOOST_DATE_TIME_LIBS} ${BOOST_THREAD_LIBS} ${ODBC_LIBS})
 
 install (TARGETS yborm_gen_domain DESTINATION bin)
+install (FILES yborm_gen_sql.bat yborm_gen_sql.xsl DESTINATION examples)
 

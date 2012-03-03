@@ -1,11 +1,11 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-#include "util/str_utils.hpp"
-#include "orm/XMLNode.h"
-#include "orm/MetaDataSingleton.h"
-#include "orm/DomainFactorySingleton.h"
-#include "orm/DomainObj.h"
-#include "orm/Engine.h"
+#include <util/str_utils.hpp>
+#include <orm/XMLNode.h>
+#include <orm/MetaDataSingleton.h>
+#include <orm/DomainFactorySingleton.h>
+#include <orm/DomainObj.h>
+#include <orm/Engine.h>
 
 #define TEST_TBL1 _T("T_ORM_TEST")
 #define NUM_STMT 6

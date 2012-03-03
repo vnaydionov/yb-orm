@@ -18,7 +18,7 @@ typedef std::map<std::string, HttpHandler> HttpHandlerMap;
 
 class ParserEx: public std::runtime_error {
 public: ParserEx(const std::string &ctx, const std::string &msg)
-    : runtime_error(ctx + ": " + msg) {}
+    : std::runtime_error(ctx + ": " + msg) {}
 };
 
 class HttpServer

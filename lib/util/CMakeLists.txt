@@ -1,7 +1,8 @@
 
 add_subdirectory (test)
 
-include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES} ${BOOST_INCLUDES})
+include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES} ${BOOST_INCLUDES}
+    ${PROJECT_SOURCE_DIR}/lib)
 
 add_library (ybutil decimal.cpp str_utils.cpp
 	xmlnode.cpp xml_writer.cpp Exception.cpp UnicodeSupport.cpp nlogger.cpp)

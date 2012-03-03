@@ -2,7 +2,7 @@
 add_subdirectory (test)
 
 include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES} ${BOOST_INCLUDES}
-    ${PROJECT_SOURCE_DIR}/lib ${PROJECT_SOURCE_DIR}/lib/orm)
+    ${PROJECT_SOURCE_DIR}/lib)
 
 add_library (yborm Engine.cpp Filters.cpp MetaData.cpp
     tiodbc.cpp Value.cpp XMLMetaDataConfig.cpp XMLNode.cpp SqlDriver.cpp

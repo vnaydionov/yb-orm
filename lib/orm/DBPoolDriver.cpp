@@ -5,7 +5,7 @@
 #include <util/xmlnode.h>
 #include <dbpool/mypp.h>
 #include <dbpool/db_pool.h>
-#include "DBPoolDriver.h"
+#include <orm/DBPoolDriver.h>
 
 using namespace std;
 using Yb::StrUtils::str_to_upper;

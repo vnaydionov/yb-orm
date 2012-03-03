@@ -37,7 +37,6 @@ AC_OUTPUT(Makefile
     lib/orm/Makefile
     lib/orm/test/Makefile
     src/Makefile
-    src/yborm_gen_sql
     examples/Makefile
     examples/example1.sh
     examples/example2.sh
