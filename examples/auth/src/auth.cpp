@@ -90,8 +90,15 @@ string
 registration(StringMap &params)
 {
     INIT_SESSION;
-    if (-1 == get_checked_session_by_token(session, params, 1))
-        return BAD_RESP;
+    User::ResultSet all = Yb::query<User>(
+            session, Yb::Filter(_T("1=1"))); // query all
+    User::ResultSet::iterator p = all.begin(), pend = all.end();
+    if (p != pend) {
+        // when user table is empty it is allowed to create the first user
+        // w/o password check, otherwise we should check permissions
+        if (-1 == get_checked_session_by_token(session, params, 1))
+            return BAD_RESP;
+    }
     User::ResultSet rs = Yb::query<User>(
             session, Yb::filter_eq(_T("NAME"), params["login"]));
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
