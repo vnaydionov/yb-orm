@@ -80,7 +80,7 @@ public:
     template <class TValue>
     void add_element (Yb::String const & name, TValue const & value)
     {
-        Element (doc_, name, value);
+        Element e (doc_, name, value);
     }
 };
 
@@ -92,8 +92,6 @@ public:
     {
         element.add_attribute (name, value);
     }
-
-    ~Attribute ();
 };
 
 } // end of namespace Writer

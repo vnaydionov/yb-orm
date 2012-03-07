@@ -146,9 +146,6 @@ void Element::set_content (Yb::String const & content)
     doc_.write_string (content);
 }
 
-Attribute::~Attribute ()
-{}
-
 } // end of namespace Writer
 
 } // end of namespace Yb
