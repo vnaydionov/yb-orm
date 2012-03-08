@@ -71,7 +71,7 @@
 
     <xsl:template match="table[@sequence]" mode="seq">
         <xsl:choose>
-            <xsl:when test="$dbtype = 'ORACLE'">
+            <xsl:when test="$dbtype = 'ORACLE' or $dbtype = 'POSTGRES'">
                 <xsl:text>CREATE SEQUENCE </xsl:text>
                 <xsl:value-of select="@sequence" />
                 <xsl:text>;

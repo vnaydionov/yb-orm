@@ -62,10 +62,24 @@ public:
     { return seq_name + _T(".NEXTVAL"); }
     const String sql_value(const Value &x)
     {
-        if (x.get_type() == Value::DATETIME) {
-            return _T("TO_DATE(") + x.sql_str()
-                + _T(", 'YYYY-MM-DD HH24:MI:SS')");
-        }
+        if (x.get_type() == Value::DATETIME)
+            return _T("date") + x.sql_str();
+        return x.sql_str();
+    }
+};
+
+class PostgresDialect: public SqlDialect
+{
+public:
+    PostgresDialect()
+        : SqlDialect(_T("POSTGRES"), _T(""), true)
+    {}
+    const String select_curr_value(const String &seq_name)
+    { return _T("CURRVAL('") + seq_name + _T("')"); }
+    const String select_next_value(const String &seq_name)
+    { return _T("NEXTVAL('") + seq_name + _T("')"); }
+    const String sql_value(const Value &x)
+    {
         return x.sql_str();
     }
 };
@@ -109,6 +123,10 @@ void register_std_dialects()
     auto_ptr<SqlDialect> dialect;
     SqlDialect *p;
     dialect.reset((SqlDialect *)new OracleDialect());
+    p = dialect.get();
+    theDialectRegistry::instance().register_item(
+            p->get_name(), dialect);
+    dialect.reset((SqlDialect *)new PostgresDialect());
     p = dialect.get();
     theDialectRegistry::instance().register_item(
             p->get_name(), dialect);

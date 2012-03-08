@@ -313,7 +313,9 @@ Engine::do_gen_sql_select(String &sql, Values &params,
 {
     String s;
     OStringStream sql_query;
-    sql_query << _T("SELECT ") << what.get_str() << _T(" FROM ") << from.get_str();
+    sql_query << _T("SELECT ") << what.get_str();
+    if (!from.get_str().empty())
+        sql_query << _T(" FROM ") << from.get_str();
 
     s = where.collect_params_and_build_sql(params);
     if (s != Filter().get_sql())

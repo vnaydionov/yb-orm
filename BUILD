@@ -69,6 +69,26 @@ $ isql-fb -u test1 -p test1_pwd \
 $ isql-fb -u test1 -p test1_pwd \
   localhost:/var/lib/firebird/2.0/data/test1_db.fdb < examples/domain/mk_tables.sql
 
+:: For Postgres ::
+The following steps are appropriate for an Ubuntu box.
+Create the test user and the test database, owned by the user.
+
+$ sudo -u postgres createuser -D -A -P test1
+$ sudo -u postgres createdb -O test1 test1_db
+
+Set password for the test user.
+
+$ sudo -u postgres psql postgres
+psql (9.1.3)
+Type "help" for help.
+
+postgres=# \password test1
+Enter new password: 
+Enter it again: 
+postgres=# \q
+
+$ psql -d test1_db -h 127.0.0.1 -p 5432 -U test1 < lib/orm/test/mk_tables.sql
+$ psql -d test1_db -h 127.0.0.1 -p 5432 -U test1 < examples/domain/mk_tables.sql
 
 -- How to build the library under Windows
 For now it is possible to build the framework using MinGW/MSYS toolchain.

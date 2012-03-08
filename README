@@ -39,7 +39,7 @@ portable across different platforms, although the development is done
 primarily on GNU/Linux, using G++.  GNU Autotools are used as building system.
 
 The library aims to be database independent.  At the time of this writing 
-it is tested to work with Oracle, MySQL and Firebird2 via ODBC drivers.
+it is tested to work with Oracle, Postgres, MySQL and Firebird via ODBC drivers.
 
 BUILD AND INSTALL
 
@@ -60,6 +60,8 @@ tinyodbc project (http://code.google.com/p/tiodbc/).
 Also, to access some database you will need one of the following:
     myodbc >= 3.51.15 (MySQL ODBC driver)
     instantclient >= 10.2 (ODBC driver for Oracle)
+    odbc-postgresql (ODBC driver for Postgres)
+    OdbcFb >= 2.0 (ODBC driver for Firebird)
 
 Assuming you've done "svn up", here are the steps to follow.
 1) Create database schema for running tests.
