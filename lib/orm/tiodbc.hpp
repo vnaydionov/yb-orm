@@ -348,21 +348,18 @@ namespace tiodbc
 	private:
 		HSTMT stmt_h;			//!< Handle of statement that parameter is set
 		int par_num;			//!< Order number of the parameter
+		int bound_sz;
 		SQLTCHAR *_int_string;	//!< Internal string buffer
 		char _int_buffer[64];	//!< Internal buffer for small built-in types (64byte ... quite large)
-		SQLLEN _int_SLOIP;	//!< Internal Str Length Or Indicator Pointer
+		SQLLEN _int_SLOIP;	//!< Internal Str Length Or Indicator
 		
 		// Not direct constructible
 		param_impl(HSTMT _stmt, int _par_num);
 
-	public:
-	
-		//! Copy constructor
+		// Not copyable
 		param_impl(const param_impl&);
-
-		//! Copy operator
 		param_impl & operator=(const param_impl&);
-
+	public:
 		//! Destructor
 		~param_impl();
 
@@ -502,7 +499,7 @@ namespace tiodbc
 		bool open(connection & _conn);
 
 		//! Check if it is an open statement
-		bool is_open() const;
+		bool is_open() const { return b_open; }
 
 		//! Close statement
 		/**

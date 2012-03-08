@@ -475,7 +475,8 @@ namespace tiodbc
 
 	//! @cond INTERNAL_FUNCTIONS
 	template <class T>
-	const T & __bind_param(HSTMT _stmt, int _parnum, SQLSMALLINT _ctype, SQLSMALLINT _sqltype, void * dst_buf, const T & _value, bool _is_null)
+	const T & __set_param(const T & _value, bool _is_null,
+							void * dst_buf, SQLLEN & StrLenOrInPoint)
 	{
 		if (_is_null) {
 			// Nullify buffer
@@ -485,21 +486,25 @@ namespace tiodbc
 			// Save buffer internally
 			std::memcpy(dst_buf, &_value, sizeof(_value));
 		}
-		const int odbc_date_prec = 23, odbc_date_scale=0;
-		// Bind on internal buffer		
-		SQLLEN StrLenOrInPoint = _is_null? SQL_NULL_DATA: 0;
-		SQLBindParameter(_stmt,
+		StrLenOrInPoint = _is_null? SQL_NULL_DATA: 0;
+		return *(T *) dst_buf;
+	}
+
+	void __bind_param(HSTMT _stmt, int _parnum,
+						SQLSMALLINT _ctype, SQLSMALLINT _sqltype,
+						void * dst_buf, SQLLEN & StrLenOrInPoint,
+						int sz = 0, int buf_sz = 0)
+	{
+		RETCODE rc = SQLBindParameter(_stmt,
 			_parnum,
 			SQL_PARAM_INPUT,
 			_ctype,
 			_sqltype,
-			_sqltype == SQL_TYPE_TIMESTAMP? odbc_date_prec: 0,
-			_sqltype == SQL_TYPE_TIMESTAMP? odbc_date_scale: 0,
-			(SQLPOINTER *)dst_buf,
+			sz,
 			0,
+			(SQLPOINTER *)dst_buf,
+			buf_sz,
 			&StrLenOrInPoint);
-
-		return *(T *) dst_buf;
 	}
 
 	//! @endcond
@@ -508,18 +513,9 @@ namespace tiodbc
 	param_impl::param_impl(HSTMT _stmt, int _par_num)
 		: stmt_h(_stmt)
 		, par_num(_par_num)
+		, bound_sz(-1)
 		, _int_string(NULL)
 	{}
-
-	// Copy constructor
-	param_impl::param_impl(const param_impl & r)
-		: stmt_h(r.stmt_h)
-		, par_num(r.par_num)
-		, _int_string(NULL)
-	{
-		if (r._int_string)
-			_int_string = str_duplicate(r._int_string);
-	}
 
 	// Destructor
 	param_impl::~param_impl()
@@ -527,68 +523,77 @@ namespace tiodbc
 		delete [] _int_string;
 	}
 
-	// Copy operator
-	param_impl & param_impl::operator=(const param_impl & r)
-	{
-		stmt_h = r.stmt_h;
-		par_num = r.par_num;
-		delete [] _int_string;
-		if (r._int_string)
-			_int_string = str_duplicate(r._int_string);
-		return *this;
-	}
-
 	// Set as string
 	void param_impl::set_as_string(const _tstring & _str, bool _is_null)
 	{
-		delete [] _int_string;
+		int data_sz = (_str.size() + 1) * sizeof(SQLTCHAR);
+		if (bound_sz < data_sz) {
+			bound_sz = data_sz;
+			if (bound_sz < sizeof(_int_buffer))
+				bound_sz = sizeof(_int_buffer);
+			// Choose which buffer to bind
+			void *bind_buf = _int_buffer;
+			if (bound_sz > sizeof(_int_buffer)) {
+				delete [] _int_string;
+				_int_string = new SQLTCHAR[bound_sz / sizeof(SQLTCHAR)];
+				bind_buf = _int_string;
+			}
+			__bind_param(stmt_h, par_num, SQL_C_TCHAR, SQL_CHAR,
+					bind_buf, _int_SLOIP, 0, bound_sz);
+					//bind_buf, _int_SLOIP, bound_sz / sizeof(SQLTCHAR) - 1, bound_sz);
+					//bind_buf, _int_SLOIP, _str.size(), bound_sz);
+		}
+		// Choose which buffer to fill
+		void *buf = _int_buffer;
+		if (bound_sz > sizeof(_int_buffer))
+			buf = _int_string;
 		if (_is_null) {
 			// Nullify buffer
-			SQLTCHAR_buf s_str(_T(""));
-			_int_string = s_str.release();
+			std::memset(buf, 0, bound_sz);
 		}
 		else {
 			// Save buffer internally
-			SQLTCHAR_buf s_str(_str.c_str());
-			_int_string = s_str.release();
+			SQLTCHAR_buf t_str(_str.c_str());
+			std::memcpy(buf, t_str.data, data_sz);
 		}
-		// Bind on internal buffer		
 		_int_SLOIP = _is_null? SQL_NULL_DATA: SQL_NTS;
-		SQLBindParameter(stmt_h,
-			par_num,
-			SQL_PARAM_INPUT,
-			SQL_C_TCHAR,
-			SQL_CHAR,
-			(SQLUINTEGER)_str.size(),
-			0,
-			(SQLPOINTER *)_int_string,
-			(SQLINTEGER)_str.size()+1,
-			&_int_SLOIP);
 	}
 
 	// Set as long
 	const long & param_impl::set_as_long(
 			const long & _value, bool _is_null)
 	{
-		return __bind_param(stmt_h, par_num, SQL_C_SLONG, SQL_INTEGER,
-				_int_buffer, _value, _is_null);
+		if (bound_sz < 0) {
+			bound_sz = 0;
+			__bind_param(stmt_h, par_num, SQL_C_SLONG, SQL_INTEGER,
+					_int_buffer, _int_SLOIP);
+		}
+		return __set_param(_value, _is_null, _int_buffer, _int_SLOIP);
 	}
 
 	// Set parameter as usigned long
 	const unsigned long & param_impl::set_as_unsigned_long(
 			const unsigned long & _value, bool _is_null)
 	{
-		return __bind_param(stmt_h, par_num, SQL_C_ULONG, SQL_INTEGER,
-				_int_buffer, _value, _is_null);
+		if (bound_sz < 0) {
+			bound_sz = 0;
+			__bind_param(stmt_h, par_num, SQL_C_ULONG, SQL_INTEGER,
+					_int_buffer, _int_SLOIP);
+		}
+		return __set_param(_value, _is_null, _int_buffer, _int_SLOIP);
 	}
 
 	// Set parameter as DateTime
 	const TIMESTAMP_STRUCT & param_impl::set_as_date_time(
 			const TIMESTAMP_STRUCT & _value, bool _is_null)
 	{
-		return __bind_param(stmt_h, par_num, SQL_C_TYPE_TIMESTAMP,
-				SQL_TYPE_TIMESTAMP,
-				_int_buffer, _value, _value.year == 0 || _is_null);
+		if (bound_sz < 0) {
+			bound_sz = 0;
+			const int odbc_date_prec = 23;
+			__bind_param(stmt_h, par_num, SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP,
+					_int_buffer, _int_SLOIP, odbc_date_prec);
+		}
+		return __set_param(_value, _value.year == 0 || _is_null, _int_buffer, _int_SLOIP);
 	}
 
 	// Set parameter as NULL
@@ -644,12 +649,6 @@ namespace tiodbc
 		return true;
 	}
 
-	// Check if it is an open statement
-	bool statement::is_open() const
-	{
-		return b_open;
-	}
-
 	// Close statement
 	void statement::close()
 	{
@@ -667,8 +666,8 @@ namespace tiodbc
 			// Free handle
 			SQLFreeHandle(SQL_HANDLE_STMT, stmt_h);
 			stmt_h = NULL;
+			b_open = false;
 		}
-		b_open = false;
 	}
 
 	// Free results (aka SQLCloseCursor)
