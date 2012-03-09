@@ -20,10 +20,7 @@ endif ()
 
 if (UNIX)
     find_path (BOOST_INCLUDES boost/lexical_cast.hpp /usr/include)
-elseif (MSVC)
-    find_path (BOOST_INCLUDES boost/lexical_cast.hpp
-            c:/yborm/include)
-elseif (BORLAND)
+else ()
     find_path (BOOST_INCLUDES boost/lexical_cast.hpp
             c:/yborm/include)
 endif ()
@@ -53,6 +50,9 @@ elseif (MSVC)
 elseif (BORLAND)
     find_library (LIBXML2_LIBS libxml2omf
             c:/yborm/lib)
+else ()
+    find_library (LIBXML2_LIBS libxml2
+            c:/yborm/bin)
 endif ()
 
 if (UNIX)
@@ -62,6 +62,9 @@ elseif (MSVC)
             c:/yborm/lib)
 elseif (BORLAND)
     find_library (BOOST_DATE_TIME_LIBS boost_date_time-bcb-mt-d-1_33_1
+            c:/yborm/lib)
+elseif (MINGW)
+    find_library (BOOST_DATE_TIME_LIBS libboost_date_time-mgw44-mt-d-1_46_1.dll
             c:/yborm/lib)
 endif ()
 
@@ -73,6 +76,9 @@ elseif (MSVC)
 elseif (BORLAND)
     find_library (BOOST_THREAD_LIBS boost_thread-bcb-mt-d-1_33_1
             c:/yborm/lib)
+elseif (MINGW)
+    find_library (BOOST_THREAD_LIBS libboost_thread-mgw44-mt-d-1_46_1.dll
+            c:/yborm/lib)
 endif ()
 
 if (UNIX)
@@ -83,14 +89,19 @@ elseif (MSVC)
 elseif (BORLAND)
     find_library (CPPUNIT_LIBS cppunitd_bc5_dll
             c:/yborm/lib)
+else ()
+    find_library (CPPUNIT_LIBS cppunit
+            c:/yborm/lib)
 endif ()
 
 if (UNIX)
     find_library (ODBC_LIBS odbc)
-elseif (MSVC)
-    find_library (ODBC_LIBS odbc32)
 elseif (BORLAND)
     find_library (ODBC_LIBS odbc32 c:/Borland/BCC55/Lib/PSDK)
+elseif (MSVC)
+    find_library (ODBC_LIBS odbc32)
+elseif (MINGW)
+    set (ODBC_LIBS -lodbc32 CACHE STRING "odbc32 lib" FORCE)
 endif ()
 
 add_subdirectory (lib)

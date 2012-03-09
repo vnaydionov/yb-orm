@@ -29,7 +29,7 @@ if ((NOT DEFINED YBORM_INCLUDES) AND (NOT DEFINED YBUTIL_LIB)
         if (UNIX)
             check_yborm_root (/usr/local)
         else ()
-            check_yborm_root (c:\yborm)
+            check_yborm_root (c:/yborm)
         endif ()
     endif ()
 endif ()
@@ -50,11 +50,15 @@ endif ()
 
 if (UNIX)
     find_path (BOOST_INCLUDES boost/lexical_cast.hpp /usr/include)
-elseif (MSVC)
+else ()
     find_path (BOOST_INCLUDES boost/lexical_cast.hpp
             c:/yborm/include)
-elseif (BORLAND)
-    find_path (BOOST_INCLUDES boost/lexical_cast.hpp
+endif ()
+
+if (UNIX)
+    find_path (CPPUNIT_INCLUDES cppunit/TestCase.h /usr/include)
+else ()
+    find_path (CPPUNIT_INCLUDES cppunit/TestCase.h
             c:/yborm/include)
 endif ()
 
@@ -80,6 +84,9 @@ elseif (MSVC)
 elseif (BORLAND)
     find_library (LIBXML2_LIBS libxml2omf
             c:/yborm/lib)
+else ()
+    find_library (LIBXML2_LIBS libxml2
+            c:/yborm/bin)
 endif ()
 
 if (UNIX)
@@ -89,6 +96,9 @@ elseif (MSVC)
             c:/yborm/lib)
 elseif (BORLAND)
     find_library (BOOST_DATE_TIME_LIBS boost_date_time-bcb-mt-d-1_33_1
+            c:/yborm/lib)
+elseif (MINGW)
+    find_library (BOOST_DATE_TIME_LIBS libboost_date_time-mgw44-mt-d-1_46_1.dll
             c:/yborm/lib)
 endif ()
 
@@ -100,26 +110,48 @@ elseif (MSVC)
 elseif (BORLAND)
     find_library (BOOST_THREAD_LIBS boost_thread-bcb-mt-d-1_33_1
             c:/yborm/lib)
+elseif (MINGW)
+    find_library (BOOST_THREAD_LIBS libboost_thread-mgw44-mt-d-1_46_1.dll
+            c:/yborm/lib)
+endif ()
+
+if (UNIX)
+    find_library (CPPUNIT_LIBS cppunit)
+elseif (MSVC)
+    find_library (CPPUNIT_LIBS cppunitd_dll
+            c:/yborm/lib)
+elseif (BORLAND)
+    find_library (CPPUNIT_LIBS cppunitd_bc5_dll
+            c:/yborm/lib)
+else ()
+    find_library (CPPUNIT_LIBS cppunit
+            c:/yborm/lib)
 endif ()
 
 if (UNIX)
     find_library (ODBC_LIBS odbc)
-elseif (MSVC)
-    find_library (ODBC_LIBS odbc32)
 elseif (BORLAND)
     find_library (ODBC_LIBS odbc32 c:/Borland/BCC55/Lib/PSDK)
+elseif (MSVC)
+    find_library (ODBC_LIBS odbc32)
+elseif (MINGW)
+    set (ODBC_LIBS -lodbc32 CACHE STRING "odbc32 lib" FORCE)
 endif ()
 
 if (MSVC)
     find_library (SOCKET_LIB wsock32)
 elseif (BORLAND)
     find_library (SOCKET_LIB wsock32 c:/Borland/BCC55/Lib/PSDK)
+elseif (MINGW)
+    set (SOCKET_LIB -lwsock32 CACHE STRING "wsock32 lib" FORCE)
 endif ()
 
 if (MSVC)
     find_library (UUID_LIB rpcrt4)
 elseif (BORLAND)
     find_library (UUID_LIB rpcrt4 c:/Borland/BCC55/Lib/PSDK)
+elseif (MINGW)
+    set (UUID_LIB -lrpcrt4 CACHE STRING "rpcrt4 lib" FORCE)
 endif ()
 
 if (DEFINED YBUTIL_LIB)
