@@ -246,13 +246,24 @@
         </xsl:choose>
     </xsl:template>
 
+    <xsl:template match="column[@type = 'integer']" mode="sql-type">
+        <xsl:choose>
+            <xsl:when test="$dbtype = 'ORACLE'">
+                <xsl:text>NUMBER(10)</xsl:text>
+            </xsl:when>
+            <xsl:when test="$dbtype = 'MYSQL'">
+                <xsl:text>INT</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:text>INTEGER</xsl:text>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+
     <xsl:template match="column[@type = 'longint']" mode="sql-type">
         <xsl:choose>
             <xsl:when test="$dbtype = 'ORACLE'">
                 <xsl:text>NUMBER</xsl:text>
-            </xsl:when>
-            <xsl:when test="$dbtype = 'POSTGRES'">
-                <xsl:text>INT8</xsl:text>
             </xsl:when>
             <xsl:otherwise>
                 <xsl:text>BIGINT</xsl:text>

@@ -91,6 +91,11 @@ Value::Value()
     : type_(INVALID)
 {}
 
+Value::Value(int x)
+    : type_(INTEGER)
+    , data_(new ValueHolder<int>(x))
+{}
+
 Value::Value(LongInt x)
     : type_(LONGINT)
     , data_(new ValueHolder<LongInt>(x))
@@ -116,11 +121,37 @@ Value::Value(const DateTime &x)
     , data_(new ValueHolder<DateTime>(x))
 {}
 
+int
+Value::as_integer() const
+{
+    if (type_ == INTEGER)
+        return typed_value<int>(data_);
+    if (type_ == LONGINT) {
+        LongInt x = typed_value<LongInt>(data_);
+        LongInt m = 0xFFFF;
+        m = (m << 16) | m;
+        LongInt h = (x >> 32) & m;
+        if (h && h != m)
+            throw ValueBadCast(boost::lexical_cast<String>(x) + _T("LL"),
+                    _T("Integer"));
+        return (int)x;
+    }
+    String s = as_string();
+    try {
+        return boost::lexical_cast<int>(s);
+    }
+    catch (const boost::bad_lexical_cast &) {
+        throw ValueBadCast(s, _T("Integer"));
+    }
+}
+
 LongInt
 Value::as_longint() const
 {
     if (type_ == LONGINT)
         return typed_value<LongInt>(data_);
+    if (type_ == INTEGER)
+        return typed_value<int>(data_);
     String s = as_string();
     try {
         return boost::lexical_cast<LongInt>(s);
@@ -189,6 +220,8 @@ Value::as_string() const
         return typed_value<String>(data_);
     if (type_ == DECIMAL)
         return to_string(typed_value<Decimal>(data_));
+    if (type_ == INTEGER)
+        return to_string(typed_value<int>(data_));
     if (type_ == LONGINT)
         return to_string(typed_value<LongInt>(data_));
     if (type_ == DATETIME)
@@ -226,9 +259,18 @@ Value::cmp(const Value &x) const
     {
         return as_decimal().cmp(x.as_decimal());
     }
-    if (type_ == LONGINT || x.type_ == LONGINT)
+    if (type_ == LONGINT || x.type_ == LONGINT || 
+            type_ == INTEGER || x.type_ == INTEGER)
     {
-        LongInt a = as_longint(), b = x.as_longint();
+        LongInt a, b;
+        if (type_ == INTEGER)
+            a = as_integer();
+        else
+            a = as_longint();
+        if (x.type_ == INTEGER)
+            b = x.as_integer();
+        else
+            b = x.as_longint();
         return a < b? -1: (a > b? 1: 0);
     }
     if (type_ == DATETIME || x.type_ == DATETIME)
@@ -245,6 +287,8 @@ Value::get_typed_value(int type) const
     if (is_null())
         return *this;
     switch (type) {
+        case Value::INTEGER:
+            return as_integer();
         case Value::LONGINT:
             return as_longint();
         case Value::DECIMAL:
@@ -262,7 +306,8 @@ const Char *
 Value::get_type_name(int type)
 {
     static const Char *type_names[] =
-        { _T("Invalid"), _T("LongInt"), _T("String"), _T("Decimal"), _T("DateTime") };
+        { _T("Invalid"), _T("Integer"), _T("LongInt"),
+          _T("String"), _T("Decimal"), _T("DateTime") };
     if (type < 0 || type >= sizeof(type_names)/sizeof(const Char *))
         return _T("UnknownType");
     return type_names[type];

@@ -167,6 +167,10 @@ private:
             if (!def_val.is_null()) {
                 string default_value = NARROW(it->get_default_value().as_string()); 
                 switch (it->get_type()) {
+                    case Value::INTEGER:
+                        str << "\tset(_T(\"" << field_name
+                            << "\"), Yb::Value((int)" << default_value << "));\n";
+                        break;
                     case Value::LONGINT:
                         str << "\tset(_T(\"" << field_name
                             << "\"), Yb::Value((Yb::LongInt)" << default_value << "));\n";
@@ -452,6 +456,7 @@ private:
     {
         string code;
         switch (type) {
+            case Value::INTEGER:  code = "INTEGER";  break;
             case Value::LONGINT:  code = "LONGINT";  break;
             case Value::DATETIME: code = "DATETIME"; break;
             case Value::STRING:   code = "STRING";   break;
@@ -479,6 +484,8 @@ private:
     string type_by_handle(int type)
     {
         switch (type) {
+            case Value::INTEGER:
+                return "int";
             case Value::LONGINT:
                 return "Yb::LongInt";
             case Value::DATETIME:
@@ -495,6 +502,8 @@ private:
     string value_type_by_handle(int type)
     {
         switch (type) {
+            case Value::INTEGER:
+                return "as_integer()";
             case Value::LONGINT:
                 return "as_longint()";
             case Value::DATETIME:

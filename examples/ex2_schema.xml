@@ -240,7 +240,7 @@ Also <column> may contain nested elements to describe additional constraints:
         <column name="EMAIL" type="string" size="100" null="false" />
         <column name="PHONE" type="string" size="50" null="true" />
         <column name="URL" type="string" size="200" />
-        <column name="IS_AGENCY" type="longint" null="false" default="0"
+        <column name="IS_AGENCY" type="integer" null="false" default="0"
                 property="agency_flag" xml-name="agency-flag"/>
     </table>
     <table name="T_ORDER" sequence="S_ORDER_ID"
@@ -284,8 +284,8 @@ Also <column> may contain nested elements to describe additional constraints:
         </column>
         <column name="START_DT" type="datetime" null="false" />
         <column name="END_DT" type="datetime" />
-        <column name="CTYPE" type="longint" null="false" />
-        <column name="SIGNED" type="longint" null="false" default="0" />
+        <column name="CTYPE" type="integer" null="false" />
+        <column name="SIGNED" type="integer" null="false" default="0" />
         <column name="CLIENT_ID" type="longint" null="false">
             <foreign-key table="T_CLIENT" key="ID" />
         </column>

@@ -95,14 +95,16 @@ struct ValueHolderBase;
 class Value
 {
 public:
-    enum Type { INVALID, LONGINT, STRING, DECIMAL, DATETIME };
+    enum Type { INVALID, INTEGER, LONGINT, STRING, DECIMAL, DATETIME };
     Value();
+    Value(int x);
     Value(LongInt x);
     Value(const Char *x);
     Value(const String &x);
     Value(const Decimal &x);
     Value(const DateTime &x);
     bool is_null() const { return type_ == INVALID; }
+    int as_integer() const;
     LongInt as_longint() const;
     const String as_string() const;
     const Decimal as_decimal() const;

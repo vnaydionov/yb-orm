@@ -161,6 +161,8 @@ int XMLMetaDataConfig::string_type_to_int(const String &type, const String &fiel
 {
     if(Yb::StrUtils::str_to_lower(type) == _T("longint"))
         return Value::LONGINT;
+    else if(Yb::StrUtils::str_to_lower(type) == _T("integer"))
+        return Value::INTEGER;
     else if(Yb::StrUtils::str_to_lower(type) == _T("string"))
         return Value::STRING;
     else if(Yb::StrUtils::str_to_lower(type) == _T("decimal"))

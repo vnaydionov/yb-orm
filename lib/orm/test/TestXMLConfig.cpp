@@ -333,7 +333,7 @@ public:
             "<li><nested n=\"n\">111</nested></li>"
             "</list>\n";
         ElementTree::ElementPtr node(ElementTree::parse(xml));
-        CPPUNIT_ASSERT_EQUAL(string("qwertyasdfgzxcvb111"), node->get_text());
+        CPPUNIT_ASSERT_EQUAL(string("qwertyasdfgzxcvb111"), NARROW(node->get_text()));
         CPPUNIT_ASSERT_EQUAL(xml, node->serialize());
     }
 };

@@ -6,8 +6,8 @@
         </column>
         <column name="NAME" type="string" size="100" null="false" />
         <column name="PASS" type="string" size="100" null="false" xml-name="!" />
-        <column name="STATUS" type="longint" null="false" default="1" />
-        <column name="FACULT" type="longint" null="false" default="1" />
+        <column name="STATUS" type="integer" null="false" default="1" />
+        <column name="FACULT" type="integer" null="false" default="1" />
     </table>
     <table name="T_SESSIONS" class="LoginSession" sequence="S_SESSIONS" xml-name="login-session">
         <column name="ID" type="longint">

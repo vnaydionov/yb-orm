@@ -63,7 +63,7 @@ public:
     const String sql_value(const Value &x)
     {
         if (x.get_type() == Value::DATETIME)
-            return _T("date") + x.sql_str();
+            return _T("timestamp") + x.sql_str();
         return x.sql_str();
     }
 };
@@ -229,6 +229,13 @@ public:
                                 ts.hour, ts.minute, ts.second));
                 }
             }
+            else if (!f.is_null() && f.get_type() == SQL_INTEGER) {
+                v = Value((int)f.as_long());
+            }
+            else if (!f.is_null() && f.get_type() == SQL_BIGINT) {
+                String val = f.as_string();
+                v = Value(boost::lexical_cast<LongInt>(val));
+            }
             else {
                 String val = f.as_string();
                 if (f.is_null() != 1)
@@ -263,6 +270,10 @@ public:
                 stmt_->param(i + 1).set_as_date_time(
                         ts,
                         params[i].is_null());
+            }
+            else if (params[i].get_type() == Value::INTEGER) {
+                long x = params[i].as_integer();
+                stmt_->param(i + 1).set_as_long(x, params[i].is_null());
             }
             else {
                 String value;

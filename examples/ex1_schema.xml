@@ -10,7 +10,7 @@
         <column name="EMAIL" type="string" size="100" null="false" />
         <column name="PHONE" type="string" size="50" null="true" />
         <column name="URL" type="string" size="200" />
-        <column name="IS_AGENCY" type="longint" null="false" default="0"
+        <column name="IS_AGENCY" type="integer" null="false" default="0"
                 property="agency_flag" xml-name="agency-flag"/>
     </table>
     <table name="T_ORDER" sequence="S_ORDER_ID"
