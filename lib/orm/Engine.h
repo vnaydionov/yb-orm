@@ -77,7 +77,7 @@ public:
     Engine(Mode work_mode, std::auto_ptr<SqlConnect> conn);
     Engine(Mode work_mode, SqlDialect *dialect); // for subclassing
     Engine(Mode work_mode, SqlPool &pool,
-           const String &source_id, int timeout = 0);
+           const String &source_id, int timeout = YB_POOL_WAIT_TIME);
     virtual ~Engine();
 
     SqlConnect *get_connect() { return conn_.get(); }

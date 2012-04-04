@@ -249,7 +249,7 @@ class SqlConnect: public boost::noncopyable
     SqlDriver *driver_;
     SqlDialect *dialect_;
     std::auto_ptr<SqlConnectBackend> backend_;
-    bool activity_, echo_, free_, bad_;
+    bool activity_, echo_, bad_;
     time_t free_since_;
     ILogger *log_;
     void mark_bad();

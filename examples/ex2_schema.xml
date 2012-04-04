@@ -349,24 +349,17 @@ Also <column> may contain nested elements to describe additional constraints:
     -->
 
     <!-- Relation Many-To-Many -->
-    <table name="T_USER" sequence="S_USER_ID" class="User" xml-name="user">
-        <column name="ID" type="longint">
-            <primary-key />
-        </column>
-        <column name="NAME" type="string" size="80" null="false" />
-        <column name="EMAIL" type="string" size="80" null="false" />
-    </table>
     <table name="T_GROUP" sequence="S_GROUP_ID" class="Group" xml-name="group">
         <column name="ID" type="longint">
             <primary-key />
         </column>
         <column name="NAME" type="string" size="80" null="false" />
     </table>
-    <table name="T_USER_GROUP">
+    <table name="T_CLIENT_GROUP">
             <!-- this table is not mapped to any class explicitly -->
-        <column name="USER_ID" type="longint">
+        <column name="CLIENT_ID" type="longint">
             <primary-key />
-            <foreign-key table="T_USER" />
+            <foreign-key table="T_CLIENT" />
         </column>
         <column name="GROUP_ID" type="longint">
             <primary-key />
@@ -375,9 +368,9 @@ Also <column> may contain nested elements to describe additional constraints:
         </column>
     </table>
     <relation type="many-to-many">
-        <side class="User" property="groups" />
-        <side class="Group" property="users" />
-        <link table="T_USER_GROUP" />
+        <side class="Client" property="groups" />
+        <side class="Group" property="clients" />
+        <link table="T_CLIENT_GROUP" />
     </relation>
 
     <!-- Inheritance -->

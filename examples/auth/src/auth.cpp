@@ -200,8 +200,8 @@ main()
     }
     try {
         Yb::init_default_meta();
-        g_pool.reset(new Yb::SqlPool(YB_POOL_SIZE,
-                YB_POOL_IDLE_TIME, YB_POOL_MGR_SLEEP, g_log.get()));
+        g_pool.reset(new Yb::SqlPool(YB_POOL_MAX_SIZE,
+                YB_POOL_IDLE_TIME, YB_POOL_MONITOR_SLEEP, g_log.get()));
         g_pool->add_source(Yb::SqlSource("auth_db", "ODBC",
                     cfg("DBTYPE"), cfg("DB"), cfg("USER"), cfg("PASSWD")));
         int port = 9090; // TODO: read from config

@@ -1,4 +1,4 @@
-// -*- C++ -*-
+// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__SQL_POOL__INCLUDED
 #define YB__ORM__SQL_POOL__INCLUDED
 
@@ -10,21 +10,22 @@
 
 namespace Yb {
 
-#define YB_POOL_SIZE 5 // max pool size
-#define YB_POOL_IDLE_TIME 15 // sec.
-#define YB_POOL_MGR_SLEEP 5  // sec.
+#define YB_POOL_MAX_SIZE 10
+#define YB_POOL_IDLE_TIME 30 // sec.
+#define YB_POOL_MONITOR_SLEEP 2 // sec.
+#define YB_POOL_WAIT_TIME 20 // sec.
 
 class SqlPool
 {
 public:
     typedef SqlConnect *SqlConnectPtr;
-    SqlPool(int pool_size = YB_POOL_SIZE,
+    SqlPool(int pool_max_size = YB_POOL_MAX_SIZE,
             int idle_time = YB_POOL_IDLE_TIME,
-            int mgr_sleep = YB_POOL_MGR_SLEEP,
+            int monitor_sleep = YB_POOL_MONITOR_SLEEP,
             ILogger *logger = NULL);
     ~SqlPool();
     void add_source(const SqlSource &source);
-    SqlConnectPtr get(const String &id, int timeout = 0);
+    SqlConnectPtr get(const String &id, int timeout = YB_POOL_WAIT_TIME);
     void put(SqlConnectPtr handle, bool close_now = false);
 
 private:
@@ -34,26 +35,25 @@ private:
     std::map<String, Pool> pools_;
     boost::mutex pool_mux_, stop_mux_;
     boost::condition pool_cond_, stop_cond_;
-    int pool_size_, idle_time_, mgr_sleep_;
-    bool stop_mgr_flag_;
-    boost::thread manager_;
+    int pool_max_size_, idle_time_, monitor_sleep_;
+    bool stop_monitor_flag_;
+    boost::thread monitor_;
     ILogger::Ptr logger_;
 
-    void *manager_thread();
+    void *monitor_thread();
     void close_all();
-    void stop_manager_thread();
-    void conn_manager();
+    void stop_monitor_thread();
     bool sleep_not_stop();
+    const String get_stats(const String &source_id);
 };
 
-class SqlPoolDescriptor
+class SqlPoolDescr
 {
     SqlPool &pool_;
     String source_id_;
     int timeout_;
 public:
-    SqlPoolDescriptor(SqlPool &pool, const String &source_id,
-                      int timeout)
+    SqlPoolDescr(SqlPool &pool, const String &source_id, int timeout)
         : pool_(pool)
         , source_id_(source_id)
         , timeout_(timeout)
@@ -63,31 +63,31 @@ public:
     int get_timeout() const { return timeout_; }
 };
 
-class SqlHandleVar: public boost::noncopyable
+class SqlConnectVar: public boost::noncopyable
 {
     SqlPool &pool_;
-    SqlConnect *sqlh_;
+    SqlConnect *handle_;
 public:
-    explicit SqlHandleVar(const SqlPoolDescriptor &d)
+    explicit SqlConnectVar(const SqlPoolDescr &d)
         : pool_(d.get_pool())
-        , sqlh_(pool_.get(d.get_source_id(), d.get_timeout()))
+        , handle_(pool_.get(d.get_source_id(), d.get_timeout()))
     {
-        if (!sqlh_)
+        if (!handle_)
             throw GenericDBError(_T("Can't get connection"));
     }
-    SqlHandleVar(SqlPool &pool, const String &source_id,
-                 int timeout)
+    SqlConnectVar(SqlPool &pool, const String &source_id,
+                 int timeout = YB_POOL_WAIT_TIME)
         : pool_(pool)
-        , sqlh_(pool_.get(source_id, timeout))
+        , handle_(pool_.get(source_id, timeout))
     {
-        if (!sqlh_)
+        if (!handle_)
             throw GenericDBError(_T("Can't get connection"));
     }
-    ~SqlHandleVar()
+    ~SqlConnectVar()
     {
-        pool_.put(sqlh_);
+        pool_.put(handle_);
     }
-    SqlConnect *operator-> () const { return sqlh_; }
+    SqlConnect *operator-> () const { return handle_; }
 };
 
 } // namespace Yb

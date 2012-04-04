@@ -1,3 +1,16 @@
+0.2.4
+    Add SqlPool for database connection pooling, thanx to Nikita Buyvich.
+    ResultSet is now able to cache all rows, i.e. not necessary lazy.
+    Support for two or more distinct relations on the same
+    table using different foreign keys.
+    Add support for 32bit integer SQL data type in schema.
+    Build script for cmake and mingw.
+    Support for Postgres dialect.
+    Auth example: Allow to register the first user via link like this:
+    http://localhost:9090/registration?login=medved&pass=preved&name=Medved&status=0
+    Bugs fixed:
+    Fix a long lasted bug with misuse of ODBC function SQLBindParameter.
+
 0.2.3
     Simple logger implementation.
     Reimplemented xml Writer classes from scratch (not using libxml2).
