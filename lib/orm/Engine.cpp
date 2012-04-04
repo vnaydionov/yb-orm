@@ -19,6 +19,7 @@ Engine::Engine(Mode work_mode)
     , conn_(new SqlConnect(_T("ODBC"), cfg(_T("DBTYPE")),
                 cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD"))))
     , dialect_(conn_->get_dialect())
+    , pool_(NULL)
 {}
 
 Engine::Engine(Mode work_mode, auto_ptr<SqlConnect> conn)
@@ -26,16 +27,34 @@ Engine::Engine(Mode work_mode, auto_ptr<SqlConnect> conn)
     , mode_(work_mode)
     , conn_(conn)
     , dialect_(conn_->get_dialect())
+    , pool_(NULL)
 {}
 
 Engine::Engine(Mode work_mode, SqlDialect *dialect)
     : touched_(false)
     , mode_(work_mode)
     , dialect_(dialect)
+    , pool_(NULL)
 {}
 
+Engine::Engine(Mode work_mode, SqlPool &pool,
+               const String &source_id, int timeout)
+    : touched_(false)
+    , mode_(work_mode)
+    , conn_(pool.get(source_id, timeout))
+    , dialect_(NULL)
+    , pool_(&pool)
+{
+    if (!conn_.get())
+        throw GenericDBError(_T("Can't get connection"));
+    dialect_ = conn_->get_dialect();
+}
+
 Engine::~Engine()
-{}
+{
+    if (pool_ && conn_.get())
+        pool_->put(conn_.release());
+}
 
 SqlResultSet
 Engine::select_iter(const StrList &what,

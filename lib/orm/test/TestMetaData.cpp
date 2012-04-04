@@ -15,6 +15,7 @@ class TestMetaData : public CppUnit::TestFixture
     CPPUNIT_TEST(test_table_columns);
     CPPUNIT_TEST(test_table_seq);
     CPPUNIT_TEST(test_table_synth_pk);
+    CPPUNIT_TEST(test_get_fk_for);
     CPPUNIT_TEST_EXCEPTION(test_table_bad_synth_pk__no_pk, NotSuitableForAutoCreating);
     CPPUNIT_TEST_EXCEPTION(test_table_bad_synth_pk__complex, NotSuitableForAutoCreating);
     CPPUNIT_TEST_EXCEPTION(test_table_bad_synth_pk__no_seq, NotSuitableForAutoCreating);
@@ -104,6 +105,46 @@ public:
         t.add_column(Column(_T("Z"), Value::LONGINT, 0, 0));
         t.set_seq_name(_T("S_A_ID"));
         CPPUNIT_ASSERT_EQUAL(string("Y"), NARROW(t.get_synth_pk()));
+    }
+
+    void test_get_fk_for()
+    {
+        Schema r;
+        Table::Ptr ta(new Table(_T("A"), _T(""), _T("A")));
+        ta->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+        r.add_table(ta);
+        Table::Ptr tc(new Table(_T("C"), _T(""), _T("C")));
+        tc->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+        tc->add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("")));
+        r.add_table(tc);
+        Relation::AttrMap a1, a2;
+        a1[_T("property")] = _T("cs");
+        a2[_T("property")] = _T("a");
+        Relation::Ptr re1(new Relation(Relation::ONE2MANY,
+            _T("A"), a1, _T("C"), a2));
+        r.add_relation(re1);
+        Table::Ptr tb(new Table(_T("B")));
+        tb->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+        tb->add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
+        tb->add_column(Column(_T("A2X"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
+        r.add_table(tb);
+        Relation::AttrMap aa1, aa2;
+        aa1[_T("property")] = _T("bs");
+        aa2[_T("property")] = _T("a");
+        aa2[_T("key")] = _T("AX");
+        Relation::Ptr re2(new Relation(Relation::ONE2MANY,
+            _T("A"), aa1, _T("B"), aa2));
+        r.add_relation(re2);
+        Relation::AttrMap aaa1, aaa2;
+        aaa2[_T("property")] = _T("a2");
+        aaa2[_T("key")] = _T("A2X");
+        Relation::Ptr re3(new Relation(Relation::ONE2MANY,
+            _T("A"), aaa1, _T("B"), aaa2));
+        r.add_relation(re3);
+        r.fill_fkeys();
+        CPPUNIT_ASSERT_EQUAL(string("AX"), NARROW(tc->get_fk_for(re1.get())));
+        CPPUNIT_ASSERT_EQUAL(string("AX"), NARROW(tb->get_fk_for(re2.get())));
+        CPPUNIT_ASSERT_EQUAL(string("A2X"), NARROW(tb->get_fk_for(re3.get())));
     }
 
     void test_table_bad_synth_pk__no_pk()

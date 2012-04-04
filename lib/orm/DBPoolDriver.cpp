@@ -256,6 +256,11 @@ public:
         }
     }
 
+    void clear_statement()
+    {
+        stmt_.reset(NULL);
+    }
+
     void commit()
     {
         exec_direct(_T("COMMIT"));

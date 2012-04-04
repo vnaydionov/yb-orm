@@ -12,6 +12,7 @@
 #include <orm/Value.h>
 #include <orm/Filters.h>
 #include <orm/SqlDriver.h>
+#include <orm/SqlPool.h>
 
 class TestEngine;
 
@@ -75,6 +76,8 @@ public:
     Engine(Mode work_mode = MANUAL);
     Engine(Mode work_mode, std::auto_ptr<SqlConnect> conn);
     Engine(Mode work_mode, SqlDialect *dialect); // for subclassing
+    Engine(Mode work_mode, SqlPool &pool,
+           const String &source_id, int timeout = 0);
     virtual ~Engine();
 
     SqlConnect *get_connect() { return conn_.get(); }
@@ -166,6 +169,7 @@ private:
     Mode mode_;
     std::auto_ptr<SqlConnect> conn_;
     SqlDialect *dialect_;
+    SqlPool *pool_;
 };
 
 } // namespace Yb

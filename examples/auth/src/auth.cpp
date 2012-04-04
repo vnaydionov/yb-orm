@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #endif
 #include <iostream>
+#include <util/str_utils.hpp>
+#include <orm/SqlPool.h>
 #include <orm/MetaDataSingleton.h>
 #include "md5.h"
 #include "logger.h"
@@ -15,9 +17,11 @@
 using namespace std;
 using namespace Domain;
 
+std::auto_ptr<Yb::SqlPool> g_pool;
+
 #define INIT_SESSION \
     Yb::Logger::Ptr ormlog = g_log->new_logger("orm"); \
-    Yb::Engine engine(Yb::Engine::MANUAL); \
+    Yb::Engine engine(Yb::Engine::MANUAL, *g_pool, "auth_db"); \
     Yb::Session session(Yb::theMetaData::instance(), &engine); \
     engine.get_connect()->set_logger(ormlog.get()); \
     engine.get_connect()->set_echo(true);
@@ -100,13 +104,14 @@ registration(StringMap &params)
             return BAD_RESP;
     }
     User::ResultSet rs = Yb::query<User>(
-            session, Yb::filter_eq(_T("NAME"), params["login"]));
+            session, Yb::filter_eq(_T("LOGIN"), params["login"]));
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q != qend)
         return BAD_RESP;
 
     User user(session);
-    user.set_name(params["login"]);
+    user.set_login(params["login"]);
+    user.set_name(params["name"]);
     user.set_pass(md5_hash(params["pass"]));
     user.set_status(boost::lexical_cast<int>(params["status"]));
     session.flush();
@@ -118,7 +123,7 @@ Yb::LongInt
 get_checked_user_by_creds(Yb::Session &session, StringMap &params)
 {
     User::ResultSet rs = Yb::query<User>(
-            session, Yb::filter_eq(_T("NAME"), params["login"]));
+            session, Yb::filter_eq(_T("LOGIN"), params["login"]));
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q == qend)
         return -1;
@@ -143,6 +148,7 @@ login(StringMap &params)
     Yb::LongInt token = get_random();
     login_session.set_token(boost::lexical_cast<string>(token));
     login_session.set_end_session(Yb::now() + boost::posix_time::hours(11));
+    login_session.set_app_name("auth");
     session.flush();
     engine.commit();
 
@@ -176,6 +182,9 @@ logout(StringMap &params)
     return OK_RESP;
 }
 
+const string
+cfg(const string &key) { return Yb::StrUtils::xgetenv("YBORM_" + key); }
+
 int
 main()
 {
@@ -191,6 +200,10 @@ main()
     }
     try {
         Yb::init_default_meta();
+        g_pool.reset(new Yb::SqlPool(YB_POOL_SIZE,
+                YB_POOL_IDLE_TIME, YB_POOL_MGR_SLEEP, g_log.get()));
+        g_pool->add_source(Yb::SqlSource("auth_db", "ODBC",
+                    cfg("DBTYPE"), cfg("DB"), cfg("USER"), cfg("PASSWD")));
         int port = 9090; // TODO: read from config
         HttpHandlerMap handlers;
         handlers["/session_info"] = session_info;

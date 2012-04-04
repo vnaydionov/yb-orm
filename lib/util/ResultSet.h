@@ -2,6 +2,7 @@
 #ifndef YB__UTIL__RESULT_SET__INCLUDED
 #define YB__UTIL__RESULT_SET__INCLUDED
 
+#include <deque>
 #include <iterator>
 #include <algorithm>
 #include <cstddef>
@@ -12,44 +13,61 @@ namespace Yb {
 template <class RowType>
 class ResultSetBase
 {
-    RowType current_row_, previous_row_;
+    std::deque<RowType> rows_;
+    bool finish_;
 
     virtual bool fetch(RowType &row) = 0;
 
-    RowType &get_current_row() { return current_row_; }
-    RowType &get_previous_row() { return previous_row_; }
-
-    void step_forward() {
-        std::swap(previous_row_, current_row_);
+    bool ready() const { return rows_.size() > 1; }
+    RowType &get_current_row() {
+        YB_ASSERT(ready());
+        return rows_[1];
     }
-    bool fetch_current() {
-        return fetch(current_row_);
+    RowType &get_previous_row() {
+        YB_ASSERT(!rows_.empty());
+        return rows_[0];
+    }
+    void step_forward() {
+        YB_ASSERT(!rows_.empty());
+        rows_.pop_front();
+    }
+    bool fetch_next() {
+        if (finish_)
+            return false;
+        RowType row;
+        finish_ = !fetch(row);
+        if (!finish_) {
+            if (rows_.empty()) {
+                RowType row0;
+                rows_.push_back(row0);
+            }
+            rows_.push_back(row);
+        }
+        return !finish_;
     }
 public:
     class iterator;
     friend class iterator;
 
+    ResultSetBase(): finish_(false) {}
     virtual ~ResultSetBase() {}
 
     class iterator: public std::iterator<std::input_iterator_tag,
             RowType, ptrdiff_t, RowType *, RowType & >
     {
         ResultSetBase &result_set_;
-        bool flag_end_, flag_ready_;
+        bool flag_end_;
 
         iterator();
 
         void lazy_fetch() {
-            if (!flag_end_ && !flag_ready_) {
-                flag_end_ = !result_set_.fetch_current();
-                flag_ready_ = !flag_end_;
-            }
+            if (!flag_end_ && !result_set_.ready())
+                flag_end_ = !result_set_.fetch_next();
         }
     public:
         iterator(ResultSetBase &result_set, bool flag_end)
             : result_set_(result_set)
             , flag_end_(flag_end)
-            , flag_ready_(false)
         {}
 
         RowType &operator *() {
@@ -68,7 +86,6 @@ public:
             lazy_fetch();
             YB_ASSERT(!flag_end_);
             result_set_.step_forward();
-            flag_ready_ = false;
             return &result_set_.get_previous_row();
         }
 
@@ -76,7 +93,6 @@ public:
             lazy_fetch();
             YB_ASSERT(!flag_end_);
             result_set_.step_forward();
-            flag_ready_ = false;
             return *this;
         }
 
@@ -97,6 +113,10 @@ public:
 
     iterator begin() { return iterator(*this, false); }
     iterator end() { return iterator(*this, true); }
+    void load() {
+        while (!finish_)
+            fetch_next();
+    }
 };
 
 template<class InputIterator, class Size, class OutputIterator>

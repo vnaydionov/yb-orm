@@ -331,7 +331,7 @@ Schema::fill_fkeys()
             {
                 Column &c = const_cast<Column &> (*j);
                 try {
-                    c.set_fk_name(table(j->get_fk_table_name()).get_synth_pk());
+                    c.set_fk_name(table(j->get_fk_table_name()).get_unique_pk());
                 }
                 catch (const TableNotFoundInMetaData &)
                 {}

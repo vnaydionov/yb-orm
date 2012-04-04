@@ -63,7 +63,10 @@ deep_xmlize(Session &session, DataObject::Ptr d,
         const String &cname = tbl.get_class_name();
         Columns::const_iterator it = tbl.begin(), end = tbl.end();
         for (; it != end; ++it)
-            if (it->has_fk() && !d->get(it->get_name()).is_null()) {
+            if (it->has_fk()) {
+                const Value &fk_v = d->get(it->get_name());
+                if (fk_v.is_null())
+                    continue;
                 const Table &fk_table = tbl.schema().
                     table(it->get_fk_table_name());
                 Schema::RelMap::const_iterator
@@ -71,20 +74,21 @@ deep_xmlize(Session &session, DataObject::Ptr d,
                     jend = tbl.schema().rels_upper_bound(cname);
                 for (; j != jend; ++j) {
                     if (j->second->type() == Relation::ONE2MANY &&
-                        j->second->side(0) == fk_table.get_class_name())
+                        j->second->side(0) == fk_table.get_class_name() &&
+                        (!j->second->has_attr(1, _T("key")) ||
+                         j->second->attr(1, _T("key")) == it->get_name()))
                     {
                         boost::shared_ptr<XMLizable> domain_obj = 
                             theDomainFactory::instance().create_object(
-                                session, it->get_fk_table_name(),
-                                d->get(it->get_name()).as_longint());
+                                session, fk_table.get_name(), fk_v.as_longint());
                         ElementTree::ElementPtr ref_node = domain_obj->xmlize(
                             depth == -1? -1: depth - 1, mk_xml_name(
                                 j->second->attr(1, _T("property")), _T("")
                             ));
                         replace_child_object_by_field(node,
                                 it->get_xml_name(), ref_node);
+                        break;
                     }
-                    break;
                 }
             }
     }

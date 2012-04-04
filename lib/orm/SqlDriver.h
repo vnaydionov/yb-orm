@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <iterator>
+#include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 #include <util/ResultSet.h>
@@ -163,6 +164,7 @@ public:
     virtual ~SqlConnectBackend();
     virtual void open(SqlDialect *dialect, const String &db,
         const String &user, const String &passwd) = 0;
+    virtual void clear_statement() = 0;
     virtual void close() = 0;
     virtual void commit() = 0;
     virtual void rollback() = 0;
@@ -202,27 +204,69 @@ public:
     SqlResultSet(SqlConnect &conn): conn_(conn) {}
 };
 
-class SqlConnect
+class SqlSource
 {
+    String id_, driver_name_, dialect_name_;
+    String db_, user_, passwd_;
+    String encoding_, host_;
+    int port_, timeout_, autocommit_;
+public:
+    SqlSource()
+        : port_(-1), timeout_(-1), autocommit_(1)
+    {}
+    SqlSource(const String &id, const String &driver_name, const String &dialect_name,
+            const String &db, const String &user = _T(""), const String &passwd = _T(""),
+            const String &encoding = _T(""), const String &host = _T(""),
+            int port = -1, int timeout = -1, int autocommit = 1)
+        : id_(id), driver_name_(driver_name), dialect_name_(dialect_name)
+        , db_(db), user_(user), passwd_(passwd)
+        , encoding_(encoding), host_(host)
+        , port_(port), timeout_(timeout), autocommit_(autocommit)
+    {}
+
+    const String &get_id() const { return id_; }
+    const String &get_driver_name() const { return driver_name_; }
+    const String &get_dialect_name() const { return dialect_name_; }
+    const String &get_db() const { return db_; }
+    const String &get_user() const { return user_; }
+    const String &get_passwd() const { return passwd_; }
+    const String &get_encoding() const { return encoding_; }
+    const String &get_host() const { return host_; }
+    int get_port() const { return port_; }
+    int get_timeout() const { return timeout_; }
+    int get_autocommit() const { return autocommit_; }
+
+    bool operator== (const SqlSource &obj) const { return id_ == obj.id_; }
+    bool operator< (const SqlSource &obj) const { return id_ < obj.id_; }
+};
+
+class SqlPool;
+
+class SqlConnect: public boost::noncopyable
+{
+    friend class SqlPool;
+    SqlSource source_;
     SqlDriver *driver_;
     SqlDialect *dialect_;
-    String db_, user_;
     std::auto_ptr<SqlConnectBackend> backend_;
-    bool activity_, echo_;
+    bool activity_, echo_, free_, bad_;
+    time_t free_since_;
     ILogger *log_;
-    SqlConnect(const SqlConnect &);
-    SqlConnect &operator=(const SqlConnect &);
+    void mark_bad();
 public:
     SqlConnect(const String &driver_name,
             const String &dialect_name, const String &db,
             const String &user = _T(""), const String &passwd = _T(""));
+    explicit SqlConnect(const SqlSource &source);
     ~SqlConnect();
-    SqlDriver *get_driver() { return driver_; }
-    SqlDialect *get_dialect() { return dialect_; }
-    const String &get_db() { return db_; }
-    const String &get_user() { return user_; }
+    const SqlSource &get_source() const { return source_; }
+    SqlDriver *get_driver() const { return driver_; }
+    SqlDialect *get_dialect() const { return dialect_; }
+    const String &get_db() const { return source_.get_db(); }
+    const String &get_user() const { return source_.get_user(); }
     void set_echo(bool echo) { echo_ = echo; }
     void set_logger(ILogger *log) { log_ = log; }
+    bool bad() const { return bad_; }
     SqlResultSet exec_direct(const String &sql);
     RowPtr fetch_row();
     RowsPtr fetch_rows(int max_rows = -1); // -1 = all
@@ -230,6 +274,7 @@ public:
     SqlResultSet exec(const Values &params);
     void commit();
     void rollback();
+    void clear();
 };
 
 } // namespace Yb

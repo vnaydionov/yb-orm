@@ -2,6 +2,7 @@
 #include <time.h>
 #include <orm/tiodbc.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/thread/thread.hpp>
 #include <util/Singleton.h>
 #include <util/str_utils.hpp>
 #include <iostream>
@@ -169,26 +170,24 @@ const Strings list_sql_dialects()
 SqlConnectBackend::~SqlConnectBackend() {}
 SqlDriver::~SqlDriver() {}
 
+class OdbcDriver;
+
 class OdbcConnectBackend: public SqlConnectBackend
 {
     auto_ptr<tiodbc::connection> conn_;
     auto_ptr<tiodbc::statement> stmt_;
+    OdbcDriver *drv_;
 public:
+    OdbcConnectBackend(OdbcDriver *drv): drv_(drv) {}
     void open(SqlDialect *dialect, const String &dsn,
-            const String &user, const String &passwd)
-    {
-        close();
-        conn_.reset(new tiodbc::connection());
-        stmt_.reset(new tiodbc::statement());
-        if (!conn_->connect(dsn, user, passwd, 10, false))
-            throw DBError(conn_->last_error_ex());
-    }
+            const String &user, const String &passwd);
 
-    void close()
+    void clear_statement()
     {
         stmt_.reset(NULL);
-        conn_.reset(NULL);
     }
+
+    void close();
 
     void commit()
     {
@@ -289,6 +288,8 @@ public:
 
 class OdbcDriver: public SqlDriver
 {
+    friend class OdbcConnectBackend;
+    boost::mutex conn_mux_;
 public:
     OdbcDriver():
         SqlDriver(_T("ODBC"))
@@ -296,10 +297,29 @@ public:
     auto_ptr<SqlConnectBackend> create_backend()
     {
         auto_ptr<SqlConnectBackend> p(
-                (SqlConnectBackend *)new OdbcConnectBackend());
+                (SqlConnectBackend *)new OdbcConnectBackend(this));
         return p;
     }
 };
+
+void
+OdbcConnectBackend::open(SqlDialect *dialect, const String &dsn,
+        const String &user, const String &passwd)
+{
+    close();
+    boost::mutex::scoped_lock lock(drv_->conn_mux_);
+    conn_.reset(new tiodbc::connection());
+    if (!conn_->connect(dsn, user, passwd, 10, false))
+        throw DBError(conn_->last_error_ex());
+}
+
+void
+OdbcConnectBackend::close()
+{
+    stmt_.reset(NULL);
+    boost::mutex::scoped_lock lock(drv_->conn_mux_);
+    conn_.reset(NULL);
+}
 
 typedef SingletonHolder<ItemRegistry<SqlDriver> > theDriverRegistry;
 
@@ -359,109 +379,196 @@ bool SqlResultSet::fetch(Row &row)
     return true;
 }
 
+void
+SqlConnect::mark_bad()
+{
+    if (!bad_) {
+        DBG(_T("mark connection bad"));
+        bad_ = true;
+    }
+}
+
 SqlConnect::SqlConnect(const String &driver_name,
         const String &dialect_name, const String &db,
         const String &user, const String &passwd)
-    : driver_(sql_driver(driver_name))
-    , dialect_(sql_dialect(dialect_name))
-    , db_(db)
-    , user_(user)
+    : source_(SqlSource(db, driver_name, dialect_name, db, user, passwd))
+    , driver_(sql_driver(source_.get_driver_name()))
+    , dialect_(sql_dialect(source_.get_dialect_name()))
     , activity_(false)
     , echo_(false)
+    , free_(true)
+    , bad_(false)
+    , free_since_(0)
     , log_(NULL)
 {
     backend_.reset(driver_->create_backend().release());
-    backend_->open(dialect_, db, user, passwd);
+    backend_->open(dialect_, source_.get_db(), source_.get_user(), source_.get_passwd());
+}
+
+SqlConnect::SqlConnect(const SqlSource &source)
+    : source_(source)
+    , driver_(sql_driver(source_.get_driver_name()))
+    , dialect_(sql_dialect(source_.get_dialect_name()))
+    , activity_(false)
+    , echo_(false)
+    , free_(true)
+    , bad_(false)
+    , free_since_(0)
+    , log_(NULL)
+{
+    backend_.reset(driver_->create_backend().release());
+    backend_->open(dialect_, source_.get_db(), source_.get_user(), source_.get_passwd());
 }
 
 SqlConnect::~SqlConnect()
 {
-    if (activity_)
-        rollback();
-    backend_->close();
+    bool err = false;
+    try {
+        if (activity_)
+            rollback();
+    }
+    catch (...) { err = true; }
+    try {
+        backend_->close();
+    }
+    catch (...) { err = true; }
+    if (err)
+        DBG(_T("error while closing connection"));
 }
 
 SqlResultSet
 SqlConnect::exec_direct(const String &sql)
 {
-    if (echo_) {
-        DBG(_T("exec_direct: ") + sql);
+    try {
+        if (echo_)
+            DBG(_T("exec_direct: ") + sql);
+        activity_ = true;
+        backend_->exec_direct(sql);
+        return SqlResultSet(*this);
     }
-    activity_ = true;
-    backend_->exec_direct(sql);
-    return SqlResultSet(*this);
+    catch (...) {
+        mark_bad();
+        throw;
+    }
 }
 
 RowPtr
 SqlConnect::fetch_row()
 {
-    RowPtr row = backend_->fetch_row();
-    if (echo_) {
-        if (row.get()) {
-            OStringStream out;
-            out << _T("fetch: ");
-            Row::const_iterator j = row->begin(), jend = row->end();
-            for (; j != jend; ++j)
-                out << j->first << _T("=") << j->second.sql_str() << _T(" ");
-            DBG(out.str());
+    try {
+        RowPtr row = backend_->fetch_row();
+        if (echo_) {
+            if (row.get()) {
+                OStringStream out;
+                out << _T("fetch: ");
+                Row::const_iterator j = row->begin(),
+                                    jend = row->end();
+                for (; j != jend; ++j)
+                    out << j->first << _T("=")
+                        << j->second.sql_str() << _T(" ");
+                DBG(out.str());
+            }
+            else
+                DBG(_T("fetch: no more rows"));
         }
-        else {
-            DBG(_T("fetch: no more rows"));
-        }
+        return row;
     }
-    return row;
+    catch (...) {
+        mark_bad();
+        throw;
+    }
 }
 
 RowsPtr
 SqlConnect::fetch_rows(int max_rows)
 {
-    RowsPtr rows(new Rows);
-    SqlResultSet result(*this);
-    copy_no_more_than_n(result.begin(), result.end(),
-                        max_rows, back_inserter(*rows));
-    return rows;
+    try {
+        RowsPtr rows(new Rows);
+        SqlResultSet result(*this);
+        copy_no_more_than_n(result.begin(), result.end(),
+                            max_rows, back_inserter(*rows));
+        return rows;
+    }
+    catch (...) {
+        mark_bad();
+        throw;
+    }
 }
 
 void
 SqlConnect::prepare(const String &sql)
 {
-    if (echo_) {
-        DBG(_T("prepare: ") + sql);
+    try {
+        if (echo_)
+            DBG(_T("prepare: ") + sql);
+        activity_ = true;
+        backend_->prepare(sql);
     }
-    activity_ = true;
-    backend_->prepare(sql);
+    catch (...) {
+        mark_bad();
+        throw;
+    }
 }
 
 SqlResultSet
 SqlConnect::exec(const Values &params)
 {
-    if (echo_) {
-        OStringStream out;
-        out << _T("exec prepared:");
-        for (unsigned i = 0; i < params.size(); ++i)
-            out << _T(" p") << (i + 1) << _T("=\"") << params[i].sql_str() << _T("\"");
-        DBG(out.str());
+    try {
+        if (echo_) {
+            OStringStream out;
+            out << _T("exec prepared:");
+            for (unsigned i = 0; i < params.size(); ++i)
+                out << _T(" p") << (i + 1) << _T("=\"")
+                    << params[i].sql_str() << _T("\"");
+            DBG(out.str());
+        }
+        backend_->exec(params);
+        return SqlResultSet(*this);
     }
-    backend_->exec(params);
-    return SqlResultSet(*this);
+    catch (...) {
+        mark_bad();
+        throw;
+    }
 }
 
 void
 SqlConnect::commit()
 {
-    if (echo_)
-        DBG(_T("commit"));
-    backend_->commit();
-    activity_ = false;
+    try {
+        activity_ = false;
+        if (echo_)
+            DBG(_T("commit"));
+        backend_->commit();
+    }
+    catch (...) {
+        mark_bad();
+        throw;
+    }
 }
 
 void
 SqlConnect::rollback()
 {
-    if (echo_)
-        DBG(_T("rollback"));
-    backend_->rollback();
-    activity_ = false;
+    try {
+        activity_ = false;
+        if (echo_)
+            DBG(_T("rollback"));
+        backend_->rollback();
+    }
+    catch (...) {
+        mark_bad();
+        throw;
+    }
+}
+
+void
+SqlConnect::clear()
+{
+    try {
+        rollback();
+    }
+    catch (...) { }
+    backend_->clear_statement();
 }
 
 } // namespace Yb
