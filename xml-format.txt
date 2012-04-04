@@ -21,6 +21,7 @@ See also in examples folder.
     name - (required) name of the column, as in SQL;
     type - (required) type of the column, for now the following types are
             supported:
+        integer - 32bit integer
         longint - 64bit (at least) integer, suitable for IDs
         decimal - decimal number with fraction part, suitable for storing
                 money values, etc.
@@ -39,7 +40,8 @@ See also in examples folder.
             column name;
     xml-name - (optional) name of the XML element, used by the AutoXMLizer,
             if not set then the column's name is used, translated to lower case,
-            '_' is substituted with '-'.
+            '_' is substituted with '-'.  To disable column output
+            set this field to special value '!'.
 
 
 Also <column> may contain nested elements to describe additional constraints:
@@ -59,6 +61,7 @@ Also <column> may contain nested elements to describe additional constraints:
         The optional attribute "cascade" defines what action to take
         for the slave records when there is an attempt to delete the master record.
         Possible actions are: "restrict" | "set-null" | "delete".
+        NOTE: only "one-to-many" relation type is supported so far.
 
     "one-to-many" - this type assumes two nested elements.
         <one> - class for the master table, attributes:
