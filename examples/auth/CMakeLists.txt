@@ -164,3 +164,4 @@ endif ()
 
 add_subdirectory (src)
 
+install (FILES README.auth DESTINATION doc)

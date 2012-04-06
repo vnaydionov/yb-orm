@@ -1,26 +1,30 @@
 
 ABOUT
 
-Auth is a separate demo project contributed by Nikita Buyvich.
+Auth is a distinct demo project contributed by Nikita Buyvich.
 It demonstrates some of YB.ORM use cases.
 You need YB.ORM installed in order to build Auth.
 
-The project consists of single executable, which runs a minimal
+The project consists of a single executable, which runs a minimal
 HTTP server at port 9090.  The server processes GET/POST queries
 of several types: /login, /logout, /session_info, /check, and
 /registration.
 After a successful call to /login you will get an XML response
 with session token, that may be passed to all other calls.
-To perform initial login you will need to insert first user into
-your T_USERS table.  Note that PASS field must contain MD5(password)
-for that user.
+To perform initial login you will need to insert somehow the first user into
+your T_USER table.  Note that PASS field must contain MD5(password)
+for that user.  If you start with an empty table T_USER then you can
+register the first user using link like this:
+http://localhost:9090/registration?login=medved&pass=preved&name=Medved&status=0
+
 
 BUILD
 
-To build Auth under Unix, please use autogen.sh/configure scripts.
-On Windows you should use cmake system, in this case it is assumed
-that YB.ORM resides in c:\yborm folder.
+On Windows you should use cmake build system. It is assumed
+that YB.ORM resides in c:\yborm folder, then use script 
+c:\yborm\build-auth\build*.bat.
 
+To build Auth under Unix, please use autogen.sh/configure scripts.
 For instance, you can build and install YB.ORM locally as follows:
 sh autogen.sh
 ./configure --with-test-dbtype=MYSQL --with-test-db=test1_db \
