@@ -3,13 +3,8 @@
 #include <util/str_utils.hpp>
 #include <orm/DataObject.h>
 #include <orm/MetaDataSingleton.h>
-#include <orm/XMLMetaDataConfig.h>
 #include "domain/Client.h"
 #include "domain/Order.h"
-//#define HAVE_DBPOOL3
-#ifdef HAVE_DBPOOL3
-#include <orm/DBPoolDriver.h>
-#endif
 
 using namespace std;
 Yb::LogAppender appender(cerr);
@@ -17,23 +12,8 @@ Yb::Logger logger(&appender);
 
 int main()
 {
-    Yb::String conf_dir = Yb::StrUtils::xgetenv(_T("EX1_DIR"));
-    if (conf_dir.empty())
-        conf_dir = _T(".");
-    Yb::load_meta(conf_dir + _T("/ex1_schema.xml"), Yb::theMetaData::instance());
-#ifdef HAVE_DBPOOL3
-    auto_ptr<Yb::DBPoolConfig> conf(
-            new Yb::DBPoolConfig(conf_dir + _T("/dbpool.cfg.xml")));
-    auto_ptr<Yb::SqlDriver> drv(
-            new Yb::DBPoolDriver(conf, _T("MY_DBPOOL")));
-    Yb::register_sql_driver(drv);
-    auto_ptr<Yb::SqlConnect> conn(
-            new Yb::SqlConnect(_T("MY_DBPOOL"), Yb::StrUtils::xgetenv(_T("YBORM_DBTYPE")), _T("default")));
-    Yb::Engine engine(Yb::Engine::MANUAL, conn);
-#else
     Yb::Engine engine(Yb::Engine::MANUAL);
-#endif
-    Yb::Session session(Yb::theMetaData::instance(), &engine);
+    Yb::Session session(Yb::init_default_meta(), &engine);
     engine.get_connect()->set_echo(true);
     engine.get_connect()->set_logger(&logger);
     Domain::Client client(session);

@@ -7,11 +7,19 @@ include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES} ${BOOST_INCLUDES}
 
 add_executable (example1 example1.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp)
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/OrderItem.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Product.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/ProductGroup.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Contract.cpp)
 
 add_executable (example2 example2.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp)
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/OrderItem.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Product.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/ProductGroup.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Contract.cpp)
 
 set_source_files_properties (
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
