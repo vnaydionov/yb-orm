@@ -2,13 +2,11 @@
 #include <map>
 #include <fstream>
 #include <util/str_utils.hpp>
-//#include <util/logger.hpp>
 #include <orm/MetaData.h>
 #include <orm/Value.h>
 #include <orm/XMLMetaDataConfig.h>
 
-//#define ORM_LOG(x) LOG(LogLevel::INFO, "ORM Domain generator: " << x)
-#define ORM_LOG(x) cout << "ORM Domain generator: " << x << "\n";
+#define ORM_LOG(x) cout << "yborm_gen_domain: " << x << "\n";
 
 using namespace std;
 using namespace Yb::StrUtils;
@@ -365,6 +363,8 @@ private:
             write_footer(table, header);
         }
         ofstream file(file_path.c_str());
+        if (!file.good())
+            throw std::runtime_error("can't write to file");
         expand_tabs_to_stream(header.str(), file);
     }
 
@@ -391,6 +391,8 @@ private:
         else
             write_cpp_data(table, cpp);
         ofstream cpp_file(cpp_path.c_str());
+        if (!cpp_file.good())
+            throw std::runtime_error("can't write to file");
         expand_tabs_to_stream(cpp.str(), cpp_file);
     }
 
@@ -773,11 +775,9 @@ int main(int argc, char *argv[])
     }
     catch (exception &e) {
         string error = string("Exception: ") + e.what();
-        cerr << error << endl;
         ORM_LOG(error);
     }
     catch (...) {
-        cerr << "Unknown exception" << endl;
         ORM_LOG("Unknown exception");
     }
     return 0;

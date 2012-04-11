@@ -54,7 +54,7 @@ public:
         Table::Ptr t(new Table(_T("A"), _T(""), _T("A")));
         t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK));
         t->add_column(Column(_T("Y"), Value::STRING, 4));
-        t->add_column(Column(_T("P"), Value::LONGINT));
+        t->add_column(Column(_T("P"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
         t->add_column(Column(_T("R"), Value::LONGINT, 0, Column::RO));
         t->set_seq_name(_T("S_A_X"));
         r_.add_table(t);

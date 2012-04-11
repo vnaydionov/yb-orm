@@ -45,6 +45,12 @@ ClassNotFoundInMetaData::ClassNotFoundInMetaData(const String &class_name)
     : MetaDataError(_T("Class '") + class_name + _T("' not found in metadata"))
 {}
 
+FkNotFoundInMetaData::FkNotFoundInMetaData(const String &master_tbl,
+        const String &slave_tbl)
+    : MetaDataError(_T("Foreign key from table '") + slave_tbl
+            + _T("' to table '") + master_tbl + _T("' not found in metadata"))
+{}
+
 RowNotLinkedToTable::RowNotLinkedToTable()
     : MetaDataError(_T("RowData object is not linked to any table"))
 {}
@@ -101,7 +107,7 @@ Table::get_unique_pk() const
 {
     StringSet::const_iterator i = pk_fields_.begin();
     if (pk_fields_.size() != 1)
-        throw AmbiguousPK(*++i);
+        throw AmbiguousPK(get_name());
     return *i;
 }
 
@@ -340,19 +346,15 @@ Schema::fill_fkeys()
     }
     RelVect::iterator l = relations_.begin(), lend = relations_.end();
     for (; l != lend; ++l) {
-        Table *t1 = NULL;
-        try {
-            t1 = const_cast<Table *> (&find_table_by_class((*l)->side(0)));
-        }
-        catch (const ClassNotFoundInMetaData &)
-        {}
-        Table *t2 = NULL;
-        try {
-            t2 = const_cast<Table *> (&find_table_by_class((*l)->side(1)));
-        }
-        catch (const ClassNotFoundInMetaData &)
-        {}
+        Table *t1 = const_cast<Table *> (&find_table_by_class((*l)->side(0))),
+              *t2 = const_cast<Table *> (&find_table_by_class((*l)->side(1)));
         (*l)->set_tables(t1, t2);
+        if ((*l)->type() == Relation::ONE2MANY) {
+            String fk = t2->get_fk_for((*l).get());
+            if (fk.empty())
+                throw FkNotFoundInMetaData(t1->get_name(), t2->get_name());
+            t1->get_unique_pk();
+        }
     }
 }
 

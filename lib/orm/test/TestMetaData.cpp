@@ -123,7 +123,7 @@ public:
         Relation::Ptr re1(new Relation(Relation::ONE2MANY,
             _T("A"), a1, _T("C"), a2));
         r.add_relation(re1);
-        Table::Ptr tb(new Table(_T("B")));
+        Table::Ptr tb(new Table(_T("B"), _T(""), _T("B")));
         tb->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
         tb->add_column(Column(_T("AX"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
         tb->add_column(Column(_T("A2X"), Value::LONGINT, 0, 0, _T("A"), _T("X")));

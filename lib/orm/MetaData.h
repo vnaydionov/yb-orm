@@ -62,6 +62,12 @@ public:
     ClassNotFoundInMetaData(const String &class_name);
 };
 
+class FkNotFoundInMetaData : public MetaDataError
+{
+public:
+    FkNotFoundInMetaData(const String &master_tbl, const String &slave_tbl);
+};
+
 class RowNotLinkedToTable: public MetaDataError
 {
 public:
