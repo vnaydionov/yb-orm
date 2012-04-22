@@ -380,10 +380,14 @@ bool SqlResultSet::fetch(Row &row)
 }
 
 void
-SqlConnect::mark_bad()
+SqlConnect::mark_bad(const std::exception &e)
 {
     if (!bad_) {
-        DBG(_T("mark connection bad"));
+        string s = e.what();
+        size_t pos = s.find('\n');
+        if (pos != string::npos)
+            s = s.substr(0, pos);
+        DBG(_T("mark connection bad, because of ") + String(WIDEN(s)));
         bad_ = true;
     }
 }
@@ -425,11 +429,11 @@ SqlConnect::~SqlConnect()
         if (activity_)
             rollback();
     }
-    catch (...) { err = true; }
+    catch (const std::exception &e) { err = true; }
     try {
         backend_->close();
     }
-    catch (...) { err = true; }
+    catch (const std::exception &e) { err = true; }
     if (err)
         DBG(_T("error while closing connection"));
 }
@@ -444,8 +448,8 @@ SqlConnect::exec_direct(const String &sql)
         backend_->exec_direct(sql);
         return SqlResultSet(*this);
     }
-    catch (...) {
-        mark_bad();
+    catch (const std::exception &e) {
+        mark_bad(e);
         throw;
     }
 }
@@ -471,8 +475,8 @@ SqlConnect::fetch_row()
         }
         return row;
     }
-    catch (...) {
-        mark_bad();
+    catch (const std::exception &e) {
+        mark_bad(e);
         throw;
     }
 }
@@ -487,8 +491,8 @@ SqlConnect::fetch_rows(int max_rows)
                             max_rows, back_inserter(*rows));
         return rows;
     }
-    catch (...) {
-        mark_bad();
+    catch (const std::exception &e) {
+        mark_bad(e);
         throw;
     }
 }
@@ -502,8 +506,8 @@ SqlConnect::prepare(const String &sql)
         activity_ = true;
         backend_->prepare(sql);
     }
-    catch (...) {
-        mark_bad();
+    catch (const std::exception &e) {
+        mark_bad(e);
         throw;
     }
 }
@@ -523,8 +527,8 @@ SqlConnect::exec(const Values &params)
         backend_->exec(params);
         return SqlResultSet(*this);
     }
-    catch (...) {
-        mark_bad();
+    catch (const std::exception &e) {
+        mark_bad(e);
         throw;
     }
 }
@@ -538,8 +542,8 @@ SqlConnect::commit()
             DBG(_T("commit"));
         backend_->commit();
     }
-    catch (...) {
-        mark_bad();
+    catch (const std::exception &e) {
+        mark_bad(e);
         throw;
     }
 }
@@ -553,8 +557,8 @@ SqlConnect::rollback()
             DBG(_T("rollback"));
         backend_->rollback();
     }
-    catch (...) {
-        mark_bad();
+    catch (const std::exception &e) {
+        mark_bad(e);
         throw;
     }
 }
@@ -565,7 +569,7 @@ SqlConnect::clear()
     try {
         rollback();
     }
-    catch (...) { }
+    catch (const std::exception &e) { }
     backend_->clear_statement();
 }
 

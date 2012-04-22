@@ -72,22 +72,43 @@ public:
     const FilterBackend *get_backend() const { return backend_.get(); }
 };
 
-class FilterBackendEq : public FilterBackend
+class FilterBackendCmp : public FilterBackend
 {
-    String name_;
+    String name_, op_;
     Value value_;
 public:
-    FilterBackendEq(const String &name, const Value &value);
+    FilterBackendCmp(const String &name, const String &op, const Value &value);
     const String do_get_sql() const;
     const String do_collect_params_and_build_sql(
             Values &seq) const;
     const String &get_name() const;
+    const String &get_op() const;
     const Value &get_value() const;
 };
 
 inline const Filter filter_eq(const String &name, const Value &value)
 {
-    return Filter(new FilterBackendEq(name, value));
+    return Filter(new FilterBackendCmp(name, _T("="), value));
+}
+inline const Filter filter_ne(const String &name, const Value &value)
+{
+    return Filter(new FilterBackendCmp(name, _T("<>"), value));
+}
+inline const Filter filter_lt(const String &name, const Value &value)
+{
+    return Filter(new FilterBackendCmp(name, _T("<"), value));
+}
+inline const Filter filter_gt(const String &name, const Value &value)
+{
+    return Filter(new FilterBackendCmp(name, _T(">"), value));
+}
+inline const Filter filter_le(const String &name, const Value &value)
+{
+    return Filter(new FilterBackendCmp(name, _T("<="), value));
+}
+inline const Filter filter_ge(const String &name, const Value &value)
+{
+    return Filter(new FilterBackendCmp(name, _T(">="), value));
 }
 
 class FilterBackendAnd : public FilterBackend

@@ -252,7 +252,7 @@ class SqlConnect: public boost::noncopyable
     bool activity_, echo_, bad_;
     time_t free_since_;
     ILogger *log_;
-    void mark_bad();
+    void mark_bad(const std::exception &e);
 public:
     SqlConnect(const String &driver_name,
             const String &dialect_name, const String &db,

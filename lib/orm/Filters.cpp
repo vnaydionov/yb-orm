@@ -35,32 +35,39 @@ Filter::collect_params_and_build_sql(Values &seq) const
     return sql_;
 }
 
-FilterBackendEq::FilterBackendEq(const String &name, const Value &value)
+FilterBackendCmp::FilterBackendCmp(const String &name, const String &op, const Value &value)
     : name_(name)
+    , op_(op)
     , value_(value)
 {}
 
 const String
-FilterBackendEq::do_get_sql() const
+FilterBackendCmp::do_get_sql() const
 {
-    return name_ + _T(" = ") + value_.sql_str();
+    return name_ + _T(" ") + op_ + _T(" ") + value_.sql_str();
 }
 
 const String
-FilterBackendEq::do_collect_params_and_build_sql(Values &seq) const
+FilterBackendCmp::do_collect_params_and_build_sql(Values &seq) const
 {
     seq.push_back(value_);
-    return name_ + _T(" = ?");
+    return name_ + _T(" ") + op_ + _T(" ?");
 }
 
 const String &
-FilterBackendEq::get_name() const
+FilterBackendCmp::get_name() const
 {
     return name_;
 }
 
+const String &
+FilterBackendCmp::get_op() const
+{
+    return op_;
+}
+
 const Value &
-FilterBackendEq::get_value() const
+FilterBackendCmp::get_value() const
 {
     return value_;
 }
