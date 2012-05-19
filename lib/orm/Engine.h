@@ -9,6 +9,7 @@
 #include <set>
 #include <stdexcept>
 #include <boost/utility.hpp>
+#include <util/nlogger.h>
 #include <orm/Value.h>
 #include <orm/Filters.h>
 #include <orm/SqlDriver.h>
@@ -75,14 +76,16 @@ public:
 
     Engine(Mode work_mode = MANUAL);
     Engine(Mode work_mode, std::auto_ptr<SqlConnect> conn);
-    Engine(Mode work_mode, SqlDialect *dialect); // for subclassing
-    Engine(Mode work_mode, SqlPool &pool,
+    Engine(Mode work_mode, std::auto_ptr<SqlPool> pool,
            const String &source_id, int timeout = YB_POOL_WAIT_TIME);
+    Engine(Mode work_mode, SqlDialect *dialect); // for subclassing
     virtual ~Engine();
 
     SqlConnect *get_connect() { return conn_.get(); }
     SqlDialect *get_dialect() { return dialect_; }
     bool is_touched() const { return touched_; }
+    void set_echo(bool echo);
+    void set_logger(ILogger::Ptr logger);
 
     // SQL operator wrappers
     SqlResultSet select_iter(
@@ -165,11 +168,12 @@ private:
             const String &table, const Filter &where) const;
 
 private:
-    bool touched_;
+    bool touched_, echo_;
     Mode mode_;
     std::auto_ptr<SqlConnect> conn_;
+    std::auto_ptr<SqlPool> pool_;
     SqlDialect *dialect_;
-    SqlPool *pool_;
+    ILogger::Ptr logger_;
 };
 
 } // namespace Yb

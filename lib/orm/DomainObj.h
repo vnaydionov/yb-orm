@@ -6,6 +6,7 @@
 #include <boost/shared_ptr.hpp>
 #include <orm/XMLNode.h>
 #include <orm/DataObject.h>
+#include <boost/tuple/tuple.hpp>
 
 namespace Yb {
 
@@ -268,42 +269,172 @@ public:
     static void save_registered(Schema &schema);
 };
 
-template <class T>
-class DomainObjectResultSet: public ResultSetBase<T>
+template <class H>
+boost::tuples::cons<H, boost::tuples::null_type>
+row2tuple(const boost::tuples::cons<H, boost::tuples::null_type> &,
+    const ObjectList &row, int pos)
 {
+    boost::tuples::null_type tail;
+    return boost::tuples::cons<H, boost::tuples::null_type>(H(row[pos]), tail);
+}
+
+template <class H, class T>
+boost::tuples::cons<H, T>
+row2tuple(const boost::tuples::cons<H, T> &item,
+    const ObjectList &row, int pos)
+{
+    return boost::tuples::cons<H, T>(H(row[pos]),
+        row2tuple(item.get_tail(), row, pos + 1));
+}
+
+template <class R>
+class DomainResultSet;
+
+template <class T0, class T1, class T2, class T3, class T4,
+          class T5, class T6, class T7, class T8, class T9>
+class DomainResultSet<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> >
+    : public ResultSetBase<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> >
+{
+    typedef boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> R;
     DataObjectResultSet rs_;
     std::auto_ptr<DataObjectResultSet::iterator> it_;
 
-    bool fetch(T &row) {
+    bool fetch(R &row) {
         if (!it_.get())
             it_.reset(
                     new DataObjectResultSet::iterator(rs_.begin()));
         if (rs_.end() == *it_)
             return false;
-        row = T((**it_)[0]);
+        typename R::inherited tuple;
+        row = row2tuple(tuple, **it_, 0);
         ++*it_;
         return true;
     }
-    DomainObjectResultSet();
+    DomainResultSet();
 public:
-    DomainObjectResultSet(const DataObjectResultSet &rs)
+    DomainResultSet(const DataObjectResultSet &rs)
         : rs_(rs)
     {}
-    DomainObjectResultSet(const DomainObjectResultSet &obj)
+    DomainResultSet(const DomainResultSet &obj)
         : rs_(obj.rs_)
     {
         YB_ASSERT(!obj.it_.get());
     }
 };
 
-template <class T>
-DomainObjectResultSet<T> query(Session &session, const Filter &filter,
-        const StrList &order_by = StrList(), int max = -1)
+template <class R>
+class DomainResultSet: public ResultSetBase<R>
 {
-    Strings tables(1);
-    tables[0] = T::get_table_name();
-    return DomainObjectResultSet<T>(session.load_collection(
-            tables, filter, order_by, max));
+    DataObjectResultSet rs_;
+    std::auto_ptr<DataObjectResultSet::iterator> it_;
+
+    bool fetch(R &row) {
+        if (!it_.get())
+            it_.reset(
+                    new DataObjectResultSet::iterator(rs_.begin()));
+        if (rs_.end() == *it_)
+            return false;
+        row = R((**it_)[0]);
+        ++*it_;
+        return true;
+    }
+    DomainResultSet();
+public:
+    DomainResultSet(const DataObjectResultSet &rs)
+        : rs_(rs)
+    {}
+    DomainResultSet(const DomainResultSet &obj)
+        : rs_(obj.rs_)
+    {
+        YB_ASSERT(!obj.it_.get());
+    }
+};
+
+template <class H>
+void tuple_tables(const boost::tuples::cons<H, boost::tuples::null_type> &, Strings &tables)
+{
+    tables.push_back(H::get_table_name());
+}
+
+template <class H, class T>
+void tuple_tables(const boost::tuples::cons<H, T> &item, Strings &tables)
+{
+    tables.push_back(H::get_table_name());
+    tuple_tables(item.get_tail(), tables);
+}
+
+template <class R>
+class QueryFunc;
+
+template <class T0, class T1, class T2, class T3, class T4,
+          class T5, class T6, class T7, class T8, class T9>
+struct QueryFunc<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> > {
+    typedef boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> R;
+    typedef DomainResultSet<R> RS;
+    static RS query(Session &session, const Filter &filter,
+         const StrList &order_by, int max)
+    {
+        Strings tables;
+        typename R::inherited tuple;
+        tuple_tables(tuple, tables);
+        return RS(session.load_collection(tables, filter, order_by, max));
+    }
+};
+
+template <class R>
+struct QueryFunc {
+    typedef DomainResultSet<R> RS;
+    static RS query(Session &session, const Filter &filter,
+         const StrList &order_by, int max)
+    {
+        Strings tables(1);
+        tables[0] = R::get_table_name();
+        return RS(session.load_collection(tables, filter, order_by, max));
+    }
+};
+
+template <class R>
+class Query {
+    Session &session_;
+    Filter filter_;
+    StrList order_;
+    int max_;
+public:
+    Query(Session &session, const Filter &filter = Filter(),
+            const StrList &order = StrList(), int max = -1)
+        : session_(session)
+        , filter_(filter)
+        , order_(order)
+        , max_(max)
+    {}
+    Query filter_by(const Filter &filter) {
+        Query q(*this);
+        if (q.filter_.is_empty())
+            q.filter_ = filter;
+        else
+            q.filter_ = q.filter_ && filter;
+        return q;
+    }
+    Query order_by(const StrList &order) {
+        Query q(*this);
+        q.order_ = order;
+        return q;
+    }
+    Query max_rows(int max) {
+        Query q(*this);
+        q.max_ = max;
+        return q;
+    }
+    DomainResultSet<R> all() {
+        return QueryFunc<R>::query(session_, filter_, order_, max_);
+    }
+};
+
+template <class R>
+Query<R> query(Session &session, const Filter &filter = Filter(),
+    const StrList &order = StrList(), int max = -1)
+{
+    return Query<R>(session, filter, order, max);
 }
 
 template <class Obj>

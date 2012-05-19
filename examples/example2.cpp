@@ -88,16 +88,32 @@ int main()
     for (; it != end; ++it)
         cout << "order in list: " << it->get_id() << endl;
     cout << "list size: " << lst.size() << endl;
-    lst.erase(lst.begin());
+    //lst.erase(lst.begin());
     cout << "list size: " << lst.size() << endl;
     session.flush();
     engine.commit();
+    using namespace Domain;
+    using namespace Yb;
+
+    DomainResultSet<boost::tuple<Order, Client> > rs0 =
+        query<boost::tuple<Order, Client> >(session).filter_by(
+            filter_eq(_T("T_CLIENT.ID"), c2.get_id()) &&
+            Filter(_T("T_ORDER.CLIENT_ID = T_CLIENT.ID"))
+        ).order_by(_T("T_CLIENT.ID, T_ORDER.ID")).all();
+    DomainResultSet<boost::tuple<Order, Client> >
+        ::iterator p = rs0.begin(), pend = rs0.end();
+    cout << "Order/Client IDs: " << endl; 
+    for (; p != pend; ++p)
+        cout << p->get<0>().get_id() << "/" << p->get<1>().get_id() << ",";
+    cout << endl;
+
     Domain::Order::ListPtr olist = Domain::Order::find(
         session, Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2.get_id()));
-    Domain::Order::ResultSet rs = Yb::query<Domain::Order>(session,
-        Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2.get_id()));
-    Domain::Order::ResultSet::iterator q = rs.begin(), qend = rs.end();
-    cout << "Order IDs: " << endl; 
+    Yb::DomainResultSet<Domain::Order> rs =
+        Yb::query<Domain::Order>(session,
+            Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2.get_id())).all();
+    Yb::DomainResultSet<Domain::Order>::iterator q = rs.begin(), qend = rs.end();
+    cout << "Order/Client IDs: " << endl; 
     for (; q != qend; ++q)
         cout << q->get_id() << ",";
     cout << endl;

@@ -77,7 +77,7 @@ private:
         str << AUTOGEN_END << "public:\n"
             << "\tstatic const Yb::String get_table_name() { return _T(\""
             << table_name << "\"); }\n"
-            << "\ttypedef Yb::DomainObjectResultSet<"
+            << "\ttypedef Yb::DomainResultSet<"
             << class_name << "> ResultSet;\n"
             << "\t// static method 'find'\n"
             << "\ttypedef std::vector<" << class_name << "> List;\n"

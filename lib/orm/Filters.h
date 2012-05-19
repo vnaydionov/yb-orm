@@ -66,6 +66,7 @@ public:
     Filter();
     Filter(const String &sql);
     Filter(FilterBackend *backend);
+    bool is_empty() const;
     const String get_sql() const;
     const String collect_params_and_build_sql(
             Values &seq) const;

@@ -19,6 +19,12 @@ Filter::Filter(FilterBackend *backend)
     : backend_(backend)
 {}
 
+bool
+Filter::is_empty() const
+{
+    return !backend_.get() && !sql_.compare(_T("1=1"));
+}
+
 const String
 Filter::get_sql() const
 {

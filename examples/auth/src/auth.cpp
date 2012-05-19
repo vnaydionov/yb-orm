@@ -17,14 +17,7 @@
 using namespace std;
 using namespace Domain;
 
-std::auto_ptr<Yb::SqlPool> g_pool;
-
-#define INIT_SESSION \
-    Yb::Logger::Ptr ormlog = g_log->new_logger("orm"); \
-    Yb::Engine engine(Yb::Engine::MANUAL, *g_pool, "auth_db"); \
-    Yb::Session session(Yb::theMetaData::instance(), &engine); \
-    engine.get_connect()->set_logger(ormlog.get()); \
-    engine.get_connect()->set_echo(true);
+std::auto_ptr<Yb::Engine> engine;
 
 Yb::LongInt
 get_random()
@@ -53,8 +46,8 @@ get_random()
 Yb::LongInt
 get_checked_session_by_token(Yb::Session &session, StringMap &params, int admin_flag=0)
 {
-    LoginSession::ResultSet rs = Yb::query<LoginSession>(
-            session, Yb::filter_eq(_T("TOKEN"), params["token"]));
+    LoginSession::ResultSet rs = Yb::query<LoginSession>(session)
+        .filter_by(Yb::filter_eq(_T("TOKEN"), params["token"])).all();
     LoginSession::ResultSet::iterator q = rs.begin(), qend=rs.end();
     if (q == qend)
         return -1;
@@ -70,7 +63,7 @@ get_checked_session_by_token(Yb::Session &session, StringMap &params, int admin_
 string 
 check(StringMap &params)
 {
-    INIT_SESSION;
+    Yb::Session session(Yb::theMetaData::instance(), engine.get());
     return get_checked_session_by_token(session, params) == -1? BAD_RESP: OK_RESP;
 }
 
@@ -93,9 +86,8 @@ md5_hash(const string &str)
 string 
 registration(StringMap &params)
 {
-    INIT_SESSION;
-    User::ResultSet all = Yb::query<User>(
-            session, Yb::Filter(_T("1=1"))); // query all
+    Yb::Session session(Yb::theMetaData::instance(), engine.get());
+    User::ResultSet all = Yb::query<User>(session).all();
     User::ResultSet::iterator p = all.begin(), pend = all.end();
     if (p != pend) {
         // when user table is empty it is allowed to create the first user
@@ -103,8 +95,8 @@ registration(StringMap &params)
         if (-1 == get_checked_session_by_token(session, params, 1))
             return BAD_RESP;
     }
-    User::ResultSet rs = Yb::query<User>(
-            session, Yb::filter_eq(_T("LOGIN"), params["login"]));
+    User::ResultSet rs = Yb::query<User>(session)
+        .filter_by(Yb::filter_eq(_T("LOGIN"), params["login"])).all();
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q != qend)
         return BAD_RESP;
@@ -115,15 +107,15 @@ registration(StringMap &params)
     user.set_pass(md5_hash(params["pass"]));
     user.set_status(boost::lexical_cast<int>(params["status"]));
     session.flush();
-    engine.commit();
+    engine->commit();
     return OK_RESP;
 }
 
 Yb::LongInt
 get_checked_user_by_creds(Yb::Session &session, StringMap &params)
 {
-    User::ResultSet rs = Yb::query<User>(
-            session, Yb::filter_eq(_T("LOGIN"), params["login"]));
+    User::ResultSet rs = Yb::query<User>(session,
+        Yb::filter_eq(_T("LOGIN"), params["login"])).all();
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q == qend)
         return -1;
@@ -135,7 +127,7 @@ get_checked_user_by_creds(Yb::Session &session, StringMap &params)
 string 
 login(StringMap &params)
 {
-    INIT_SESSION;
+    Yb::Session session(Yb::theMetaData::instance(), engine.get());
     Yb::LongInt uid = get_checked_user_by_creds(session, params);
     if (-1 == uid)
         return BAD_RESP;
@@ -150,7 +142,7 @@ login(StringMap &params)
     login_session.set_end_session(Yb::now() + boost::posix_time::hours(11));
     login_session.set_app_name("auth");
     session.flush();
-    engine.commit();
+    engine->commit();
 
     stringstream ss;
     ss << "<token>" << token << "</token>";
@@ -160,7 +152,7 @@ login(StringMap &params)
 string 
 session_info(StringMap &params)
 { 
-    INIT_SESSION;
+    Yb::Session session(Yb::theMetaData::instance(), engine.get());
     Yb::LongInt sid = get_checked_session_by_token(session, params);
     if (-1 == sid)
         return BAD_RESP;
@@ -171,14 +163,14 @@ session_info(StringMap &params)
 string 
 logout(StringMap &params)
 {
-    INIT_SESSION;
+    Yb::Session session(Yb::theMetaData::instance(), engine.get());
     Yb::LongInt sid = get_checked_session_by_token(session, params);
     if (-1 == sid)
         return BAD_RESP;
     LoginSession ls(session, sid);
     ls.delete_object();
     session.flush();
-    engine.commit();
+    engine->commit();
     return OK_RESP;
 }
 
@@ -200,10 +192,14 @@ main()
     }
     try {
         Yb::init_default_meta();
-        g_pool.reset(new Yb::SqlPool(YB_POOL_MAX_SIZE,
+        std::auto_ptr<Yb::SqlPool> pool(new Yb::SqlPool(YB_POOL_MAX_SIZE,
                 YB_POOL_IDLE_TIME, YB_POOL_MONITOR_SLEEP, g_log.get()));
-        g_pool->add_source(Yb::SqlSource("auth_db", "ODBC",
-                    cfg("DBTYPE"), cfg("DB"), cfg("USER"), cfg("PASSWD")));
+        pool->add_source(Yb::SqlSource("auth_db", "ODBC",
+                cfg("DBTYPE"), cfg("DB"), cfg("USER"), cfg("PASSWD")));
+        engine.reset(new Yb::Engine(Yb::Engine::MANUAL, pool, "auth_db"));
+        Yb::Logger::Ptr ormlog = g_log->new_logger("orm");
+        engine->set_echo(true);
+        engine->set_logger(ormlog);
         int port = 9090; // TODO: read from config
         HttpHandlerMap handlers;
         handlers["/session_info"] = session_info;
