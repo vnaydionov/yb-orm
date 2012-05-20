@@ -410,6 +410,18 @@ void Session::flush()
         }
 }
 
+void Session::commit()
+{
+    flush();
+    engine_->commit();
+}
+
+void Session::rollback()
+{
+    //purge();
+    engine_->rollback();
+}
+
 void DataObject::set_session(Session *session)
 {
     YB_ASSERT(!session_);

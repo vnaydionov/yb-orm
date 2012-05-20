@@ -109,8 +109,7 @@ registration(StringMap &params)
     user.set_name(params["name"]);
     user.set_pass(md5_hash(params["pass"]));
     user.set_status(boost::lexical_cast<int>(params["status"]));
-    session.flush();
-    engine->commit();
+    session.commit();
     return OK_RESP;
 }
 
@@ -144,8 +143,7 @@ login(StringMap &params)
     login_session.set_token(boost::lexical_cast<string>(token));
     login_session.set_end_session(Yb::now() + boost::posix_time::hours(11));
     login_session.set_app_name("auth");
-    session.flush();
-    engine->commit();
+    session.commit();
 
     stringstream ss;
     ss << "<token>" << token << "</token>";
@@ -172,8 +170,7 @@ logout(StringMap &params)
         return BAD_RESP;
     LoginSession ls(session, sid);
     ls.delete_object();
-    session.flush();
-    engine->commit();
+    session.commit();
     return OK_RESP;
 }
 

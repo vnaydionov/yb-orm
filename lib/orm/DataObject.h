@@ -80,6 +80,8 @@ public:
     void detach(DataObjectPtr obj);
     DataObjectPtr get_lazy(const Key &key);
     void flush();
+    void commit();
+    void rollback();
     EngineBase *engine() { return engine_.get(); }
     void load_collection(ObjectList &out,
                          const String &table_name,
