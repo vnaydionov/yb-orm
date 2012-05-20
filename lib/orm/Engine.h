@@ -65,6 +65,7 @@ public:
     virtual LongInt get_curr_value(const String &seq_name) = 0;
     virtual LongInt get_next_value(const String &seq_name) = 0;
     virtual SqlDialect *get_dialect() = 0;
+    virtual std::auto_ptr<EngineBase> clone() = 0;
 };
 
 class Engine
@@ -79,10 +80,12 @@ public:
     Engine(Mode work_mode, std::auto_ptr<SqlPool> pool,
            const String &source_id, int timeout = YB_POOL_WAIT_TIME);
     Engine(Mode work_mode, SqlDialect *dialect); // for subclassing
+
     virtual ~Engine();
 
     SqlConnect *get_connect() { return conn_.get(); }
     SqlDialect *get_dialect() { return dialect_; }
+    std::auto_ptr<EngineBase> clone();
     bool is_touched() const { return touched_; }
     void set_echo(bool echo);
     void set_logger(ILogger::Ptr logger);
@@ -135,6 +138,15 @@ public:
     */
 
 private:
+    // clone support
+    Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
+           SqlConnect *conn);
+    Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
+           SqlPool *pool, const String &source_id, int timeout);
+
+    SqlPool *get_pool();
+    SqlConnect *get_conn(bool strict = true);
+
     virtual RowsPtr on_select(const StrList &what,
             const StrList &from, const Filter &where,
             const StrList &group_by, const Filter &having,
@@ -168,12 +180,18 @@ private:
             const String &table, const Filter &where) const;
 
 private:
+    Engine *master_ptr_;
     bool touched_, echo_;
     Mode mode_;
-    std::auto_ptr<SqlConnect> conn_;
-    std::auto_ptr<SqlPool> pool_;
-    SqlDialect *dialect_;
     ILogger::Ptr logger_;
+    std::auto_ptr<SqlPool> pool_;
+    String source_id_;
+    int timeout_;
+    std::auto_ptr<SqlConnect> conn_;
+    ILogger *logger_ptr_;
+    SqlPool *pool_ptr_;
+    SqlConnect *conn_ptr_;
+    SqlDialect *dialect_;
 };
 
 } // namespace Yb

@@ -46,18 +46,21 @@ get_random()
 Yb::LongInt
 get_checked_session_by_token(Yb::Session &session, StringMap &params, int admin_flag=0)
 {
-    LoginSession::ResultSet rs = Yb::query<LoginSession>(session)
-        .filter_by(Yb::filter_eq(_T("TOKEN"), params["token"])).all();
-    LoginSession::ResultSet::iterator q = rs.begin(), qend=rs.end();
+    typedef boost::tuple<LoginSession, User> Pair;
+    Yb::DomainResultSet<Pair> rs = Yb::query<Pair>(session)
+        .filter_by(Yb::filter_eq(_T("TOKEN"), params["token"])
+            && Yb::Filter(_T("USER_ID = T_USER.ID"))).all();
+    Yb::DomainResultSet<Pair>::iterator q = rs.begin(), qend=rs.end();
     if (q == qend)
         return -1;
+    LoginSession &ls = q->get<0>();
     if (admin_flag) {
-        if (q->get_user().get_status() != 0)
+        if (ls.get_user().get_status() != 0)
             return -1;
     }
-    if (Yb::now() >= q->get_end_session())
+    if (Yb::now() >= ls.get_end_session())
         return -1;
-    return q->get_id();
+    return ls.get_id();
 }
 
 string 

@@ -13,64 +13,162 @@ static inline const String cfg(const String &entry)
 EngineBase::~EngineBase()
 {}
 
+Engine::Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
+               SqlConnect *conn)
+    : master_ptr_(master)
+    , touched_(false)
+    , echo_(echo)
+    , mode_(work_mode)
+    , timeout_(0)
+    , logger_ptr_(logger)
+    , pool_ptr_(NULL)
+    , conn_ptr_(conn)
+    , dialect_(conn->get_dialect())
+{
+    conn_ptr_->set_echo(echo_);
+    conn_ptr_->set_logger(logger_ptr_);
+}
+
+Engine::Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
+               SqlPool *pool, const String &source_id, int timeout)
+    : master_ptr_(master)
+    , touched_(false)
+    , echo_(echo)
+    , mode_(work_mode)
+    , source_id_(source_id)
+    , timeout_(timeout)
+    , logger_ptr_(logger)
+    , pool_ptr_(pool)
+    , conn_ptr_(pool->get(source_id, timeout))
+    , dialect_(NULL)
+{
+    if (!conn_ptr_)
+        throw GenericDBError(_T("Can't get connection"));
+    dialect_ = conn_ptr_->get_dialect();
+    conn_ptr_->set_echo(echo_);
+    conn_ptr_->set_logger(logger_ptr_);
+}
+
 Engine::Engine(Mode work_mode)
-    : touched_(false)
+    : master_ptr_(NULL)
+    , touched_(false)
     , echo_(false)
     , mode_(work_mode)
+    , timeout_(0)
     , conn_(new SqlConnect(_T("ODBC"), cfg(_T("DBTYPE")),
                 cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD"))))
+    , logger_ptr_(NULL)
+    , pool_ptr_(NULL)
+    , conn_ptr_(NULL)
     , dialect_(conn_->get_dialect())
 {}
 
 Engine::Engine(Mode work_mode, auto_ptr<SqlConnect> conn)
-    : touched_(false)
+    : master_ptr_(NULL)
+    , touched_(false)
     , echo_(false)
     , mode_(work_mode)
+    , timeout_(0)
     , conn_(conn)
+    , logger_ptr_(NULL)
+    , pool_ptr_(NULL)
+    , conn_ptr_(NULL)
     , dialect_(conn_->get_dialect())
 {}
 
 Engine::Engine(Mode work_mode, auto_ptr<SqlPool> pool,
                const String &source_id, int timeout)
-    : touched_(false)
+    : master_ptr_(NULL)
+    , touched_(false)
     , echo_(false)
     , mode_(work_mode)
-    , conn_(pool->get(source_id, timeout))
     , pool_(pool)
+    , source_id_(source_id)
+    , timeout_(timeout)
+    , logger_ptr_(NULL)
+    , pool_ptr_(NULL)
+    , conn_ptr_(NULL)
     , dialect_(NULL)
-{
-    if (!conn_.get())
-        throw GenericDBError(_T("Can't get connection"));
-    dialect_ = conn_->get_dialect();
-}
+{}
 
 Engine::Engine(Mode work_mode, SqlDialect *dialect)
-    : touched_(false)
+    : master_ptr_(NULL)
+    , touched_(false)
     , echo_(false)
     , mode_(work_mode)
+    , timeout_(0)
+    , logger_ptr_(NULL)
+    , pool_ptr_(NULL)
+    , conn_ptr_(NULL)
     , dialect_(dialect)
 {}
 
 Engine::~Engine()
 {
-    if (pool_.get() && conn_.get())
-        pool_->put(conn_.release());
+    if (conn_ptr_) {
+        SqlPool *pool = get_pool();
+        if (pool)
+            pool->put(conn_ptr_);
+    }
+}
+
+std::auto_ptr<EngineBase>
+Engine::clone()
+{
+    if (master_ptr_)
+        throw GenericDBError(_T("Trying to clone a non master Engine"));
+    if (pool_.get())
+        return std::auto_ptr<EngineBase>(new Engine(mode_, this, echo_, logger_.get(),
+            pool_.get(), source_id_, timeout_));
+    return std::auto_ptr<EngineBase>(new Engine(mode_, this, echo_, logger_.get(),
+        conn_.get()));
+}
+
+SqlPool *
+Engine::get_pool()
+{
+    if (pool_ptr_)
+        return pool_ptr_;
+    if (pool_.get())
+        return pool_.get();
+    return NULL;
+}
+
+SqlConnect *
+Engine::get_conn(bool strict)
+{
+    if (conn_ptr_)
+        return conn_ptr_;
+    if (conn_.get())
+        return conn_.get();
+    if (!strict)
+        return NULL;
+    SqlPool *pool = get_pool();
+    if (!pool)
+        throw GenericDBError(_T("Engine with no connection"));
+    conn_ptr_ = pool->get(source_id_, timeout_);
+    if (!conn_ptr_)
+        throw GenericDBError(_T("Can't get connection"));
+    dialect_ = conn_ptr_->get_dialect();
+    return conn_ptr_;
 }
 
 void
 Engine::set_echo(bool echo)
 {
     echo_ = echo;
-    if (conn_.get())
-        conn_->set_echo(echo_);
+    SqlConnect *conn = get_conn(false);
+    if (conn)
+        conn->set_echo(echo_);
 }
 
 void
 Engine::set_logger(ILogger::Ptr logger)
 {
     logger_ = logger;
-    if (conn_.get())
-        conn_->set_logger(logger.get());
+    SqlConnect *conn = get_conn(false);
+    if (conn)
+        conn->set_logger(logger.get());
 }
 
 SqlResultSet
@@ -87,8 +185,8 @@ Engine::select_iter(const StrList &what,
     Values params;
     do_gen_sql_select(sql, params,
             what, from, where, group_by, having, order_by, for_update);
-    conn_->prepare(sql);
-    SqlResultSet rs = conn_->exec(params);
+    get_conn()->prepare(sql);
+    SqlResultSet rs = get_conn()->exec(params);
     if (select_mode)
         touched_ = true;
     return rs;
@@ -238,9 +336,9 @@ Engine::on_select(const StrList &what,
     Values params;
     do_gen_sql_select(sql, params,
             what, from, where, group_by, having, order_by, for_update);
-    conn_->prepare(sql);
-    conn_->exec(params);
-    return conn_->fetch_rows(max_rows);
+    get_conn()->prepare(sql);
+    get_conn()->exec(params);
+    return get_conn()->fetch_rows(max_rows);
 }
 
 const vector<LongInt>
@@ -257,7 +355,7 @@ Engine::on_insert(const String &table_name,
     do_gen_sql_insert(sql, params, param_nums, table_name,
             rows[0], exclude_fields);
     if (!collect_new_ids) {
-        conn_->prepare(sql);
+        get_conn()->prepare(sql);
         Rows::const_iterator it = rows.begin(), end = rows.end();
         for (; it != end; ++it) {
             Row::const_iterator f = it->begin(), fend = it->end();
@@ -266,22 +364,22 @@ Engine::on_insert(const String &table_name,
                 if (x == exclude_fields.end())
                     params[param_nums[f->first]] = f->second;
             }
-            conn_->exec(params);
+            get_conn()->exec(params);
         }
     }
     else {
         Rows::const_iterator it = rows.begin(), end = rows.end();
         for (; it != end; ++it) {
-            conn_->prepare(sql);
+            get_conn()->prepare(sql);
             Row::const_iterator f = it->begin(), fend = it->end();
             for (; f != fend; ++f) {
                 StringSet::const_iterator x = exclude_fields.find(f->first);
                 if (x == exclude_fields.end())
                     params[param_nums[f->first]] = f->second;
             }
-            conn_->exec(params);
-            conn_->exec_direct(_T("SELECT LAST_INSERT_ID() LID"));
-            RowsPtr id_rows = conn_->fetch_rows();
+            get_conn()->exec(params);
+            get_conn()->exec_direct(_T("SELECT LAST_INSERT_ID() LID"));
+            RowsPtr id_rows = get_conn()->fetch_rows();
             ids.push_back((*id_rows)[0][0].second.as_longint());
         }
     }
@@ -300,7 +398,7 @@ Engine::on_update(const String &table_name,
     ParamNums param_nums;
     do_gen_sql_update(sql, params, param_nums, table_name,
             rows[0], key_fields, exclude_fields, where);
-    conn_->prepare(sql);
+    get_conn()->prepare(sql);
     Rows::const_iterator it = rows.begin(), end = rows.end();
     for (; it != end; ++it) {
         Row::const_iterator f = it->begin(), fend = it->end();
@@ -309,7 +407,7 @@ Engine::on_update(const String &table_name,
             if (x == exclude_fields.end())
                 params[param_nums[f->first]] = f->second;
         }
-        conn_->exec(params);
+        get_conn()->exec(params);
     }
 }
 
@@ -319,26 +417,26 @@ Engine::on_delete(const String &table_name, const Filter &where)
     String sql;
     Values params;
     do_gen_sql_delete(sql, params, table_name, where);
-    conn_->prepare(sql);
-    conn_->exec(params);
+    get_conn()->prepare(sql);
+    get_conn()->exec(params);
 }
 
 void
 Engine::on_exec_proc(const String &proc_code)
 {
-    conn_->exec_direct(proc_code);
+    get_conn()->exec_direct(proc_code);
 }
 
 void
 Engine::on_commit()
 {
-    conn_->commit();
+    get_conn()->commit();
 }
 
 void
 Engine::on_rollback()
 {
-    conn_->rollback();
+    get_conn()->rollback();
 }
 
 void

@@ -59,7 +59,7 @@ class Session: boost::noncopyable {
     Objects objects_;
     IdentityMap identity_map_;
     const Schema *schema_;
-    EngineBase *engine_;
+    std::auto_ptr<EngineBase> engine_;
     DataObjectPtr add_to_identity_map(DataObjectPtr obj, bool return_found);
     void flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs);
     void flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs);
@@ -67,10 +67,12 @@ class Session: boost::noncopyable {
     void flush_update(IdentityMap &idmap_copy);
     void flush_delete(IdentityMap &idmap_copy);
 public:
-    Session(const Schema &schema, EngineBase *engine = NULL):
-        schema_(&schema),
-        engine_(engine)
-    {}
+    Session(const Schema &schema, EngineBase *engine = NULL)
+        : schema_(&schema)
+    {
+        if (engine)
+            engine_ = engine->clone();
+    }
     ~Session();
     const Schema &schema() const { return *schema_; }
     void save(DataObjectPtr obj);
@@ -78,7 +80,7 @@ public:
     void detach(DataObjectPtr obj);
     DataObjectPtr get_lazy(const Key &key);
     void flush();
-    EngineBase *engine() { return engine_; }
+    EngineBase *engine() { return engine_.get(); }
     void load_collection(ObjectList &out,
                          const String &table_name,
                          const Filter &filter, 
