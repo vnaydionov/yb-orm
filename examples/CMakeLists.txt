@@ -24,6 +24,10 @@ add_executable (example2 example2.cpp
 set_source_files_properties (
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/OrderItem.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Product.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/ProductGroup.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Contract.cpp
     PROPERTIES GENERATED 1)
 
 add_dependencies (example1 generate_domain)

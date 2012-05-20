@@ -364,7 +364,7 @@ void tuple_tables(const boost::tuples::cons<H, T> &item, Strings &tables)
 }
 
 template <class R>
-class QueryFunc;
+struct QueryFunc;
 
 template <class T0, class T1, class T2, class T3, class T4,
           class T5, class T6, class T7, class T8, class T9>
@@ -394,47 +394,48 @@ struct QueryFunc {
 };
 
 template <class R>
-class Query {
+class QueryObj {
+    typedef QueryFunc<R> QF;
     Session &session_;
     Filter filter_;
     StrList order_;
     int max_;
 public:
-    Query(Session &session, const Filter &filter = Filter(),
+    QueryObj(Session &session, const Filter &filter = Filter(),
             const StrList &order = StrList(), int max = -1)
         : session_(session)
         , filter_(filter)
         , order_(order)
         , max_(max)
     {}
-    Query filter_by(const Filter &filter) {
-        Query q(*this);
+    QueryObj filter_by(const Filter &filter) {
+        QueryObj q(*this);
         if (q.filter_.is_empty())
             q.filter_ = filter;
         else
             q.filter_ = q.filter_ && filter;
         return q;
     }
-    Query order_by(const StrList &order) {
-        Query q(*this);
+    QueryObj order_by(const StrList &order) {
+        QueryObj q(*this);
         q.order_ = order;
         return q;
     }
-    Query max_rows(int max) {
-        Query q(*this);
+    QueryObj max_rows(int max) {
+        QueryObj q(*this);
         q.max_ = max;
         return q;
     }
     DomainResultSet<R> all() {
-        return QueryFunc<R>::query(session_, filter_, order_, max_);
+        return QF::query(session_, filter_, order_, max_);
     }
 };
 
 template <class R>
-Query<R> query(Session &session, const Filter &filter = Filter(),
+QueryObj<R> query(Session &session, const Filter &filter = Filter(),
     const StrList &order = StrList(), int max = -1)
 {
-    return Query<R>(session, filter, order, max);
+    return QueryObj<R>(session, filter, order, max);
 }
 
 template <class Obj>

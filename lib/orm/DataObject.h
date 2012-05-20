@@ -71,7 +71,7 @@ public:
         : schema_(&schema)
     {
         if (engine)
-            engine_ = engine->clone();
+            engine_.reset(engine->clone().release());
     }
     ~Session();
     const Schema &schema() const { return *schema_; }
