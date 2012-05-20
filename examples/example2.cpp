@@ -95,6 +95,7 @@ int main()
     using namespace Domain;
     using namespace Yb;
 
+#if !defined(__BORLANDC__)
     DomainResultSet<boost::tuple<Order, Client> > rs0 =
         query<boost::tuple<Order, Client> >(session).filter_by(
             filter_eq(_T("T_CLIENT.ID"), c2.get_id()) &&
@@ -106,6 +107,7 @@ int main()
     for (; p != pend; ++p)
         cout << p->get<0>().get_id() << "/" << p->get<1>().get_id() << ",";
     cout << endl;
+#endif
 
     Domain::Order::ListPtr olist = Domain::Order::find(
         session, Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2.get_id()));
