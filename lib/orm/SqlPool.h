@@ -32,6 +32,8 @@ private:
     std::map<String, SqlSource> sources_;
     std::map<String, int> counts_;
     typedef std::deque<SqlConnectPtr> Pool;
+    std::deque<String> connects_for_open_;
+    std::deque<SqlConnectPtr> connects_for_delete_;
     std::map<String, Pool> pools_;
     boost::mutex pool_mux_, stop_mux_;
     boost::condition pool_cond_, stop_cond_;

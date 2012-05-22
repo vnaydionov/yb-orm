@@ -54,9 +54,61 @@ SqlPool::monitor_thread()
     block_sigpipe();
     LOG(ll_INFO, _T("monitor thread started"));
     while (sleep_not_stop()) {
+        //LOG(ll_DEBUG, _T("monitor wake"));
         String del_source_id;
         SqlConnectPtr del_handle = NULL;
         int del_count = 0, del_pool_sz = 0;
+        // process all 'open' requests
+        while (1) {
+            //LOG(ll_DEBUG, _T("looking for connects_for_open_"));
+            String id;
+            {
+                boost::mutex::scoped_lock lock(stop_mux_);
+                if (!connects_for_open_.empty()) {
+                    id = connects_for_open_.front();
+                    connects_for_open_.pop_front();
+                }
+            }
+            if (id.empty())
+                break;
+            map<String, SqlSource>::iterator src = sources_.find(id);
+            if (sources_.end() == src) {
+                LOG(ll_ERROR, _T("unknown source") << format_stats(id));
+                continue;
+            }
+            try {
+                LOG(ll_DEBUG, _T("opening new connection") << format_stats(id));
+                SqlConnectPtr handle = new SqlConnect(src->second);
+                handle->free_since_ = time(NULL);
+                boost::mutex::scoped_lock lock(pool_mux_);
+                ++counts_[id];
+                LOG(ll_INFO, _T("opened new connection") << get_stats(id));
+                --counts_[id];
+                pools_[id].push_back(handle);
+                pool_cond_.notify_one();
+            }
+            catch (const std::exception &e) {
+                LOG(ll_ERROR, _T("connect error") << format_stats(id)
+                        << _T(" ") << WIDEN(e.what()));
+            }
+        }
+        // process all 'forced close' requests
+        while (1) {
+            //LOG(ll_DEBUG, _T("looking for connects_for_delete_"));
+            del_handle = NULL;
+            {
+                boost::mutex::scoped_lock lock(stop_mux_);
+                if (!connects_for_delete_.empty()) {
+                    del_handle = connects_for_delete_.front();
+                    connects_for_delete_.pop_front();
+                }
+            }
+            if (!del_handle)
+                break;
+            delete del_handle;
+            LOG(ll_INFO, _T("forced close connection"));
+        }
+        // processing 'idle close'
         {
             boost::mutex::scoped_lock lock(pool_mux_);
             map<String, Pool>::iterator i = pools_.begin(), iend = pools_.end();
@@ -114,7 +166,9 @@ SqlPool::sleep_not_stop(void)
         boost::xtime xt;
         boost::xtime_get(&xt, boost::TIME_UTC);
         xt.sec += monitor_sleep_;
-        if (!stop_cond_.timed_wait(lock, xt))
+        if (!stop_cond_.timed_wait(lock, xt) ||
+                !connects_for_open_.empty() ||
+                !connects_for_delete_.empty())
             return true;
     }
     return false;
@@ -152,22 +206,40 @@ SqlPool::add_source(const SqlSource &source)
 SqlPool::SqlConnectPtr
 SqlPool::get(const String &id, int timeout)
 {
+    //LOG(ll_DEBUG, _T("SqlPool::get()"));
     map<String, SqlSource>::iterator src = sources_.find(id);
     if (sources_.end() == src)
         throw GenericDBError(_T("Unknown source ID: ") + id);
-    boost::mutex::scoped_lock lock(pool_mux_);
+    String stats;
+    {
+        boost::mutex::scoped_lock lock(pool_mux_);
+        stats = get_stats(id); // can do this only when pool_mux_ is locked
+    }
     boost::xtime xt;
-    if (!pools_[id].size() && counts_[id] >= pool_max_size_) {
-        if (timeout > 0) {
-            LOG(ll_INFO, _T("waiting for connection ")
-                    << timeout << _T(" sec") << get_stats(id));
+    if (!pools_[id].size()) {
+        if (counts_[id] >= pool_max_size_) {
+            if (timeout > 0) {
+                LOG(ll_INFO, _T("waiting for connection ")
+                        << timeout << _T(" sec") << stats);
+                boost::xtime_get(&xt, boost::TIME_UTC);
+                xt.sec += timeout;
+            }
+            else
+                LOG(ll_INFO, _T("waiting for connection forever") << stats);
+        }
+        else {
+            timeout = 5; // new connection timeout
+            LOG(ll_DEBUG, _T("waiting for new connection ")
+                    << timeout << _T(" sec") << stats);
             boost::xtime_get(&xt, boost::TIME_UTC);
             xt.sec += timeout;
+            boost::mutex::scoped_lock lock(stop_mux_);
+            connects_for_open_.push_back(id);
+            stop_cond_.notify_all();
         }
-        else
-            LOG(ll_INFO, _T("waiting for connection forever") << get_stats(id));
     }
-    while (!pools_[id].size() && counts_[id] >= pool_max_size_) {
+    boost::mutex::scoped_lock lock(pool_mux_);
+    while (!pools_[id].size()) {
         if (timeout > 0) {
             if (!pool_cond_.timed_wait(lock, xt))
                 return NULL;
@@ -176,25 +248,10 @@ SqlPool::get(const String &id, int timeout)
             pool_cond_.wait(lock);
     }
     SqlConnectPtr handle = NULL;
-    if (pools_[id].size()) {
-        handle = pools_[id].front();
-        ++counts_[id];
-        pools_[id].pop_front();
-        LOG(ll_INFO, _T("got connection") << get_stats(id));
-    } 
-    else {
-        LOG(ll_DEBUG, _T("opening new connection") << get_stats(id));
-        try {
-            handle = new SqlConnect(src->second);
-            ++counts_[id];
-            LOG(ll_INFO, _T("opened new connection") << get_stats(id));
-            // TODO: optional post-connect initialization
-        } 
-        catch (const std::exception &e) {
-            LOG(ll_ERROR, _T("connect error") << format_stats(id)
-                    << _T(" ") << e.what());
-        }
-    }
+    handle = pools_[id].front();
+    ++counts_[id];
+    pools_[id].pop_front();
+    LOG(ll_INFO, _T("got connection") << get_stats(id));
     return handle;
 }
 
@@ -229,9 +286,9 @@ SqlPool::put(SqlConnectPtr handle, bool close_now)
     }
     if (del_handle) {
         LOG(ll_DEBUG, _T("forced closing connection") << format_stats(id));
-        delete del_handle;
-        LOG(ll_INFO, _T("forced closed connection")
-                << format_stats(id, del_count, del_pool_sz));
+        boost::mutex::scoped_lock lock(stop_mux_);
+        connects_for_delete_.push_back(del_handle);
+        stop_cond_.notify_all();
     }
 }
 
