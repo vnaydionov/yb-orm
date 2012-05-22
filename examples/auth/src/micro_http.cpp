@@ -45,6 +45,7 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
         string buf = cl_sock.readline();
         logger->debug(buf);
         int cont_len = -1;
+        string cont_type = "";
         while (1) { // skip to request's body
             string s = cl_sock.readline();
             if (s == "\r\n" || s == "\n")
@@ -62,9 +63,21 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
                         string("couldn't parse CONTENT-LENGTH: ") + ex.what());
                 }
             }
+            if (starts_with(str_to_upper(s), "CONTENT-TYPE: ")) {
+                try {
+                    Strings parts;
+                    split_str_by_chars(s, ": ", parts, 2);
+                    cont_type = trim_trailing_space(parts[1]);
+                }
+                catch (const std::exception &ex) {
+                    logger->warning(
+                        string("couldn't parse CONTENT-TYPE: ") + ex.what());
+                }
+            }
         }
         // parse request
         StringMap rez = parse_http(buf);
+        rez["&content-type"] = cont_type;
         if (rez["&method"].compare("GET") && rez["&method"].compare("POST")) {
             logger->error("unsupported method \"" + rez["&method"] + "\"");
             send_response(cl_sock, *logger, 400, "Bad request", BAD_RESP);
@@ -72,9 +85,12 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
         else {
             if (!rez["&method"].compare("POST") && cont_len > 0) {
                 string post_data = cl_sock.read(cont_len);
-                StringMap params = parse_params(post_data);
-                for (StringMap::iterator i = params.begin(); i != params.end(); ++i)
-                    rez[i->first] = i->second;
+                if (!cont_type.compare("application/x-www-form-urlencoded")) {
+                    StringMap params = parse_params(post_data);
+                    for (StringMap::iterator i = params.begin(); i != params.end(); ++i)
+                        rez[i->first] = i->second;
+                } else
+                    rez["&post-data"] = post_data;
             }
             HttpHandlerMap::const_iterator it = handlers->find(rez["&uri"]);
             if (it == handlers->end()) {
@@ -90,7 +106,9 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
     }
     catch (const SocketEx &ex) {
         logger->error(string("socket error: ") + ex.what());
-        send_response(cl_sock, *logger, 400, "Short read", BAD_RESP);
+        //if connection is closed by peer - this is killing the whole process:
+        //send_response(cl_sock, *logger, 400, "Short read", BAD_RESP);
+        cl_sock.close(true);
     }
     catch (const ParserEx &ex) {
         logger->error(string("parser error: ") + ex.what());
