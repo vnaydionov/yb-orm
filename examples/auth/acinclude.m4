@@ -189,14 +189,21 @@ AC_DEFUN([YB_BOOST_THREAD],
         AC_MSG_RESULT([yes])
         ifelse([$1], , :, [$1])
     ], [
-        LIBS="$ac_save_libs -lboost_thread"
+        LIBS="$ac_save_libs -lboost_thread-mt"
         YB_TRY_LINK_BOOST_THREAD([
-            BOOST_LIBS_R="$BOOST_LIBS_R -lboost_thread"
+            BOOST_LIBS_R="$BOOST_LIBS_R -lboost_thread-mt"
             AC_MSG_RESULT([yes])
             ifelse([$1], , :, [$1])
         ], [
-            AC_MSG_RESULT([no])
-            ifelse([$2], , :, [$2])
+            LIBS="$ac_save_libs -lboost_thread"
+            YB_TRY_LINK_BOOST_THREAD([
+                BOOST_LIBS_R="$BOOST_LIBS_R -lboost_thread"
+                AC_MSG_RESULT([yes])
+                ifelse([$1], , :, [$1])
+            ], [
+                AC_MSG_RESULT([no])
+                ifelse([$2], , :, [$2])
+            ])
         ])
     ])
 
@@ -232,10 +239,14 @@ AC_DEFUN([YB_BOOST_DATETIME],
         AC_MSG_RESULT([yes])
         ifelse([$1], , :, [$1])
     ], [
-        LIBS="$ac_save_libs -lboost_date_time"
+        if test "x$use_boost_mt" = "xno" ; then
+            LIBS="$ac_save_libs -lboost_date_time"
+        else
+            LIBS="$ac_save_libs -lboost_date_time-mt"
+        fi
         YB_TRY_LINK_BOOST_DATETIME([
             BOOST_LIBS="$BOOST_LIBS -lboost_date_time"
-            BOOST_LIBS_R="$BOOST_LIBS_R -lboost_date_time"
+            BOOST_LIBS_R="$BOOST_LIBS_R -lboost_date_time-mt"
             AC_MSG_RESULT([yes])
             ifelse([$1], , :, [$1])
         ], [

@@ -40,10 +40,10 @@ Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 mysql> create database test1_db default charset utf8;
 Query OK, 1 row affected (0.00 sec)
 
-mysql> create user test1 identified by "test1_pwd";
+mysql> create user 'test1'@'localhost' identified by "test1_pwd";
 Query OK, 0 rows affected (0.00 sec)
 
-mysql> grant all on test1_db.* to test1;
+mysql> grant all on test1_db.* to 'test1'@'localhost';
 Query OK, 0 rows affected (0.00 sec)
 
 mysql> exit
