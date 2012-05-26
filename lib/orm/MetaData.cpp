@@ -105,10 +105,9 @@ Table::Table(const String &name, const String &xml_name,
 const String &
 Table::get_unique_pk() const
 {
-    StringSet::const_iterator i = pk_fields_.begin();
     if (pk_fields_.size() != 1)
         throw AmbiguousPK(get_name());
-    return *i;
+    return *pk_fields_.begin();
 }
 
 void
@@ -130,7 +129,7 @@ Table::add_column(const Column &column)
     }
     cols_[idx].table(*this);
     if (column.is_pk())
-        pk_fields_.insert(column_uname);
+        pk_fields_.push_back(column_uname);
 }
 
 size_t
@@ -175,21 +174,19 @@ Table::get_synth_pk() const
     return pk_name;
 }
 
-const String
-Table::get_fk_for(const Relation *rel) const
+Strings &
+Table::get_fk_for(const Relation &rel, Strings &fkey_parts) const
 {
-    vector<String> parts;
-    Columns::const_iterator i = begin(), iend = end();
-    const String &master_tbl = rel->table(0).get_name();
-    for (; i != iend; ++i)
-        if (i->has_fk()
-            && i->get_fk_table_name() == master_tbl
-            && (!rel->has_attr(1, _T("key"))
-                || rel->attr(1, _T("key")) == i->get_name()))
-        {
-            parts.push_back(i->get_name());
-        }
-    return StrUtils::join_str(_T(","), parts);
+    const String &master_tbl = rel.table(0).get_name();
+    if (rel.has_attr(1, _T("key")))
+        StrUtils::split_str(rel.attr(1, _T("key")), _T(","), fkey_parts);
+    else {
+        Columns::const_iterator i = begin(), iend = end();
+        for (; i != iend; ++i)
+            if (i->has_fk() && i->get_fk_table_name() == master_tbl)
+                fkey_parts.push_back(i->get_name());
+    }
+    return fkey_parts;
 }
 
 const String
@@ -346,14 +343,15 @@ Schema::fill_fkeys()
     }
     RelVect::iterator l = relations_.begin(), lend = relations_.end();
     for (; l != lend; ++l) {
-        Table *t1 = const_cast<Table *> (&find_table_by_class((*l)->side(0))),
-              *t2 = const_cast<Table *> (&find_table_by_class((*l)->side(1)));
-        (*l)->set_tables(t1, t2);
-        if ((*l)->type() == Relation::ONE2MANY) {
-            String fk = t2->get_fk_for((*l).get());
-            if (fk.empty())
-                throw FkNotFoundInMetaData(t1->get_name(), t2->get_name());
-            t1->get_unique_pk();
+        Relation &r = **l;
+        Table *t0 = const_cast<Table *> (&find_table_by_class(r.side(0))),
+              *t1 = const_cast<Table *> (&find_table_by_class(r.side(1)));
+        r.set_tables(t0, t1);
+        if (r.type() == Relation::ONE2MANY) {
+            Strings fkey_parts;
+            t1->get_fk_for(r, fkey_parts);
+            if (!fkey_parts.size() || fkey_parts.size() != t0->pk_fields().size())
+                throw FkNotFoundInMetaData(t0->get_name(), t1->get_name());
         }
     }
 }

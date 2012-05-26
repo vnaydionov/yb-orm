@@ -232,6 +232,7 @@ public:
         set(table_.idx_by_name(name), v);
     }
     const Key &key();
+    Key fk_value_for(const Relation &r);
     const Row values(bool include_key=true);
     bool assigned_key();
     SlaveRelations &slave_relations() {

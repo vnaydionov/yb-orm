@@ -49,7 +49,7 @@ public:
     virtual void update(
         const String &table_name,
         const Rows &rows,
-        const StringSet &key_fields,
+        const Strings &key_fields,
         const StringSet &exclude_fields = StringSet(),
         const Filter &where = Filter()) = 0;
     virtual void delete_from(
@@ -111,7 +111,7 @@ public:
             const Rows &rows, const StringSet &exclude_fields = StringSet(),
             bool collect_new_ids = false);
     void update(const String &table_name,
-            const Rows &rows, const StringSet &key_fields,
+            const Rows &rows, const Strings &key_fields,
             const StringSet &exclude_fields = StringSet(),
             const Filter &where = Filter());
     void delete_from(const String &table_name, const Filter &where);
@@ -157,7 +157,7 @@ private:
             const Rows &rows, const StringSet &exclude_fields,
             bool collect_new_ids);
     virtual void on_update(const String &table_name,
-            const Rows &rows, const StringSet &key_fields,
+            const Rows &rows, const Strings &key_fields,
             const StringSet &exclude_fields, const Filter &where);
     virtual void on_delete(const String &table_name,
             const Filter &where);
@@ -170,7 +170,7 @@ private:
             const Row &row, const StringSet &exclude_fields) const;
     virtual void do_gen_sql_update(String &sql, Values &params,
             ParamNums &param_nums, const String &table_name,
-            const Row &row, const StringSet &key_fields,
+            const Row &row, const Strings &key_fields,
             const StringSet &exclude_fields, const Filter &where) const;
     virtual void do_gen_sql_select(String &sql, Values &params,
             const StrList &what, const StrList &from, const Filter &where,

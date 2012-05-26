@@ -198,7 +198,7 @@ public:
     const String &get_unique_pk() const;
     const String find_synth_pk() const;
     const String get_synth_pk() const;
-    const String get_fk_for(const Relation *rel) const;
+    Strings &get_fk_for(const Relation &rel, Strings &fkey_parts) const;
     int get_depth() const { return depth_; }
     void add_column(const Column &column);
     void set_seq_name(const String &seq_name);
@@ -207,7 +207,7 @@ public:
     void set_xml_name(const String &xml_name) { xml_name_ = xml_name; }
     void set_class_name(const String &class_name) { class_name_ = class_name; }
     void set_depth(int depth) { depth_ = depth; }
-    const StringSet &pk_fields() const { return pk_fields_; }
+    const Strings &pk_fields() const { return pk_fields_; }
     const Key mk_key(const ValueMap &key_fields) const;
     const Key mk_key(LongInt id) const;
     void refresh();
@@ -219,7 +219,7 @@ private:
     bool autoinc_;
     Columns cols_;
     IndexMap indicies_;
-    StringSet pk_fields_;
+    Strings pk_fields_;
     int depth_;
     Schema *schema_;
 };

@@ -232,7 +232,7 @@ public:
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
-                _T("T"), row, StringSet(), StringSet(), filter_eq(_T("B"), Value(_T("b"))));
+                _T("T"), row, Strings(), StringSet(), filter_eq(_T("B"), Value(_T("b"))));
         CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET A = ? WHERE (B = ?)"), NARROW(sql));
         CPPUNIT_ASSERT(2 == params.size()
                 && Value(_T("a")) == params[0] && Value(_T("b")) == params[1]);
@@ -250,9 +250,10 @@ public:
         row.push_back(make_pair(String(_T("D")), Value(_T("d"))));
         row.push_back(make_pair(String(_T("E")), Value(_T("e"))));
         row.push_back(make_pair(String(_T("F")), Value(2)));
-        StringSet key, exclude;
-        key.insert(_T("B"));
-        key.insert(_T("D"));
+        Strings key;
+        key.push_back(_T("B"));
+        key.push_back(_T("D"));
+        StringSet exclude;
         exclude.insert(_T("A"));
         exclude.insert(_T("C"));
         Values params;
@@ -276,7 +277,7 @@ public:
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
-                _T("A"), Row(), StringSet(), StringSet(), Filter());
+                _T("A"), Row(), Strings(), StringSet(), Filter());
     }
 
     void test_update_wo_clause()
@@ -288,7 +289,7 @@ public:
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
-                _T("T"), row, StringSet(), StringSet(), Filter());
+                _T("T"), row, Strings(), StringSet(), Filter());
     }
 
     void test_delete()
@@ -373,8 +374,9 @@ public:
         row.push_back(make_pair(String(_T("C")), Value(Decimal(_T("1.3")))));
         row.push_back(make_pair(String(_T("ID")), Value(record_id_)));
         rows.push_back(row);
-        StringSet key, exclude;
-        key.insert(_T("ID"));
+        Strings key;
+        key.push_back(_T("ID"));
+        StringSet exclude;
         exclude.insert(_T("B"));
         engine.update(_T("T_ORM_TEST"), rows, key, exclude);
         CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
@@ -397,7 +399,7 @@ public:
     void test_update_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
-        engine.update(_T(""), Rows(), StringSet(), StringSet());
+        engine.update(_T(""), Rows(), Strings(), StringSet());
     }
     
     void test_selforupdate_ro_mode()

@@ -45,6 +45,7 @@ bool DataObjectResultSet::fetch(ObjectList &row)
     }
     row.swap(new_row);
     ++*it_;
+
     return true;
 }
 
@@ -103,8 +104,7 @@ DataObjectPtr Session::add_to_identity_map(DataObjectPtr obj, bool return_found)
                 if (!c.is_pk())
                     eobj->values_[i] = obj->values_[i];
             }
-            if (eobj->status_ == DataObject::Sync)
-                eobj->status_ = DataObject::Dirty;
+            eobj->status_ = obj->status_;
             return eobj;
         }
         identity_map_[key] = obj;
@@ -463,22 +463,23 @@ void DataObject::set(int i, const Value &v)
     }
     if (c.is_ro() && !c.is_pk())
         throw ReadOnlyColumn(table_.get_name(), c.get_name());
+    Value new_value;
     if (c.get_type() == Value::STRING) {
         String s = v.as_string();
         if (c.get_size() && c.get_size() < s.size())
             throw StringTooLong(table_.get_name(), c.get_name(),
                                 c.get_size(), s);
-        values_[i] = Value(s);
-    }
-    else {
-        values_[i] = get_typed_value(c, v);
-    }
-    //values_[i] = v;
-    if (c.is_pk()) {
-        update_key();
+        new_value = Value(s);
     }
     else
-        touch();
+        new_value = get_typed_value(c, v);
+    if (values_[i] != new_value) {
+        values_[i] = new_value;
+        if (c.is_pk())
+            update_key();
+        else
+            touch();
+    }
 }
 
 void DataObject::update_key()
@@ -583,7 +584,12 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     ro->slave_objects().insert(slave);
     slave->slave_relations().insert(ro);
     slave->calc_depth(master->depth() + 1, master);
-    slave->touch();
+    if (slave->status() == DataObject::Sync &&
+        (master->status() == DataObject::New ||
+         slave->fk_value_for(ro->relation_info()) != master->key()))
+    {
+        slave->touch();
+    }
 }
 
 void DataObject::link(DataObject *master, DataObject::Ptr slave,
@@ -597,6 +603,20 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     link(master, slave, *r);
 }
 
+Key DataObject::fk_value_for(const Relation &r)
+{
+    const Table &master_tbl = r.table(0),
+        &slave_tbl = table_;
+    Strings parts;
+    slave_tbl.get_fk_for(r, parts);
+    Strings::const_iterator i = parts.begin(), iend = parts.end(),
+        j = master_tbl.pk_fields().begin(), jend = master_tbl.pk_fields().end();
+    ValueMap fk_values;
+    for (; i != iend && j != jend; ++i, ++j)
+        fk_values[*j] = get(*i);
+    return Key(master_tbl.get_name(), fk_values);
+}
+
 DataObject::Ptr DataObject::get_master(
     DataObject::Ptr obj, const String &relation_name)
 {
@@ -608,18 +628,7 @@ DataObject::Ptr DataObject::get_master(
         (obj->table_.get_class(), relation_name, _T(""), 1);
     YB_ASSERT(r != NULL);
     // Find FK value.
-    String fk = obj->table_.get_fk_for(r);
-    Strings parts;
-    StrUtils::split_str(fk, _T(","), parts);
-    ValueMap fk_values;
-    Strings::iterator i = parts.begin(),
-        end = parts.end();
-    const Table &master_tbl = r->table(0);
-    // TODO: support compound foreign keys
-    //for (; i != end; ++i)
-    //    fk_values[*i] = get(*i);
-    fk_values[master_tbl.get_unique_pk()] = obj->get(*i);
-    Key fkey(master_tbl.get_name(), fk_values);
+    Key fkey = obj->fk_value_for(*r);
     DataObject::Ptr master = obj->session_->get_lazy(fkey);
     link(master.get(), obj, *r);
     return master;
@@ -734,10 +743,9 @@ void DataObject::exclude_from_slave_relations()
 
 void DataObject::set_free_from(RelationObject *rel)
 {
-    String fk = table_.get_fk_for(&rel->relation_info());
     Strings parts;
-    StrUtils::split_str(fk, _T(","), parts);
-    Strings::iterator i = parts.begin(), end = parts.end();
+    table_.get_fk_for(rel->relation_info(), parts);
+    Strings::const_iterator i = parts.begin(), end = parts.end();
     for (; i != end; ++i)
         set(*i, Value());
 }
@@ -785,10 +793,12 @@ const Key RelationObject::gen_fkey() const
     const Table &master_tbl = relation_info_.table(0),
         &slave_tbl = relation_info_.table(1);
     Strings parts;
-    StrUtils::split_str(slave_tbl.get_fk_for(&relation_info_), _T(","), parts);
-    // TODO: support compound foreign keys
+    slave_tbl.get_fk_for(relation_info_, parts);
+    Strings::const_iterator i = parts.begin(), iend = parts.end(),
+        j = master_tbl.pk_fields().begin(), jend = master_tbl.pk_fields().end();
     ValueMap fk_values;
-    fk_values[*parts.begin()] = master_object_->get(master_tbl.get_unique_pk());
+    for (; i != iend && j != jend; ++i, ++j)
+        fk_values[*i] = master_object_->get(*j);
     return Key(slave_tbl.get_name(), fk_values);
 }
 
@@ -844,15 +854,16 @@ void RelationObject::refresh_slaves_fkeys()
 {
     const Table &master_tbl = relation_info_.table(0),
         &slave_tbl = relation_info_.table(1);
-    String pk = master_tbl.get_synth_pk();
-    Value pk_val = master_object_->get(pk);
     Strings parts;
-    StrUtils::split_str(slave_tbl.get_fk_for(&relation_info_), _T(","), parts);
-    String fk = *parts.begin();
-    SlaveObjects::iterator i = slave_objects_.begin(),
-        iend = slave_objects_.end();
-    for (; i != iend; ++i)
-        (*i)->set(fk, pk_val);
+    slave_tbl.get_fk_for(relation_info_, parts);
+    SlaveObjects::iterator k = slave_objects_.begin(),
+        kend = slave_objects_.end();
+    for (; k != kend; ++k) {
+        Strings::const_iterator i = parts.begin(), iend = parts.end(),
+            j = master_tbl.pk_fields().begin(), jend = master_tbl.pk_fields().end();
+        for (; i != iend && j != jend; ++i, ++j)
+            (*k)->set(*i, master_object_->get(*j));
+    }
 }
 
 void RelationObject::exclude_slave(DataObject *obj)

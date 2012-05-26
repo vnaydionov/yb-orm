@@ -1,4 +1,5 @@
 #include <sstream>
+#include <algorithm>
 #include <util/str_utils.hpp>
 #include <orm/Engine.h>
 
@@ -223,7 +224,7 @@ Engine::insert(const String &table_name,
 
 void
 Engine::update(const String &table_name,
-        const Rows &rows, const StringSet &key_fields,
+        const Rows &rows, const Strings &key_fields,
         const StringSet &exclude_fields, const Filter &where)
 {
     if (mode_ == READ_ONLY)
@@ -388,7 +389,7 @@ Engine::on_insert(const String &table_name,
 
 void
 Engine::on_update(const String &table_name,
-        const Rows &rows, const StringSet &key_fields,
+        const Rows &rows, const Strings &key_fields,
         const StringSet &exclude_fields, const Filter &where)
 {
     if (!rows.size())
@@ -502,7 +503,7 @@ Engine::do_gen_sql_insert(String &sql, Values &params,
 void
 Engine::do_gen_sql_update(String &sql, Values &params,
         ParamNums &param_nums, const String &table_name,
-        const Row &row, const StringSet &key_fields,
+        const Row &row, const Strings &key_fields,
         const StringSet &exclude_fields, const Filter &where) const
 {
     if (key_fields.empty() && (where.get_sql() == Filter().get_sql()))
@@ -516,10 +517,11 @@ Engine::do_gen_sql_update(String &sql, Values &params,
     sql_query << _T("UPDATE ") << table_name << _T(" SET ");
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it) {
-        StringSet::const_iterator x = exclude_fields.find(it->first),
-            y = key_fields.find(it->first);
-        if ((x == exclude_fields.end()) && (y == key_fields.end()))
+        if (exclude_fields.find(it->first) == exclude_fields.end() &&
+            std::find(key_fields.begin(), key_fields.end(), it->first) == key_fields.end())
+        {
             excluded_row.push_back(make_pair(it->first, it->second));
+        }
     }
 
     Row::const_iterator last = excluded_row.end();
@@ -544,9 +546,8 @@ Engine::do_gen_sql_update(String &sql, Values &params,
         if (!key_fields.empty())
             where_sql << _T(" AND ");
     }
-    StringSet::const_iterator it_where = key_fields.begin(),
-        end_where = key_fields.end();
-    StringSet::const_iterator it_last =
+    Strings::const_iterator it_where = key_fields.begin(), end_where = key_fields.end();
+    Strings::const_iterator it_last =
         (key_fields.empty()) ? key_fields.end() : --key_fields.end();
     for (; it_where != end_where; ++it_where) {
         Row::const_iterator it_find = find_in_row(row, *it_where);
