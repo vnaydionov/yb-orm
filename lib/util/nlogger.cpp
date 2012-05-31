@@ -9,7 +9,6 @@
 #include <time.h>
 #include <stdio.h>
 #include <sstream>
-#include <boost/lexical_cast.hpp>
 #include <util/nlogger.h>
 
 namespace Yb {
@@ -75,8 +74,8 @@ struct tm *localtime_safe(const time_t *clock, struct tm *result)
     if (!localtime_r(clock, result))
         return NULL;
 #else
-    static boost::mutex m;
-    boost::mutex::scoped_lock lock(m);
+    static Mutex m;
+    ScopedLock lock(m);
     struct tm *r = localtime(clock);
     if (!r)
         return NULL;
@@ -262,7 +261,7 @@ LogAppender::~LogAppender()
 
 void LogAppender::append(const LogRecord &rec)
 {
-    boost::mutex::scoped_lock lk(queue_mutex_);
+    ScopedLock lk(queue_mutex_);
     queue_.push_back(rec);
     time_t now = time(NULL);
     if (should_flush(now))
@@ -271,7 +270,7 @@ void LogAppender::append(const LogRecord &rec)
 
 void LogAppender::flush()
 {
-    boost::mutex::scoped_lock lk(queue_mutex_);
+    ScopedLock lk(queue_mutex_);
     time_t now = time(NULL);
     do_flush(now);
 }
@@ -292,7 +291,7 @@ int main()
         sleep(2);
         for (int i = 0; i < 1000000; ++i) {
             xlogger->debug("test component logger: " +
-                boost::lexical_cast<string>(i));
+                Yb::to_stdstring(i));
         }
     }
     ILogger::Ptr ylogger = logger.new_logger("yyy");

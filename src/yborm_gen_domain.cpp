@@ -63,7 +63,7 @@ private:
                 << "public:\n"
                 << "\t" << class_name << "NotFoundByID(Yb::LongInt id)\n"
                 << "\t\t: Yb::ObjectNotFoundByKey(_T(\"" << class_name << " with ID = \") +\n"
-                << "\t\t\tboost::lexical_cast<Yb::String>(id) + _T(\" not found\"))\n"
+                << "\t\t\tYb::to_string(id) + _T(\" not found\"))\n"
                 << "\t{}\n"
                 << "};\n\n";
         }
@@ -666,7 +666,7 @@ private:
             << "{\n"
             << "\tYb::Table::Ptr t(new Yb::Table(_T(\"" << table_name
             << "\"), _T(\"" << xml_name << "\"), _T(\"" << class_name << "\")));\n";
-        if (!tbl.get_seq_name().empty())
+        if (!str_empty(tbl.get_seq_name()))
             out << "\tt->set_seq_name(_T(\"" << NARROW(tbl.get_seq_name()) << "\"));\n";
         Columns::const_iterator i = tbl.begin(), iend = tbl.end();
         for (; i != iend; ++i) {

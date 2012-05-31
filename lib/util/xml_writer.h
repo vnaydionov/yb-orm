@@ -2,15 +2,14 @@
 #define YB__UTIL__XML_WRITER__INCLUDED
 
 #include <sstream>
-#include <boost/utility.hpp>
-#include <boost/lexical_cast.hpp>
-#include <util/UnicodeSupport.h>
+#include <util/String.h>
+#include <util/Utility.h>
 
 namespace Yb {
 
 namespace Writer {
 
-class Document: private boost::noncopyable
+class Document: NonCopyable
 {
     friend class Element;
     std::ostringstream buffer_;
@@ -27,13 +26,13 @@ class Document: private boost::noncopyable
     template <class TValue>
     void write_attribute (Yb::String const & name, TValue const & value)
     {
-        write_attribute (name, boost::lexical_cast<Yb::String> (value));
+        write_attribute (name, Yb::to_string (value));
     }
 
     template <class TValue>
     void write_string (TValue const & value)
     {
-        write_string (boost::lexical_cast<Yb::String> (value));
+        write_string (Yb::to_string (value));
     }
 
 public:
@@ -45,7 +44,7 @@ public:
     std::string const & get_string ();
 };
 
-class Element: private boost::noncopyable
+class Element: NonCopyable
 {
     Document & doc_;
     Yb::String name_;
@@ -84,7 +83,7 @@ public:
     }
 };
 
-class Attribute: private boost::noncopyable
+class Attribute: NonCopyable
 {
 public:
     template <class TValue>

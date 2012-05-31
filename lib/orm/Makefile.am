@@ -20,7 +20,9 @@ AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
-	$(DBPOOL3_CXXFLAGS)
+	$(DBPOOL3_CXXFLAGS) \
+	$(WX_CFLAGS) \
+	$(QT_CFLAGS)
 
 H_FILES = \
 	Filters.h \
@@ -64,5 +66,8 @@ libyborm_la_LIBADD = \
 	$(BOOST_LIBS_R) \
 	$(ODBC_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
-	$(DBPOOL3_LIBS)
+	$(DBPOOL3_LIBS) \
+	$(WX_LIBS) \
+	$(QT_LDFLAGS) \
+	$(QT_LIBS)
 

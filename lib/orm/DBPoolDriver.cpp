@@ -1,6 +1,5 @@
 #include <set>
 #include <fstream>
-#include <boost/lexical_cast.hpp>
 #include <util/str_utils.hpp>
 #include <util/xmlnode.h>
 #include <dbpool/mypp.h>
@@ -15,7 +14,7 @@ namespace Yb {
 DBPoolConfig::DBPoolConfig(const String &xml_file_name)
     : pool_size_(DBPOOL_DEFAULT_SIZE)
 {
-    if (!xml_file_name.empty())
+    if (!str_empty(xml_file_name))
         load_from_xml_file(xml_file_name);
 }
 
@@ -51,20 +50,17 @@ static void parse_dbpool_config(ElementTree::ElementPtr root,
         }
         catch (const ElementTree::ElementNotFound &) {}
         try {
-            ds.port = boost::lexical_cast<int>(
-                    backend->find_first(_T("Port"))->get_text());
+            from_string(backend->find_first(_T("Port"))->get_text(), ds.port);
         }
         catch (const ElementTree::ElementNotFound &) {}
         try {
-            ds.timeout = boost::lexical_cast<int>(
-                    backend->find_first(_T("Timeout"))->get_text());
+            from_string(backend->find_first(_T("Timeout"))->get_text(), ds.timeout);
         }
         catch (const ElementTree::ElementNotFound &) {}
         ds_map[key] = ds;
     }
     try {
-        pool_size = boost::lexical_cast<int>(
-                root->find_first(_T("DbPoolSize"))->get_text());
+        from_string(root->find_first(_T("DbPoolSize"))->get_text(), pool_size);
     }
     catch (const ElementTree::ElementNotFound &) {}
     // preload drivers
@@ -117,10 +113,10 @@ bool find_subst_signs(const String &sql, vector<int> &pos_list)
         COMMENT_ASTER_FOUND, IN_QUOT, IN_QUOT_QFOUND, IN_DQUOT } st;
     st = NORMAL;
     for (int i = 0; i < sql.size();) {
-        char c = sql[i];
+        Char c = sql[i];
         switch (st) {
         case NORMAL:
-            switch (c) {
+            switch (char_code(c)) {
             case '-': st = MINUS_FOUND; break;
             case '/': st = SLASH_FOUND; break;
             case '"': st = IN_DQUOT; break;
@@ -193,10 +189,10 @@ void split_by_subst_sign(const String &sql,
     int prev_pos = -1;
     for (int i = 0; i < pos_list.size(); ++i) {
         int cur_pos = pos_list[i];
-        parts.push_back(sql.substr(prev_pos + 1, cur_pos - prev_pos - 1));
+        parts.push_back(str_substr(sql, prev_pos + 1, cur_pos - prev_pos - 1));
         prev_pos = cur_pos;
     }
-    parts.push_back(sql.substr(prev_pos + 1, sql.size() - prev_pos - 1));
+    parts.push_back(str_substr(sql, prev_pos + 1, sql.size() - prev_pos - 1));
 }
 
 const String format_sql(const vector<String> &parts,

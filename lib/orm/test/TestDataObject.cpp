@@ -100,7 +100,7 @@ public:
     void test_init_long_string()
     {
         DataObject::Ptr d = DataObject::create_new(r_.table(_T("A")));
-        d->set(_T("Y"), _T("zrzzz"));
+        d->set(_T("Y"), String(_T("zrzzz")));
     }
 
     void test_data_object_key()
@@ -142,10 +142,10 @@ public:
         ValueMap values;
         values[_T("X")] = Value(10);
         DataObject::Ptr e = session.get_lazy(Key(_T("A"), values));
-        CPPUNIT_ASSERT_EQUAL(d.get(), e.get());
+        CPPUNIT_ASSERT_EQUAL(shptr_get(d), shptr_get(e));
         values[_T("X")] = Value(11);
         e = session.get_lazy(Key(_T("A"), values));
-        CPPUNIT_ASSERT(d.get() != e.get());
+        CPPUNIT_ASSERT(shptr_get(d) != shptr_get(e));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)e->status());
         session.detach(d);
         CPPUNIT_ASSERT_EQUAL((Session *)NULL, d->session());
@@ -165,14 +165,14 @@ public:
     {
         DataObject::Ptr d = DataObject::create_new(r_.table(_T("A")));
         d->set(_T("X"), 10);
-        d->set(_T("Y"), _T("abc"));
+        d->set(_T("Y"), String(_T("abc")));
         Session session(r_);
         session.save(d);
         DataObject::Ptr e = DataObject::create_new(r_.table(_T("A")));
         e->set(_T("X"), 10);
-        e->set(_T("Y"), _T("xyz"));
+        e->set(_T("Y"), String(_T("xyz")));
         DataObject::Ptr f = session.save_or_update(e);
-        CPPUNIT_ASSERT(d.get() == f.get());
+        CPPUNIT_ASSERT(shptr_get(d) == shptr_get(f));
         CPPUNIT_ASSERT_EQUAL(string("xyz"), NARROW(f->get(_T("Y")).as_string()));
     }
 
@@ -180,7 +180,7 @@ public:
     {
         DataObject::Ptr d = DataObject::create_new(r_.table(_T("A")));
         d->set(_T("X"), 10);
-        d->set(_T("Y"), _T("abc"));
+        d->set(_T("Y"), String(_T("abc")));
         Session session(r_);
         session.save(d);
         d->set(_T("X"), 100);
@@ -201,7 +201,7 @@ public:
         CPPUNIT_ASSERT_EQUAL((size_t)1, e->slave_relations().size());
         RelationObject *ro = *e->slave_relations().begin();
         CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
-        CPPUNIT_ASSERT_EQUAL(d.get(), ro->master_object());
+        CPPUNIT_ASSERT_EQUAL(shptr_get(d), ro->master_object());
     }
 
     void test_data_object_relink()
@@ -219,7 +219,7 @@ public:
         CPPUNIT_ASSERT_EQUAL((size_t)1, e->slave_relations().size());
         RelationObject *ro = *e->slave_relations().begin();
         CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
-        CPPUNIT_ASSERT_EQUAL(d.get(), ro->master_object());
+        CPPUNIT_ASSERT_EQUAL(shptr_get(d), ro->master_object());
         DataObject::Ptr f = DataObject::create_new(r_.table(_T("A")));
         DataObject::link_slave_to_master(e, f, _T("MasterA"));
         CPPUNIT_ASSERT_EQUAL((size_t)1, d->master_relations().size());
@@ -229,7 +229,7 @@ public:
         CPPUNIT_ASSERT_EQUAL((size_t)0, ro->slave_objects().size());
         ro = *e->slave_relations().begin();
         CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
-        CPPUNIT_ASSERT_EQUAL(f.get(), ro->master_object());
+        CPPUNIT_ASSERT_EQUAL(shptr_get(f), ro->master_object());
     }
 
     void test_data_object_delete()
@@ -295,7 +295,7 @@ public:
         session.save(e);
         DataObject::Ptr d = DataObject::get_master(e, _T("MasterA"));
         DataObject::Ptr c = DataObject::get_master(e);
-        CPPUNIT_ASSERT_EQUAL(d.get(), c.get());
+        CPPUNIT_ASSERT_EQUAL(shptr_get(d), shptr_get(c));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d->status());
     }    
 
@@ -390,9 +390,8 @@ public:
                         xgetenv(_T("YBORM_DB")),
                         xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
         {
-            OStringStream sql;
-            sql << _T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)");
-            String sql_str = sql.str();
+            String sql_str =
+                _T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)");
             conn.prepare(sql_str);
             Values params(4);
             params[0] = Value(-10);
@@ -402,9 +401,8 @@ public:
             conn.exec(params);
         }
         {
-            OStringStream sql;
-            sql << _T("INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES (?, ?, ?)");
-            String sql_str = sql.str();
+            String sql_str =
+                _T("INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES (?, ?, ?)");
             conn.prepare(sql_str);
             Values params(3);
             params[0] = Value(-20);
@@ -480,7 +478,7 @@ public:
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d->status());
         CPPUNIT_ASSERT_EQUAL(string("item"), NARROW(d->get(_T("A")).as_string()));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
-        d->set(_T("A"), _T("meti"));
+        d->set(_T("A"), String(_T("meti")));
         CPPUNIT_ASSERT_EQUAL(string("meti"), NARROW(d->get(_T("A")).as_string()));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Dirty, (int)d->status());
     }

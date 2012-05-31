@@ -9,12 +9,12 @@ ElementTree::ElementPtr
 data_object_to_etree(DataObject::Ptr data, const String &alt_name)
 {
     const Table &table = data->table();
-    String name = alt_name.empty()? table.get_xml_name(): alt_name;
+    String name = str_empty(alt_name)? table.get_xml_name(): alt_name;
     ElementTree::ElementPtr node = ElementTree::new_element(name);
     Columns::const_iterator it = table.begin(), end = table.end();
     for (; it != end; ++it) {
         const String col_name = it->get_xml_name();
-        if (!col_name.empty() && _T("!") != col_name) {
+        if (!str_empty(col_name) && _T("!") != col_name) {
             Value value = data->get(it->get_name());
             ElementTree::ElementPtr sub_el = node->sub_element(col_name);
             if (value.is_null())
@@ -78,7 +78,7 @@ deep_xmlize(Session &session, DataObject::Ptr d,
                         (!j->second->has_attr(1, _T("key")) ||
                          j->second->attr(1, _T("key")) == it->get_name()))
                     {
-                        boost::shared_ptr<XMLizable> domain_obj = 
+                        SharedPtr<XMLizable>::Type domain_obj = 
                             theDomainFactory::instance().create_object(
                                 session, fk_table.get_name(), fk_v.as_longint());
                         ElementTree::ElementPtr ref_node = domain_obj->xmlize(
@@ -102,7 +102,7 @@ xmlize_row(const Row &row, const String &entry_name)
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it)
         entry->sub_element(mk_xml_name(it->first, _T("")),
-                it->second.nvl(_T("")).as_string());
+                it->second.nvl(String(_T(""))).as_string());
     return entry;
 }
 

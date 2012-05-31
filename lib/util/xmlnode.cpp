@@ -1,7 +1,14 @@
 
 #include <util/xmlnode.h>
+#if defined(YB_USE_WX)
+#include <wx/mstream.h>
+#include <wx/xml/xml.h>
+#elif defined(YB_USE_QT)
+#include <QtXml>
+#else
 #include <libxml/tree.h>
 #include <libxml/parser.h>
+#endif
 #include <sstream>
 
 namespace Yb {
@@ -112,6 +119,51 @@ Element::serialize() const
     return doc.end_document();
 }
 
+#if defined(YB_USE_WX)
+static ElementPtr
+convert_node(wxXmlNode *node)
+{
+    ElementPtr p = new_element(node->GetName());
+    for (wxXmlProperty *attr = node->GetProperties();
+            attr; attr = attr->GetNext())
+    {
+        p->attrib_[attr->GetName()] = attr->GetValue();
+    }
+    for (wxXmlNode *cur = node->GetChildren(); cur; cur = cur->GetNext())
+    {
+        if (wxXML_ELEMENT_NODE == cur->GetType())
+            p->children_.push_back(convert_node(cur));
+        else if (wxXML_TEXT_NODE == cur->GetType()) {
+            Yb::String value = cur->GetContent();
+            if (!str_empty(value))
+                p->text_.push_back(value);
+        }
+    }
+    return p;
+}
+#elif defined(YB_USE_QT)
+static ElementPtr
+convert_node(QDomElement node)
+{
+    ElementPtr p = new_element(node.tagName());
+    QDomNamedNodeMap attr = node.attributes();
+    for (int i = 0; i < attr.length(); ++i) {
+        QDomNode it = attr.item(i);
+        p->attrib_[it.nodeName()] = it.nodeValue();
+    }
+    for (QDomNode cur = node.firstChild(); !cur.isNull(); cur = cur.nextSibling()) {
+        QDomElement e = cur.toElement();
+        if (!e.isNull())
+            p->children_.push_back(convert_node(e));
+        else {
+            QDomText t = cur.toText();
+            if (!t.isNull())
+                p->text_.push_back(t.data());
+        }
+    }
+    return p;
+}
+#else
 static Yb::String
 get_node_content(xmlNodePtr node)
 {
@@ -150,16 +202,33 @@ convert_node(xmlNodePtr node)
             p->children_.push_back(convert_node(cur));
         else if (XML_TEXT_NODE == cur->type) {
             Yb::String value = get_node_content(cur);
-            if (!value.empty())
+            if (!str_empty(value))
                 p->text_.push_back(value);
         }
     }
     return p;
 }
+#endif
 
 ElementPtr
 parse(const std::string &content)
 {
+#if defined(YB_USE_WX)
+    wxMemoryInputStream input(content.c_str(), content.size());
+    wxXmlDocument doc(input);
+    if (!doc.IsOk())
+        throw ParseError("parsing XML failed");
+    ElementPtr p = convert_node(doc.GetRoot());
+    return p;
+#elif defined(YB_USE_QT)
+    QBuffer buf;
+    buf.setData(content.c_str(), content.size());
+    QDomDocument doc("xml-data");
+    if (!doc.setContent(&buf))
+        throw ParseError("parsing XML failed");
+    ElementPtr p = convert_node(doc.documentElement());
+    return p;
+#else
     xmlDocPtr doc = xmlParseMemory(content.c_str(), content.size());
     if (!doc)
         throw ParseError("xmlParseMemory failed");
@@ -167,6 +236,7 @@ parse(const std::string &content)
     ElementPtr p = convert_node(node);
     xmlFreeDoc(doc);
     return p;
+#endif
 }
 
 ElementPtr

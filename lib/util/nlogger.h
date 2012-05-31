@@ -1,4 +1,3 @@
-
 #ifndef NLOGGER__INCLUDED
 #define NLOGGER__INCLUDED
 
@@ -9,7 +8,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <time.h>
-#include <boost/thread/mutex.hpp>
+#include <util/Thread.h>
 
 namespace Yb {
 
@@ -27,11 +26,7 @@ public:
     InvalidLoggerName();
 };
 
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-typedef __int64 MilliSec;
-#else
-typedef long long MilliSec;
-#endif
+typedef LongInt MilliSec;
 
 unsigned long get_process_id();
 unsigned long get_thread_id();
@@ -155,7 +150,7 @@ class LogAppender : public ILogAppender
     std::ostream &s_;
     typedef std::vector<LogRecord> Queue;
     Queue queue_;
-    boost::mutex queue_mutex_;
+    Mutex queue_mutex_;
     time_t last_flush_;
     const int flush_interval_;
 

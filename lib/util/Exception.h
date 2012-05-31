@@ -1,21 +1,11 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__UTIL__EXCEPTION__INCLUDED
 #define YB__UTIL__EXCEPTION__INCLUDED
 
-#include <string>
+#include <util/String.h>
 #include <stdexcept>
-#include <util/UnicodeSupport.h>
 
 namespace Yb {
-
-class noncopyable {
-protected:
-    noncopyable() {}
-    ~noncopyable() {}
-private:
-    // emphasize the following members are private
-    noncopyable(const noncopyable &);
-    const noncopyable &operator=(const noncopyable &);
-};
 
 class BaseError: public std::logic_error {
     static const String format_base(const String &msg);
@@ -32,6 +22,24 @@ public:
 
 #define YB_ASSERT(X) do { if (!(X)) throw AssertError(__FILE__, __LINE__, \
     #X); } while (0)
+
+typedef BaseError RunTimeError;
+
+class ValueError : public RunTimeError
+{
+public:
+    ValueError(const String &msg) :
+        RunTimeError(msg)
+    {}
+};
+
+class ValueBadCast : public ValueError
+{
+public:
+    ValueBadCast(const String &value, const String &type)
+        :ValueError(_T("Can't cast value '") + value + _T("' to type ") + type)
+    {}
+};
 
 } // namespace Yb
 

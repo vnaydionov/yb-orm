@@ -1,7 +1,8 @@
 #include "micro_http.h"
 #include <sstream>
-#include <boost/lexical_cast.hpp>
-#include <boost/thread.hpp>
+#include <util/Thread.h>
+#include <util/Utility.h>
+#include <util/DataTypes.h>
 #include <util/str_utils.hpp>
 
 using namespace std;
@@ -51,23 +52,23 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
             if (s == "\r\n" || s == "\n")
                 break;
             logger->debug(s);
-            if (starts_with(str_to_upper(s), "CONTENT-LENGTH: ")) {
+            Yb::String s2 = WIDEN(s);
+            if (starts_with(str_to_upper(s2), _T("CONTENT-LENGTH: "))) {
                 try {
-                    Strings parts;
-                    split_str_by_chars(s, " ", parts, 2);
-                    cont_len = boost::lexical_cast<unsigned>(
-                        trim_trailing_space(parts[1]));
+                    Yb::Strings parts;
+                    split_str_by_chars(s2, _T(" "), parts, 2);
+                    Yb::from_string(parts[1], cont_len);
                 }
                 catch (const std::exception &ex) {
                     logger->warning(
                         string("couldn't parse CONTENT-LENGTH: ") + ex.what());
                 }
             }
-            if (starts_with(str_to_upper(s), "CONTENT-TYPE: ")) {
+            if (starts_with(str_to_upper(s2), _T("CONTENT-TYPE: "))) {
                 try {
-                    Strings parts;
-                    split_str_by_chars(s, ": ", parts, 2);
-                    cont_type = trim_trailing_space(parts[1]);
+                    Yb::Strings parts;
+                    split_str_by_chars(s2, _T(": "), parts, 2);
+                    cont_type = NARROW(trim_trailing_space(parts[1]));
                 }
                 catch (const std::exception &ex) {
                     logger->warning(
@@ -122,37 +123,50 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
 
 typedef void (*WorkerFunc)(SOCKET, Yb::ILogger *, const HttpHandlerMap *);
 
-class WorkerCall {
+class WorkerThread: public Yb::Thread {
     SOCKET s_;
     Yb::ILogger *log_;
     const HttpHandlerMap *handlers_;
     WorkerFunc worker_;
+    void on_run() { worker_(s_, log_, handlers_); }
 public:
-    WorkerCall(SOCKET s, Yb::ILogger *log, const HttpHandlerMap *handlers,
+    WorkerThread(SOCKET s, Yb::ILogger *log, const HttpHandlerMap *handlers,
             WorkerFunc worker)
         : s_(s), log_(log), handlers_(handlers), worker_(worker)
     {}
-    void operator ()() {
-        worker_(s_, log_, handlers_);
-    }
 };
 
 void
 HttpServer::serve()
 {
     TcpSocket::init_socket_lib();
-    log_->info("start server on port " +
-            boost::lexical_cast<string>(port_));
+    log_->info("start server on port " + Yb::to_stdstring(port_));
     sock_ = TcpSocket(TcpSocket::create());
     sock_.bind(port_);
     sock_.listen();
+    typedef Yb::SharedPtr<WorkerThread>::Type WorkerThreadPtr;
+    typedef std::vector<WorkerThreadPtr> Workers;
+    Workers workers;
     while (1) {
         // accept request
         try {
             SOCKET cl_sock = sock_.accept();
             log_->info("accepted");
-            WorkerCall wcall(cl_sock, log_.get(), &handlers_, HttpServer::process);
-            boost::thread worker(wcall);
+            WorkerThreadPtr worker(new WorkerThread(
+                    cl_sock, log_.get(), &handlers_, HttpServer::process));
+            workers.push_back(worker);
+            worker->start();
+            Workers workers_dead, workers_alive;
+            for (Workers::iterator i = workers.begin(); i != workers.end(); ++i)
+                if ((*i)->finished())
+                    workers_dead.push_back(*i);
+                else
+                    workers_alive.push_back(*i);
+            for (Workers::iterator i = workers_dead.begin(); i != workers_dead.end(); ++i) {
+                (*i)->terminate();
+                (*i)->wait();
+            }
+            workers.swap(workers_alive);
         }
         catch (const std::exception &ex) {
             log_->error(string("exception: ") + ex.what());
@@ -193,16 +207,16 @@ string url_decode(const string &s)
 StringMap parse_params(const string &msg)
 {
     StringMap params;
-    Strings param_parts;
-    split_str_by_chars(msg, "&", param_parts);
+    Yb::Strings param_parts;
+    split_str_by_chars(WIDEN(msg), _T("&"), param_parts);
     for (size_t i = 0; i < param_parts.size(); ++i) {
-        Strings value_parts;
-        split_str_by_chars(param_parts[i], "=", value_parts, 2);
+        Yb::Strings value_parts;
+        split_str_by_chars(param_parts[i], _T("="), value_parts, 2);
         if (value_parts.size() < 1)
             throw ParserEx("parse_params", "value_parts.size() < 1");
-        string n = value_parts[0], v;
+        string v, n = NARROW(value_parts[0]);
         if (value_parts.size() == 2)
-            v = url_decode(value_parts[1]);
+            v = url_decode(NARROW(value_parts[1]));
         StringMap::iterator it = params.find(n);
         if (it == params.end())
             params[n] = v;
@@ -214,20 +228,20 @@ StringMap parse_params(const string &msg)
 
 StringMap parse_http(const string &msg)
 {
-    Strings head_parts;
-    split_str_by_chars(msg, " \t\r\n", head_parts);
+    Yb::Strings head_parts;
+    split_str_by_chars(WIDEN(msg), _T(" \t\r\n"), head_parts);
     if (head_parts.size() != 3)
         throw ParserEx("parse_http", "head_parts.size() != 3");
-    Strings uri_parts;
-    split_str_by_chars(head_parts[1], "?", uri_parts, 2);
+    Yb::Strings uri_parts;
+    split_str_by_chars(head_parts[1], _T("?"), uri_parts, 2);
     if (uri_parts.size() < 1)
         throw ParserEx("parse_http", "uri_parts.size() < 1");
     StringMap params;
     if (uri_parts.size() == 2)
-        params = parse_params(uri_parts[1]);
-    params["&method"] = head_parts[0];
-    params["&version"] = head_parts[2];
-    params["&uri"] = uri_parts[0];
+        params = parse_params(NARROW(uri_parts[1]));
+    params["&method"] = NARROW(head_parts[0]);
+    params["&version"] = NARROW(head_parts[2]);
+    params["&uri"] = NARROW(uri_parts[0]);
     return params;
 }
     

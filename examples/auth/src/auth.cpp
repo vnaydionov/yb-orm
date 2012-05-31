@@ -4,8 +4,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #endif
+#if defined(YB_USE_WX)
+#include <wx/app.h>
+#endif
 #include <iostream>
 #include <util/str_utils.hpp>
+#include <util/xmlnode.h>
 #include <orm/SqlPool.h>
 #include <orm/MetaDataSingleton.h>
 #include "md5.h"
@@ -15,6 +19,7 @@
 #include "domain/LoginSession.h"
 
 using namespace std;
+using namespace Domain;
 using namespace Domain;
 
 std::auto_ptr<Yb::Engine> engine;
@@ -44,7 +49,8 @@ get_random()
 }
 
 Yb::LongInt
-get_checked_session_by_token(Yb::Session &session, StringMap &params, int admin_flag=0)
+get_checked_session_by_token(Yb::Session &session,
+        StringMap &params, int admin_flag=0)
 {
 #if defined(__BORLANDC__)
     typedef LoginSession Row;
@@ -52,9 +58,9 @@ get_checked_session_by_token(Yb::Session &session, StringMap &params, int admin_
     typedef boost::tuple<LoginSession, User> Row;
 #endif
     Yb::DomainResultSet<Row> rs = Yb::query<Row>(session)
-        .filter_by(Yb::filter_eq(_T("TOKEN"), params["token"]))
+        .filter_by(Yb::filter_eq(Yb::String(_T("TOKEN")), WIDEN(params["token"])))
 #if !defined(__BORLANDC__)
-        .filter_by(Yb::Filter(_T("USER_ID = T_USER.ID")))
+        .filter_by(Yb::Filter(Yb::String(_T("USER_ID = T_USER.ID"))))
 #endif
         .all();
     Yb::DomainResultSet<Row>::iterator q = rs.begin(), qend=rs.end();
@@ -74,21 +80,21 @@ get_checked_session_by_token(Yb::Session &session, StringMap &params, int admin_
     return ls.get_id();
 }
 
-string 
+std::string 
 check(StringMap &params)
 {
     Yb::Session session(Yb::theMetaData::instance(), engine.get());
     return get_checked_session_by_token(session, params) == -1? BAD_RESP: OK_RESP;
 }
 
-string 
-md5_hash(const string &str)
+std::string 
+md5_hash(const std::string &str)
 {
     MD5_CTX mdContext;
     MD5Init(&mdContext);
     MD5Update(&mdContext, (unsigned char *)str.c_str(), str.size());
     MD5Final(&mdContext);
-    string rez;
+    std::string rez;
     char omg[3];
     for (int i = 0; i < 16; ++i) {
         sprintf(omg, "%02x", mdContext.digest[i]);
@@ -97,7 +103,7 @@ md5_hash(const string &str)
     return rez;
 }
 
-string 
+std::string 
 registration(StringMap &params)
 {
     Yb::Session session(Yb::theMetaData::instance(), engine.get());
@@ -110,16 +116,18 @@ registration(StringMap &params)
             return BAD_RESP;
     }
     User::ResultSet rs = Yb::query<User>(session)
-        .filter_by(Yb::filter_eq(_T("LOGIN"), params["login"])).all();
+        .filter_by(Yb::filter_eq(_T("LOGIN"), WIDEN(params["login"]))).all();
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q != qend)
         return BAD_RESP;
 
     User user(session);
-    user.set_login(params["login"]);
-    user.set_name(params["name"]);
-    user.set_pass(md5_hash(params["pass"]));
-    user.set_status(boost::lexical_cast<int>(params["status"]));
+    user.set_login(WIDEN(params["login"]));
+    user.set_name(WIDEN(params["name"]));
+    user.set_pass(WIDEN(md5_hash(params["pass"])));
+    int status;
+    Yb::from_stdstring(params["status"], status);
+    user.set_status(status);
     session.commit();
     return OK_RESP;
 }
@@ -128,16 +136,16 @@ Yb::LongInt
 get_checked_user_by_creds(Yb::Session &session, StringMap &params)
 {
     User::ResultSet rs = Yb::query<User>(session,
-        Yb::filter_eq(_T("LOGIN"), params["login"])).all();
+        Yb::filter_eq(_T("LOGIN"), WIDEN(params["login"]))).all();
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q == qend)
         return -1;
-    if (q->get_pass() != md5_hash(params["pass"]))
+    if (q->get_pass() != WIDEN(md5_hash(params["pass"])))
         return -1;
     return q->get_id();
 }
 
-string 
+std::string 
 login(StringMap &params)
 {
     Yb::Session session(Yb::theMetaData::instance(), engine.get());
@@ -151,17 +159,16 @@ login(StringMap &params)
     LoginSession login_session(session);
     login_session.set_user(user);
     Yb::LongInt token = get_random();
-    login_session.set_token(boost::lexical_cast<string>(token));
-    login_session.set_end_session(Yb::now() + boost::posix_time::hours(11));
-    login_session.set_app_name("auth");
+    login_session.set_token(Yb::to_string(token));
+    login_session.set_end_session(Yb::dt_add_seconds(Yb::now(), 11*60*60));
+    login_session.set_app_name(_T("auth"));
+    Yb::ElementTree::ElementPtr root = Yb::ElementTree::new_element(
+            _T("token"), login_session.get_token());
     session.commit();
-
-    stringstream ss;
-    ss << "<token>" << token << "</token>";
-    return ss.str();
+    return root->serialize();
 }
 
-string 
+std::string
 session_info(StringMap &params)
 { 
     Yb::Session session(Yb::theMetaData::instance(), engine.get());
@@ -172,7 +179,7 @@ session_info(StringMap &params)
     return ls.xmlize(1)->serialize();
 }
 
-string 
+std::string
 logout(StringMap &params)
 {
     Yb::Session session(Yb::theMetaData::instance(), engine.get());
@@ -185,11 +192,17 @@ logout(StringMap &params)
     return OK_RESP;
 }
 
-const string
-cfg(const string &key) { return Yb::StrUtils::xgetenv("YBORM_" + key); }
+const Yb::String
+cfg(const Yb::String &key) { return Yb::StrUtils::xgetenv(_T("YBORM_") + key); }
 
-int
-main()
+#if defined(YB_USE_WX)
+class MyApp : public wxAppConsole {
+public:
+    virtual bool OnInit() { return true; }
+    virtual int OnRun()
+#else
+    int main()
+#endif
 {
     try {
         const char *log_fname = "log.txt"; // TODO: read from config
@@ -205,9 +218,9 @@ main()
         Yb::init_default_meta();
         std::auto_ptr<Yb::SqlPool> pool(new Yb::SqlPool(YB_POOL_MAX_SIZE,
                 YB_POOL_IDLE_TIME, YB_POOL_MONITOR_SLEEP, g_log.get()));
-        pool->add_source(Yb::SqlSource("auth_db", "ODBC",
-                cfg("DBTYPE"), cfg("DB"), cfg("USER"), cfg("PASSWD")));
-        engine.reset(new Yb::Engine(Yb::Engine::MANUAL, pool, "auth_db"));
+        pool->add_source(Yb::SqlSource(_T("auth_db"), _T("ODBC"),
+                cfg(_T("DBTYPE")), cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD"))));
+        engine.reset(new Yb::Engine(Yb::Engine::MANUAL, pool, _T("auth_db")));
         Yb::Logger::Ptr ormlog = g_log->new_logger("orm");
         engine->set_echo(true);
         engine->set_logger(ormlog);
@@ -223,8 +236,14 @@ main()
     }
     catch (const std::exception &ex) {
         g_log->error(string("exception: ") + ex.what());
+        engine.reset(NULL);
         return 1;
     }
+    engine.reset(NULL);
     return 0;
 }
+#if defined(YB_USE_WX)
+};
+IMPLEMENT_APP(MyApp)
+#endif
 // vim:ts=4:sts=4:sw=4:et:

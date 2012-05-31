@@ -6,9 +6,8 @@
 #include <vector>
 #include <map>
 #include <iterator>
-#include <boost/utility.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
+#include <util/Utility.h>
+#include <util/Thread.h>
 #include <util/ResultSet.h>
 #include <util/nlogger.h>
 #include <orm/Value.h>
@@ -21,23 +20,29 @@ class ItemRegistry
     ItemRegistry(const ItemRegistry &);
     ItemRegistry &operator=(const ItemRegistry &);
 public:
-    typedef boost::shared_ptr<Item> ItemPtr;
+    typedef
+#if defined(__BORLANDC__)
+        SharedPtr<Item>::Type
+#else
+        typename SharedPtr<Item>::Type
+#endif
+            ItemPtr;
     typedef std::map<String, ItemPtr> Map;
 
     ItemRegistry() {}
 
     Item *find_item(const String &name)
     {
-        boost::mutex::scoped_lock lock(mutex_);
+        ScopedLock lock(mutex_);
         typename Map::const_iterator it = map_.find(name);
         if (it != map_.end())
-            return it->second.get();
+            return shptr_get(it->second);
         return NULL;
     }
 
     bool register_item(const String &name, std::auto_ptr<Item> item)
     {
-        boost::mutex::scoped_lock lock(mutex_);
+        ScopedLock lock(mutex_);
         typename Map::const_iterator it = map_.find(name);
         if (it != map_.end())
             return false;
@@ -60,7 +65,7 @@ public:
 
     const Strings list_items()
     {
-        boost::mutex::scoped_lock lock(mutex_);
+        ScopedLock lock(mutex_);
         Strings names;
         typename Map::const_iterator it = map_.begin(), end = map_.end();
         for (; it != end; ++it)
@@ -69,12 +74,12 @@ public:
     }
 
     bool empty() {
-        boost::mutex::scoped_lock lock(mutex_);
+        ScopedLock lock(mutex_);
         return map_.empty();
     }
 private:
     Map map_;
-    boost::mutex mutex_;
+    Mutex mutex_;
 };
 
 class DBError : public BaseError
@@ -119,12 +124,10 @@ public:
     SqlDriverError(const String &msg);
 };
 
-class SqlDialect
+class SqlDialect: NonCopyable
 {
     String name_, dual_;
     bool has_sequences_;
-    SqlDialect(const SqlDialect &);
-    SqlDialect &operator=(const SqlDialect &);
 public:
     SqlDialect(const String &name, const String &dual,
             bool has_sequences)
@@ -155,10 +158,8 @@ typedef std::auto_ptr<Rows> RowsPtr;
 Row::iterator find_in_row(Row &row, const String &name);
 Row::const_iterator find_in_row(const Row &row, const String &name);
 
-class SqlConnectBackend
+class SqlConnectBackend: NonCopyable
 {
-    SqlConnectBackend(const SqlConnectBackend &);
-    SqlConnectBackend &operator=(const SqlConnectBackend &);
 public:
     SqlConnectBackend() {}
     virtual ~SqlConnectBackend();
@@ -174,11 +175,9 @@ public:
     virtual void exec(const Values &params) = 0;
 };
 
-class SqlDriver
+class SqlDriver: NonCopyable
 {
     String name_;
-    SqlDriver(const SqlDriver &);
-    SqlDriver &operator=(const SqlDriver &);
 public:
     SqlDriver(const String &name)
         : name_(name)
@@ -242,7 +241,7 @@ public:
 
 class SqlPool;
 
-class SqlConnect: public boost::noncopyable
+class SqlConnect: NonCopyable
 {
     friend class SqlPool;
     SqlSource source_;

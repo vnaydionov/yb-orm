@@ -4,7 +4,7 @@
 
 #include <string>
 #include <vector>
-#include <util/UnicodeSupport.h>
+#include <util/String.h>
 
 namespace Yb {
 
@@ -60,7 +60,7 @@ std::vector<Yb::String> &split_str(const Yb::String &s,
         const Yb::String &delim,
         std::vector<Yb::String> &parts);
 
-void split_str_by_chars(const Yb::String &s, const Yb::Char *delim,
+void split_str_by_chars(const Yb::String &s, const Yb::String &delim,
         std::vector<Yb::String> &parts, int limit = -1);
 
 const Yb::String join_str(const Yb::String &delim,

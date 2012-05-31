@@ -447,28 +447,28 @@ Engine::do_gen_sql_select(String &sql, Values &params,
         const StrList &order_by, bool for_update) const
 {
     String s;
-    OStringStream sql_query;
-    sql_query << _T("SELECT ") << what.get_str();
-    if (!from.get_str().empty())
-        sql_query << _T(" FROM ") << from.get_str();
+    std::ostringstream sql_query;
+    sql_query << "SELECT " << NARROW(what.get_str());
+    if (!str_empty(from.get_str()))
+        sql_query << " FROM " << NARROW(from.get_str());
 
     s = where.collect_params_and_build_sql(params);
     if (s != Filter().get_sql())
-        sql_query << _T(" WHERE ") << s;
-    if (!group_by.get_str().empty())
-        sql_query << _T(" GROUP BY ") << group_by.get_str();
+        sql_query << " WHERE " << NARROW(s);
+    if (!str_empty(group_by.get_str()))
+        sql_query << " GROUP BY " << NARROW(group_by.get_str());
     s = having.collect_params_and_build_sql(params);
     if (s != Filter().get_sql()) {
-        if (group_by.get_str().empty())
+        if (str_empty(group_by.get_str()))
             throw BadSQLOperation(
                     _T("Trying to use HAVING without GROUP BY clause"));
-        sql_query << _T(" HAVING ") << s;
+        sql_query << " HAVING " << NARROW(s);
     }
-    if (!order_by.get_str().empty())
-        sql_query << _T(" ORDER BY ") << order_by.get_str();
+    if (!str_empty(order_by.get_str()))
+        sql_query << " ORDER BY " << NARROW(order_by.get_str());
     if (for_update)
-        sql_query << _T(" FOR UPDATE");
-    sql = sql_query.str();
+        sql_query << " FOR UPDATE";
+    sql = WIDEN(sql_query.str());
 }
 
 void
@@ -478,8 +478,8 @@ Engine::do_gen_sql_insert(String &sql, Values &params,
 {
     if (row.empty())
         throw BadSQLOperation(_T("Can't do INSERT with empty row"));
-    OStringStream sql_query;
-    sql_query << _T("INSERT INTO ") << table_name << _T(" (");
+    std::ostringstream sql_query;
+    sql_query << "INSERT INTO " << NARROW(table_name) << " (";
     typedef vector<String> vector_string;
     vector_string names;
     vector_string pholders;
@@ -493,11 +493,11 @@ Engine::do_gen_sql_insert(String &sql, Values &params,
             pholders.push_back(_T("?"));
         }
     }
-    sql_query << StrList(names).get_str()
-        << _T(") VALUES (")
-        << StrList(pholders).get_str()
-        << _T(")");
-    sql = sql_query.str();
+    sql_query << NARROW(StrList(names).get_str())
+        << ") VALUES ("
+        << NARROW(StrList(pholders).get_str())
+        << ")";
+    sql = WIDEN(sql_query.str());
 }
 
 void
@@ -513,8 +513,8 @@ Engine::do_gen_sql_update(String &sql, Values &params,
         throw BadSQLOperation(_T("Can't UPDATE with empty row set"));
 
     Row excluded_row;
-    OStringStream sql_query;
-    sql_query << _T("UPDATE ") << table_name << _T(" SET ");
+    std::ostringstream sql_query;
+    sql_query << "UPDATE " << NARROW(table_name) << " SET ";
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it) {
         if (exclude_fields.find(it->first) == exclude_fields.end() &&
@@ -532,19 +532,19 @@ Engine::do_gen_sql_update(String &sql, Values &params,
     {
         param_nums[it->first] = params.size();
         params.push_back(it->second);
-        sql_query << it->first << _T(" = ?");
+        sql_query << NARROW(it->first) << " = ?";
         if (it != last)
-            sql_query << _T(", ");
+            sql_query << ", ";
     }
 
-    sql_query << _T(" WHERE ");
-    OStringStream where_sql;
+    sql_query << " WHERE ";
+    std::ostringstream where_sql;
     String s = where.collect_params_and_build_sql(params);
     if (s != Filter().get_sql())
     {
-        where_sql << _T("(") << s << _T(")");
+        where_sql << "(" << NARROW(s) << ")";
         if (!key_fields.empty())
-            where_sql << _T(" AND ");
+            where_sql << " AND ";
     }
     Strings::const_iterator it_where = key_fields.begin(), end_where = key_fields.end();
     Strings::const_iterator it_last =
@@ -554,16 +554,15 @@ Engine::do_gen_sql_update(String &sql, Values &params,
         if (it_find != row.end()) {
             param_nums[it_find->first] = params.size();
             params.push_back(it_find->second);
-            where_sql << _T("(") << it_find->first << _T(" = ?)");
-            if (it_where != it_last) {
-                where_sql << _T(" AND ");
-            }
+            where_sql << "(" << NARROW(it_find->first) << " = ?)";
+            if (it_where != it_last)
+                where_sql << " AND ";
         }
     }
-    if(where_sql.str().empty())
+    if (str_empty(WIDEN(where_sql.str())))
         throw BadSQLOperation(_T("Can't do UPDATE with empty where clause"));
     sql_query << where_sql.str();
-    sql = sql_query.str();
+    sql = WIDEN(sql_query.str());
 }
 
 void
@@ -572,12 +571,12 @@ Engine::do_gen_sql_delete(String &sql, Values &params,
 {
     if (where.get_sql() == Filter().get_sql())
         throw BadSQLOperation(_T("Can't DELETE without where clause"));
-    OStringStream sql_query;
-    sql_query << _T("DELETE FROM ") << table;
+    std::ostringstream sql_query;
+    sql_query << "DELETE FROM " << NARROW(table);
     String s = where.collect_params_and_build_sql(params);
     if (s != Filter().get_sql())
-        sql_query << _T(" WHERE ") << s;
-    sql = sql_query.str();
+        sql_query << " WHERE " << NARROW(s);
+    sql = WIDEN(sql_query.str());
 }
 
 } // namespace Yb

@@ -7,16 +7,23 @@ AC_LANG_CPLUSPLUS
 AC_PROG_CXX
 AM_PROG_LIBTOOL
 
-AM_PATH_XML2
-CPPFLAGS="$CPPFLAGS $XML_CPPFLAGS"
+YB_QT([
+    CPPFLAGS="$CPPFLAGS -DYB_USE_QT"
+],[
+    YB_WX([
+        CPPFLAGS="$CPPFLAGS -DYB_USE_WX"
+    ],[
+        AM_PATH_XML2
+        CPPFLAGS="$CPPFLAGS $XML_CPPFLAGS"
+        YB_BOOST([1.31.0],[],
+            AC_MSG_ERROR([Package requires the Boost C++ libraries!]))
+        YB_BOOST_THREAD([],
+            AC_MSG_ERROR([Package requires the Boost threads library!]))
+        YB_BOOST_DATETIME([],
+            AC_MSG_ERROR([Package requires the Boost date_time library!]))
+    ])
+])
 
-# required dependencies
-YB_BOOST([1.31.0],[],
-    AC_MSG_ERROR([Package requires the Boost C++ libraries!]))
-YB_BOOST_THREAD([],
-    AC_MSG_ERROR([Package requires the Boost threads library!]))
-YB_BOOST_DATETIME([],
-    AC_MSG_ERROR([Package requires the Boost date_time library!]))
 YB_ODBC([],
     AC_MSG_ERROR([ODBC library is required!]))
 

@@ -4,15 +4,15 @@ add_subdirectory (test)
 include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES} ${BOOST_INCLUDES}
     ${PROJECT_SOURCE_DIR}/lib)
 
-add_library (ybutil decimal.cpp str_utils.cpp
-	xmlnode.cpp xml_writer.cpp Exception.cpp UnicodeSupport.cpp nlogger.cpp)
+add_library (ybutil String.cpp Exception.cpp Thread.cpp decimal.cpp DataTypes.cpp
+    str_utils.cpp xml_writer.cpp xmlnode.cpp nlogger.cpp)
 
 target_link_libraries (ybutil ${LIBXML2_LIBS} ${BOOST_DATE_TIME_LIBS}
     ${BOOST_THREAD_LIBS})
 
 install (TARGETS ybutil DESTINATION lib)
-install (FILES decimal.h str_utils.hpp xmlnode.h xml_writer.h
-    param.hpp Singleton.h stacktrace.h Exception.h ResultSet.h
-    UnicodeSupport.h nlogger.h
+install (FILES Utility.h String.h Exception.h Thread.h decimal.h
+    DataTypes.h str_utils.hpp xml_writer.h xmlnode.h nlogger.h
+    param.hpp stacktrace.h ResultSet.h Singleton.h
              DESTINATION include/yb/util)
 

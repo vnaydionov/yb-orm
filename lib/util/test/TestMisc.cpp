@@ -1,7 +1,6 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-#include <boost/lexical_cast.hpp>
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <util/str_utils.hpp>

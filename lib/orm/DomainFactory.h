@@ -3,12 +3,12 @@
 
 #include <map>
 #include <stdexcept>
-#include <boost/shared_ptr.hpp>
+#include <util/Utility.h>
 #include <orm/DomainObj.h>
 
 namespace Yb {
 
-typedef boost::shared_ptr<DomainObject> DomainObjectPtr;
+typedef SharedPtr<DomainObject>::Type DomainObjectPtr;
 
 class NoCreator: public std::logic_error
 {
@@ -35,7 +35,7 @@ public:
     }
 };
 
-typedef boost::shared_ptr<ICreator> CreatorPtr;
+typedef SharedPtr<ICreator>::Type CreatorPtr;
 
 class DomainFactory
 {

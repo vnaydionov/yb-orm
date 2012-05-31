@@ -1,3 +1,96 @@
+AC_DEFUN([YB_WX],
+[
+    AC_SUBST(WX_CFLAGS)
+    AC_SUBST(WX_LIBS)
+    WX_CFLAGS=""
+    WX_LIBS=""
+    AC_ARG_WITH([wx-config],
+        AC_HELP_STRING([--with-wx-config=BIN],
+            [Configuration script for the wxWidgets C++ library]),
+        [ac_wx_config="$withval"])
+    if test "x$ac_wx_config" != "x" && test -x "$ac_wx_config" ; then
+        AC_MSG_CHECKING([for the wxWidgets C++ library])
+        WX_CFLAGS=`wx-config --cflags`
+        WX_LIBS=`wx-config --libs base,xml`
+        ac_save_cxxflags="$CXXFLAGS"
+        ac_save_libs="$LIBS"
+        CXXFLAGS="$ac_save_cxxflags $WX_CFLAGS"
+        LIBS="$ac_save_libs $WX_LIBS"
+        AC_LANG_PUSH(C++)
+        AC_TRY_LINK([
+#include <wx/mstream.h>
+#include <wx/xml/xml.h>
+],
+        [ wxMemoryInputStream input("<aaa/>", 6); wxXmlDocument doc(input); ],
+        [ have_wx="yes" ])
+        AC_LANG_POP(C++)
+        if test "x$have_wx" = "xyes" ; then
+            AC_MSG_RESULT([yes])
+            ifelse([$1], , :, [$1])
+        else
+            AC_MSG_RESULT([no])
+            ifelse([$2], , :, [$2])
+        fi
+        CXXFLAGS="$ac_save_cxxflags"
+        LIBS="$ac_save_libs"
+    else
+        ifelse([$2], , :, [$2])
+    fi
+])
+
+AC_DEFUN([YB_QT],
+[
+    AC_SUBST(QT_CFLAGS)
+    AC_SUBST(QT_LDFLAGS)
+    AC_SUBST(QT_LIBS)
+    QT_CFLAGS=""
+    QT_LDFLAGS=""
+    QT_LIBS=""
+    AC_ARG_WITH([qt-includes],
+        AC_HELP_STRING([--with-qt-includes=DIR],
+            [Directory where the QT4 C++ includes reside]),
+        [ac_qt_includes="$withval"])
+    AC_ARG_WITH([qt-libs],
+        AC_HELP_STRING([--with-qt-libs=DIR],
+            [Directory where the QT4 C++ libraries reside]),
+        [ac_qt_libs="$withval"])
+    if test "x$ac_qt_includes" != "x" || test "x$ac_qt_libs" != "x" ; then
+        AC_MSG_CHECKING([for the QT4 C++ libraries])
+        if test "x$ac_qt_includes" != "x" ; then
+            QT_CFLAGS="-I$ac_qt_includes -I$ac_qt_includes/QtCore -I$ac_qt_includes/QtXml"
+        fi
+        if test "x$ac_qt_libs" != "x" ; then
+            QT_LDFLAGS="-L$ac_qt_libs"
+        fi
+        QT_LIBS="$QT_LIBS -lQtCore -lQtXml"
+        ac_save_cxxflags="$CXXFLAGS"
+        ac_save_ldflags="$LDFLAGS"
+        ac_save_libs="$LIBS"
+        CXXFLAGS="$ac_save_cxxflags $QT_CFLAGS"
+        LDFLAGS="$ac_save_ldflags $QT_LDFLAGS"
+        LIBS="$ac_save_libs $QT_LIBS"
+        AC_LANG_PUSH(C++)
+        AC_TRY_LINK([
+#include <QtXml>
+],
+        [ QBuffer buf; buf.setData("<aaa/>", 6); QDomDocument doc("aaa"); ],
+        [ have_qt="yes" ])
+        AC_LANG_POP(C++)
+        if test "x$have_qt" = "xyes" ; then
+            AC_MSG_RESULT([yes])
+            ifelse([$1], , :, [$1])
+        else
+            AC_MSG_RESULT([no])
+            ifelse([$2], , :, [$2])
+        fi
+        CXXFLAGS="$ac_save_cxxflags"
+        LDFLAGS="$ac_save_ldflags"
+        LIBS="$ac_save_libs"
+    else
+        ifelse([$2], , :, [$2])
+    fi
+])
+
 dnl YB_BOOST([MINIMUM-VERSION], [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
 dnl Test for the Boost C++ libraries of a particular version (or newer)
 dnl Defines:
@@ -60,6 +153,9 @@ AC_DEFUN([YB_BOOST],
         ])
 
     if test "$have_boost" = "yes"; then
+        if test "x$have_boost" = "xyes" ; then
+            ac_save_cxxflags="$ac_save_cxxflags -DYB_USE_TUPLE"
+        fi
         WANT_BOOST_VERSION=`expr $WANT_BOOST_MAJOR \* 100000 \+ $WANT_BOOST_MINOR \* 100 \+ $WANT_BOOST_SUB_MINOR`
         AC_TRY_COMPILE([
 #include <boost/version.hpp>
@@ -565,9 +661,9 @@ AC_DEFUN([YB_CHECK_YBORM],
         YBORM_LDFLAGS="-L$ac_yborm_libs"
     fi
     YBORM_LIBS="-lybutil -lyborm"
-    CXXFLAGS="$ac_save_cxxflags $YBORM_CXXFLAGS"
-    LDFLAGS="$ac_save_ldflags $YBORM_LDFLAGS"
-    LIBS="$ac_save_libs $YBORM_LIBS"
+    CXXFLAGS="$ac_save_cxxflags $YBORM_CXXFLAGS $WX_CFLAGS $QT_CFLAGS"
+    LDFLAGS="$ac_save_ldflags $YBORM_LDFLAGS $QT_LDFLAGS"
+    LIBS="$ac_save_libs $YBORM_LIBS $WX_LIBS $QT_LIBS"
 
     AC_LANG_PUSH(C++)
     AC_TRY_LINK([

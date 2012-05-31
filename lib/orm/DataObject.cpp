@@ -17,7 +17,7 @@ StringTooLong::StringTooLong(
         int max_len, const String &value)
     : ORMError(_T("Can't set value of ") + table_name + _T(".") + field_name +
             _T(" with '") + value + _T("', having max length ") +
-            boost::lexical_cast<String>(max_len))
+            to_string(max_len))
 {}
 
 BadTypeCast::BadTypeCast(
@@ -76,13 +76,14 @@ Session::~Session()
 
 const String key2str(const Key &key)
 {
-    OStringStream out;
-    out << _T("Key('") << key.first << _T("', {");
+    std::ostringstream out;
+    out << "Key('" << NARROW(key.first) << "', {";
     ValueMap::const_iterator i = key.second.begin(), iend = key.second.end();
     for (; i != iend; ++i)
-        out << _T("'") << i->first << _T("': ") << i->second.sql_str() << _T(", ");
-    out << _T("}");
-    return out.str();
+        out << "'" << NARROW(i->first) << "': "
+            << NARROW(i->second.sql_str()) << ", ";
+    out << "}";
+    return WIDEN(out.str());
 }
 
 DataObjectAlreadyInSession::DataObjectAlreadyInSession(const Key &key)
@@ -234,9 +235,9 @@ void Session::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
 void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
 {
     bool sql_seq = engine_->get_dialect()->has_sequences();
-    bool use_seq = sql_seq && !tbl.get_seq_name().empty();
+    bool use_seq = sql_seq && !str_empty(tbl.get_seq_name());
     bool use_autoinc = !sql_seq &&
-        (tbl.get_autoinc() || !tbl.get_seq_name().empty());
+        (tbl.get_autoinc() || !str_empty(tbl.get_seq_name()));
     Objects::iterator i, iend = unkeyed_objs.end();
     if (use_seq) {
         String pk = tbl.get_synth_pk();
@@ -500,7 +501,7 @@ void DataObject::update_key()
 
 const Key &DataObject::key()
 {
-    if (key_.first.empty())
+    if (str_empty(key_.first))
         update_key();
     return key_;
 }
@@ -518,7 +519,7 @@ const Row DataObject::values(bool include_key)
 
 bool DataObject::assigned_key()
 {
-    if (key_.first.empty())
+    if (str_empty(key_.first))
         update_key();
     return assigned_key_;
 }
@@ -571,14 +572,14 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
         jend = master->master_relations().end();
     for (; j != jend; ++j)
         if (&(*j)->relation_info() == &r) {
-            ro = (*j).get();
+            ro = shptr_get(*j);
             break;
         }
     // Create one if it doesn't exist, master will own it
     if (!ro) {
         RelationObject::Ptr new_ro = RelationObject::create_new(r, master);
         master->master_relations().insert(new_ro);
-        ro = new_ro.get();
+        ro = shptr_get(new_ro);
     }
     // Register slave in the relation
     ro->slave_objects().insert(slave);
@@ -620,7 +621,7 @@ Key DataObject::fk_value_for(const Relation &r)
 DataObject::Ptr DataObject::get_master(
     DataObject::Ptr obj, const String &relation_name)
 {
-    YB_ASSERT(obj.get());
+    YB_ASSERT(shptr_get(obj));
     YB_ASSERT(obj->session_);
     // Find relation in metadata.
     const Schema &schema(obj->table_.schema());
@@ -630,7 +631,7 @@ DataObject::Ptr DataObject::get_master(
     // Find FK value.
     Key fkey = obj->fk_value_for(*r);
     DataObject::Ptr master = obj->session_->get_lazy(fkey);
-    link(master.get(), obj, *r);
+    link(shptr_get(master), obj, *r);
     return master;
 }
 
@@ -661,14 +662,14 @@ RelationObject *DataObject::get_slaves(
         jend = master_relations_.end();
     for (; j != jend; ++j)
         if (&(*j)->relation_info() == r) {
-            ro = (*j).get();
+            ro = shptr_get(*j);
             break;
         }
     // Create one if it doesn't exist, master will own it
     if (!ro) {
         RelationObject::Ptr new_ro = RelationObject::create_new(*r, this);
         master_relations_.insert(new_ro);
-        ro = new_ro.get();
+        ro = shptr_get(new_ro);
     }
     return ro;
 }
@@ -755,7 +756,7 @@ void RelationObject::calc_depth(int d, DataObject *parent)
     SlaveObjects::iterator i = slave_objects_.begin(),
         iend = slave_objects_.end();
     for (; i != iend; ++i) {
-        if (parent && i->get() == parent)
+        if (parent && shptr_get(*i) == parent)
             throw CycleDetected();
         (*i)->calc_depth(d, parent);
     }
@@ -871,7 +872,7 @@ void RelationObject::exclude_slave(DataObject *obj)
     SlaveObjects::iterator i = slave_objects_.begin(),
         iend = slave_objects_.end();
     for (; i != iend; ++i) {
-        if (i->get() == obj)
+        if (shptr_get(*i) == obj)
             break;
     }
     YB_ASSERT(i != slave_objects_.end());

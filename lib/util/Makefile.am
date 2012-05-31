@@ -11,31 +11,38 @@ endif
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \
-	$(BOOST_CPPFLAGS)
+	$(BOOST_CPPFLAGS) \
+	$(WX_CFLAGS) \
+	$(QT_CFLAGS)
 
 lib_LTLIBRARIES = libybutil.la
 
 ybutilinclude_HEADERS = \
-	str_utils.hpp \
-	param.hpp \
+	Utility.h \
+	String.h \
+	Exception.h \
+	Thread.h \
 	decimal.h \
+	DataTypes.h \
+	str_utils.hpp \
 	xml_writer.h \
 	xmlnode.h \
+	nlogger.h \
+	param.hpp \
 	stacktrace.h \
-	Exception.h \
 	ResultSet.h \
-	Singleton.h \
-	UnicodeSupport.h \
-	nlogger.h
+	Singleton.h
 
 libybutil_la_SOURCES = \
 	$(ybutilinclude_HEADERS) \
-	str_utils.cpp \
+	String.cpp \
+	Exception.cpp \
+	Thread.cpp \
 	decimal.cpp \
+	DataTypes.cpp \
+	str_utils.cpp \
 	xml_writer.cpp \
 	xmlnode.cpp \
-	Exception.cpp \
-	UnicodeSupport.cpp \
 	nlogger.cpp
 
 libybutil_la_LDFLAGS = -version-info 0:0:0
@@ -43,5 +50,8 @@ libybutil_la_LDFLAGS = -version-info 0:0:0
 libybutil_la_LIBADD = \
 	$(XML_LIBS) \
 	$(BOOST_LDFLAGS) \
-	$(BOOST_LIBS_R)
+	$(BOOST_LIBS_R) \
+	$(WX_LIBS) \
+	$(QT_LDFLAGS) \
+	$(QT_LIBS)
 

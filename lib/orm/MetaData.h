@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <list>
 #include <orm/Value.h>
+#include <util/Utility.h>
 #include <util/Exception.h>
 
 class TestMetaData;
@@ -145,7 +146,7 @@ public:
     const String &get_fk_table_name() const { return fk_table_name_; }
     const String &get_fk_name() const { return fk_name_; }
     bool has_fk() const {
-        return !fk_table_name_.empty() && !fk_name_.empty();
+        return !str_empty(fk_table_name_) && !str_empty(fk_name_);
     }
     void set_fk_name(const String &fk_name) { fk_name_ = fk_name; }
     const String &get_xml_name() const { return xml_name_; }
@@ -169,11 +170,11 @@ typedef std::map<String, int> IndexMap;
 class Schema;
 class Relation;
 
-class Table: private noncopyable
+class Table: NonCopyable
 {
     Table();
 public:
-    typedef boost::shared_ptr<Table> Ptr;
+    typedef SharedPtr<Table>::Type Ptr;
     Table(const String &name, const String &xml_name = _T(""),
         const String &class_name = _T(""));
     void set_schema(Schema *s) { schema_ = s; }
@@ -226,11 +227,11 @@ private:
 
 typedef std::vector<Table::Ptr> Tables;
 
-class Relation: private noncopyable
+class Relation: NonCopyable
 {
     Relation();
 public:
-    typedef boost::shared_ptr<Relation> Ptr;
+    typedef SharedPtr<Relation>::Type Ptr;
     typedef std::map<String, String> AttrMap;
     enum { UNKNOWN = 0, ONE2MANY, MANY2MANY, PARENT2CHILD };
     enum { Restrict = 0, Nullify, Delete };

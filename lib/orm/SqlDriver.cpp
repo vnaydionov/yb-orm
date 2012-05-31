@@ -1,22 +1,21 @@
-#include <orm/SqlDriver.h>
 #include <time.h>
-#include <orm/tiodbc.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/thread/thread.hpp>
-#include <util/Singleton.h>
-#include <util/str_utils.hpp>
 #include <iostream>
 #include <sstream>
+#include <orm/SqlDriver.h>
+#include <orm/tiodbc.hpp>
+#include <util/Singleton.h>
+#include <util/str_utils.hpp>
 
 using namespace std;
 using Yb::StrUtils::str_to_upper;
 
 #if 0
-#define DBG(x) do{ char __s[40]; OStringStream __log; time_t __t = time(NULL); \
+#define DBG(x) do { char __s[40]; std::ostringstream __log; time_t __t = time(NULL); \
     strcpy(__s, ctime(&__t)); __s[strlen(__s) - 1] = 0; \
-    __log << WIDEN(__s) << _T(": ") << x << '\n'; cerr << NARROW(__log.str()); }while(0)
+    __log << __s << ": " << NARROW(x) << '\n'; \
+    std::cerr << __log.str(); } while(0)
 #else
-#define DBG(x) do{ if (log_) { log_->debug(NARROW(x)); } }while(0)
+#define DBG(x) do { if (log_) { log_->debug(NARROW(x)); } } while(0)
 #endif
 
 namespace Yb {
@@ -224,7 +223,7 @@ public:
             {
                 TIMESTAMP_STRUCT ts = f.as_date_time();
                 if (ts.year != 0 || f.is_null() != 1) {
-                    v = Value(mk_datetime(ts.year, ts.month, ts.day,
+                    v = Value(dt_make(ts.year, ts.month, ts.day,
                                 ts.hour, ts.minute, ts.second));
                 }
             }
@@ -232,8 +231,8 @@ public:
                 v = Value((int)f.as_long());
             }
             else if (!f.is_null() && f.get_type() == SQL_BIGINT) {
-                String val = f.as_string();
-                v = Value(boost::lexical_cast<LongInt>(val));
+                LongInt x;
+                v = Value(from_string(f.as_string(), x));
             }
             else {
                 String val = f.as_string();
@@ -259,12 +258,12 @@ public:
                 TIMESTAMP_STRUCT ts;
                 memset(&ts, 0, sizeof(ts));
                 DateTime t = params[i].as_date_time();
-                ts.year = t.date().year();
-                ts.month = t.date().month();
-                ts.day = t.date().day();
-                ts.hour = (SQLUSMALLINT)t.time_of_day().hours();
-                ts.minute = (SQLUSMALLINT)t.time_of_day().minutes();
-                ts.second = (SQLUSMALLINT)t.time_of_day().seconds();
+                ts.year = dt_year(t);
+                ts.month = dt_month(t);
+                ts.day = dt_day(t);
+                ts.hour = (SQLUSMALLINT)dt_hour(t);
+                ts.minute = (SQLUSMALLINT)dt_minute(t);
+                ts.second = (SQLUSMALLINT)dt_second(t);
                 ts.fraction = 0; // TODO
                 stmt_->param(i + 1).set_as_date_time(
                         ts,
@@ -278,7 +277,8 @@ public:
                 String value;
                 if (!params[i].is_null())
                     value = params[i].as_string();
-                stmt_->param(i + 1).set_as_string(value, params[i].is_null());
+                stmt_->param(i + 1).set_as_string(value,
+                                                  params[i].is_null());
             }
         }
         if (!stmt_->execute())
@@ -289,7 +289,7 @@ public:
 class OdbcDriver: public SqlDriver
 {
     friend class OdbcConnectBackend;
-    boost::mutex conn_mux_;
+    Mutex conn_mux_;
 public:
     OdbcDriver():
         SqlDriver(_T("ODBC"))
@@ -307,9 +307,10 @@ OdbcConnectBackend::open(SqlDialect *dialect, const String &dsn,
         const String &user, const String &passwd)
 {
     close();
-    boost::mutex::scoped_lock lock(drv_->conn_mux_);
+    ScopedLock lock(drv_->conn_mux_);
     conn_.reset(new tiodbc::connection());
-    if (!conn_->connect(dsn, user, passwd, 10, false))
+    if (!conn_->connect(dsn,
+            user, passwd, 10, false))
         throw DBError(conn_->last_error_ex());
 }
 
@@ -317,7 +318,7 @@ void
 OdbcConnectBackend::close()
 {
     stmt_.reset(NULL);
-    boost::mutex::scoped_lock lock(drv_->conn_mux_);
+    ScopedLock lock(drv_->conn_mux_);
     conn_.reset(NULL);
 }
 
@@ -461,14 +462,14 @@ SqlConnect::fetch_row()
         RowPtr row = backend_->fetch_row();
         if (echo_) {
             if (row.get()) {
-                OStringStream out;
-                out << _T("fetch: ");
+                std::ostringstream out;
+                out << "fetch: ";
                 Row::const_iterator j = row->begin(),
                                     jend = row->end();
                 for (; j != jend; ++j)
-                    out << j->first << _T("=")
-                        << j->second.sql_str() << _T(" ");
-                DBG(out.str());
+                    out << NARROW(j->first) << "="
+                        << NARROW(j->second.sql_str()) << " ";
+                DBG(WIDEN(out.str()));
             }
             else
                 DBG(_T("fetch: no more rows"));
@@ -517,12 +518,12 @@ SqlConnect::exec(const Values &params)
 {
     try {
         if (echo_) {
-            OStringStream out;
-            out << _T("exec prepared:");
+            std::ostringstream out;
+            out << "exec prepared:";
             for (unsigned i = 0; i < params.size(); ++i)
-                out << _T(" p") << (i + 1) << _T("=\"")
-                    << params[i].sql_str() << _T("\"");
-            DBG(out.str());
+                out << " p" << (i + 1) << "=\""
+                    << NARROW(params[i].sql_str()) << "\"";
+            DBG(WIDEN(out.str()));
         }
         backend_->exec(params);
         return SqlResultSet(*this);

@@ -1,14 +1,17 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
-#include <string>
-#include <locale>
-#include <iostream>
-#include <stdexcept>
+#include <util/String.h>
+#if defined(YB_USE_WX)
+#include <wx/strconv.h>
+#elif defined(YB_USE_QT)
+#include <QTextCodec>
+#endif
 #include <cstring>
-#include <util/UnicodeSupport.h>
+#include <locale>
+#include <stdexcept>
 
 namespace Yb {
 
-size_t fast_narrow(const std::wstring &wide, std::string &narrow)
+static size_t do_fast_narrow(const std::wstring &wide, std::string &narrow)
 {
     const wchar_t *src = wide.c_str();
     const wchar_t *src0 = src;
@@ -27,7 +30,7 @@ size_t fast_narrow(const std::wstring &wide, std::string &narrow)
     return processed;
 }
 
-size_t fast_widen(const std::string &narrow, std::wstring &wide)
+static size_t do_fast_widen(const std::string &narrow, std::wstring &wide)
 {
     const char *src = narrow.c_str();
     const char *src0 = src;
@@ -46,25 +49,34 @@ size_t fast_widen(const std::string &narrow, std::wstring &wide)
     return processed;
 }
 
-const std::string narrow(const std::wstring &wide, const std::string &loc_name)
-{
-    std::locale loc(loc_name.empty()?
-#if defined(__WIN32__) || defined(_WIN32)
-            "rus_rus.866"
-#else
-            "ru_RU.UTF-8"
-#endif
-            : loc_name.c_str());
-    return narrow(wide, loc);
-}
-
-const std::string narrow(const std::wstring &wide, const std::locale &loc)
+const std::string fast_narrow(const std::wstring &wide)
 {
     if (wide.empty())
         return std::string();
+    std::string narrow(4 * wide.size(), '\0'); // max character length in UTF-8
+    size_t processed = do_fast_narrow(wide, narrow);
+    if (processed == wide.size())
+        return narrow;
+    throw std::runtime_error("non ascii detected, fast_narrow failed");
+}
 
+const std::wstring fast_widen(const std::string &narrow)
+{
+    if (narrow.empty())
+        return std::wstring();
+    std::wstring wide(narrow.size(), L'\0');
+    size_t processed = do_fast_widen(narrow, wide);
+    if (processed == narrow.size())
+        return wide;
+    throw std::runtime_error("non ascii detected, fast_widen failed");
+}
+
+const std::string do_narrow(const std::wstring &wide, const std::locale &loc)
+{
+    if (wide.empty())
+        return std::string();
     std::string narrow(4*wide.size(), '\0'); // max character length in UTF-8
-    size_t processed = fast_narrow(wide, narrow);
+    size_t processed = do_fast_narrow(wide, narrow);
     if (processed == wide.size())
         return narrow;
 
@@ -115,25 +127,12 @@ const std::string narrow(const std::wstring &wide, const std::locale &loc)
     return narrow;
 }
 
-const std::wstring widen(const std::string &narrow, const std::string &loc_name)
-{
-    std::locale loc(loc_name.empty()?
-#if defined(__WIN32__) || defined(_WIN32)
-            "rus_rus.866"
-#else
-            "ru_RU.UTF-8"
-#endif
-            : loc_name.c_str());
-    return widen(narrow, loc);
-}
-
-const std::wstring widen(const std::string &narrow, const std::locale &loc)
+const std::wstring do_widen(const std::string &narrow, const std::locale &loc)
 {
     if (narrow.empty())
         return std::wstring();
-
     std::wstring wide(narrow.size(), L'\0');
-    size_t processed = fast_widen(narrow, wide);
+    size_t processed = do_fast_widen(narrow, wide);
     if (processed == narrow.size())
         return wide;
 
@@ -179,5 +178,80 @@ const std::wstring widen(const std::string &narrow, const std::locale &loc)
     return wide;
 }
 
+const std::string get_locale(const std::string &enc_name = "")
+{
+    if (enc_name.empty())
+        return
+#if defined(__WIN32__) || defined(_WIN32)
+            "rus_rus.866"
+#else
+            "ru_RU.UTF-8"
+#endif
+        ;
+    return enc_name;
+}
+
+const std::string str2std(const String &s, const std::string &enc_name)
+{
+#if defined(YB_USE_WX)
+    if (enc_name.empty())
+        return std::string(s.mb_str(wxConvUTF8));
+    wxCSConv conv(wxString(enc_name.c_str(), wxConvUTF8).GetData());
+    return std::string(s.mb_str(conv));
+#elif defined(YB_USE_QT)
+    if (enc_name.empty())
+        return std::string(s.toLocal8Bit().constData());
+    QTextCodec *codec = QTextCodec::codecForName(enc_name.c_str());
+    return std::string(codec->fromUnicode(s).constData());
+#elif defined(YB_USE_UNICODE)
+    std::locale loc(get_locale(enc_name).c_str());
+    return do_narrow(s, loc);
+#else
+    return s;
+#endif
+}
+
+const String std2str(const std::string &s, const std::string &enc_name)
+{
+#if defined(YB_USE_WX)
+    if (enc_name.empty())
+        return wxString(s.c_str(), wxConvUTF8);
+    wxCSConv conv(wxString(enc_name.c_str(), wxConvUTF8).GetData());
+    return wxString(s.c_str(), conv);
+#elif defined(YB_USE_QT)
+    if (enc_name.empty())
+        return QString::fromLocal8Bit(s.c_str());
+    QTextCodec *codec = QTextCodec::codecForName(enc_name.c_str());
+    return codec->toUnicode(s.c_str());
+#elif defined(YB_USE_UNICODE)
+    std::locale loc(get_locale(enc_name).c_str());
+    return do_widen(s, loc);
+#else
+    return s;
+#endif
+}
+
+const std::string str_narrow(const std::wstring &wide, const std::string &enc_name)
+{
+    std::locale loc(get_locale(enc_name).c_str());
+    return do_narrow(wide, loc);
+}
+
+const std::wstring str_widen(const std::string &narrow, const std::string &enc_name)
+{
+    std::locale loc(get_locale(enc_name).c_str());
+    return do_widen(narrow, loc);
+}
+
+const std::string get_locale_enc()
+{
+    std::string loc_name = get_locale();
+    int pos = loc_name.find('.');
+    if (pos != std::string::npos)
+        return loc_name.substr(pos + 1);
+    return loc_name;
+}
+
 } // namespace Yb
+
 // vim:ts=4:sts=4:sw=4:et:

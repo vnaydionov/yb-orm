@@ -57,7 +57,7 @@ void XMLMetaDataConfig::parse(Schema &reg)
             reg.add_table(t);
         } else if (!(*child)->name_.compare(_T("relation"))) {
             Relation::Ptr r = parse_relation(*child);
-            if (r.get())
+            if (shptr_get(r))
                 reg.add_relation(r);
         } else
             throw ParseError(String(_T("Unknown element '")) + (*child)->name_ +
@@ -99,16 +99,16 @@ Table::Ptr XMLMetaDataConfig::parse_table(ElementTree::ElementPtr node)
 }
 
 void XMLMetaDataConfig::parse_relation_side(ElementTree::ElementPtr node,
-        const Char **attr_names, size_t attr_count,
+        const char **attr_names, size_t attr_count,
         String &cname, Relation::AttrMap &attrs)
 {
     if (!node->has_attr(_T("class")))
         throw MandatoryAttributeAbsent(node->name_, _T("class"));
     cname = node->get_attr(_T("class"));
     Relation::AttrMap new_attrs;
-    for (size_t i = 0; i < attr_count; ++i)
-        if (node->has_attr(attr_names[i]))
-            new_attrs[attr_names[i]] = node->get_attr(attr_names[i]);
+    for (int i = 0; i < attr_count; ++i)
+        if (node->has_attr(std2str(attr_names[i])))
+            new_attrs[std2str(attr_names[i])] = node->get_attr(std2str(attr_names[i]));
     attrs.swap(new_attrs);
 }
 
@@ -137,9 +137,9 @@ Relation::Ptr XMLMetaDataConfig::parse_relation(ElementTree::ElementPtr node)
         return Relation::Ptr();
     String one, many;
     Relation::AttrMap a1, a2;
-    static const Char
-        *anames_one[] = {_T("property"), _T("use-list")},
-        *anames_many[] = {_T("property"), _T("filter"), _T("key")};
+    static const char
+        *anames_one[] = {"property", "use-list"},
+        *anames_many[] = {"property", "filter", "key"};
     ElementTree::Elements::const_iterator child = node->children_.begin(),
         cend = node->children_.end();
     for (; child != cend; ++child) {
@@ -207,11 +207,22 @@ Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
        String value = node->get_attr(_T("default"));
         switch (col_type) {
             case Value::DECIMAL:
+                try {
+                    Decimal x;
+                    from_string(value, x);
+                    default_val = x;
+                } catch(const std::exception &) {
+                    throw ParseError(String(_T("Wrong default value '")) + value + _T("' for integer element '") + name + _T("'"));
+                }
+                break;
+            case Value::INTEGER:
             case Value::LONGINT:
                 try {
-                    default_val = Value(boost::lexical_cast<LongInt>(value));
-                } catch(const boost::bad_lexical_cast &) {
-                        throw ParseError(String(_T("Wrong default value '")) + value + _T("' for integer element '") + name + _T("'"));
+                    LongInt x;
+                    from_string(value, x);
+                    default_val = x;
+                } catch(const std::exception &) {
+                    throw ParseError(String(_T("Wrong default value '")) + value + _T("' for integer element '") + name + _T("'"));
                 }
                 break;
             case Value::DATETIME:
@@ -225,7 +236,7 @@ Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
     }
 
     if (node->has_attr(_T("size")))
-        size = boost::lexical_cast<int>(node->get_attr(_T("size")));
+        from_string(node->get_attr(_T("size")), size);
 
     if (node->has_attr(_T("property")))
         prop_name = node->get_attr(_T("property"));

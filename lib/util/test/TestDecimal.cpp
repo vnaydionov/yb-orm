@@ -1,10 +1,12 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#if !defined(YB_USE_QT) && !defined(YB_USE_WX)
 #include <boost/lexical_cast.hpp>
+#endif
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <util/decimal.h>
+#include <util/DataTypes.h>
 
 using namespace std;
 
@@ -41,9 +43,11 @@ class TestDecimal: public CppUnit::TestFixture
     CPPUNIT_TEST(testDeserialization);
     CPPUNIT_TEST(testFailedDeserialization);
 
+#if !defined(YB_USE_QT) && !defined(YB_USE_WX)
     CPPUNIT_TEST(testCast);
-    CPPUNIT_TEST_EXCEPTION(testInvalidCast1,boost::bad_lexical_cast);
-    CPPUNIT_TEST_EXCEPTION(testInvalidCast2,boost::bad_lexical_cast);
+    CPPUNIT_TEST_EXCEPTION(testInvalidCast1, boost::bad_lexical_cast);
+    CPPUNIT_TEST_EXCEPTION(testInvalidCast2, boost::bad_lexical_cast);
+#endif
 
     CPPUNIT_TEST_SUITE_END();   
 
@@ -262,40 +266,40 @@ public:
         decimal m7(_T("-1000000.11"));
 
         {
-            Yb::OStringStream s;
-            s << setprecision(2) << m1;
-            CPPUNIT_ASSERT_EQUAL(string("25.00"), NARROW(s.str()));
+            std::ostringstream s;
+            s << std::setprecision(2) << m1;
+            CPPUNIT_ASSERT_EQUAL(string("25.00"), s.str());
         }
         {
-            Yb::OStringStream s;
+            std::ostringstream s;
             s << setprecision(5) << setiosflags(ios_base::showpos) << m2;
-            CPPUNIT_ASSERT_EQUAL(string("+10.20000"), NARROW(s.str()));
+            CPPUNIT_ASSERT_EQUAL(string("+10.20000"), s.str());
         }
         {
-            Yb::OStringStream s;
-            s << setprecision(0) << setfill(_T('_')) << setw(7) << m3;
-            CPPUNIT_ASSERT_EQUAL(string("____-10"), NARROW(s.str()));
+            std::ostringstream s;
+            s << setprecision(0) << setfill('_') << setw(7) << m3;
+            CPPUNIT_ASSERT_EQUAL(string("____-10"), s.str());
         }
         {
-            Yb::OStringStream s;
+            std::ostringstream s;
             s << setprecision(23) << m4;
-            CPPUNIT_ASSERT_EQUAL(string("0.99999999999999999900000"), NARROW(s.str()));
+            CPPUNIT_ASSERT_EQUAL(string("0.99999999999999999900000"), s.str());
         }
         {
-            Yb::OStringStream s;
+            std::ostringstream s;
             s << setw(3) << fixed << m5;
-            CPPUNIT_ASSERT_EQUAL(string("20.123"), NARROW(s.str()));
+            CPPUNIT_ASSERT_EQUAL(string("20.123"), s.str());
         }
         {
-            Yb::OStringStream s;
+            std::ostringstream s;
             s << setprecision(17) << m6;
-            CPPUNIT_ASSERT_EQUAL(string("1.00000000000000000"), NARROW(s.str()));
+            CPPUNIT_ASSERT_EQUAL(string("1.00000000000000000"), s.str());
         }
     }
 
     void testDeserialization() 
     {
-        Yb::StringStream s(_T("1000000.11"));
+        std::stringstream s("1000000.11");
         decimal d;
         s >> d;
         CPPUNIT_ASSERT(decimal(_T("1000000.11")) == d);
@@ -303,32 +307,34 @@ public:
 
     void testFailedDeserialization() 
     {
-        Yb::StringStream s(_T("qwelkfjwoefijw"));
-        Yb::String str;
+        std::stringstream s("qwelkfjwoefijw");
+        std::string str;
         decimal d;
         s >> d;
         s >> str;
-        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(str));
+        CPPUNIT_ASSERT_EQUAL(string(""), str);
     }
 
+#if !defined(YB_USE_QT) && !defined(YB_USE_WX)
     void testCast() 
     {
-        decimal r = boost::lexical_cast<decimal>(Yb::String(_T("-32410.20")));
-        decimal d = boost::lexical_cast<decimal>(Yb::String(_T("10.23")));
+        decimal r = boost::lexical_cast<decimal>(_T("-32410.20")),
+                d = boost::lexical_cast<decimal>(
+                        Yb::String(_T("10.23")));
         CPPUNIT_ASSERT(r == decimal(_T("-32410.20")));
         CPPUNIT_ASSERT(d == decimal(_T("10.23")));
     }
 
     void testInvalidCast1() 
     {
-        decimal r = boost::lexical_cast<decimal>(Yb::String(_T("")));
+        decimal r = boost::lexical_cast<decimal>(_T(""));
     }
 
     void testInvalidCast2() 
     {
-        decimal r = boost::lexical_cast<decimal>(Yb::String(_T("wefojhweofihwoe")));
+        decimal r = boost::lexical_cast<decimal>(_T("wefojhweofihwoe"));
     }
-
+#endif
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestDecimal);

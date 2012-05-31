@@ -1,14 +1,19 @@
-
 C:\Program Files\PostgreSQL\9.1\bin>createuser -U postgres -h 127.0.0.1 -p 5432 -D -A -P test1
-Введите пароль для новой роли:
-Повторите его:
-Новая роль должна иметь право создавать другие роли? (y - да/n - нет) y
-Пароль:
+Enter password for new role: test1_pwd
+Enter it again: test1_pwd
+Shall the new role be allowed to create more new roles? (y/n) n
+Password: <your master password>
 
 C:\Program Files\PostgreSQL\9.1\bin>createdb -U postgres -h 127.0.0.1 -p 5432 -O test1 test1_db
-Пароль:
-
+Password: <your master password>
 
 C:\Program Files\PostgreSQL\9.1\bin>psql -h 127.0.0.1 -p 5432 -d test1_db -U test1 < \yborm\examples\test_schema.sql
-Пароль пользователя test1: test1_pwd
+Password for user test1: test1_pwd
 
+NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "t_orm_test_pkey" for table "t_orm_test"
+CREATE TABLE
+NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index "t_orm_xml_pkey" for table "t_orm_xml"
+CREATE TABLE
+ALTER TABLE
+CREATE SEQUENCE
+CREATE SEQUENCE

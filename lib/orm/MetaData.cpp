@@ -1,4 +1,5 @@
 #include <sstream>
+#include <algorithm>
 #include <util/str_utils.hpp>
 #include <util/Exception.h>
 #include <orm/MetaData.h>
@@ -73,7 +74,7 @@ mk_xml_name(const String &name, const String &xml_name)
 {
     if (xml_name == _T("-"))
         return _T("");
-    if (!xml_name.empty())
+    if (!str_empty(xml_name))
         return xml_name;
     return translate(str_to_lower(name), underscore_to_dash);
 }
@@ -88,7 +89,7 @@ Column::Column(const String &name, int type, size_t size, int flags,
     , fk_table_name_(fk_table)
     , fk_name_(fk)
     , xml_name_(mk_xml_name(name, xml_name))
-    , prop_name_(prop_name.empty()? str_to_lower(name): prop_name)
+    , prop_name_(str_empty(prop_name)? str_to_lower(name): prop_name)
     , table_(NULL)
 {}
 
@@ -153,7 +154,7 @@ Table::find_synth_pk() const
 {
     // This call assumes that we have a table with
     // a synth. numeric primary key.
-    if (get_seq_name().empty() && !get_autoinc())
+    if (str_empty(get_seq_name()) && !get_autoinc())
         return String();
     if (pk_fields_.size() != 1)
         return String();
@@ -169,7 +170,7 @@ Table::get_synth_pk() const
     // This call assumes that we have a table with
     // a synth. numeric primary key.
     String pk_name = find_synth_pk();
-    if (pk_name.empty())
+    if (str_empty(pk_name))
         throw NotSuitableForAutoCreating(get_name());
     return pk_name;
 }
@@ -292,7 +293,7 @@ Schema::table(const String &name) const
     TblMap::const_iterator it = tables_.find(table_uname);
     if (it == tables_.end())
         throw TableNotFoundInMetaData(name);
-    return *it->second.get();
+    return *shptr_get(it->second);
 }
 
 const Table &
@@ -329,8 +330,8 @@ Schema::fill_fkeys()
         Table &tbl = *i->second;
         Columns::const_iterator j = tbl.begin(), jend = tbl.end(); 
         for (; j != jend; ++j) {
-            if (!j->get_fk_table_name().empty() &&
-                    j->get_fk_name().empty())
+            if (!str_empty(j->get_fk_table_name()) &&
+                    str_empty(j->get_fk_name()))
             {
                 Column &c = const_cast<Column &> (*j);
                 try {
@@ -381,18 +382,18 @@ Schema::find_relation(const String &class1,
         it = rels_lower_bound(class1),
         end = rels_upper_bound(class1);
     for (; it != end; ++it)
-        if (class2.empty() ||
+        if (str_empty(class2) ||
             (it->second->side(0) == class1 &&
              it->second->side(1) == class2) ||
             (it->second->side(0) == class2 &&
              it->second->side(1) == class1))
         {
             if (!r) {
-                if (relation_name.empty() ||
+                if (str_empty(relation_name) ||
                     (it->second->has_attr(prop_side, _T("property")) &&
                      it->second->attr(prop_side, _T("property")) == relation_name))
                 {
-                    r = it->second.get();
+                    r = shptr_get(it->second);
                 }
             }
             else {
@@ -486,7 +487,7 @@ Schema::traverse_children(const StrMap &parent_child, map<String, int> &depths)
             const String &child = range.first->second;
             if (std::find(children.begin(), children.end(), child) == children.end()) {
                 children.push_back(child);
-                int new_depth = (parent.empty()? 0: depths[parent]) + 1;
+                int new_depth = (str_empty(parent)? 0: depths[parent]) + 1;
                 if (depths[child] < new_depth)
                     depths[child] = new_depth;
                 if (new_depth > (int)parent_child.size())

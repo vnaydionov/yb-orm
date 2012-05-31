@@ -8,8 +8,7 @@
 #include <vector>
 #include <set>
 #include <map>
-#include <boost/utility.hpp>
-#include <boost/shared_ptr.hpp>
+#include <util/Utility.h>
 #include <util/Exception.h>
 #include <orm/Value.h>
 #include <orm/MetaData.h>
@@ -22,8 +21,8 @@ namespace Yb {
 
 class DataObject;
 class RelationObject;
-typedef boost::shared_ptr<DataObject> DataObjectPtr;
-typedef boost::shared_ptr<RelationObject> RelationObjectPtr;
+typedef SharedPtr<DataObject>::Type DataObjectPtr;
+typedef SharedPtr<RelationObject>::Type RelationObjectPtr;
 typedef std::vector<DataObjectPtr> ObjectList;
 
 const String key2str(const Key &key);
@@ -51,7 +50,7 @@ public:
     }
 };
 
-class Session: boost::noncopyable {
+class Session: NonCopyable {
     friend class ::TestDataObject;
     friend class ::TestDataObjectSaveLoad;
     typedef std::set<DataObjectPtr> Objects;
@@ -149,7 +148,7 @@ public:
 
 enum DeletionMode { DelNormal, DelDryRun, DelUnchecked };
 
-class DataObject: boost::noncopyable {
+class DataObject: NonCopyable {
     // 0) Always allocate object in heap, pointer to object = object's identity.
     //      -> non-copyable.
     // 1) Store data values within object.
@@ -252,12 +251,12 @@ public:
     static void link_slave_to_master(Ptr slave, Ptr master,
                                      const String relation_name = _T(""))
     {
-        link(master.get(), slave, relation_name, 1);
+        link(shptr_get(master), slave, relation_name, 1);
     }
     static void link_master_to_slave(Ptr master, Ptr slave,
                                      const String relation_name = _T(""))
     {
-        link(master.get(), slave, relation_name, 0);
+        link(shptr_get(master), slave, relation_name, 0);
     }
     static Ptr get_master(Ptr obj, const String &relation_name = _T(""));
     static bool has_master(Ptr obj, const String &relation_name = _T(""));
@@ -265,7 +264,7 @@ public:
     void calc_depth(int d, DataObject *parent = NULL);
 };
 
-class RelationObject: boost::noncopyable {
+class RelationObject: NonCopyable {
     // 0) Always allocate object in heap,
     //      pointer to object = object's identity.
     //      -> non-copyable.

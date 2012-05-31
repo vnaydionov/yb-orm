@@ -4,8 +4,7 @@
 
 #include <map>
 #include <deque>
-#include <boost/thread/thread.hpp>
-#include <boost/thread/condition.hpp>
+#include <util/Thread.h>
 #include <orm/SqlDriver.h>
 
 namespace Yb {
@@ -15,8 +14,19 @@ namespace Yb {
 #define YB_POOL_MONITOR_SLEEP 2 // sec.
 #define YB_POOL_WAIT_TIME 20 // sec.
 
+class SqlPool;
+
+class PoolMonThread: public Thread
+{
+    SqlPool *pool_;
+public:
+    PoolMonThread(SqlPool *pool);
+    void on_run();
+};
+
 class SqlPool
 {
+    friend class PoolMonThread;
 public:
     typedef SqlConnect *SqlConnectPtr;
     SqlPool(int pool_max_size = YB_POOL_MAX_SIZE,
@@ -26,20 +36,22 @@ public:
     ~SqlPool();
     void add_source(const SqlSource &source);
     SqlConnectPtr get(const String &id, int timeout = YB_POOL_WAIT_TIME);
-    void put(SqlConnectPtr handle, bool close_now = false);
+    void put(SqlConnectPtr handle, bool close_now = false, bool new_conn = false);
 
 private:
     std::map<String, SqlSource> sources_;
     std::map<String, int> counts_;
     typedef std::deque<SqlConnectPtr> Pool;
+    std::map<String, Pool> pools_;
+    typedef std::deque<std::exception> OpenErrors;
+    std::map<String, OpenErrors> open_errors_;
     std::deque<String> connects_for_open_;
     std::deque<SqlConnectPtr> connects_for_delete_;
-    std::map<String, Pool> pools_;
-    boost::mutex pool_mux_, stop_mux_;
-    boost::condition pool_cond_, stop_cond_;
+    Mutex pool_mux_, stop_mux_;
+    Condition pool_cond_, stop_cond_;
     int pool_max_size_, idle_time_, monitor_sleep_;
     bool stop_monitor_flag_;
-    boost::thread monitor_;
+    PoolMonThread monitor_;
     ILogger::Ptr logger_;
 
     void *monitor_thread();
@@ -65,7 +77,7 @@ public:
     int get_timeout() const { return timeout_; }
 };
 
-class SqlConnectVar: public boost::noncopyable
+class SqlConnectVar: NonCopyable
 {
     SqlPool &pool_;
     SqlConnect *handle_;

@@ -42,13 +42,13 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("z"), NARROW(Value(_T("z")).as_string()));
         CPPUNIT_ASSERT_EQUAL(12, (int)Value(_T("12")).as_longint());
         CPPUNIT_ASSERT(Decimal(_T("12.3")) == Value(_T("012.30")).as_decimal());
-        DateTime a(mk_datetime(2006, 11, 16, 15, 5, 10));
+        DateTime a(dt_make(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT(a == Value(_T("2006-11-16T15:05:10")).as_date_time());
         CPPUNIT_ASSERT(a == Value(_T("2006-11-16 15:05:10")).as_date_time());
         time_t t = time(NULL);
         tm stm;
         localtime_safe(&t, &stm);
-        DateTime b(mk_datetime(stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday,
+        DateTime b(dt_make(stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday,
                     stm.tm_hour, stm.tm_min, stm.tm_sec));
         CPPUNIT_ASSERT(b == Value((LongInt)t).as_date_time());
     }
@@ -74,7 +74,7 @@ public:
         CPPUNIT_ASSERT(Value(Decimal(1)) == Value(Decimal(1)));
         CPPUNIT_ASSERT(Value(Decimal(1)) != Value(Decimal(2)));
         time_t t = time(NULL);
-        DateTime a(mk_datetime(t)), b(mk_datetime(t + 1));
+        DateTime a(dt_from_time_t(t)), b(dt_from_time_t(t + 1));
         CPPUNIT_ASSERT(Value(a) == Value(a));
         CPPUNIT_ASSERT(Value(a) != Value(b));
     }
@@ -91,7 +91,7 @@ public:
         CPPUNIT_ASSERT(Value(Decimal(1)) < Value(Decimal(2)));
         CPPUNIT_ASSERT(!(Value(Decimal(1)) < Value(Decimal(1))));
         time_t t = time(NULL);
-        DateTime a(mk_datetime(t)), b(mk_datetime(t + 1));
+        DateTime a(dt_from_time_t(t)), b(dt_from_time_t(t + 1));
         CPPUNIT_ASSERT(Value(a) < Value(b));
         CPPUNIT_ASSERT(!(Value(a) < Value(a)));
     }
@@ -103,7 +103,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("'a''sd'"), NARROW(Value(_T("a'sd")).sql_str()));
         CPPUNIT_ASSERT_EQUAL(string("123.45"),
                 NARROW(Value(Decimal(_T("0123.450"))).sql_str()));
-        DateTime a(mk_datetime(2006, 11, 16, 15, 5, 10));
+        DateTime a(dt_make(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT_EQUAL(string("'2006-11-16 15:05:10'"), NARROW(Value(a).sql_str()));
     }
 
@@ -112,7 +112,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("123"), NARROW(Value(123).as_string()));
         CPPUNIT_ASSERT_EQUAL(string("a'sd"), NARROW(Value(_T("a'sd")).as_string()));
         CPPUNIT_ASSERT_EQUAL(string("123.45"), NARROW(Value(Decimal(_T("0123.450"))).as_string()));
-        DateTime a(mk_datetime(2006, 11, 16, 15, 5, 10));
+        DateTime a(dt_make(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT_EQUAL(string("2006-11-16T15:05:10"), NARROW(Value(a).as_string()));
     }
 

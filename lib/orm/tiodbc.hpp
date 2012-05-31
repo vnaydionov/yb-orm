@@ -30,6 +30,8 @@
 #ifndef _TIODBC_HPP_DEFINED_
 #define _TIODBC_HPP_DEFINED_
 
+#include <util/String.h>
+
 // System headers
 #if defined(__WIN32__) || defined(_WIN32)
 #include <windows.h>
@@ -49,11 +51,7 @@
 namespace tiodbc
 {
 	//! MACRO for std::wstring or std::string based on _UNICODE definition.
-	#ifdef _UNICODE
-		typedef std::wstring _tstring;	
-	#else
-		typedef std::string _tstring;
-	#endif
+	typedef Yb::String _tstring;	
 
 	// Class prototypes
 	class connection;

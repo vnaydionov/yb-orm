@@ -3,10 +3,11 @@
 #define YB__ORM__DOMAIN_OBJ__INCLUDED
 
 #include <stdexcept>
-#include <boost/shared_ptr.hpp>
 #include <orm/XMLNode.h>
 #include <orm/DataObject.h>
+#if defined(YB_USE_TUPLE)
 #include <boost/tuple/tuple.hpp>
+#endif
 
 namespace Yb {
 
@@ -41,10 +42,10 @@ public:
 class OutOfManagedList: public std::runtime_error {
 public:
     OutOfManagedList(int pos, int sz)
-        : std::runtime_error(NARROW(_T("Trying to access index ") +
-            boost::lexical_cast<String>(pos) + 
-            _T(" that falls out of ManagedList of size ") +
-            boost::lexical_cast<String>(sz)))
+        : std::runtime_error("Trying to access index " +
+            to_stdstring(pos) + 
+            " that falls out of ManagedList of size " +
+            to_stdstring(sz))
     {}
 };
 
@@ -118,7 +119,7 @@ public:
     ManagedList(): ro_(NULL) {}
     ManagedList(RelationObject *ro, DataObject::Ptr m): ro_(ro), master_(m) {
         YB_ASSERT(ro_);
-        YB_ASSERT(ro_->master_object() == master_.get());
+        YB_ASSERT(ro_->master_object() == shptr_get(master_));
     }
     RelationObject *relation_object() const { return ro_; }
     DataObject::Ptr master() { return master_; }
@@ -176,7 +177,7 @@ class DomainObject: public XMLizable
 protected:
     DataObject::Ptr d_;
     void check_ptr() const {
-        if (!d_.get())
+        if (!shptr_get(d_))
             throw NoRawData();
     }
 public:
@@ -200,7 +201,7 @@ public:
     virtual ~DomainObject() {}
     void save(Session &session) { check_ptr(); session.save(d_); }
     void detach(Session &session) { check_ptr(); session.detach(d_); }
-    bool empty() const { return !d_.get(); }
+    bool empty() const { return !shptr_get(d_); }
     Session *session() const {
         check_ptr();
         return d_->session();
@@ -251,9 +252,9 @@ public:
     int cmp(const DomainObject &x) const {
         if (d_ == x.d_)
             return 0;
-        if (!d_.get())
+        if (!shptr_get(d_))
             return -1;
-        if (!x.d_.get())
+        if (!shptr_get(x.d_))
             return 1;
         if (d_->values() == x.d_->values())
             return 0;
@@ -268,6 +269,14 @@ public:
     static bool register_relation_meta(Relation::Ptr rel);
     static void save_registered(Schema &schema);
 };
+
+template <class R>
+class DomainResultSet;
+
+template <class R>
+struct QueryFunc;
+
+#if defined(YB_USE_TUPLE)
 
 template <class H>
 boost::tuples::cons<H, boost::tuples::null_type>
@@ -286,9 +295,6 @@ row2tuple(const boost::tuples::cons<H, T> &item,
     return boost::tuples::cons<H, T>(H(row[pos]),
         row2tuple(item.get_tail(), row, pos + 1));
 }
-
-template <class R>
-class DomainResultSet;
 
 template <class T0, class T1, class T2, class T3, class T4,
           class T5, class T6, class T7, class T8, class T9>
@@ -322,6 +328,35 @@ public:
     }
 };
 
+template <class H>
+void tuple_tables(const boost::tuples::cons<H, boost::tuples::null_type> &, Strings &tables)
+{
+    tables.push_back(H::get_table_name());
+}
+
+template <class H, class T>
+void tuple_tables(const boost::tuples::cons<H, T> &item, Strings &tables)
+{
+    tables.push_back(H::get_table_name());
+    tuple_tables(item.get_tail(), tables);
+}
+
+template <class T0, class T1, class T2, class T3, class T4,
+          class T5, class T6, class T7, class T8, class T9>
+struct QueryFunc<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> > {
+    typedef boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> R;
+    typedef DomainResultSet<R> RS;
+    static RS query(Session &session, const Filter &filter,
+         const StrList &order_by, int max)
+    {
+        Strings tables;
+        typename R::inherited tuple;
+        tuple_tables(tuple, tables);
+        return RS(session.load_collection(tables, filter, order_by, max));
+    }
+};
+#endif // defined(YB_USE_TUPLE)
+
 template <class R>
 class DomainResultSet: public ResultSetBase<R>
 {
@@ -347,37 +382,6 @@ public:
         : rs_(obj.rs_)
     {
         YB_ASSERT(!obj.it_.get());
-    }
-};
-
-template <class H>
-void tuple_tables(const boost::tuples::cons<H, boost::tuples::null_type> &, Strings &tables)
-{
-    tables.push_back(H::get_table_name());
-}
-
-template <class H, class T>
-void tuple_tables(const boost::tuples::cons<H, T> &item, Strings &tables)
-{
-    tables.push_back(H::get_table_name());
-    tuple_tables(item.get_tail(), tables);
-}
-
-template <class R>
-struct QueryFunc;
-
-template <class T0, class T1, class T2, class T3, class T4,
-          class T5, class T6, class T7, class T8, class T9>
-struct QueryFunc<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> > {
-    typedef boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> R;
-    typedef DomainResultSet<R> RS;
-    static RS query(Session &session, const Filter &filter,
-         const StrList &order_by, int max)
-    {
-        Strings tables;
-        typename R::inherited tuple;
-        tuple_tables(tuple, tables);
-        return RS(session.load_collection(tables, filter, order_by, max));
     }
 };
 

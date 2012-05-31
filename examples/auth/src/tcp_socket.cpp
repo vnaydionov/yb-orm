@@ -2,7 +2,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <cstring>
-#include <boost/lexical_cast.hpp>
+#include <util/String.h>
 
 using namespace std;
 
@@ -18,7 +18,7 @@ TcpSocket::init_socket_lib()
         if (err != 0) {
             throw SocketEx("init_socket_lib",
                     "WSAStartup failed with error: " +
-                    boost::lexical_cast<string>(err));
+                    Yb::to_stdstring(err));
         }
         did_it = true;
     }

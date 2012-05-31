@@ -2,7 +2,7 @@
 #define YB__UTIL__SINGLETON___INCLUDED
 
 #include <memory>
-#include <boost/thread/mutex.hpp>
+#include <util/Thread.h>
 
 class TestSingleton;
 
@@ -14,7 +14,7 @@ class SingletonHolder
     friend class ::TestSingleton;
 
     std::auto_ptr<T> instance_;
-    boost::mutex mutex_;
+    Mutex mutex_;
 
     static SingletonHolder singleton;
 
@@ -25,7 +25,7 @@ public:
     {}
     T *get()
     {
-        boost::mutex::scoped_lock lock(mutex_);
+        ScopedLock lock(mutex_);
         if (!instance_.get())
             instance_.reset(new T());
         return instance_.get();

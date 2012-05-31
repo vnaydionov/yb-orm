@@ -27,76 +27,102 @@
 *****************************************************************************/
 
 #include <orm/tiodbc.hpp>
-#include <cstring>
 #include <memory>
-#include <util/UnicodeSupport.h>
+#include <util/String.h>
 
 namespace {
 
-#if defined(_UNICODE)
-#define CHAR_MASK 0xFFFF
-typedef wchar_t MY_TCHAR;
-#else
-#define CHAR_MASK 0xFF
-typedef char MY_TCHAR;
-#endif
+typedef Yb::CharBuf<SQLTCHAR> SQLTCHAR_buf;
 
-template <class T>
-size_t str_length(const T *s) {
-	const T *s0 = s;
-	while (*s)
-		++s;
-	return s - s0;
-}
-
-template <class T>
-T *str_copy(T *dst, const T *src) {
-	T *dst0 = dst;
-	while (*src)
-		*dst++ = *src++;
-	return dst0;
-}
-
-template <class T>
-T *str_duplicate(const T *s) {
-	size_t n = str_length(s);
-	T *t = new T[n + 1];
-	return str_copy(t, s);
-}
-
-template <class T, class U>
-T *str_convert(T *dst, const U *src)
+Yb::String sqltchar2ybstring(const SQLTCHAR *src,
+		const std::string &sql_enc = "")
 {
-	T *dst0 = dst;
-	for (; *src; ++src, ++dst) {
-		if ((*src & (U)CHAR_MASK) != *src)
-			*dst = (T)'?';
-		else
-			*dst = (T)*src;
+	int src_len = Yb::x_strlen(src);
+#if defined(_UNICODE)
+#if defined(YB_USE_UNICODE)
+	Yb::String wide_dst;
+	typedef Yb::Char WideChar;
+	typedef Yb::String WideString;
+#else
+	std::wstring wide_dst;
+	typedef wchar_t WideChar;
+	typedef std::wstring WideString;
+#endif
+	Yb::CharBuf<WideChar> dst_buf(src_len + 1);
+	int i;
+	for (i = 0; i < src_len; ++i)
+		dst_buf.data[i] = WideChar((int)src[i]);
+	dst_buf.data[i] = 0;
+#if defined(YB_USE_QT)
+	wide_dst = WideString(dst_buf.data, src_len);
+#else
+	wide_dst = WideString(dst_buf.data);
+#endif
+#if defined(YB_USE_UNICODE)
+	return wide_dst;
+#else
+	return Yb::String(Yb::str_narrow(wide_dst).c_str());
+#endif
+#else
+#if defined(YB_USE_UNICODE)
+	std::string narrow_dst;
+	typedef std::string NarrowString;
+#else
+	Yb::String narrow_dst;
+	typedef Yb::String NarrowString;
+#endif
+	if (!sql_enc.empty() && sql_enc != Yb::get_locale_enc()) {
+		std::wstring wide_tmp = Yb::str_widen((const char *)src, sql_enc);
+		narrow_dst = NarrowString(Yb::str_narrow(wide_tmp).c_str());
 	}
-	*dst = *src;
-	return dst0;
+	else
+		narrow_dst = NarrowString((const char *)src);
+#if defined(YB_USE_UNICODE)
+	return Yb::std2str(narrow_dst);
+#else
+	return narrow_dst;
+#endif
+#endif
 }
 
-template <class T>
-class CharBuf {
-	CharBuf(const CharBuf &x);
-	CharBuf &operator=(const CharBuf &x);
-public:
-	T *data;
-	CharBuf(size_t n): data(new T[n]) {}
-	template <class U>
-	CharBuf(const U *d): data(new T[str_length(d) + 1])
-	{
-		str_convert(data, d);
+SQLTCHAR_buf ybstring2sqltchar(const Yb::String &src,
+		const std::string &sql_enc = "")
+{
+#if defined(_UNICODE)
+#undef CHAR_CODE
+#if defined(YB_USE_UNICODE)
+	const Yb::String &wide_src = src;
+	int src_len = Yb::str_length(src);
+#define CHAR_CODE(x) (Yb::char_code(x))
+#else
+	std::wstring wide_src = Yb::str_widen(Yb::str_data(src));
+	int src_len = wide_src.size();
+#define CHAR_CODE(x) (x)
+#endif
+	SQLTCHAR_buf dst(src_len + 1);
+	int i;
+	for (i = 0; i < src_len; ++i)
+		dst.data[i] = (SQLTCHAR)CHAR_CODE(wide_src[i]);
+	dst.data[i] = 0;
+	return dst;
+#else
+#if defined(YB_USE_UNICODE)
+	std::string narrow_src = Yb::str2std(src, sql_enc);
+#else
+	std::string narrow_src;
+	if (!sql_enc.empty() && sql_enc != Yb::get_locale_enc()) {
+		std::wstring wide_tmp = Yb::str_widen(Yb::str_data(src));
+		narrow_src = Yb::str_narrow(wide_tmp, sql_enc);
 	}
-	~CharBuf() { delete [] data; }
-	size_t length() const { return str_length(data); }
-	T *release() { T *d = data; data = NULL; return d; }
-};
-
-typedef CharBuf<MY_TCHAR> MY_TCHAR_buf;
-typedef CharBuf<SQLTCHAR> SQLTCHAR_buf;
+	else
+		narrow_src = std::string(Yb::str_data(src));
+#endif
+	int src_len = narrow_src.size();
+	SQLTCHAR_buf dst(src_len + 1);
+	std::memcpy(dst.data, narrow_src.c_str(), src_len + 1);
+#endif
+	return dst;
+}
 
 } // end of anonymous namespace
 
@@ -134,10 +160,8 @@ namespace tiodbc
 
 		if (TIODBC_SUCCESS_CODE(rc))
 		{
-			MY_TCHAR_buf t_status_code(status_code),
-						 t_error_message(error_message);
-			_error_desc = t_error_message.data;
-			_status_code = t_status_code.data;
+			_status_code = sqltchar2ybstring(status_code, "");
+			_error_desc = sqltchar2ybstring(error_message, "");
 			return true;
 		}
 
@@ -230,7 +254,7 @@ namespace tiodbc
 
 		if (_timeout != -1) {
 			// Set connection timeout
-			SQLSetConnectAttr(conn_h, SQL_ATTR_LOGIN_TIMEOUT, (SQLPOINTER)_timeout, 0);
+			SQLSetConnectAttr(conn_h, SQL_ATTR_LOGIN_TIMEOUT, (SQLPOINTER)(size_t)_timeout, 0);
 		}
 
 		b_autocommit = _autocommit;
@@ -240,8 +264,9 @@ namespace tiodbc
 		}
 
 		// Connect!
-		SQLTCHAR_buf s_dsn(_dsn.c_str()),
-					 s_user(_user.c_str()), s_pass(_pass.c_str());
+		SQLTCHAR_buf s_dsn = ybstring2sqltchar(_dsn, ""),
+					 s_user = ybstring2sqltchar(_user, ""),
+					 s_pass = ybstring2sqltchar(_pass, "");
 		rc = SQLConnect(conn_h,
 					    s_dsn.data, SQL_NTS,
 						s_user.data, SQL_NTS,
@@ -391,8 +416,7 @@ namespace tiodbc
 				is_null_flag = 1;
 				return _tstring();
 			}
-			MY_TCHAR_buf t_small_buff(small_buff);
-			str_buf = _tstring(t_small_buff.data);
+			str_buf = sqltchar2ybstring(small_buff, "");
 			return str_buf;
 		}
 		else if (sz_needed > 0)
@@ -401,8 +425,7 @@ namespace tiodbc
 			SQLINTEGER sz_buff = sz_needed + 1;
 			SQLTCHAR_buf buff(sz_buff);
 			SQLGetData(stmt_h, col_num, SQL_C_TCHAR, buff.data, sz_buff, &sz_needed);
-			MY_TCHAR_buf t_buff(buff.data);
-			str_buf = _tstring(t_buff.data);
+			str_buf = sqltchar2ybstring(buff.data, "");
 			return str_buf;
 		}
 
@@ -526,7 +549,8 @@ namespace tiodbc
 	// Set as string
 	void param_impl::set_as_string(const _tstring & _str, bool _is_null)
 	{
-		int data_sz = (_str.size() + 1) * sizeof(SQLTCHAR);
+		SQLTCHAR_buf data(ybstring2sqltchar(_str, ""));
+		int data_sz = data.len * sizeof(SQLTCHAR);
 		if (bound_sz < data_sz) {
 			bound_sz = data_sz;
 			if (bound_sz < sizeof(_int_buffer))
@@ -553,8 +577,7 @@ namespace tiodbc
 		}
 		else {
 			// Save buffer internally
-			SQLTCHAR_buf t_str(_str.c_str());
-			std::memcpy(buf, t_str.data, data_sz);
+			std::memcpy(buf, data.data, data_sz);
 		}
 		_int_SLOIP = _is_null? SQL_NULL_DATA: SQL_NTS;
 	}
@@ -690,7 +713,7 @@ namespace tiodbc
 			return false;
 
 		// Prepare statement
-		SQLTCHAR_buf buff(_stmt.c_str());
+		SQLTCHAR_buf buff = ybstring2sqltchar(_stmt, "");
 		rc = SQLPrepare(stmt_h, buff.data, SQL_NTS);
 
 		if (!TIODBC_SUCCESS_CODE(rc))
@@ -712,7 +735,7 @@ namespace tiodbc
 			return false;
 
 		// Execute directly statement
-		SQLTCHAR_buf buff(_query.c_str());
+		SQLTCHAR_buf buff = ybstring2sqltchar(_query, "");
 		rc = SQLExecDirect(stmt_h, buff.data, SQL_NTS);
 
 		if (!TIODBC_SUCCESS_CODE(rc) && rc != SQL_NO_DATA)
@@ -790,9 +813,9 @@ namespace tiodbc
 
 	// Get a field by column number (1-based)
 	const field_impl statement::field(int _num) const
-	{	
-		MY_TCHAR_buf name(m_cols[_num - 1].name);
-		return field_impl(stmt_h, _num, name.data, m_cols[_num - 1].type);
+	{
+		_tstring name = sqltchar2ybstring(m_cols[_num - 1].name, "");
+		return field_impl(stmt_h, _num, name, m_cols[_num - 1].type);
 	}
 
 	// Count columns of the result

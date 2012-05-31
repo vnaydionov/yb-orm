@@ -5,7 +5,7 @@
 #include <string>
 #include <set>
 #include <map>
-#include <boost/shared_ptr.hpp>
+#include <util/Utility.h>
 #include <util/Exception.h>
 #include <orm/Value.h>
 
@@ -23,8 +23,10 @@ class StrList
         typename T::const_iterator it = cont.begin(), end = cont.end();
         if (it != end)
             r = *it;
-        for (++it; it != end; ++it)
-            r += _T(", ") + *it;
+        for (++it; it != end; ++it) {
+            r += _T(", ");
+            r += *it;
+        }
         return r;
     }
 public:
@@ -43,8 +45,11 @@ public:
     StrList(const String &s)
         : str_list_(s)
     {}
-    StrList(const Char *s)
-        : str_list_(s)
+    StrList(const wchar_t *s)
+        : str_list_(WIDEN(fast_narrow(s).c_str()))
+    {}
+    StrList(const char *s)
+        : str_list_(WIDEN(s))
     {}
     const String &get_str() const { return str_list_; }
 };
@@ -60,7 +65,7 @@ public:
 
 class Filter
 {
-    boost::shared_ptr<FilterBackend> backend_;
+    SharedPtr<FilterBackend>::Type backend_;
     String sql_;
 public:
     Filter();
@@ -70,7 +75,7 @@ public:
     const String get_sql() const;
     const String collect_params_and_build_sql(
             Values &seq) const;
-    const FilterBackend *get_backend() const { return backend_.get(); }
+    const FilterBackend *get_backend() const { return shptr_get(backend_); }
 };
 
 class FilterBackendCmp : public FilterBackend

@@ -22,13 +22,13 @@ Filter::Filter(FilterBackend *backend)
 bool
 Filter::is_empty() const
 {
-    return !backend_.get() && !sql_.compare(_T("1=1"));
+    return !shptr_get(backend_) && !sql_.compare(_T("1=1"));
 }
 
 const String
 Filter::get_sql() const
 {
-    if (backend_.get())
+    if (shptr_get(backend_))
         return backend_->do_get_sql();
     return sql_;
 }
@@ -36,7 +36,7 @@ Filter::get_sql() const
 const String
 Filter::collect_params_and_build_sql(Values &seq) const
 {
-    if (backend_.get())
+    if (shptr_get(backend_))
         return backend_->do_collect_params_and_build_sql(seq);
     return sql_;
 }
@@ -119,27 +119,27 @@ FilterBackendOr::do_collect_params_and_build_sql(Values &seq) const
 const String
 FilterBackendByPK::do_get_sql() const
 {
-    OStringStream sql;
-    sql << _T("1=1");
+    std::ostringstream sql;
+    sql << "1=1";
     ValueMap::const_iterator i = key_.second.begin(),
         iend = key_.second.end();
     for (; i != iend; ++i)
-        sql << _T(" AND ") << i->first << _T(" = ") << i->second.sql_str();
-    return sql.str();
+        sql << " AND " << NARROW(i->first) << " = " << NARROW(i->second.sql_str());
+    return WIDEN(sql.str());
 }
 
 const String
 FilterBackendByPK::do_collect_params_and_build_sql(Values &seq) const
 {
-    OStringStream sql;
-    sql << _T("1=1");
+    std::ostringstream sql;
+    sql << "1=1";
     ValueMap::const_iterator i = key_.second.begin(),
         iend = key_.second.end();
     for (; i != iend; ++i) {
-        sql << _T(" AND ") << i->first << _T(" = ?");
+        sql << " AND " << NARROW(i->first) << " = ?";
         seq.push_back(i->second);
     }
-    return sql.str();
+    return WIDEN(sql.str());
 }
 
 ORMError::ORMError(const String &msg)

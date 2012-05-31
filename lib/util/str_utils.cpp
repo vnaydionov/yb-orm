@@ -45,7 +45,7 @@ bool is_symbol_of_id(Yb::Char c)
 
 bool is_id(const Yb::String &s)
 {
-    if (s.empty())
+    if (str_empty(s))
         return false;
     Yb::String::const_iterator it = s.begin(), end = s.end();
     if (!is_start_symbol_of_id(*it))
@@ -60,36 +60,36 @@ bool starts_with(const Yb::String &s, const Yb::String &subs)
 {
     if (s.size() < subs.size())
         return false;
-    return s.substr(0, subs.size()) == subs;
+    return str_substr(s, 0, subs.size()) == subs;
 }
 
 bool ends_with(const Yb::String &s, const Yb::String &subs)
 {
     if (s.size() < subs.size())
         return false;
-    return s.substr(s.size() - subs.size()) == subs;
+    return str_substr(s, s.size() - subs.size()) == subs;
 }
 
 const Yb::String substr_after(const Yb::String &s, const Yb::String &subs)
 {
-    Yb::String::size_type pos = s.find(subs);
-    if (pos == Yb::String::npos)
+    int pos = str_find(s, subs);
+    if (pos == -1)
         return Yb::String();
-    return s.substr(pos + subs.size());
+    return str_substr(s, pos + subs.size());
 }
 
 Yb::Char to_lower(Yb::Char c)
 {
     if (!is_upper(c))
         return c;
-    return c + (_T('a') - _T('A'));
+    return Yb::Char(char_code(c) + (_T('a') - _T('A')));
 }
 
 Yb::Char to_upper(Yb::Char c)
 {
     if (!is_lower(c))
         return c;
-    return c + (_T('A') - _T('a'));
+    return Yb::Char(char_code(c) + (_T('A') - _T('a')));
 }
 
 const Yb::String translate(const Yb::String &s, Yb::Char (*f)(Yb::Char))
@@ -98,7 +98,7 @@ const Yb::String translate(const Yb::String &s, Yb::Char (*f)(Yb::Char))
     r.reserve(s.size());
     Yb::String::const_iterator it = s.begin(), end = s.end();
     for (; it != end; ++it)
-        r.push_back(f(*it));
+        str_append(r, f(*it));
     return r;
 }
 
@@ -120,17 +120,17 @@ const Yb::String trim_trailing_space(const Yb::String &s)
     while (j >= 0 && is_space(s[j])) --j;
     if (i > j)
         return Yb::String();
-    return s.substr(i, j - i + 1);
+    return str_substr(s, i, j - i + 1);
 }
 
 const Yb::String sql_string_escape(const Yb::String &s)
 {
     Yb::String r;
     r.reserve(s.size() * 2);
-    for (size_t pos = 0; pos < s.size(); ++pos) {
+    for (int pos = 0; pos < s.size(); ++pos) {
         if (s[pos] == _T('\''))
-            r.push_back(_T('\''));
-        r.push_back(s[pos]);
+            str_append(r, _T('\''));
+        str_append(r, s[pos]);
     }
     return r;
 }
@@ -139,10 +139,10 @@ const Yb::String html_escape(const Yb::String &s)
 {
     Yb::String r;
     r.reserve(s.size() * 2);
-    for (size_t i = 0; i < s.size(); ++i)
+    for (int i = 0; i < s.size(); ++i)
     {
         Yb::Char c = s[i];
-        switch (c)
+        switch (char_code(c))
         {
             case _T('<'):
                 r += _T("&lt;");
@@ -172,38 +172,38 @@ split_path(const Yb::String &path, vector<Yb::String> &items)
 vector<Yb::String> &split_str(const Yb::String &s,
         const Yb::String &delim, vector<Yb::String> &parts)
 {
-    size_t start = 0;
+    int start = 0;
     while (1) {
-        size_t pos = s.find(delim, start);
-        if (pos == Yb::String::npos) {
-            parts.push_back(Yb::String(s, start));
+        int pos = str_find(s, delim, start);
+        if (-1 == pos) {
+            parts.push_back(str_substr(s, start));
             break;
         }
-        parts.push_back(Yb::String(s, start, pos - start));
-        start = pos + delim.size();
+        parts.push_back(str_substr(s, start, pos - start));
+        start = pos + str_length(delim);
     }
     return parts;
 }
 
-void split_str_by_chars(const Yb::String &s, const Yb::Char *delim,
+void split_str_by_chars(const Yb::String &s, const Yb::String &delim,
         vector<Yb::String> &parts, int limit)
 {
     const size_t sz0 = parts.size();
     Yb::String p;
-    for (size_t i = 0; i < s.size(); ++i) {
-        if (Yb::StrChr(delim, s[i])) {
-            if (limit > 0 && !p.empty() &&
+    for (int i = 0; i < str_length(s); ++i) {
+        if (str_find(delim, s[i]) != -1) {
+            if (limit > 0 && !str_empty(p) &&
                     parts.size() - sz0 >= (size_t)(limit - 1))
-                p.push_back(s[i]);
-            else if (!p.empty()) {
+                str_append(p, s[i]);
+            else if (!str_empty(p)) {
                 parts.push_back(p);
-                p.clear();
+                p = _T("");
             }
         }
         else
-            p.push_back(s[i]);
+            str_append(p, s[i]);
     }
-    if (!p.empty())
+    if (!str_empty(p))
         parts.push_back(p);
 }
 

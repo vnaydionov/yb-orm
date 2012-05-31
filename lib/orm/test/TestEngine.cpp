@@ -69,8 +69,8 @@ public:
         Engine engine(Engine::READ_ONLY);
         record_id_ = get_next_test_id(engine, _T("S_ORM_TEST_ID"));
         CPPUNIT_ASSERT(record_id_ > 0);
-        OStringStream sql;
-        sql << _T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)");
+        std::ostringstream sql;
+        sql << "INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)";
         Values params;
         params.push_back(Value(record_id_));
         params.push_back(Value(_T("item")));
@@ -80,7 +80,7 @@ public:
                 xgetenv(_T("YBORM_DB")), xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
-        conn.prepare(sql.str());
+        conn.prepare(WIDEN(sql.str()));
         conn.exec(params);
         conn.commit();
     }

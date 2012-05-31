@@ -6,8 +6,8 @@
 #include <vector>
 #include <map>
 #include <iostream>
-#include <boost/shared_ptr.hpp>
-#include <util/UnicodeSupport.h>
+#include <util/Utility.h>
+#include <util/String.h>
 #include <util/xml_writer.h>
 
 namespace Yb {
@@ -17,7 +17,7 @@ namespace ElementTree {
 typedef std::map<Yb::String, Yb::String> AttribMap;
 typedef std::vector<Yb::String> Strings;
 struct Element;
-typedef boost::shared_ptr<Element> ElementPtr;
+typedef SharedPtr<Element>::Type ElementPtr;
 typedef std::vector<ElementPtr> Elements;
 typedef std::auto_ptr<Elements> ElementsPtr;
 

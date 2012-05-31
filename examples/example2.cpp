@@ -18,7 +18,7 @@ Yb::Logger logger(&appender);
 int main()
 {
     Yb::String conf_dir = Yb::StrUtils::xgetenv(_T("EX1_DIR"));
-    if (conf_dir.empty())
+    if (Yb::str_empty(conf_dir))
         conf_dir = _T(".");
 #if 0
     Yb::load_meta(conf_dir + _T("/ex1_schema.xml"), Yb::theMetaData::instance());

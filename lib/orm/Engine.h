@@ -8,7 +8,6 @@
 #include <map>
 #include <set>
 #include <stdexcept>
-#include <boost/utility.hpp>
 #include <util/nlogger.h>
 #include <orm/Value.h>
 #include <orm/Filters.h>
@@ -69,7 +68,7 @@ public:
 };
 
 class Engine
-    : public EngineBase, private boost::noncopyable
+    : public EngineBase, private NonCopyable
 {
     friend class ::TestEngine;
 public:

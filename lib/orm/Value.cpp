@@ -1,10 +1,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <iomanip>
-#include <boost/lexical_cast.hpp>
-#include <boost/thread/mutex.hpp>
 #include <util/str_utils.hpp>
-#include <util/nlogger.h>
 #include <orm/Value.h>
 
 using namespace std;
@@ -12,68 +9,7 @@ using namespace Yb::StrUtils;
 
 namespace Yb {
 
-static int extract_int(const Char *s, size_t len)
-{
-    int a = 0;
-    for (; len > 0 && *s >= _T('0') && *s <= _T('9');
-         a = a*10 + *s - _T('0'), --len, ++s);
-    return len == 0? a: -1;
-}
-
-const DateTime mk_datetime(const String &s)
-{
-#if 0
-    String::size_type pos = s.find(_T('T'));
-    if (pos == String::npos)
-        return boost::posix_time::time_from_string(s);
-    String t(s);
-    t[pos] = _T(' ');
-    return boost::posix_time::time_from_string(t);
-#else
-    if (s.size() < 19 || s[4] != _T('-') || s[7] != _T('-') ||
-        (s[10] != _T(' ') && s[10] != _T('T')) || s[13] != _T(':') ||
-        s[16] != _T(':'))
-    {
-        throw ValueBadCast(s, _T("YYYY-MM-DD HH:MI:SS"));
-    }
-    const Char *cs = s.c_str();
-    int year = extract_int(cs, 4), month = extract_int(cs + 5, 2),
-        day = extract_int(cs + 8, 2), hours = extract_int(cs + 11, 2),
-        minutes = extract_int(cs + 14, 2), seconds = extract_int(cs + 17, 2);
-    if (year < 0 || month < 0 || day < 0
-        || hours < 0 || minutes < 0 || seconds < 0)
-    {
-        throw ValueBadCast(s, _T("YYYY-MM-DD HH:MI:SS"));
-    }
-    return mk_datetime(year, month, day, hours, minutes, seconds);
-#endif
-}
-
-const String ptime2str(const boost::posix_time::ptime &t)
-{
-#if 0
-    Char buf[80];
-    stprintf(buf, _T("%04d-%02d-%02dT%02d:%02d:%02d"),
-        (int)t.date().year(), (int)t.date().month(),
-        (int)t.date().day(), (int)t.time_of_day().hours(),
-        (int)t.time_of_day().minutes(), (int)t.time_of_day().seconds());
-    return String(buf);
-#else
-    OStringStream o;
-    o << setfill(_T('0'))
-        << setw(4) << t.date().year()
-        << _T('-') << setw(2) << (int)t.date().month()
-        << _T('-') << setw(2) << t.date().day()
-        << _T('T') << setw(2) << t.time_of_day().hours()
-        << _T(':') << setw(2) << t.time_of_day().minutes()
-        << _T(':') << setw(2) << t.time_of_day().seconds();
-    return o.str();
-#endif
-}
-
-struct ValueHolderBase {
-    virtual ~ValueHolderBase() {}
-};
+ValueHolderBase::~ValueHolderBase() {}
 
 template <class T>
 struct ValueHolder: public ValueHolderBase {
@@ -82,9 +18,9 @@ struct ValueHolder: public ValueHolderBase {
 };
 
 template <class T>
-const T &typed_value(boost::shared_ptr<ValueHolderBase> data)
+const T &typed_value(SharedPtr<ValueHolderBase>::Type data)
 {
-    return reinterpret_cast<ValueHolder<T> * > (data.get())->d_;
+    return reinterpret_cast<ValueHolder<T> * > (shptr_get(data))->d_;
 }
 
 Value::Value()
@@ -132,15 +68,16 @@ Value::as_integer() const
         m = (m << 16) | m;
         LongInt h = (x >> 32) & m;
         if (h && h != m)
-            throw ValueBadCast(boost::lexical_cast<String>(x) + _T("LL"),
+            throw ValueBadCast(to_string(x) + _T("LL"),
                     _T("Integer"));
         return (int)x;
     }
     String s = as_string();
     try {
-        return boost::lexical_cast<int>(s);
+        int x;
+        return from_string(s, x);
     }
-    catch (const boost::bad_lexical_cast &) {
+    catch (const std::exception &) {
         throw ValueBadCast(s, _T("Integer"));
     }
 }
@@ -154,9 +91,10 @@ Value::as_longint() const
         return typed_value<int>(data_);
     String s = as_string();
     try {
-        return boost::lexical_cast<LongInt>(s);
+        LongInt x;
+        return from_string(s, x);
     }
-    catch (const boost::bad_lexical_cast &) {
+    catch (const std::exception &) {
         throw ValueBadCast(s, _T("LongInt"));
     }
 }
@@ -173,15 +111,15 @@ Value::as_decimal() const
     catch (const Decimal::exception &) {
         double f = 0.0;
         try {
-            f = boost::lexical_cast<double>(s);
+            from_string(s, f);
         }
-        catch (const boost::bad_lexical_cast &) {
+        catch (const std::exception &) {
             throw ValueBadCast(s, _T("Decimal"));
         }
-        OStringStream o;
+        std::ostringstream o;
         o << setprecision(10) << fixed << f;
         try {
-            return Decimal(o.str());
+            return Decimal(WIDEN(o.str()));
         }
         catch (const Decimal::exception &) {
             throw ValueBadCast(s, _T("Decimal"));
@@ -196,18 +134,18 @@ Value::as_date_time() const
         return typed_value<DateTime>(data_);
     String s = as_string();
     try {
-        time_t t = boost::lexical_cast<time_t>(s);
+        DateTime x;
+        return from_string(s, x);
+    }
+    catch (const std::exception &) {
+        time_t t;
+        from_string(s, t);
         tm stm;
         if (!localtime_safe(&t, &stm))
             throw ValueBadCast(s, _T("struct tm"));
-        return DateTime(
-                boost::gregorian::date(
-                    stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday),
-                boost::posix_time::time_duration(
-                    stm.tm_hour, stm.tm_min, stm.tm_sec));
-    }
-    catch (const boost::bad_lexical_cast &) {
-        return mk_datetime(s);
+        return dt_make(stm.tm_year + 1900,
+                stm.tm_mon + 1, stm.tm_mday,
+                stm.tm_hour, stm.tm_min, stm.tm_sec);
     }
 }
 
@@ -238,8 +176,8 @@ Value::sql_str() const
         return quote(sql_string_escape(typed_value<String>(data_)));
     else if (type_ == DATETIME) {
         String t(to_string(typed_value<DateTime>(data_)));
-        size_t pos = t.find(_T('T'));
-        if (pos != String::npos)
+        int pos = str_find(t, _T('T'));
+        if (pos != -1)
             t[pos] = _T(' ');
         return _T("'") + t + _T("'");
     }
@@ -302,15 +240,15 @@ Value::get_typed_value(int type) const
     }
 }
 
-const Char *
+const String
 Value::get_type_name(int type)
 {
-    static const Char *type_names[] =
-        { _T("Invalid"), _T("Integer"), _T("LongInt"),
-          _T("String"), _T("Decimal"), _T("DateTime") };
-    if (type < 0 || type >= sizeof(type_names)/sizeof(const Char *))
-        return _T("UnknownType");
-    return type_names[type];
+    static const char *type_names[] =
+        { "Invalid", "Integer", "LongInt",
+          "String", "Decimal", "DateTime" };
+    if (type < 0 || type >= sizeof(type_names)/sizeof(const char *))
+        return WIDEN("UnknownType");
+    return WIDEN(type_names[type]);
 }
 
 } // namespace Yb

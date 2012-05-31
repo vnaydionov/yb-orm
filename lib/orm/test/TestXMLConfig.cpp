@@ -241,7 +241,7 @@ public:
         String fk_table, fk_field;
         XMLMetaDataConfig::get_foreign_key_data(ElementTree::parse(xml),
                 fk_table, fk_field);
-        CPPUNIT_ASSERT(fk_field.empty());
+        CPPUNIT_ASSERT(str_empty(fk_field));
     }
 
     void testAbsentForeignKeyTable()
@@ -274,8 +274,8 @@ public:
     void testRelationSide() {
         ElementTree::ElementPtr node(ElementTree::parse(
             "<one class='Abc' property='def' use-list='false' xxx='1'/>"));
-        static const Char
-            *anames[] = {_T("property"), _T("use-list"), _T("some-other")};
+        static const char
+            *anames[] = {"property", "use-list", "some-other"};
         String cname;
         Relation::AttrMap attrs;
         cfg_.parse_relation_side(node, anames, sizeof(anames)/sizeof(void*),
@@ -289,8 +289,8 @@ public:
     void testRelationSideNoClass() {
         ElementTree::ElementPtr node(ElementTree::parse(
             "<one property='def' use-list='false' xxx='1'/>"));
-        static const Char
-            *anames[] = {_T("property"), _T("use-list"), _T("some-other")};
+        static const char
+            *anames[] = {"property", "use-list", "some-other"};
         String cname;
         Relation::AttrMap attrs;
         cfg_.parse_relation_side(node, anames, sizeof(anames)/sizeof(void*),

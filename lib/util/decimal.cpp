@@ -1,29 +1,10 @@
 #include <util/decimal.h>
 #include <sstream>
+#include <stdexcept>
 #include <util/str_utils.hpp>
 
 using namespace std;
 using namespace Yb::StrUtils;
-
-const char *decimal::exception::what() const throw()
-{
-    return "Decimal exception";
-}
-
-const char *decimal::overflow::what() const throw()
-{
-    return "Decimal exception: overflow";
-}
-
-const char *decimal::divizion_by_zero::what() const throw()
-{
-    return "Decimal exception: divizion by zero";
-}
-
-const char *decimal::invalid_format::what() const throw()
-{
-    return "Decimal exception: invalid format";
-}
 
 namespace { // Anonymous namespace
 
@@ -164,7 +145,7 @@ void init_from_str(const Yb::Char *s, decimal_numerator &value, int &precision)
     {
         if (is_digit(*s))
         {
-            value = add(mul(value, 10), *s - _T('0'));
+            value = add(mul(value, 10), Yb::char_code(*s) - _T('0'));
             if (decimal)
                 ++precision;
             ++digits;
@@ -177,7 +158,7 @@ void init_from_str(const Yb::Char *s, decimal_numerator &value, int &precision)
             break;
     }
     while (is_space(*s)) ++s;
-    if (*s || !digits)
+    if (Yb::char_code(*s) || !digits)
         throw decimal::invalid_format();
     if (negative)
         value = -value;
@@ -240,7 +221,7 @@ decimal::decimal(const Yb::String &s):
     value_(0),
     precision_(0)
 {
-    init_from_str(s.c_str(), value_, precision_);
+    init_from_str(Yb::str_data(s), value_, precision_);
     check_format(value_, precision_);
     normalize(value_, precision_);
 }
@@ -249,9 +230,9 @@ decimal::decimal(double x):
     value_(0),
     precision_(0)
 {
-    Yb::OStringStream s;
+    std::ostringstream s;
     s << std::fixed << x;
-    init_from_str(s.str().c_str(), value_, precision_);
+    init_from_str(Yb::str_data(WIDEN(s.str())), value_, precision_);
     check_format(value_, precision_);
     normalize(value_, precision_);
 }
@@ -392,7 +373,10 @@ const Yb::String decimal::str() const
     {
         if (n == precision_ && n > 0)
             s = _T(".") + s;
-        s = Yb::String(1, x % 10 + _T('0')) + s;
+        Yb::Char buf[2];
+        buf[0] = Yb::Char((int)(_T('0') + x % 10));
+        buf[1] = Yb::Char(0);
+        s = Yb::String(buf) + s;
         x = x / 10;
         if (!x && n >= precision_)
             break;
@@ -430,7 +414,7 @@ const decimal operator / (const decimal &x, const decimal &y)
     return t;
 }
 
-Yb::OStream &operator << (Yb::OStream &o, const decimal &x)
+std::ostream &operator << (std::ostream &o, const decimal &x)
 {
     int prec = o.precision();
     if (prec < 0)
@@ -456,20 +440,44 @@ Yb::OStream &operator << (Yb::OStream &o, const decimal &x)
     {
         if (y.get_precision() == 0)
             s += _T('.');
-        s += Yb::String(o.precision() - y.get_precision(), _T('0'));
+        s += Yb::str_n(o.precision() - y.get_precision(), _T('0'));
     }
-    o << s;
+    o << NARROW(s);
     return o;
 }
 
-Yb::IStream &operator >> (Yb::IStream &i, decimal &x)
+std::istream &operator >> (std::istream &i, decimal &x)
 {
-    Yb::String str;
-    i >> str;
+    std::string buf;
+    i >> buf;
     try {
-        x = decimal(str);
+        x = decimal(WIDEN(buf));
     }
     catch (const decimal::exception &) {
+        i.setstate(ios_base::failbit);
+    }
+    return i;
+}
+
+std::wostream &operator << (std::wostream &o, const decimal &x)
+{
+    std::ostringstream out;
+    out << x;
+    o << Yb::fast_widen(out.str());
+    return o;
+}
+
+std::wistream &operator >> (std::wistream &i, decimal &x)
+{
+    std::wstring buf;
+    i >> buf;
+    try {
+        x = decimal(WIDEN(Yb::fast_narrow(buf)));
+    }
+    catch (const decimal::exception &) {
+        i.setstate(ios_base::failbit);
+    }
+    catch (const std::runtime_error &) {
         i.setstate(ios_base::failbit);
     }
     return i;

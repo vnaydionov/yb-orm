@@ -5,7 +5,9 @@ AM_CXXFLAGS=\
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
-	$(YBORM_CXXFLAGS)
+	$(YBORM_CXXFLAGS) \
+	$(WX_CFLAGS) \
+	$(QT_CFLAGS)
 
 bin_PROGRAMS=auth
 bin_SCRIPTS=auth.sh
@@ -26,6 +28,9 @@ auth_LDFLAGS=\
 	$(ODBC_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS) \
+	$(WX_LIBS) \
+	$(QT_LDFLAGS) \
+	$(QT_LIBS) \
 	$(YBORM_LDFLAGS) \
 	$(YBORM_LIBS)
 

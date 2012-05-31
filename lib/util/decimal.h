@@ -4,7 +4,8 @@
 #include <exception>
 #include <string>
 #include <iosfwd>
-#include <util/UnicodeSupport.h>
+#include <util/String.h>
+#include <util/Exception.h>
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef __int64 decimal_numerator;
@@ -23,36 +24,36 @@ const int MAX_DECIMAL_LENGTH = 18;
 class decimal
 {
 public:
-    class exception: public std::exception
+    class exception: public Yb::RunTimeError
     {
     public:
-        virtual const char *what() const throw();
+        exception(const Yb::String &msg): Yb::RunTimeError(msg) {}
     };
 
     class overflow: public exception
     {
     public:
-        virtual const char *what() const throw();
+        overflow(): exception(_T("Decimal exception: overflow")) {}
     };
 
     class divizion_by_zero: public exception
     {
     public:
-        virtual const char *what() const throw();
+        divizion_by_zero(): exception(_T("Decimal exception: divizion by zero")) {}
     };
 
     class invalid_format: public exception
     {
     public:
-        virtual const char *what() const throw();
+        invalid_format(): exception(_T("Decimal exception: invalid format")) {}
     };
 
 public:
     decimal(int x = 0, int p = 0);
-    decimal(decimal_numerator x, int p = 0);
-    decimal(const Yb::Char *s);
-    decimal(const Yb::String &s);
-    decimal(double x);
+    explicit decimal(decimal_numerator x, int p = 0);
+    explicit decimal(const Yb::Char *s);
+    explicit decimal(const Yb::String &s);
+    explicit decimal(double x);
 
     decimal &operator += (const decimal &x);
     decimal &operator -= (const decimal &x);
@@ -83,8 +84,10 @@ const decimal operator + (const decimal &, const decimal &);
 const decimal operator - (const decimal &, const decimal &);
 const decimal operator * (const decimal &, const decimal &);
 const decimal operator / (const decimal &, const decimal &);
-Yb::OStream &operator << (Yb::OStream &o, const decimal &x);
-Yb::IStream &operator >> (Yb::IStream &i, decimal &x);
+std::ostream &operator << (std::ostream &o, const decimal &x);
+std::istream &operator >> (std::istream &i, decimal &x);
+std::wostream &operator << (std::wostream &o, const decimal &x);
+std::wistream &operator >> (std::wistream &i, decimal &x);
 
 inline bool operator == (const decimal &x, const decimal &y) { return !x.cmp(y); }
 inline bool operator != (const decimal &x, const decimal &y) { return x.cmp(y) != 0; }

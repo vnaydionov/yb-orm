@@ -2,13 +2,11 @@
 #include <sstream>
 #include <util/stacktrace.h>
 
-using namespace std;
-
 namespace Yb {
 
 const String BaseError::format_base(const String &msg)
 {
-    ostringstream out;
+    std::ostringstream out;
     print_stacktrace(out, 100, 2);
     if (out.str().compare("<stack trace not implemented>\n") != 0)
         return msg + _T("\nBacktrace:\n") + WIDEN(out.str());
@@ -22,7 +20,7 @@ BaseError::BaseError(const String &msg)
 const String AssertError::format_assert(const char *file, int line,
         const char *expr)
 {
-    ostringstream out;
+    std::ostringstream out;
     out << "Assertion failed in file " << file << ":" << line
         << " (" << expr << ")";
     return WIDEN(out.str());

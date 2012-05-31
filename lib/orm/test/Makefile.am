@@ -5,7 +5,9 @@ AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
-	$(CPPUNIT_CFLAGS)
+	$(CPPUNIT_CFLAGS) \
+	$(WX_CFLAGS) \
+	$(QT_CFLAGS)
 
 BUILT_SOURCES=mk_tables.sql
 
@@ -20,7 +22,7 @@ unit_tests_SOURCES = \
 	TestXMLNode.cpp \
 	TestDataObject.cpp
 
-unit_tests_LDADD = \
+unit_tests_LDFLAGS = \
 	$(top_builddir)/lib/test/libtestmain.la \
 	$(top_builddir)/lib/orm/libyborm.la \
 	$(top_builddir)/lib/util/libybutil.la \
@@ -30,7 +32,10 @@ unit_tests_LDADD = \
 	$(CPPUNIT_LIBS) \
 	$(ODBC_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
-	$(DBPOOL3_LIBS)
+	$(DBPOOL3_LIBS) \
+	$(WX_LIBS) \
+	$(QT_LDFLAGS) \
+	$(QT_LIBS)
 
 TESTS = unit_tests
 

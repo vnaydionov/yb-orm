@@ -2,6 +2,7 @@
 #define YB__ORM__XML_METADATA_CONFIG__INCLUDED
 
 #include <stdexcept>
+#include <algorithm>
 #include <util/xmlnode.h>
 #include <util/str_utils.hpp>
 #include <orm/MetaData.h>
@@ -60,7 +61,7 @@ public:
 private:
     friend class ::TestXMLConfig;
     Table::Ptr parse_table(ElementTree::ElementPtr node);
-    void parse_relation_side(ElementTree::ElementPtr node, const Char **attr_names,
+    void parse_relation_side(ElementTree::ElementPtr node, const char **attr_names,
             size_t attr_count, String &cname, Relation::AttrMap &attrs);
     Relation::Ptr parse_relation(ElementTree::ElementPtr node);
     template <typename T>
@@ -79,9 +80,9 @@ template <typename T>
 void XMLMetaDataConfig::get_node_ptr_value(ElementTree::ElementPtr node, T &t) {
     String str = node->get_text();
     try {
-        t = boost::lexical_cast<T>(str);  
+        from_string(str, t);
     } 
-    catch (const boost::bad_lexical_cast &) {
+    catch (const std::exception &) {
         throw ParseError(_T("Wrong element value for '") + node->name_ + _T("'"));
     }
 }
