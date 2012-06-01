@@ -162,7 +162,7 @@ void Thread::start()
 #elif defined(YB_USE_QT)
     QThread::start();
 #else
-    thread_ = boost::thread(ThreadCallable(this));
+    thread_.reset(new boost::thread(ThreadCallable(this)));
 #endif
 }
 
@@ -192,7 +192,7 @@ void Thread::wait()
 #elif defined(YB_USE_QT)
     QThread::wait();
 #else
-    thread_.join();
+    thread_->join();
 #endif
 }
 

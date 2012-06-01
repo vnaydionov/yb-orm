@@ -91,8 +91,8 @@ class Thread
 #elif defined(YB_USE_QT)
     void run();
 #else
-    friend class ThreadCallable;
-    boost::thread thread_;
+    friend struct ThreadCallable;
+    std::auto_ptr<boost::thread> thread_;
 #endif
 protected:
     bool is_terminating();
