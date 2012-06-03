@@ -3,6 +3,5 @@ YBORM_DBTYPE=@YBORM_DBTYPE@ \
 YBORM_DB=@YBORM_DB@ \
 YBORM_USER=@YBORM_USER@ \
 YBORM_PASSWD=@YBORM_PASSWD@ \
-EX1_DIR=@top_srcdir@/examples \
-libtool --mode=execute ./example2
+`dirname $0`/example2
 

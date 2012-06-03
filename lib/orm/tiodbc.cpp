@@ -37,31 +37,17 @@ typedef Yb::CharBuf<SQLTCHAR> SQLTCHAR_buf;
 Yb::String sqltchar2ybstring(const SQLTCHAR *src,
 		const std::string &sql_enc = "")
 {
-	int src_len = Yb::CharBuf<SQLTCHAR>::x_strlen(src);
 #if defined(_UNICODE)
 #if defined(YB_USE_UNICODE)
-	Yb::String wide_dst;
 	typedef Yb::Char WideChar;
-	typedef Yb::String WideString;
 #else
-	std::wstring wide_dst;
 	typedef wchar_t WideChar;
-	typedef std::wstring WideString;
 #endif
-	Yb::CharBuf<WideChar> dst_buf(src_len + 1);
-	int i;
-	for (i = 0; i < src_len; ++i)
-		dst_buf.data[i] = WideChar((int)src[i]);
-	dst_buf.data[i] = 0;
-#if defined(YB_USE_QT)
-	wide_dst = WideString(dst_buf.data, src_len);
-#else
-	wide_dst = WideString(dst_buf.data);
-#endif
+	Yb::CharBuf<WideChar> dst_buf(src);
 #if defined(YB_USE_UNICODE)
-	return wide_dst;
+	return Yb::str_from_chars(dst_buf.data);
 #else
-	return Yb::String(Yb::str_narrow(wide_dst).c_str());
+	return Yb::String(Yb::str_narrow(std::wstring(dst_buf.data)).c_str());
 #endif
 #else
 #if defined(YB_USE_UNICODE)
@@ -89,27 +75,18 @@ SQLTCHAR_buf ybstring2sqltchar(const Yb::String &src,
 		const std::string &sql_enc = "")
 {
 #if defined(_UNICODE)
-#undef CHAR_CODE
 #if defined(YB_USE_UNICODE)
-	const Yb::String &wide_src = src;
-	int src_len = Yb::str_length(src);
-#define CHAR_CODE(x) (Yb::char_code(x))
+	const Yb::Char *wide_src = Yb::str_data(src);
 #else
-	std::wstring wide_src = Yb::str_widen(Yb::str_data(src));
-	int src_len = wide_src.size();
-#define CHAR_CODE(x) (x)
+	std::wstring wide_str = Yb::str_widen(Yb::str_data(src));
+	const wchar_t *wide_src = wide_str.c_str();
 #endif
-	SQLTCHAR_buf dst(src_len + 1);
-	int i;
-	for (i = 0; i < src_len; ++i)
-		dst.data[i] = (SQLTCHAR)CHAR_CODE(wide_src[i]);
-	dst.data[i] = 0;
-	return dst;
-#else
-#if defined(YB_USE_UNICODE)
-	std::string narrow_src = Yb::str2std(src, sql_enc);
+	SQLTCHAR_buf dst(wide_src);
 #else
 	std::string narrow_src;
+#if defined(YB_USE_UNICODE)
+	narrow_src = Yb::str2std(src, sql_enc);
+#else
 	if (!sql_enc.empty() && sql_enc != Yb::get_locale_enc()) {
 		std::wstring wide_tmp = Yb::str_widen(Yb::str_data(src));
 		narrow_src = Yb::str_narrow(wide_tmp, sql_enc);
@@ -117,9 +94,7 @@ SQLTCHAR_buf ybstring2sqltchar(const Yb::String &src,
 	else
 		narrow_src = std::string(Yb::str_data(src));
 #endif
-	int src_len = narrow_src.size();
-	SQLTCHAR_buf dst(src_len + 1);
-	std::memcpy(dst.data, narrow_src.c_str(), src_len + 1);
+	SQLTCHAR_buf dst(narrow_src.c_str());
 #endif
 	return dst;
 }

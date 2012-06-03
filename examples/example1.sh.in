@@ -3,5 +3,4 @@ YBORM_DBTYPE=@YBORM_DBTYPE@ \
 YBORM_DB=@YBORM_DB@ \
 YBORM_USER=@YBORM_USER@ \
 YBORM_PASSWD=@YBORM_PASSWD@ \
-libtool --mode=execute ./example1
-
+`dirname $0`/example1

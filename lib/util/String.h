@@ -17,11 +17,18 @@ namespace Yb {
 
 template <class C>
 struct CharTraits {
-    static int char_code(C c) { return c; }
+    inline static int char_code(C c) { return c; }
+};
+
+template <>
+struct CharTraits<char> {
+    inline static int char_code(char c) { return (unsigned char )c; }
 };
 
 template <class C, class Traits = CharTraits<C> >
 struct CharBuf {
+    typedef Traits CharBufTraits;
+
     static int x_strlen(const C *s)
     {
         const C *s0 = s;
@@ -29,11 +36,16 @@ struct CharBuf {
         return s - s0;
     }
 
-    static C *x_strcpy(C *d, const C *s)
+    template <class S>
+    static C *x_strcpy(C *d, const S *s)
     {
         C *d0 = d;
-        while (Traits::char_code(*s))
-            *d++ = *s++;
+        while (1) {
+            int x = CharBuf<S>::CharBufTraits::char_code(*s++);
+            if (!x)
+                break;
+            *d++ = C(x);
+        }
         *d = C(0);
         return d0;
     }
@@ -42,18 +54,26 @@ struct CharBuf {
     mutable C *data;
 
     explicit CharBuf(): len(0), data(NULL) {}
+
     explicit CharBuf(int buf_len): len(buf_len), data(new C[buf_len]) {
         std::memset(data, 0, buf_len * sizeof(C));
     }
-    explicit CharBuf(const C *s): len(x_strlen(s) + 1), data(new C[len])  {
+
+    template <class S>
+    explicit CharBuf(const S *s)
+        : len(CharBuf<S>::x_strlen(s) + 1)
+        , data(new C[len])
+    {
         x_strcpy(data, s);
     }
+
     CharBuf(const CharBuf &x) {
         data = x.data;
         len = x.len;
         x.data = NULL;
         x.len = 0;
     }
+
     CharBuf &operator=(const CharBuf &x) {
         if (this != &x) {
             delete[] data;
@@ -64,6 +84,7 @@ struct CharBuf {
         }
         return *this;
     }
+
     ~CharBuf() { delete[] data; }
 };
 
@@ -110,7 +131,7 @@ typedef QChar Char;
 typedef QString String;
 template <>
 struct CharTraits<QChar> {
-    static int char_code(QChar c) { return c.unicode(); }
+    inline static int char_code(QChar c) { return c.unicode(); }
 };
 inline int char_code(Char c) { return c.unicode(); }
 inline const String str_n(int n, Char c) { return String(n, c); }
