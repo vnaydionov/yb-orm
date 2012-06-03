@@ -1,3 +1,4 @@
+#define YB_USE_TUPLE
 #include <memory>
 #include <iostream>
 #include <util/str_utils.hpp>

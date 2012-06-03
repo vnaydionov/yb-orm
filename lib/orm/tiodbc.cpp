@@ -37,7 +37,7 @@ typedef Yb::CharBuf<SQLTCHAR> SQLTCHAR_buf;
 Yb::String sqltchar2ybstring(const SQLTCHAR *src,
 		const std::string &sql_enc = "")
 {
-	int src_len = Yb::x_strlen(src);
+	int src_len = Yb::CharBuf<SQLTCHAR>::x_strlen(src);
 #if defined(_UNICODE)
 #if defined(YB_USE_UNICODE)
 	Yb::String wide_dst;

@@ -15,6 +15,58 @@
 
 namespace Yb {
 
+template <class C>
+struct CharTraits {
+    static int char_code(C c) { return c; }
+};
+
+template <class C, class Traits = CharTraits<C> >
+struct CharBuf {
+    static int x_strlen(const C *s)
+    {
+        const C *s0 = s;
+        for (; Traits::char_code(*s); ++s);
+        return s - s0;
+    }
+
+    static C *x_strcpy(C *d, const C *s)
+    {
+        C *d0 = d;
+        while (Traits::char_code(*s))
+            *d++ = *s++;
+        *d = C(0);
+        return d0;
+    }
+
+    mutable size_t len;
+    mutable C *data;
+
+    explicit CharBuf(): len(0), data(NULL) {}
+    explicit CharBuf(int buf_len): len(buf_len), data(new C[buf_len]) {
+        std::memset(data, 0, buf_len * sizeof(C));
+    }
+    explicit CharBuf(const C *s): len(x_strlen(s) + 1), data(new C[len])  {
+        x_strcpy(data, s);
+    }
+    CharBuf(const CharBuf &x) {
+        data = x.data;
+        len = x.len;
+        x.data = NULL;
+        x.len = 0;
+    }
+    CharBuf &operator=(const CharBuf &x) {
+        if (this != &x) {
+            delete[] data;
+            data = x.data;
+            len = x.len;
+            x.data = NULL;
+            x.len = 0;
+        }
+        return *this;
+    }
+    ~CharBuf() { delete[] data; }
+};
+
 #define YB_STRING_NOSTD
 #if defined(YB_USE_WX)
 #if wxUSE_UNICODE
@@ -30,6 +82,7 @@ typedef wxChar Char;
 typedef wxString String;
 inline int char_code(Char c) { return c; }
 inline const String str_n(int n, Char c) { return wxString(c, (size_t)n); }
+inline const String str_from_chars(const Char *s) { return wxString(s); }
 inline size_t str_length(const String &s) { return s.Len(); }
 inline bool str_empty(const String &s) { return s.IsEmpty(); }
 inline const Char *str_data(const String &s) { return s.GetData(); }
@@ -55,8 +108,16 @@ inline const String str_substr(const String &s, int start, int count = -1)
 #define _T(x) x
 typedef QChar Char;
 typedef QString String;
+template <>
+struct CharTraits<QChar> {
+    static int char_code(QChar c) { return c.unicode(); }
+};
 inline int char_code(Char c) { return c.unicode(); }
 inline const String str_n(int n, Char c) { return String(n, c); }
+inline const String str_from_chars(const Char *s)
+{
+    return QString(s, CharBuf<QChar>::x_strlen(s));
+}
 inline size_t str_length(const String &s) { return s.length(); }
 inline bool str_empty(const String &s) { return s.isEmpty(); }
 inline const Char *str_data(const String &s) { return s.data(); }
@@ -90,6 +151,7 @@ typedef std::string String;
 #endif
 inline int char_code(Char c) { return c; }
 inline const String str_n(int n, Char c) { return String((size_t)n, c); }
+inline const String str_from_chars(const Char *s) { return String(s); }
 inline size_t str_length(const String &s) { return s.size(); }
 inline bool str_empty(const String &s) { return s.empty(); }
 inline const Char *str_data(const String &s) { return s.c_str(); }
@@ -134,52 +196,6 @@ T &from_string(const String &s, T &x);
 typedef std::vector<String> Strings;
 typedef std::set<String> StringSet;
 typedef std::map<String, String> StringMap;
-
-template <class C>
-int x_strlen(const C *s) {
-    const C *s0 = s;
-    for (; *s; ++s);
-    return s - s0;
-}
-
-template <class C>
-C *x_strcpy(C *d, const C *s) {
-    C *d0 = d;
-    while (*s)
-        *d++ = *s++;
-    *d = 0;
-    return d0;
-}
-
-template <class C>
-struct CharBuf {
-    mutable size_t len;
-    mutable C *data;
-    explicit CharBuf(): len(0), data(NULL) {}
-    explicit CharBuf(int buf_len): len(buf_len), data(new C[buf_len]) {
-        std::memset(data, 0, buf_len * sizeof(C));
-    }
-    explicit CharBuf(const C *s): len(x_strlen(s) + 1), data(new C[len])  {
-        x_strcpy(data, s);
-    }
-    CharBuf(const CharBuf &x) {
-        data = x.data;
-        len = x.len;
-        x.data = NULL;
-        x.len = 0;
-    }
-    CharBuf &operator=(const CharBuf &x) {
-        if (this != &x) {
-            delete[] data;
-            data = x.data;
-            len = x.len;
-            x.data = NULL;
-            x.len = 0;
-        }
-        return *this;
-    }
-    ~CharBuf() { delete[] data; }
-};
 
 } // namespace Yb
 

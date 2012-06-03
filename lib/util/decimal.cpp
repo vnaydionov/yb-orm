@@ -373,16 +373,13 @@ const Yb::String decimal::str() const
     {
         if (n == precision_ && n > 0)
             s = _T(".") + s;
-        Yb::Char buf[2];
-        buf[0] = Yb::Char((int)(_T('0') + x % 10));
-        buf[1] = Yb::Char(0);
-        s = Yb::String(buf) + s;
+        s = Yb::Char((int)(_T('0') + x % 10)) + s;
         x = x / 10;
         if (!x && n >= precision_)
             break;
     }
     if (negative)
-        s = _T("-") + s;
+        s = Yb::Char(_T('-')) + s;
     return s;
 }
 

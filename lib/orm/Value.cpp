@@ -39,7 +39,7 @@ Value::Value(LongInt x)
 
 Value::Value(const Char *x)
     : type_(STRING)
-    , data_(new ValueHolder<String>(String(x)))
+    , data_(new ValueHolder<String>(str_from_chars(x)))
 {}
 
 Value::Value(const String &x)

@@ -1,3 +1,4 @@
+#define YB_USE_TUPLE
 #if defined(__WIN32__) || defined(_WIN32)
 #include <rpc.h>
 #else
