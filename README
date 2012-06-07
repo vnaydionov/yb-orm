@@ -43,16 +43,12 @@ at Yandex company (http://www.yandex.com/).
 YB stands for Yandex.Balance, that was the name for the billing system.
 Today YB.ORM project is not affiliated with Yandex company.
 
+REQUIREMENTS
+
 This piece of software is developed entirely in C++ and should be easily
 portable across different platforms, although the development is done
 primarily on GNU/Linux, using GNU C++.  GNU Autotools are used as building
 system in Linux, CMake is used in Windows.
-
-The library aims to be database independent.  At the time of this writing 
-it is tested to work with Oracle, Postgres, MySQL and Firebird via
-corresponding ODBC drivers.
-
-REQUIREMENTS
 
 You can build YB.ORM library against Boost, Qt4, or wxWidgets toolkits,
 to use their native datatypes, such as strings, datetime, etc.
@@ -66,6 +62,10 @@ should be met:
 - autotools >= 2.61, automake >= 1.10.1
 - unixODBC >= 2.2.11 (to make Oracle ODBC driver work
     under GNU/Linux x86_64 I have used unixODBC = 2.3.0)
+
+The library aims to be database independent.  At the time of this writing 
+it is tested to work with Oracle, Postgres, MySQL and Firebird via
+corresponding ODBC drivers.
 
 Also, to access some database you will need one of the following:
 - myodbc >= 3.51.15 (MySQL ODBC driver)
