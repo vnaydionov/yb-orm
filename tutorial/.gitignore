@@ -1,0 +1,7 @@
+.deps
+.libs
+*.o
+Makefile
+Makefile.in
+tut1
+tut2
