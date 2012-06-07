@@ -107,7 +107,8 @@ endif ()
 add_subdirectory (lib)
 add_subdirectory (src)
 add_subdirectory (examples)
+add_subdirectory (doc)
 
-install (FILES AUTHORS BUILD.win32 CHANGES COPYING README README.rus
-    TODO xml-format.txt xml-format-ru.txt msvc-settings.pdf DESTINATION doc)
+install (FILES AUTHORS BUILD.win32 CHANGES COPYING README README.rus TODO
+    DESTINATION doc)
 
