@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema>
+
+    <!-- Relation One-To-Many -->
+    <table name="T_CLIENT" sequence="S_CLIENT_ID"
+            class="Client" xml-name="client">
+        <column name="ID" type="longint">
+                <!-- /null="false"/ assummed for a primary key column,
+                     otherwise /null="true"/ is the default -->
+            <primary-key />
+        </column>
+        <column name="DT" type="datetime" null="false" default="sysdate" />
+        <column name="NAME" type="string" size="100" null="false" />
+        <column name="EMAIL" type="string" size="100" null="false" />
+        <column name="PHONE" type="string" size="50" null="true" />
+        <column name="URL" type="string" size="200" />
+        <column name="IS_AGENCY" type="integer" null="false" default="0"
+                property="agency_flag" xml-name="agency-flag"/>
+    </table>
+    <table name="T_ORDER" sequence="S_ORDER_ID"
+            class="Order" xml-name="order">
+        <column name="ID" type="longint">
+            <primary-key />
+        </column>
+        <column name="DT" type="datetime" default="sysdate">
+            <!--
+            <read-only />
+            -->
+        </column>
+        <column name="RECEIPT_SUM" type="decimal" default="0" />
+        <column name="RECEIPT_DT" type="datetime" />
+        <column name="CLIENT_ID" type="longint" null="false">
+            <foreign-key table="T_CLIENT" key="ID"/>
+                <!-- attribute /key="ID"/ may be omitted if it refers
+                     the primary key -->
+        </column>
+        <column name="TOTAL_SUM" type="decimal" null="false" />
+    </table>
+    <table name="T_ORDER_ITEM" sequence="S_ORDER_ITEM_ID"
+            class="OrderItem" xml-name="order-item">
+        <column name="ID" type="longint">
+            <primary-key />
+        </column>
+        <column name="ORDER_ID" type="longint" null="false">
+            <foreign-key table="T_ORDER" />
+        </column>
+        <column name="PRODUCT_ID" type="longint" null="false">
+            <foreign-key table="T_PRODUCT" />
+        </column>
+        <column name="QUANTITY" type="decimal" null="false"/>
+        <column name="ORDER_SUM" type="decimal" null="false"/>
+        <column name="DISCOUNT_PCT" type="decimal" null="false" default="0"/>
+    </table>
+    <table name="T_CONTRACT" sequence="S_CONTRACT_ID"
+            class="Contract" xml-name="contract">
+        <column name="ID" type="longint">
+            <primary-key />
+        </column>
+        <column name="START_DT" type="datetime" null="false" />
+        <column name="END_DT" type="datetime" />
+        <column name="CTYPE" type="integer" null="false" />
+        <column name="SIGNED" type="integer" null="false" default="0" />
+        <column name="CLIENT_ID" type="longint" null="false">
+            <foreign-key table="T_CLIENT" key="ID" />
+        </column>
+    </table>
+    <relation type="one-to-many">
+        <one class="Client" property="orders" />
+        <many class="Order" property="owner" />
+    </relation>
+    <relation type="one-to-many">
+        <one class="Order" property="items" />
+        <many class="OrderItem" property="order" />
+    </relation>
+    <relation type="one-to-many">
+        <one class="Product" />
+        <many class="OrderItem" property="product" />
+    </relation>
+    <relation type="one-to-many">
+        <one class="Client" property="contracts" />
+        <many class="Contract" property="client" />
+    </relation>
+    <relation type="one-to-many">
+        <one class="Client" property="signed_contracts" />
+        <many class="Contract" filter="SIGNED = 1" />
+    </relation>
+
+    <!-- Relation One-To-Many on the same table -->
+    <table name="T_PRODUCT_GROUP" sequence="S_PG_ID"
+            class="ProductGroup" xml-name="prod-group">
+        <column name="ID" type="longint">
+            <primary-key />
+        </column>
+        <column name="PARENT_ID" type="longint" null="true">
+            <foreign-key table="T_PRODUCT_GROUP" />
+        </column>
+        <column name="NAME" type="string" size="100" null="false" />
+    </table>
+    <table name="T_PRODUCT" sequence="S_PG_ID"
+            class="Product" xml-name="product">
+        <column name="ID" type="longint">
+            <primary-key />
+        </column>
+        <column name="PARENT_ID" type="longint" null="false">
+            <foreign-key table="T_PRODUCT_GROUP" />
+        </column>
+        <column name="NAME" type="string" size="100" null="false" />
+        <column name="PRICE"  type="decimal" null="false" />
+    </table>
+    <relation type="one-to-many">
+        <one class="ProductGroup" property="children" />
+        <many class="ProductGroup" property="parent" />
+    </relation>
+    <relation type="one-to-many">
+        <one class="ProductGroup" property="products" />
+        <many class="Product" property="parent" />
+    </relation>
+    <!--
+    <relation type="one-to-many">
+        <one class="Product" />
+        <many class="OrderItem" property="product" />
+    </relation>
+    -->
+
+    <!-- Relation Many-To-Many -->
+    <table name="T_GROUP" sequence="S_GROUP_ID" class="Group" xml-name="group">
+        <column name="ID" type="longint">
+            <primary-key />
+        </column>
+        <column name="NAME" type="string" size="80" null="false" />
+    </table>
+    <table name="T_CLIENT_GROUP">
+            <!-- this table is not mapped to any class explicitly -->
+        <column name="CLIENT_ID" type="longint">
+            <primary-key />
+            <foreign-key table="T_CLIENT" />
+        </column>
+        <column name="GROUP_ID" type="longint">
+            <primary-key />
+                <!-- more than just one column may be included in PK -->
+            <foreign-key table="T_GROUP" />
+        </column>
+    </table>
+    <relation type="many-to-many">
+        <side class="Client" property="groups" />
+        <side class="Group" property="clients" />
+        <link table="T_CLIENT_GROUP" />
+    </relation>
+
+    <!-- Inheritance -->
+    <table name="T_PAYMENT" sequence="S_PAYMENT_ID"
+            class="Payment" xml-name="payment">
+                <!-- parent table -->
+        <column name="ID" type="longint">
+            <primary-key />
+        </column>
+        <column name="AMOUNT" type="decimal" null="false" />
+        <column name="DT" type="datetime" null="false" default="sysdate" />
+        <column name="PAYMENT_DT" type="datetime" />
+        <column name="PAYSYS_CODE" type="string" size="20" null="false" />
+            <!-- discriminator column: CCARD|WEBMONEY_RU|WEBMONEY_UA -->
+    </table>
+    <table name="T_CCARD_PAYMENT"
+            class="CCardPayment" xml-name="ccard-payment">
+                <!-- child table: discr=CCARD -->
+        <column name="ID" type="longint">
+            <primary-key />
+            <foreign-key table="T_PAYMENT" />
+        </column>
+        <column name="CARD_NUMBER" type="string" size="16" />
+        <column name="AUTH_CODE" type="string" size="10" />
+        <column name="POSTAUTH_DT" type="datetime" />
+    </table>
+    <table name="T_WEBMONEY_PAYMENT"
+            class="WebMoneyPaymentBase">
+                <!-- child table: discr=WEBMONEY_RU|WEBMONEY_UA -->
+        <column name="ID" type="longint">
+            <primary-key />
+            <foreign-key table="T_PAYMENT" />
+        </column>
+        <column name="PAYER_PURSE" type="string" size="13" />
+        <column name="SYS_TRANS_NO" type="longint" />
+    </table>
+    <relation type="parent-child">
+        <parent class="Payment" discr-column="PAYSYS_CODE" />
+        <child class="CCardPayment" discr-value="CCARD" />
+    </relation>
+    <relation type="parent-child">
+        <parent class="Payment" discr-column="PAYSYS_CODE" />
+        <child class="WebMoneyPaymentBase" />
+    </relation>
+    <relation type="parent-child">
+        <parent class="WebMoneyPaymentBase" />
+        <child class="WebMoneyRuPayment" discr-value="WEBMONEY_RU"
+                xml-name="webmoney-ru-payment" />
+    </relation>
+    <relation type="parent-child">
+        <parent class="WebMoneyPaymentBase" />
+        <child class="WebMoneyUaPayment" discr-value="WEBMONEY_UA"
+                xml-name="webmoney-ua-payment" />
+    </relation>
+
+</schema>
+<!-- vim:ts=4:sts=4:sw=4:et:
+-->

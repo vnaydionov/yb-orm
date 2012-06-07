@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema>
+    <table name="T_ORM_TEST" sequence="S_ORM_TEST_ID"
+            class="OrmTest" xml-name="orm-test">
+        <column name="ID" type="longint">
+            <primary-key />
+            <read-only />
+        </column>
+        <column name="A" type="string" size="200" />
+        <column name="B" type="datetime" default="sysdate"/>
+        <column name="C" type="decimal"/>
+    </table>
+    <table name="T_ORM_XML" sequence="S_ORM_XML_ID"
+            class="OrmXml" xml-name="orm-xml">
+        <column name="ID" type="longint">
+            <primary-key />
+            <read-only />
+        </column>
+        <column name="ORM_TEST_ID" type="longint">
+            <foreign-key table="T_ORM_TEST" key="ID"/>
+        </column>
+        <column name="B" type="decimal"/>
+    </table>
+    <relation type="one-to-many">
+        <one class="OrmTest" />
+        <many class="OrmXml" property="orm_test" />
+    </relation>
+</schema>
+<!-- vim:ts=4:sts=4:sw=4:et:
+-->

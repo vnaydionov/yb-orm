@@ -1,0 +1,107 @@
+
+ABOUT
+
+YB.ORM is an object-relational mapper library for C++ programming language.
+It helps to link data tables from your RDBMS to objects incapsulating
+business logic of your application.
+
+Warning!! The software is under development, so it may behave unstable.
+Many interesting features are still to be implemented.
+
+Typical usage scenario is the following:
+- Describe your database schema i.e. the tables with their columns and
+    the relationships between tables in simple XML-based format.
+- Optionally, use the SQL generator for initial DDL statements.
+    Perform this step to populate your empty database schema with tables.
+- Use code generation tool provided to produce C++ classes for each table.
+    This code hides details of how objects are being loaded and stored
+    from/to the corresponding database tables, as well it represents
+    the relationships between objects in a convenient way.
+- Add application-specific logic to the classes, etc.
+- Should you make changes to the database schema, you then use 
+    the code generation tool to synchronize the description
+    to the previously generated C++ classes (TODO).
+
+This library employs many ideas explained in the book
+"Patterns of Enterprise Application Architecture" by Martin Fawler.
+Such patterns as "Data Mapper", "Unit of Work" etc.
+Also I was inspired by the power of frameworks like
+Hibernate (http://www.hibernate.org/) for Java programming language and
+SQLAlchemy (http://www.sqlalchemy.org/) for Python.
+
+Project was once started as part of a billing system for on-line ads
+at Yandex company (http://www.yandex.com/).
+YB stands for Yandex.Balance, that was the name for the billing system.
+Today YB.ORM project is not affiliated with Yandex company.
+
+This piece of software is developed entirely in C++ and should be easily
+portable across different platforms, although the development is done
+primarily on GNU/Linux, using G++.  GNU Autotools are used as building system.
+
+The library aims to be database independent.  At the time of this writing 
+it is tested to work with Oracle, Postgres, MySQL and Firebird via ODBC drivers.
+
+BUILD AND INSTALL
+
+To build the software, the following prerequisites should be met:
+    boost-thread >= 1.31.0
+    boost-date-time >= 1.31.0
+    libxml2 >= 2.6.16
+    xsltproc >= 1.1.24
+    cppunit >= 1.10.2 (if you want to run unit tests)
+    autotools >= 2.61, automake >= 1.10.1
+    (for GNU/Linux) unixODBC >= 2.2.11 (for Oracle ODBC driver to work
+        under GNU/Linux x86_64 I used unixODBC = 2.3.0)
+
+Older versions may or may not work.
+This software also imports some pieces of 
+tinyodbc project (http://code.google.com/p/tiodbc/).
+
+Also, to access some database you will need one of the following:
+    myodbc >= 3.51.15 (MySQL ODBC driver)
+    instantclient >= 10.2 (ODBC driver for Oracle)
+    odbc-postgresql (ODBC driver for Postgres)
+    OdbcFb >= 2.0 (ODBC driver for Firebird)
+
+Assuming you've done "svn up", here are the steps to follow.
+1) Create database schema for running tests.
+    Take a look at lib/orm/test/mk_tables.sql
+    Edit, then apply using sqlplus(Oracle) or mysql commands.
+2) Setup an ODBC data source.
+    Create or edit /etc/odbcinst.ini ~/.odbc.ini
+    You can use this files as the base: lib/orm/test/odbc*ini
+3) Build the library and run the tests.
+    $ sh autogen.sh
+    $ ./configure
+    $ make
+    $ make check
+4) Run "example1".
+    Here is XML file for the test DB schema: examples/ex1_schema.xml
+    Edit and apply the auto-generated DDL: examples/domain/mk_tables.sql
+    run the example:
+    $ cd examples/
+    $ sh example1.sh
+
+TODO
+
+Lots of things to be done:
+    - better relationships handling
+    - object-based query language
+    - update auto-generated C++ code
+    - simplify session object management
+    - connection pooling
+    - etc.
+
+AUTHORS
+
+main developer: Vaclav Naydionov <vaclav _at yandex _dot ru>
+contributor: Sergey Chmelev <halty _at yandex _dash team _dot ru>
+tiodbc code: SqUe <squarious _at_ gmail _dot_ com>
+
+Any feedback, patches or comments are welcome.
+
+-- 
+Best regards!
+Vaclav Naydionov
+2011 march 28
+

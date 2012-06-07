@@ -1,0 +1,91 @@
+=== Отображение отдельно взятого класса (tut1.cpp) ===
+Описать структуру соответствующей таблицы в XML.
+
+ <nowiki><schema> </nowiki>
+     <nowiki><table name="client" sequence="seq_client" class="Client"> </nowiki>
+         <nowiki><column name="id" type="longint"> </nowiki>
+             <nowiki><primary-key /> </nowiki>
+         <nowiki></column> </nowiki>
+         <nowiki><column name="dt" type="datetime" null="false" default="sysdate" /> </nowiki>
+         <nowiki><column name="name" type="string" size="100" null="false" /> </nowiki>
+         <nowiki><column name="email" type="string" size="100" null="false" /> </nowiki>
+         <nowiki><column name="phone" type="string" size="50" null="true" /> </nowiki>
+         <nowiki><column name="budget" type="decimal" /> </nowiki>
+     <nowiki></table> </nowiki>
+ <nowiki></schema> </nowiki>
+
+Далее, с помощью специальной утилиты сгенерировать C++ классы. Первый параметр — имя файла со схемой, второй — папка, куда помещать сгенерированные файлы, третий (опциональный) — префикс для директивы <tt><nowiki>#include</nowiki></tt> (по умолчанию <tt>domain/</tt>).
+
+ $(YBORM_ROOT)/bin/yborm_gen_domain tutorial/tut1.xml domain
+
+Если необходимо, сгенерировать SQL DDL скрипт для создания таблиц и сиквенсов. При генерации нужно указать диалект SQL. На данный момент поддерживаются MYSQL, POSTGRES, ORACLE, INTERBASE.
+
+ $(YBORM_ROOT)/bin/yborm_gen_sql MYSQL tutorial/tut1.xml 
+
+В результате будет получен SQL наподобие такого:
+
+ CREATE TABLE client ( 
+     id BIGINT NOT NULL AUTO_INCREMENT, 
+     dt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+     name VARCHAR(100) NOT NULL, 
+     email VARCHAR(100) NOT NULL, 
+     phone VARCHAR(50), 
+     budget DECIMAL(16, 6), 
+     PRIMARY KEY (id) 
+ ) ENGINE=INNODB DEFAULT CHARSET=utf8; 
+
+Теперь можно использовать доменный класс <tt>Client</tt>. Рассмотрим на примерах. Для синхронизации объектов с БД используется экземпляр класса <tt>Yb::Session</tt>. В качестве уровня абстракции SQL базы используются классы <tt>Yb::Engine</tt> и <tt>Yb::SqlConnect</tt>. В приведённом ниже примере показано создание сессии, создание и заполнение нового экземпляра отображённого класса и сохранение его в сессии с последующим сохранением в БД. При сохранении объекту присваивается новый уникальный ID.
+
+ <nowiki>#include <memory> </nowiki>
+ <nowiki>#include <iostream> </nowiki>
+ <nowiki>#include <orm/MetaDataSingleton.h> </nowiki>
+ <nowiki>#include "domain/Client.h" </nowiki>
+ using namespace std; 
+ 
+ int main() 
+ { 
+     <nowiki>auto_ptr<Yb::SqlConnect> conn( </nowiki>
+         new Yb::SqlConnect("ODBC", "MYSQL", "test1_db", "test1", "test1_pwd")); 
+     Yb::Engine engine(Yb::Engine::MANUAL, conn); 
+     Yb::Session session(Yb::init_default_meta(), &engine); 
+     Domain::Client client; 
+     string name, email, budget; 
+     <nowiki>cout << "Enter name, email, budget:\n"; </nowiki>
+     cin >> name >> email >> budget; 
+     client.set_name(name); 
+     client.set_email(email); 
+     client.set_budget(Yb::Decimal(budget)); 
+     client.set_dt(Yb::now()); 
+     client.save(session); 
+     session.flush(); 
+     <nowiki>cout << "New client: " << client.get_id() << endl; </nowiki>
+     engine.commit(); 
+     return 0; 
+ }
+
+Для сборки данного примера необходимо подключить библиотеки <tt>$(YBORM_ROOT)/lib/libyborm.so</tt>, <tt>$(YBORM_ROOT)/lib/libybutil.so</tt>, а также зависимостями <tt>-lodbc</tt>, <tt>-lxml2</tt>, <tt>-lboost_thread</tt>, <tt>-lboost_date_time</tt>. Если вы собираете пример из папки <tt>tutorial</tt>, то можете заглянуть в файл <tt>Makefile.am</tt>.
+
+Для подключения к базе используется бакэнд ODBC. Поэтому чтобы пример заработал необходимо внести соответствующий DSN в локальный (<tt>~/.odbc.ini</tt>) или глобальный (<tt>/etc/odbc.ini</tt>) конфигурационный файл.
+
+ <nowiki>[test1_db] </nowiki>
+ Description     <nowiki>= Test database 1 </nowiki>
+ Driver          <nowiki>= MyODBC </nowiki>
+ Server          <nowiki>= localhost </nowiki>
+ Database        <nowiki>= test1_db </nowiki>
+ Port            <nowiki>= </nowiki>
+ Socket          <nowiki>= </nowiki>
+ Option          <nowiki>= 3 </nowiki>
+ Stmt            <nowiki>= </nowiki>
+ CharSet         <nowiki>= UTF8</nowiki>
+
+Если проследить сгенерированные SQL запросы, то (при использовании MYSQL) увидим следующее:
+
+ INSERT INTO client (dt, name, email, phone, budge t) VALUES (?, ?, ?, ?, ?);
+ SELECT LAST_INSERT_ID() LID;
+ COMMIT;
+
+При использовании Oracle последовательность операторов будет иная:
+
+ SELECT seq_client.NEXTVAL FROM DUAL;
+ INSERT INTO client (id, dt, name, email, phone, b udget) VALUES (?, ?, ?, ?, ?, ?);
+ COMMIT;

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema>
+    <table name="T_CLIENT" sequence="S_CLIENT_ID"
+            class="Client" xml-name="client">
+        <column name="ID" type="longint">
+            <primary-key />
+        </column>
+        <column name="DT" type="datetime" null="false" default="sysdate" />
+        <column name="NAME" type="string" size="100" null="false" />
+        <column name="EMAIL" type="string" size="100" null="false" />
+        <column name="PHONE" type="string" size="50" null="true" />
+        <column name="URL" type="string" size="200" />
+        <column name="IS_AGENCY" type="integer" null="false" default="0"
+                property="agency_flag" xml-name="agency-flag"/>
+    </table>
+    <table name="T_ORDER" sequence="S_ORDER_ID"
+            class="Order" xml-name="order">
+        <column name="ID" type="longint">
+            <primary-key />
+        </column>
+        <column name="DT" type="datetime" default="sysdate"/>
+        <column name="RECEIPT_SUM" type="decimal" default="0" />
+        <column name="RECEIPT_DT" type="datetime" />
+        <column name="CLIENT_ID" type="longint" null="false">
+            <foreign-key table="T_CLIENT" key="ID"/>
+        </column>
+        <column name="TOTAL_SUM" type="decimal" null="false" />
+    </table>
+    <relation type="one-to-many">
+        <one class="Client" property="orders" />
+        <many class="Order" property="owner" />
+    </relation>
+</schema>
+<!-- vim:ts=4:sts=4:sw=4:et:
+-->

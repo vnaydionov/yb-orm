@@ -1,0 +1,36 @@
+
+SUBDIRS=domain
+
+AM_CXXFLAGS=\
+	-I $(top_srcdir)/lib \
+	$(XML_CPPFLAGS) \
+	$(BOOST_CPPFLAGS) \
+	$(YBORM_CXXFLAGS) \
+	$(WX_CFLAGS) \
+	$(QT_CFLAGS)
+
+bin_PROGRAMS=auth
+bin_SCRIPTS=auth.sh
+
+auth_SOURCES=\
+	domain/User.cpp \
+	domain/LoginSession.cpp \
+	auth.cpp \
+	tcp_socket.cpp \
+	micro_http.cpp \
+	logger.cpp \
+	md5.c
+
+auth_LDFLAGS=\
+	$(XML_LIBS) \
+	$(BOOST_LDFLAGS) \
+	$(BOOST_LIBS_R) \
+	$(ODBC_LIBS) \
+	$(DBPOOL3_LDFLAGS) \
+	$(DBPOOL3_LIBS) \
+	$(WX_LIBS) \
+	$(QT_LDFLAGS) \
+	$(QT_LIBS) \
+	$(YBORM_LDFLAGS) \
+	$(YBORM_LIBS)
+
