@@ -68,7 +68,7 @@ endif ()
 
 else (USE_QT4)
 
-find_package (Qt4 4.4.0 REQUIRED QtCore QtGui QtXml)
+find_package (Qt4 4.4.0 REQUIRED QtCore QtXml)
 include (${QT_USE_FILE})
 add_definitions (-D YB_USE_QT)
 
