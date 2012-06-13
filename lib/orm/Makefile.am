@@ -30,6 +30,7 @@ H_FILES = \
 	Value.h \
 	Engine.h \
 	SqlDriver.h \
+	OdbcDriver.h \
 	SqlPool.h \
 	tiodbc.hpp \
 	DomainObj.h \
@@ -47,6 +48,7 @@ CPP_FILES = \
 	Value.cpp \
 	Engine.cpp \
 	SqlDriver.cpp \
+	OdbcDriver.cpp \
 	SqlPool.cpp \
 	tiodbc.cpp \
 	XMLMetaDataConfig.cpp \

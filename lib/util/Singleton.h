@@ -14,7 +14,7 @@ class SingletonHolder
     friend class ::TestSingleton;
 
     std::auto_ptr<T> instance_;
-    Mutex mutex_;
+    std::auto_ptr<Mutex> mutex_;
 
     static SingletonHolder singleton;
 
@@ -25,7 +25,9 @@ public:
     {}
     T *get()
     {
-        ScopedLock lock(mutex_);
+        if (!mutex_.get())
+            mutex_.reset(new Mutex);
+        ScopedLock lock(*mutex_);
         if (!instance_.get())
             instance_.reset(new T());
         return instance_.get();
