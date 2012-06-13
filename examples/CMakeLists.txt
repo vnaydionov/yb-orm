@@ -1,8 +1,8 @@
 
 add_subdirectory (domain)
 
-include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES} ${BOOST_INCLUDES}
-    ${PROJECT_SOURCE_DIR}/lib
+include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES}
+    ${BOOST_INCLUDEDIR} ${PROJECT_SOURCE_DIR}/lib
     ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable (example1 example1.cpp
@@ -34,13 +34,14 @@ add_dependencies (example1 generate_domain)
 add_dependencies (example2 generate_domain)
 
 target_link_libraries (example1 ybutil yborm ${LIBXML2_LIBS}
-    ${BOOST_DATE_TIME_LIBS} ${BOOST_THREAD_LIBS} ${ODBC_LIBS})
+    ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
+    ${QT_LIBRARIES})
 
 target_link_libraries (example2 ybutil yborm ${LIBXML2_LIBS}
-    ${BOOST_DATE_TIME_LIBS} ${BOOST_THREAD_LIBS} ${ODBC_LIBS})
+    ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
+    ${QT_LIBRARIES})
 
 install (TARGETS example1 example2 DESTINATION examples)
 install (FILES ex1_schema.xml ex2_schema.xml 
 	example1.bat example2.bat DESTINATION examples)
-
 

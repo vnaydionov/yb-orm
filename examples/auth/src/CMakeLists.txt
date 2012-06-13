@@ -4,7 +4,7 @@ add_subdirectory (domain)
 include_directories (
     ${ICONV_INCLUDES}
     ${LIBXML2_INCLUDES}
-    ${BOOST_INCLUDES}
+    ${BOOST_INCLUDEDIR}
     ${YBORM_INCLUDES}
     ${PROJECT_SOURCE_DIR}/lib
     ${CMAKE_CURRENT_BINARY_DIR})
@@ -23,11 +23,12 @@ add_dependencies (auth generate_domain)
 
 if (UNIX)
 target_link_libraries (auth ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
-    ${BOOST_DATE_TIME_LIBS} ${BOOST_THREAD_LIBS} ${ODBC_LIBS})
+    ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
+    ${QT_LIBRARIES})
 else ()
 target_link_libraries (auth ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
-    ${BOOST_DATE_TIME_LIBS} ${BOOST_THREAD_LIBS} ${ODBC_LIBS}
-    ${SOCKET_LIB} ${UUID_LIB})
+    ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
+    ${QT_LIBRARIES} ${SOCKET_LIB} ${UUID_LIB})
 endif ()
 
 install (TARGETS auth DESTINATION examples)
