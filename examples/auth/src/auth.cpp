@@ -1,4 +1,3 @@
-#define YB_USE_TUPLE
 #if defined(__WIN32__) || defined(_WIN32)
 #include <rpc.h>
 #else
@@ -53,21 +52,21 @@ Yb::LongInt
 get_checked_session_by_token(Yb::Session &session,
         StringMap &params, int admin_flag=0)
 {
-#if defined(__BORLANDC__)
+#if !defined(YB_USE_TUPLE)
     typedef LoginSession Row;
 #else
     typedef boost::tuple<LoginSession, User> Row;
 #endif
     Yb::DomainResultSet<Row> rs = Yb::query<Row>(session)
         .filter_by(Yb::filter_eq(Yb::String(_T("TOKEN")), WIDEN(params["token"])))
-#if !defined(__BORLANDC__)
+#if defined(YB_USE_TUPLE)
         .filter_by(Yb::Filter(Yb::String(_T("USER_ID = T_USER.ID"))))
 #endif
         .all();
     Yb::DomainResultSet<Row>::iterator q = rs.begin(), qend=rs.end();
     if (q == qend)
         return -1;
-#if defined(__BORLANDC__)
+#if !defined(YB_USE_TUPLE)
     LoginSession &ls = *q;
 #else
     LoginSession &ls = q->get<0>();

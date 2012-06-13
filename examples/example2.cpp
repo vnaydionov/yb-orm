@@ -1,4 +1,3 @@
-#define YB_USE_TUPLE
 #include <memory>
 #include <iostream>
 #include <util/str_utils.hpp>
@@ -96,7 +95,7 @@ int main()
     using namespace Domain;
     using namespace Yb;
 
-#if !defined(__BORLANDC__)
+#if defined(YB_USE_TUPLE)
     DomainResultSet<boost::tuple<Order, Client> > rs0 =
         query<boost::tuple<Order, Client> >(session).filter_by(
             filter_eq(_T("T_CLIENT.ID"), c2.get_id()) &&

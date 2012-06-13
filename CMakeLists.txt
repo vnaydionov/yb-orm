@@ -5,6 +5,12 @@ project (yborm)
 
 option (USE_QT4 "Build YB.ORM against QT4" OFF)
 
+if (UNIX)
+    find_path (BOOST_INCLUDEDIR boost/lexical_cast.hpp /usr/include)
+else ()
+    find_path (BOOST_INCLUDEDIR boost/lexical_cast.hpp c:/yborm/include)
+endif ()
+
 if (NOT USE_QT4)
 
 # find boost + libxml2
@@ -18,11 +24,6 @@ set (Boost_USE_MULTITHREADED ON)
 set (Boost_NO_SYSTEM_PATHS ON)
 #set (Boost_DEBUG ON)
 set (Boost_ADDITIONAL_VERSIONS "1.33.1" "1.38" "1.30.0" "1.46.1")
-if (UNIX)
-    find_path (BOOST_INCLUDEDIR boost/lexical_cast.hpp /usr/include)
-else ()
-    find_path (BOOST_INCLUDEDIR boost/lexical_cast.hpp c:/yborm/include)
-endif ()
 if (UNIX)
     set (BOOST_LIBRARYDIR "/usr/lib")
 else ()
@@ -73,6 +74,10 @@ include (${QT_USE_FILE})
 add_definitions (-D YB_USE_QT)
 
 endif ()
+
+if (BOOST_INCLUDEDIR AND (NOT BORLAND))
+    add_definitions (-D YB_USE_TUPLE)
+endif()
 
 if (UNIX)
     find_library (ODBC_LIBS odbc)
