@@ -29,6 +29,11 @@ examples/example1
 examples/example1.sh
 examples/example2
 examples/example2.sh
+examples/auth/src/auth
+examples/auth/src/auth.sh
+examples/auth/src/domain/*.cpp
+examples/auth/src/domain/*.h
+examples/auth/src/domain/*.sql
 lib/orm/test/mk_tables.sql
 src/yborm_gen_domain
 
