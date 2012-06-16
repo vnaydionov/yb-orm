@@ -207,33 +207,49 @@ const String format_sql(const vector<String> &parts,
     return sql;
 }
 
-class DBPoolConnectBackend: public SqlConnectBackend
+class DBPoolConnectionBackend;
+
+class DBPoolCursorBackend: public SqlCursorBackend
 {
+    DBPoolConnectionBackend *conn_;
+    String saved_sql_;
+    vector<String> sql_parts_;
+public:
+    DBPoolCursorBackend(DBPoolConnectionBackend *conn)
+        : conn_(conn)
+    {}
+
+    void exec_direct(const String &sql);
+    void prepare(const String &sql);
+    void exec(const Values &params);
+    RowPtr fetch_row();
+};
+
+class DBPoolConnectionBackend: public SqlConnectionBackend
+{
+    friend class DBPoolCursorBackend;
     const DBPoolConfig &conf_;
     mypp::DBPool &pool_;
     SqlDialect *dialect_;
     mypp::Handle *handle_;
     auto_ptr<mypp::Statement> stmt_;
-    String saved_sql_;
-    vector<String> sql_parts_;
 public:
-    DBPoolConnectBackend(const DBPoolConfig &conf, mypp::DBPool &pool)
+    DBPoolConnectionBackend(const DBPoolConfig &conf, mypp::DBPool &pool)
         : conf_(conf)
         , pool_(pool)
         , dialect_(NULL)
         , handle_(NULL)
     {}
 
-    ~DBPoolConnectBackend()
+    ~DBPoolConnectionBackend()
     {
         close();
     }
 
-    void open(SqlDialect *dialect, const String &dsn,
-            const String & /* user */, const String & /* passwd */)
+    void open(SqlDialect *dialect, const SqlSource &source)
     {
         close();
-        DBPoolDataSource ds(conf_.get_data_source(dsn));
+        DBPoolDataSource ds(conf_.get_data_source(source.get_db()));
         mypp::DSN mypp_dsn(NARROW(ds.driver), NARROW(ds.host), ds.port,
                 NARROW(ds.user), NARROW(ds.pass), NARROW(ds.db));
         handle_ = pool_.get(mypp_dsn, ds.timeout);
@@ -241,6 +257,13 @@ public:
             throw DBError(_T("Can't get connection from pool"));
         handle_->Clear();
         dialect_ = dialect;
+    }
+
+    auto_ptr<SqlCursorBackend> new_cursor()
+    {
+        auto_ptr<SqlCursorBackend> p(
+                (SqlCursorBackend *)new DBPoolCursorBackend(this));
+        return p;
     }
 
     void close()
@@ -252,73 +275,70 @@ public:
         }
     }
 
-    void clear_statement()
-    {
-        stmt_.reset(NULL);
-    }
-
     void commit()
     {
-        exec_direct(_T("COMMIT"));
+        DBPoolCursorBackend cur(this);
+        cur.exec_direct(_T("COMMIT"));
     }
 
     void rollback()
     {
-        exec_direct(_T("ROLLBACK"));
-    }
-
-    void exec_direct(const String &sql)
-    {
-        try {
-            saved_sql_ = sql;
-            stmt_.reset(NULL);
-            stmt_.reset(new mypp::Statement(handle_, NARROW(sql)));
-            stmt_->Execute();
-        }
-        catch (const mypp::Exception &e) {
-            throw GenericDBError(WIDEN(e.error()));
-        }
-    }
-
-    RowPtr fetch_row()
-    {
-        if (!stmt_.get())
-            throw GenericDBError(
-                    _T("fetch_rows(): no statement. context: ") + saved_sql_);
-        try {
-            mypp::Row row;
-            if (!stmt_->Fetch(row))
-                return RowPtr();
-            RowPtr orm_row(new Row);
-            for (int i = 0; i < row.size(); ++i) {
-                const String name = str_to_upper(WIDEN(row[i].getName()));
-                if (row[i].isNull())
-                    orm_row->push_back(RowItem(name, Value()));
-                else
-                    orm_row->push_back(RowItem(name, Value(WIDEN(row[i].asString()))));
-            }
-            return orm_row;
-        }
-        catch (const mypp::Exception &e) {
-            throw GenericDBError(WIDEN(e.error()));
-        }
-    }
-
-    void prepare(const String &sql)
-    {
-        saved_sql_ = sql;
-        vector<int> pos_list;
-        find_subst_signs(sql, pos_list);
-        vector<String> empty;
-        sql_parts_.swap(empty);
-        split_by_subst_sign(sql, pos_list, sql_parts_);
-    }
-
-    void exec(const Values &params)
-    {
-        exec_direct(format_sql(sql_parts_, params, dialect_));
+        DBPoolCursorBackend cur(this);
+        cur.exec_direct(_T("ROLLBACK"));
     }
 };
+
+void DBPoolCursorBackend::exec_direct(const String &sql)
+{
+    try {
+        saved_sql_ = sql;
+        conn_->stmt_.reset(NULL);
+        conn_->stmt_.reset(new mypp::Statement(conn_->handle_, NARROW(sql)));
+        conn_->stmt_->Execute();
+    }
+    catch (const mypp::Exception &e) {
+        throw GenericDBError(WIDEN(e.error()));
+    }
+}
+
+void DBPoolCursorBackend::prepare(const String &sql)
+{
+    saved_sql_ = sql;
+    vector<int> pos_list;
+    find_subst_signs(sql, pos_list);
+    vector<String> empty;
+    sql_parts_.swap(empty);
+    split_by_subst_sign(sql, pos_list, sql_parts_);
+}
+
+void DBPoolCursorBackend::exec(const Values &params)
+{
+    exec_direct(format_sql(sql_parts_, params, conn_->dialect_));
+}
+
+RowPtr DBPoolCursorBackend::fetch_row()
+{
+    if (!conn_->stmt_.get())
+        throw GenericDBError(
+                _T("fetch_rows(): no statement. context: ") + saved_sql_);
+    try {
+        mypp::Row row;
+        if (!conn_->stmt_->Fetch(row))
+            return RowPtr();
+        RowPtr orm_row(new Row);
+        for (int i = 0; i < row.size(); ++i) {
+            const String name = str_to_upper(WIDEN(row[i].getName()));
+            if (row[i].isNull())
+                orm_row->push_back(RowItem(name, Value()));
+            else
+                orm_row->push_back(RowItem(name, Value(WIDEN(row[i].asString()))));
+        }
+        return orm_row;
+    }
+    catch (const mypp::Exception &e) {
+        throw GenericDBError(WIDEN(e.error()));
+    }
+}
 
 class DBPoolDriverImpl
 {
@@ -330,10 +350,10 @@ public:
         , pool_(conf_->get_pool_size())
     {}
 
-    auto_ptr<SqlConnectBackend> create_backend()
+    auto_ptr<SqlConnectionBackend> create_backend()
     {
-        auto_ptr<SqlConnectBackend> p(
-                (SqlConnectBackend *)new DBPoolConnectBackend(
+        auto_ptr<SqlConnectionBackend> p(
+                (SqlConnectionBackend *)new DBPoolConnectionBackend(
                     *conf_, pool_));
         return p;
     }
@@ -350,7 +370,7 @@ DBPoolDriver::~DBPoolDriver()
     delete pimpl_;
 }
 
-auto_ptr<SqlConnectBackend>
+auto_ptr<SqlConnectionBackend>
 DBPoolDriver::create_backend()
 {
     return pimpl_->create_backend();

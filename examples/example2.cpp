@@ -13,7 +13,6 @@
 
 using namespace std;
 Yb::LogAppender appender(cerr);
-Yb::Logger logger(&appender);
 
 int main()
 {
@@ -31,15 +30,16 @@ int main()
     auto_ptr<Yb::SqlDriver> drv(
             new Yb::DBPoolDriver(conf, _T("MY_DBPOOL")));
     Yb::register_sql_driver(drv);
-    auto_ptr<Yb::SqlConnect> conn(
-            new Yb::SqlConnect(_T("MY_DBPOOL"), Yb::StrUtils::xgetenv(_T("YBORM_DBTYPE")), _T("default")));
+    auto_ptr<Yb::SqlConnection> conn(
+            new Yb::SqlConnection(_T("MY_DBPOOL"),
+                Yb::StrUtils::xgetenv(_T("YBORM_DBTYPE")), _T("default")));
     Yb::Engine engine(Yb::Engine::MANUAL, conn);
 #else
     Yb::Engine engine(Yb::Engine::MANUAL);
 #endif
     Yb::Session session(Yb::theMetaData::instance(), &engine);
-    engine.get_connect()->set_echo(true);
-    engine.get_connect()->set_logger(&logger);
+    engine.set_echo(true);
+    engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&appender)));
     Domain::Client client(session);
     string name, email;
     cout << "Enter name, email: \n";

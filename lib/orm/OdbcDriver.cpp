@@ -6,60 +6,65 @@ using Yb::StrUtils::str_to_upper;
 
 namespace Yb {
 
-OdbcConnectBackend::OdbcConnectBackend(OdbcDriver *drv)
-    : drv_(drv)
+OdbcCursorBackend::OdbcCursorBackend(tiodbc::connection *conn)
+    : conn_(conn)
 {}
 
 void
-OdbcConnectBackend::open(SqlDialect *dialect, const String &dsn,
-        const String &user, const String &passwd)
-{
-    close();
-    ScopedLock lock(drv_->conn_mux_);
-    conn_.reset(new tiodbc::connection());
-    if (!conn_->connect(dsn,
-            user, passwd, 10, false))
-        throw DBError(conn_->last_error_ex());
-}
-
-void
-OdbcConnectBackend::clear_statement()
+OdbcCursorBackend::exec_direct(const String &sql)
 {
     stmt_.reset(NULL);
-}
-
-void
-OdbcConnectBackend::close()
-{
-    stmt_.reset(NULL);
-    ScopedLock lock(drv_->conn_mux_);
-    conn_.reset(NULL);
-}
-
-void
-OdbcConnectBackend::commit()
-{
-    if (!conn_->commit())
-        throw DBError(conn_->last_error_ex());
-}
-
-void
-OdbcConnectBackend::rollback()
-{
-    if (!conn_->rollback())
-        throw DBError(conn_->last_error_ex());
-}
-
-void
-OdbcConnectBackend::exec_direct(const String &sql)
-{
     stmt_.reset(new tiodbc::statement());
     if (!stmt_->execute_direct(*conn_, sql))
         throw DBError(stmt_->last_error_ex());
 }
 
+void
+OdbcCursorBackend::prepare(const String &sql)
+{
+    stmt_.reset(NULL);
+    stmt_.reset(new tiodbc::statement());
+    if (!stmt_->prepare(*conn_, sql))
+        throw DBError(stmt_->last_error_ex());
+}
+
+void
+OdbcCursorBackend::exec(const Values &params)
+{
+    for (unsigned i = 0; i < params.size(); ++i) {
+        if (params[i].get_type() == Value::DATETIME) {
+            TIMESTAMP_STRUCT ts;
+            memset(&ts, 0, sizeof(ts));
+            DateTime t = params[i].as_date_time();
+            ts.year = dt_year(t);
+            ts.month = dt_month(t);
+            ts.day = dt_day(t);
+            ts.hour = (SQLUSMALLINT)dt_hour(t);
+            ts.minute = (SQLUSMALLINT)dt_minute(t);
+            ts.second = (SQLUSMALLINT)dt_second(t);
+            ts.fraction = 0; // TODO
+            stmt_->param(i + 1).set_as_date_time(
+                    ts,
+                    params[i].is_null());
+        }
+        else if (params[i].get_type() == Value::INTEGER) {
+            long x = params[i].as_integer();
+            stmt_->param(i + 1).set_as_long(x, params[i].is_null());
+        }
+        else {
+            String value;
+            if (!params[i].is_null())
+                value = params[i].as_string();
+            stmt_->param(i + 1).set_as_string(value,
+                                              params[i].is_null());
+        }
+    }
+    if (!stmt_->execute())
+        throw DBError(stmt_->last_error_ex());
+}
+
 RowPtr
-OdbcConnectBackend::fetch_row()
+OdbcCursorBackend::fetch_row()
 {
     if (!stmt_->fetch_next())
         return RowPtr();
@@ -96,58 +101,59 @@ OdbcConnectBackend::fetch_row()
     return row;
 }
 
+OdbcConnectionBackend::OdbcConnectionBackend(OdbcDriver *drv)
+    : drv_(drv)
+{}
+
 void
-OdbcConnectBackend::prepare(const String &sql)
+OdbcConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 {
-    stmt_.reset(new tiodbc::statement());
-    if (!stmt_->prepare(*conn_, sql))
-        throw DBError(stmt_->last_error_ex());
+    close();
+    ScopedLock lock(drv_->conn_mux_);
+    conn_.reset(new tiodbc::connection());
+    if (!conn_->connect(source.get_db(), source.get_user(), source.get_passwd(),
+                source.get_timeout(), source.get_autocommit()))
+        throw DBError(conn_->last_error_ex());
+}
+
+auto_ptr<SqlCursorBackend>
+OdbcConnectionBackend::new_cursor()
+{
+    auto_ptr<SqlCursorBackend> p(
+            (SqlCursorBackend *)new OdbcCursorBackend(conn_.get()));
+    return p;
 }
 
 void
-OdbcConnectBackend::exec(const Values &params)
+OdbcConnectionBackend::close()
 {
-    for (unsigned i = 0; i < params.size(); ++i) {
-        if (params[i].get_type() == Value::DATETIME) {
-            TIMESTAMP_STRUCT ts;
-            memset(&ts, 0, sizeof(ts));
-            DateTime t = params[i].as_date_time();
-            ts.year = dt_year(t);
-            ts.month = dt_month(t);
-            ts.day = dt_day(t);
-            ts.hour = (SQLUSMALLINT)dt_hour(t);
-            ts.minute = (SQLUSMALLINT)dt_minute(t);
-            ts.second = (SQLUSMALLINT)dt_second(t);
-            ts.fraction = 0; // TODO
-            stmt_->param(i + 1).set_as_date_time(
-                    ts,
-                    params[i].is_null());
-        }
-        else if (params[i].get_type() == Value::INTEGER) {
-            long x = params[i].as_integer();
-            stmt_->param(i + 1).set_as_long(x, params[i].is_null());
-        }
-        else {
-            String value;
-            if (!params[i].is_null())
-                value = params[i].as_string();
-            stmt_->param(i + 1).set_as_string(value,
-                                              params[i].is_null());
-        }
-    }
-    if (!stmt_->execute())
-        throw DBError(stmt_->last_error_ex());
+    ScopedLock lock(drv_->conn_mux_);
+    conn_.reset(NULL);
+}
+
+void
+OdbcConnectionBackend::commit()
+{
+    if (!conn_->commit())
+        throw DBError(conn_->last_error_ex());
+}
+
+void
+OdbcConnectionBackend::rollback()
+{
+    if (!conn_->rollback())
+        throw DBError(conn_->last_error_ex());
 }
 
 OdbcDriver::OdbcDriver():
     SqlDriver(_T("ODBC"))
 {}
 
-auto_ptr<SqlConnectBackend>
+auto_ptr<SqlConnectionBackend>
 OdbcDriver::create_backend()
 {
-    auto_ptr<SqlConnectBackend> p(
-            (SqlConnectBackend *)new OdbcConnectBackend(this));
+    auto_ptr<SqlConnectionBackend> p(
+            (SqlConnectionBackend *)new OdbcConnectionBackend(this));
     return p;
 }
 

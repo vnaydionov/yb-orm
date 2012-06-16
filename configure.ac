@@ -22,10 +22,10 @@ YB_QT([
         YB_BOOST_DATETIME([],
             AC_MSG_ERROR([Package requires the Boost date_time library!]))
     ])
+    YB_ODBC([],
+        AC_MSG_ERROR([ODBC library is required!]))
 ])
-
-YB_ODBC([],
-    AC_MSG_ERROR([ODBC library is required!]))
+AM_CONDITIONAL([QT4_PRESENT], [test x$have_qt = xyes])
 
 # optional dependencies
 YB_PATH_CPPUNIT([1.10.0],[],

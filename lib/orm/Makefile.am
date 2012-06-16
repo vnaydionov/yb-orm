@@ -8,13 +8,24 @@ else
 SUBDIRS = 
 endif
 
-if DBPOOL3_PRESENT
-yborminclude_HEADERS = $(H_FILES) DBPoolDriver.h
-libyborm_la_SOURCES = $(CPP_FILES) DBPoolDriver.cpp
+if QT4_PRESENT
+DEFAULT_DRV_H = QtSqlDriver.h
+DEFAULT_DRV_CPP = QtSqlDriver.cpp
 else
-yborminclude_HEADERS = $(H_FILES)
-libyborm_la_SOURCES = $(CPP_FILES)
+DEFAULT_DRV_H = OdbcDriver.h tiodbc.hpp
+DEFAULT_DRV_CPP = OdbcDriver.cpp tiodbc.cpp
 endif
+
+if DBPOOL3_PRESENT
+DBPOOL_DRV_H = DBPoolDriver.h
+DBPOOL_DRV_CPP = DBPoolDriver.cpp
+else
+DBPOOL_DRV_H =
+DBPOOL_DRV_CPP =
+endif
+
+yborminclude_HEADERS = $(H_FILES) $(DEFAULT_DRV_H) $(DBPOOL_DRV_H)
+libyborm_la_SOURCES = $(CPP_FILES) $(DEFAULT_DRV_CPP) $(DBPOOL_DRV_CPP)
 
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
@@ -30,9 +41,7 @@ H_FILES = \
 	Value.h \
 	Engine.h \
 	SqlDriver.h \
-	OdbcDriver.h \
 	SqlPool.h \
-	tiodbc.hpp \
 	DomainObj.h \
 	DomainFactory.h \
 	DomainFactorySingleton.h \
@@ -48,9 +57,7 @@ CPP_FILES = \
 	Value.cpp \
 	Engine.cpp \
 	SqlDriver.cpp \
-	OdbcDriver.cpp \
 	SqlPool.cpp \
-	tiodbc.cpp \
 	XMLMetaDataConfig.cpp \
 	XMLNode.cpp \
 	DomainFactory.cpp \

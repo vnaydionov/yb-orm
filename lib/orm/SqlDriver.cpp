@@ -2,7 +2,15 @@
 #include <iostream>
 #include <sstream>
 #include <orm/SqlDriver.h>
+#if defined(YB_USE_QT)
+#include <orm/QtSqlDriver.h>
+typedef Yb::QtSqlDriver DefaultSqlDriver;
+#define DEFAULT_DRIVER _T("QTSQL")
+#else
 #include <orm/OdbcDriver.h>
+typedef Yb::OdbcDriver DefaultSqlDriver;
+#define DEFAULT_DRIVER _T("ODBC")
+#endif
 #include <util/Singleton.h>
 
 using namespace std;
@@ -164,14 +172,15 @@ const Strings list_sql_dialects()
     return theDialectRegistry::instance().list_items();
 }
 
-SqlConnectBackend::~SqlConnectBackend() {}
+SqlCursorBackend::~SqlCursorBackend() {}
+SqlConnectionBackend::~SqlConnectionBackend() {}
 SqlDriver::~SqlDriver() {}
 
 typedef SingletonHolder<ItemRegistry<SqlDriver> > theDriverRegistry;
 
 void register_std_drivers()
 {
-    auto_ptr<SqlDriver> driver((SqlDriver *)new OdbcDriver());
+    auto_ptr<SqlDriver> driver((SqlDriver *)new DefaultSqlDriver());
     SqlDriver *p = driver.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver);
 }
@@ -180,7 +189,11 @@ SqlDriver *sql_driver(const String &name)
 {
     if (theDriverRegistry::instance().empty())
         register_std_drivers();
-    SqlDriver *driver = theDriverRegistry::instance().find_item(name);
+    SqlDriver *driver = NULL;
+    if (str_empty(name) || name == _T("DEFAULT"))
+        driver = theDriverRegistry::instance().find_item(DEFAULT_DRIVER);
+    else
+        driver = theDriverRegistry::instance().find_item(name);
     if (!driver)
         throw SqlDriverError(_T("Unknown driver: ") + name);
     return driver;
@@ -216,9 +229,10 @@ Row::const_iterator find_in_row(const Row &row, const String &name)
     return i;
 }
 
-bool SqlResultSet::fetch(Row &row)
+bool
+SqlResultSet::fetch(Row &row)
 {
-    RowPtr p = conn_.fetch_row();
+    RowPtr p = cursor_.fetch_row();
     if (!p.get())
         return false;
     row.swap(*p);
@@ -226,82 +240,74 @@ bool SqlResultSet::fetch(Row &row)
 }
 
 void
-SqlConnect::mark_bad(const std::exception &e)
+SqlResultSet::own(auto_ptr<SqlCursor> cursor)
 {
-    if (!bad_) {
-        string s = e.what();
-        size_t pos = s.find('\n');
-        if (pos != string::npos)
-            s = s.substr(0, pos);
-        DBG(_T("mark connection bad, because of ") + String(WIDEN(s)));
-        bad_ = true;
-    }
+    owned_cursor_.reset(NULL);
+    owned_cursor_.reset(cursor.release());
 }
 
-SqlConnect::SqlConnect(const String &driver_name,
-        const String &dialect_name, const String &db,
-        const String &user, const String &passwd)
-    : source_(SqlSource(db, driver_name, dialect_name, db, user, passwd))
-    , driver_(sql_driver(source_.get_driver_name()))
-    , dialect_(sql_dialect(source_.get_dialect_name()))
-    , activity_(false)
-    , echo_(false)
-    , bad_(false)
-    , free_since_(0)
-    , log_(NULL)
-{
-    backend_.reset(driver_->create_backend().release());
-    backend_->open(dialect_, source_.get_db(), source_.get_user(), source_.get_passwd());
-}
-
-SqlConnect::SqlConnect(const SqlSource &source)
-    : source_(source)
-    , driver_(sql_driver(source_.get_driver_name()))
-    , dialect_(sql_dialect(source_.get_dialect_name()))
-    , activity_(false)
-    , echo_(false)
-    , bad_(false)
-    , free_since_(0)
-    , log_(NULL)
-{
-    backend_.reset(driver_->create_backend().release());
-    backend_->open(dialect_, source_.get_db(), source_.get_user(), source_.get_passwd());
-}
-
-SqlConnect::~SqlConnect()
-{
-    bool err = false;
-    try {
-        if (activity_)
-            rollback();
-    }
-    catch (const std::exception &e) { err = true; }
-    try {
-        backend_->close();
-    }
-    catch (const std::exception &e) { err = true; }
-    if (err)
-        DBG(_T("error while closing connection"));
-}
+SqlCursor::SqlCursor(SqlConnection &connection)
+    : connection_(connection)
+    , backend_(connection.backend_->new_cursor())
+    , echo_(connection.echo_)
+    , log_(connection.log_)
+{}
 
 SqlResultSet
-SqlConnect::exec_direct(const String &sql)
+SqlCursor::exec_direct(const String &sql)
 {
     try {
         if (echo_)
             DBG(_T("exec_direct: ") + sql);
-        activity_ = true;
+        connection_.activity_ = true;
         backend_->exec_direct(sql);
         return SqlResultSet(*this);
     }
     catch (const std::exception &e) {
-        mark_bad(e);
+        connection_.mark_bad(e);
+        throw;
+    }
+}
+
+void
+SqlCursor::prepare(const String &sql)
+{
+    try {
+        if (echo_)
+            DBG(_T("prepare: ") + sql);
+        connection_.activity_ = true;
+        backend_->prepare(sql);
+    }
+    catch (const std::exception &e) {
+        connection_.mark_bad(e);
+        throw;
+    }
+}
+
+SqlResultSet
+SqlCursor::exec(const Values &params)
+{
+    try {
+        if (echo_) {
+            std::ostringstream out;
+            out << "exec prepared:";
+            for (unsigned i = 0; i < params.size(); ++i)
+                out << " p" << (i + 1) << "=\""
+                    << NARROW(params[i].sql_str()) << "\"";
+            DBG(WIDEN(out.str()));
+        }
+        connection_.activity_ = true;
+        backend_->exec(params);
+        return SqlResultSet(*this);
+    }
+    catch (const std::exception &e) {
+        connection_.mark_bad(e);
         throw;
     }
 }
 
 RowPtr
-SqlConnect::fetch_row()
+SqlCursor::fetch_row()
 {
     try {
         RowPtr row = backend_->fetch_row();
@@ -322,13 +328,13 @@ SqlConnect::fetch_row()
         return row;
     }
     catch (const std::exception &e) {
-        mark_bad(e);
+        connection_.mark_bad(e);
         throw;
     }
 }
 
 RowsPtr
-SqlConnect::fetch_rows(int max_rows)
+SqlCursor::fetch_rows(int max_rows)
 {
     try {
         RowsPtr rows(new Rows);
@@ -338,49 +344,79 @@ SqlConnect::fetch_rows(int max_rows)
         return rows;
     }
     catch (const std::exception &e) {
-        mark_bad(e);
+        connection_.mark_bad(e);
         throw;
     }
 }
 
 void
-SqlConnect::prepare(const String &sql)
+SqlConnection::mark_bad(const std::exception &e)
 {
-    try {
-        if (echo_)
-            DBG(_T("prepare: ") + sql);
-        activity_ = true;
-        backend_->prepare(sql);
-    }
-    catch (const std::exception &e) {
-        mark_bad(e);
-        throw;
+    if (!bad_) {
+        string s = e.what();
+        size_t pos = s.find('\n');
+        if (pos != string::npos)
+            s = s.substr(0, pos);
+        DBG(_T("mark connection bad, because of ") + String(WIDEN(s)));
+        bad_ = true;
     }
 }
 
-SqlResultSet
-SqlConnect::exec(const Values &params)
+SqlConnection::SqlConnection(const String &driver_name,
+        const String &dialect_name, const String &db,
+        const String &user, const String &passwd)
+    : source_(SqlSource(db, driver_name, dialect_name, db, user, passwd))
+    , driver_(sql_driver(source_.get_driver_name()))
+    , dialect_(sql_dialect(source_.get_dialect_name()))
+    , activity_(false)
+    , echo_(false)
+    , bad_(false)
+    , free_since_(0)
+    , log_(NULL)
 {
+    backend_.reset(driver_->create_backend().release());
+    backend_->open(dialect_, source_);
+}
+
+SqlConnection::SqlConnection(const SqlSource &source)
+    : source_(source)
+    , driver_(sql_driver(source_.get_driver_name()))
+    , dialect_(sql_dialect(source_.get_dialect_name()))
+    , activity_(false)
+    , echo_(false)
+    , bad_(false)
+    , free_since_(0)
+    , log_(NULL)
+{
+    backend_.reset(driver_->create_backend().release());
+    backend_->open(dialect_, source_);
+}
+
+SqlConnection::~SqlConnection()
+{
+    bool err = false;
     try {
-        if (echo_) {
-            std::ostringstream out;
-            out << "exec prepared:";
-            for (unsigned i = 0; i < params.size(); ++i)
-                out << " p" << (i + 1) << "=\""
-                    << NARROW(params[i].sql_str()) << "\"";
-            DBG(WIDEN(out.str()));
-        }
-        backend_->exec(params);
-        return SqlResultSet(*this);
+        clear();
+        if (activity_)
+            rollback();
     }
-    catch (const std::exception &e) {
-        mark_bad(e);
-        throw;
+    catch (const std::exception &e) { err = true; }
+    try {
+        backend_->close();
     }
+    catch (const std::exception &e) { err = true; }
+    if (err)
+        DBG(_T("error while closing connection"));
+}
+
+auto_ptr<SqlCursor>
+SqlConnection::new_cursor()
+{
+    return auto_ptr<SqlCursor>(new SqlCursor(*this));
 }
 
 void
-SqlConnect::commit()
+SqlConnection::commit()
 {
     try {
         activity_ = false;
@@ -395,7 +431,7 @@ SqlConnect::commit()
 }
 
 void
-SqlConnect::rollback()
+SqlConnection::rollback()
 {
     try {
         activity_ = false;
@@ -410,13 +446,68 @@ SqlConnect::rollback()
 }
 
 void
-SqlConnect::clear()
+SqlConnection::clear()
 {
     try {
-        rollback();
+        cursor_.reset(NULL);
     }
-    catch (const std::exception &e) { }
-    backend_->clear_statement();
+    catch (const std::exception &e) {
+        mark_bad(e);
+        throw;
+    }
+}
+
+SqlResultSet
+SqlConnection::exec_direct(const String &sql)
+{
+    auto_ptr<SqlCursor> cursor;
+    try {
+        cursor.reset(NULL);
+        cursor.reset(new SqlCursor(*this));
+    }
+    catch (const std::exception &e) {
+        mark_bad(e);
+        throw;
+    }
+    SqlResultSet rs = cursor->exec_direct(sql);
+    rs.own(cursor);
+    return rs;
+}
+
+void
+SqlConnection::prepare(const String &sql)
+{
+    try {
+        cursor_.reset(NULL);
+        cursor_.reset(new SqlCursor(*this));
+    }
+    catch (const std::exception &e) {
+        mark_bad(e);
+        throw;
+    }
+    cursor_->prepare(sql);
+}
+
+SqlResultSet
+SqlConnection::exec(const Values &params)
+{
+    YB_ASSERT(cursor_.get());
+    SqlResultSet rs = cursor_->exec(params);
+    return rs;
+}
+
+RowPtr
+SqlConnection::fetch_row()
+{
+    YB_ASSERT(cursor_.get());
+    return cursor_->fetch_row();
+}
+
+RowsPtr
+SqlConnection::fetch_rows(int max_rows)
+{
+    YB_ASSERT(cursor_.get());
+    return cursor_->fetch_rows(max_rows);
 }
 
 } // namespace Yb

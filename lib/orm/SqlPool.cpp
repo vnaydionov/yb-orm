@@ -58,17 +58,17 @@ SqlPool::monitor_thread()
     while (sleep_not_stop()) {
         //LOG(ll_DEBUG, _T("monitor wake"));
         String del_source_id;
-        SqlConnectPtr del_handle = NULL;
+        SqlConnectionPtr del_handle = NULL;
         int del_count = 0, del_pool_sz = 0;
         // process all 'open' requests
         while (1) {
-            //LOG(ll_DEBUG, _T("looking for connects_for_open_"));
+            //LOG(ll_DEBUG, _T("looking for connections_for_open_"));
             String id;
             {
                 ScopedLock lock(stop_mux_);
-                if (!connects_for_open_.empty()) {
-                    id = connects_for_open_.front();
-                    connects_for_open_.pop_front();
+                if (!connections_for_open_.empty()) {
+                    id = connections_for_open_.front();
+                    connections_for_open_.pop_front();
                 }
             }
             if (str_empty(id))
@@ -80,11 +80,11 @@ SqlPool::monitor_thread()
             }
             try {
                 LOG(ll_DEBUG, _T("opening new connection") + format_stats(id));
-                SqlConnectPtr handle = new SqlConnect(src->second);
+                SqlConnectionPtr handle = new SqlConnection(src->second);
                 put(handle, false, true);
             }
             catch (const std::exception &e) {
-                LOG(ll_ERROR, _T("connect error") + format_stats(id)
+                LOG(ll_ERROR, _T("connection error") + format_stats(id)
                         + _T(" ") + WIDEN(e.what()));
                 ScopedLock lock(pool_mux_);
                 open_errors_[id].push_back(e);
@@ -93,13 +93,13 @@ SqlPool::monitor_thread()
         }
         // process all 'forced close' requests
         while (1) {
-            //LOG(ll_DEBUG, _T("looking for connects_for_delete_"));
+            //LOG(ll_DEBUG, _T("looking for connections_for_delete_"));
             del_handle = NULL;
             {
                 ScopedLock lock(stop_mux_);
-                if (!connects_for_delete_.empty()) {
-                    del_handle = connects_for_delete_.front();
-                    connects_for_delete_.pop_front();
+                if (!connections_for_delete_.empty()) {
+                    del_handle = connections_for_delete_.front();
+                    connections_for_delete_.pop_front();
                 }
             }
             if (!del_handle)
@@ -163,8 +163,8 @@ SqlPool::sleep_not_stop(void)
     ScopedLock lock(stop_mux_);
     while (!stop_monitor_flag_) {
         if (!stop_cond_.wait(lock, monitor_sleep_ * 1000) ||
-                !connects_for_open_.empty() ||
-                !connects_for_delete_.empty())
+                !connections_for_open_.empty() ||
+                !connections_for_delete_.empty())
             return true;
     }
     return false;
@@ -201,7 +201,7 @@ SqlPool::add_source(const SqlSource &source)
     pools_[source.get_id()] = Pool();
 }
 
-SqlPool::SqlConnectPtr
+SqlPool::SqlConnectionPtr
 SqlPool::get(const String &id, int timeout)
 {
     //LOG(ll_DEBUG, _T("SqlPool::get()"));
@@ -226,7 +226,7 @@ SqlPool::get(const String &id, int timeout)
             LOG(ll_DEBUG, _T("waiting for new connection ")
                     + to_string(timeout) + _T(" sec") + stats);
             ScopedLock lock(stop_mux_);
-            connects_for_open_.push_back(id);
+            connections_for_open_.push_back(id);
             stop_cond_.notify_all();
         }
     }
@@ -244,7 +244,7 @@ SqlPool::get(const String &id, int timeout)
         open_errors_[id].pop_front();
         throw e;
     }
-    SqlConnectPtr handle = NULL;
+    SqlConnectionPtr handle = NULL;
     handle = pools_[id].front();
     ++counts_[id];
     pools_[id].pop_front();
@@ -253,7 +253,7 @@ SqlPool::get(const String &id, int timeout)
 }
 
 void
-SqlPool::put(SqlConnectPtr handle, bool close_now, bool new_conn)
+SqlPool::put(SqlConnectionPtr handle, bool close_now, bool new_conn)
 {
     if (!handle)
         return;
@@ -263,7 +263,7 @@ SqlPool::put(SqlConnectPtr handle, bool close_now, bool new_conn)
         handle->clear();
     if (handle->bad())
         close_now = true;
-    SqlConnectPtr del_handle = NULL;
+    SqlConnectionPtr del_handle = NULL;
     int del_count = 0, del_pool_sz = 0;
     String id = handle->get_source().get_id();
     {
@@ -286,7 +286,7 @@ SqlPool::put(SqlConnectPtr handle, bool close_now, bool new_conn)
     if (del_handle) {
         LOG(ll_DEBUG, _T("forced closing connection") + format_stats(id));
         ScopedLock lock(stop_mux_);
-        connects_for_delete_.push_back(del_handle);
+        connections_for_delete_.push_back(del_handle);
         stop_cond_.notify_all();
     }
 }

@@ -15,7 +15,7 @@ EngineBase::~EngineBase()
 {}
 
 Engine::Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
-               SqlConnect *conn)
+               SqlConnection *conn)
     : master_ptr_(master)
     , touched_(false)
     , echo_(echo)
@@ -56,7 +56,7 @@ Engine::Engine(Mode work_mode)
     , echo_(false)
     , mode_(work_mode)
     , timeout_(0)
-    , conn_(new SqlConnect(_T("ODBC"), cfg(_T("DBTYPE")),
+    , conn_(new SqlConnection(_T("DEFAULT"), cfg(_T("DBTYPE")),
                 cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD"))))
     , logger_ptr_(NULL)
     , pool_ptr_(NULL)
@@ -64,7 +64,7 @@ Engine::Engine(Mode work_mode)
     , dialect_(conn_->get_dialect())
 {}
 
-Engine::Engine(Mode work_mode, auto_ptr<SqlConnect> conn)
+Engine::Engine(Mode work_mode, auto_ptr<SqlConnection> conn)
     : master_ptr_(NULL)
     , touched_(false)
     , echo_(false)
@@ -135,7 +135,7 @@ Engine::get_pool()
     return NULL;
 }
 
-SqlConnect *
+SqlConnection *
 Engine::get_conn(bool strict)
 {
     if (conn_ptr_)
@@ -158,7 +158,7 @@ void
 Engine::set_echo(bool echo)
 {
     echo_ = echo;
-    SqlConnect *conn = get_conn(false);
+    SqlConnection *conn = get_conn(false);
     if (conn)
         conn->set_echo(echo_);
 }
@@ -167,9 +167,9 @@ void
 Engine::set_logger(ILogger::Ptr logger)
 {
     logger_ = logger;
-    SqlConnect *conn = get_conn(false);
+    SqlConnection *conn = get_conn(false);
     if (conn)
-        conn->set_logger(logger.get());
+        conn->set_logger(logger_.get());
 }
 
 SqlResultSet
@@ -186,8 +186,10 @@ Engine::select_iter(const StrList &what,
     Values params;
     do_gen_sql_select(sql, params,
             what, from, where, group_by, having, order_by, for_update);
-    get_conn()->prepare(sql);
-    SqlResultSet rs = get_conn()->exec(params);
+    auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+    cursor->prepare(sql);
+    SqlResultSet rs = cursor->exec(params);
+    rs.own(cursor);
     if (select_mode)
         touched_ = true;
     return rs;
@@ -337,9 +339,10 @@ Engine::on_select(const StrList &what,
     Values params;
     do_gen_sql_select(sql, params,
             what, from, where, group_by, having, order_by, for_update);
-    get_conn()->prepare(sql);
-    get_conn()->exec(params);
-    return get_conn()->fetch_rows(max_rows);
+    auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+    cursor->prepare(sql);
+    cursor->exec(params);
+    return cursor->fetch_rows(max_rows);
 }
 
 const vector<LongInt>
@@ -356,7 +359,8 @@ Engine::on_insert(const String &table_name,
     do_gen_sql_insert(sql, params, param_nums, table_name,
             rows[0], exclude_fields);
     if (!collect_new_ids) {
-        get_conn()->prepare(sql);
+        auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+        cursor->prepare(sql);
         Rows::const_iterator it = rows.begin(), end = rows.end();
         for (; it != end; ++it) {
             Row::const_iterator f = it->begin(), fend = it->end();
@@ -365,22 +369,26 @@ Engine::on_insert(const String &table_name,
                 if (x == exclude_fields.end())
                     params[param_nums[f->first]] = f->second;
             }
-            get_conn()->exec(params);
+            cursor->exec(params);
         }
     }
     else {
         Rows::const_iterator it = rows.begin(), end = rows.end();
         for (; it != end; ++it) {
-            get_conn()->prepare(sql);
-            Row::const_iterator f = it->begin(), fend = it->end();
-            for (; f != fend; ++f) {
-                StringSet::const_iterator x = exclude_fields.find(f->first);
-                if (x == exclude_fields.end())
-                    params[param_nums[f->first]] = f->second;
+            {
+                auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+                cursor->prepare(sql);
+                Row::const_iterator f = it->begin(), fend = it->end();
+                for (; f != fend; ++f) {
+                    StringSet::const_iterator x = exclude_fields.find(f->first);
+                    if (x == exclude_fields.end())
+                        params[param_nums[f->first]] = f->second;
+                }
+                cursor->exec(params);
             }
-            get_conn()->exec(params);
-            get_conn()->exec_direct(_T("SELECT LAST_INSERT_ID() LID"));
-            RowsPtr id_rows = get_conn()->fetch_rows();
+            auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+            cursor->exec_direct(_T("SELECT LAST_INSERT_ID() LID"));
+            RowsPtr id_rows = cursor->fetch_rows();
             ids.push_back((*id_rows)[0][0].second.as_longint());
         }
     }
@@ -399,7 +407,8 @@ Engine::on_update(const String &table_name,
     ParamNums param_nums;
     do_gen_sql_update(sql, params, param_nums, table_name,
             rows[0], key_fields, exclude_fields, where);
-    get_conn()->prepare(sql);
+    auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+    cursor->prepare(sql);
     Rows::const_iterator it = rows.begin(), end = rows.end();
     for (; it != end; ++it) {
         Row::const_iterator f = it->begin(), fend = it->end();
@@ -408,7 +417,7 @@ Engine::on_update(const String &table_name,
             if (x == exclude_fields.end())
                 params[param_nums[f->first]] = f->second;
         }
-        get_conn()->exec(params);
+        cursor->exec(params);
     }
 }
 
@@ -418,14 +427,16 @@ Engine::on_delete(const String &table_name, const Filter &where)
     String sql;
     Values params;
     do_gen_sql_delete(sql, params, table_name, where);
-    get_conn()->prepare(sql);
-    get_conn()->exec(params);
+    auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+    cursor->prepare(sql);
+    cursor->exec(params);
 }
 
 void
 Engine::on_exec_proc(const String &proc_code)
 {
-    get_conn()->exec_direct(proc_code);
+    auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+    cursor->exec_direct(proc_code);
 }
 
 void
