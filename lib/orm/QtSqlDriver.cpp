@@ -113,8 +113,8 @@ QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
             + _T("_") + to_string(drv_->seq_);
         ++drv_->seq_;
     }
-    String driver = source.get_driver_name();
-    //if (str_empty(driver))
+    String driver = source.get_lowlevel_driver();
+    if (str_empty(driver))
     {
         if (dialect->get_name() == _T("MYSQL"))
             driver = _T("QMYSQL");
