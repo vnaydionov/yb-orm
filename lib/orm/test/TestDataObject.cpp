@@ -10,10 +10,10 @@ using namespace std;
 using namespace Yb;
 using Yb::StrUtils::xgetenv;
 
-LogAppender appender(cerr);
-Logger logger(&appender);
-#define SETUP_LOG(e) do{ e.get_connect()->set_echo(true); \
-    e.get_connect()->set_logger(&logger); }while(0)
+static LogAppender appender(cerr);
+#define SETUP_LOG(e) do{ e.set_echo(true); \
+    ILogger::Ptr __log(new Logger(&appender)); \
+    e.set_logger(__log); }while(0)
 
 class TestDataObject : public CppUnit::TestFixture
 {
@@ -386,7 +386,7 @@ public:
     void setUp()
     {
         tearDown();
-        SqlConnect conn(_T("ODBC"), xgetenv(_T("YBORM_DBTYPE")),
+        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
                         xgetenv(_T("YBORM_DB")),
                         xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
         {
@@ -454,7 +454,7 @@ public:
 
     void tearDown()
     {
-        SqlConnect conn(_T("ODBC"), xgetenv(_T("YBORM_DBTYPE")),
+        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
                         xgetenv(_T("YBORM_DB")),
                         xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));

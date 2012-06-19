@@ -28,25 +28,25 @@ class SqlPool
 {
     friend class PoolMonThread;
 public:
-    typedef SqlConnect *SqlConnectPtr;
+    typedef SqlConnection *SqlConnectionPtr;
     SqlPool(int pool_max_size = YB_POOL_MAX_SIZE,
             int idle_time = YB_POOL_IDLE_TIME,
             int monitor_sleep = YB_POOL_MONITOR_SLEEP,
             ILogger *logger = NULL);
     ~SqlPool();
     void add_source(const SqlSource &source);
-    SqlConnectPtr get(const String &id, int timeout = YB_POOL_WAIT_TIME);
-    void put(SqlConnectPtr handle, bool close_now = false, bool new_conn = false);
+    SqlConnectionPtr get(const String &id, int timeout = YB_POOL_WAIT_TIME);
+    void put(SqlConnectionPtr handle, bool close_now = false, bool new_conn = false);
 
 private:
     std::map<String, SqlSource> sources_;
     std::map<String, int> counts_;
-    typedef std::deque<SqlConnectPtr> Pool;
+    typedef std::deque<SqlConnectionPtr> Pool;
     std::map<String, Pool> pools_;
     typedef std::deque<std::exception> OpenErrors;
     std::map<String, OpenErrors> open_errors_;
-    std::deque<String> connects_for_open_;
-    std::deque<SqlConnectPtr> connects_for_delete_;
+    std::deque<String> connections_for_open_;
+    std::deque<SqlConnectionPtr> connections_for_delete_;
     Mutex pool_mux_, stop_mux_;
     Condition pool_cond_, stop_cond_;
     int pool_max_size_, idle_time_, monitor_sleep_;
@@ -77,19 +77,19 @@ public:
     int get_timeout() const { return timeout_; }
 };
 
-class SqlConnectVar: NonCopyable
+class SqlConnectionVar: NonCopyable
 {
     SqlPool &pool_;
-    SqlConnect *handle_;
+    SqlConnection *handle_;
 public:
-    explicit SqlConnectVar(const SqlPoolDescr &d)
+    explicit SqlConnectionVar(const SqlPoolDescr &d)
         : pool_(d.get_pool())
         , handle_(pool_.get(d.get_source_id(), d.get_timeout()))
     {
         if (!handle_)
             throw GenericDBError(_T("Can't get connection"));
     }
-    SqlConnectVar(SqlPool &pool, const String &source_id,
+    SqlConnectionVar(SqlPool &pool, const String &source_id,
                  int timeout = YB_POOL_WAIT_TIME)
         : pool_(pool)
         , handle_(pool_.get(source_id, timeout))
@@ -97,11 +97,11 @@ public:
         if (!handle_)
             throw GenericDBError(_T("Can't get connection"));
     }
-    ~SqlConnectVar()
+    ~SqlConnectionVar()
     {
         pool_.put(handle_);
     }
-    SqlConnect *operator-> () const { return handle_; }
+    SqlConnection *operator-> () const { return handle_; }
 };
 
 } // namespace Yb

@@ -6,6 +6,8 @@
 #endif
 #if defined(YB_USE_WX)
 #include <wx/app.h>
+#elif defined(YB_USE_QT)
+#include <QCoreApplication>
 #endif
 #include <iostream>
 #include <util/str_utils.hpp>
@@ -201,9 +203,12 @@ public:
     virtual bool OnInit() { return true; }
     virtual int OnRun()
 #else
-    int main()
+    int main(int argc, char *argv[])
 #endif
 {
+#if defined(YB_USE_QT)
+    QCoreApplication app(argc, argv);
+#endif
     try {
         const char *log_fname = "log.txt"; // TODO: read from config
         g_log.reset(new Log(log_fname));
@@ -218,8 +223,12 @@ public:
         Yb::init_default_meta();
         std::auto_ptr<Yb::SqlPool> pool(new Yb::SqlPool(YB_POOL_MAX_SIZE,
                 YB_POOL_IDLE_TIME, YB_POOL_MONITOR_SLEEP, g_log.get()));
-        pool->add_source(Yb::SqlSource(_T("auth_db"), _T("ODBC"),
-                cfg(_T("DBTYPE")), cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD"))));
+        Yb::SqlSource src(_T("auth_db"), _T("DEFAULT"),
+                cfg(_T("DBTYPE")), cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+#if defined(YB_USE_QT)
+        src.set_lowlevel_driver(_T("QODBC"));
+#endif
+        pool->add_source(src);
         engine.reset(new Yb::Engine(Yb::Engine::MANUAL, pool, _T("auth_db")));
         Yb::Logger::Ptr ormlog = g_log->new_logger("orm");
         engine->set_echo(true);

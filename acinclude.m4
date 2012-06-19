@@ -57,12 +57,12 @@ AC_DEFUN([YB_QT],
     if test "x$ac_qt_includes" != "x" || test "x$ac_qt_libs" != "x" ; then
         AC_MSG_CHECKING([for the QT4 C++ libraries])
         if test "x$ac_qt_includes" != "x" ; then
-            QT_CFLAGS="-I$ac_qt_includes -I$ac_qt_includes/QtCore -I$ac_qt_includes/QtXml"
+            QT_CFLAGS="-I$ac_qt_includes -I$ac_qt_includes/QtCore -I$ac_qt_includes/QtXml -I$ac_qt_includes/QtSql"
         fi
         if test "x$ac_qt_libs" != "x" ; then
             QT_LDFLAGS="-L$ac_qt_libs"
         fi
-        QT_LIBS="$QT_LIBS -lQtCore -lQtXml"
+        QT_LIBS="$QT_LIBS -lQtCore -lQtXml -lQtSql"
         ac_save_cxxflags="$CXXFLAGS"
         ac_save_ldflags="$LDFLAGS"
         ac_save_libs="$LIBS"

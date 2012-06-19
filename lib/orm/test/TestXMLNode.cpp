@@ -135,7 +135,7 @@ public:
             };
             st = st_data;
         }
-        SqlConnect conn(_T("ODBC"), xgetenv(_T("YBORM_DBTYPE")),
+        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
                 xgetenv(_T("YBORM_DB")), xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
         for (size_t i = 0; i < NUM_STMT; ++i)
             conn.exec_direct(WIDEN(st[i]));

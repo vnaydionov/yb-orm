@@ -67,18 +67,6 @@ else ()
     find_library (LIBXML2_LIBS libxml2 c:/yborm/bin)
 endif ()
 
-else (USE_QT4)
-
-find_package (Qt4 4.4.0 REQUIRED QtCore QtXml)
-include (${QT_USE_FILE})
-add_definitions (-D YB_USE_QT)
-
-endif ()
-
-if (BOOST_INCLUDEDIR AND (NOT BORLAND))
-    add_definitions (-D YB_USE_TUPLE)
-endif()
-
 if (UNIX)
     find_library (ODBC_LIBS odbc)
 elseif (BORLAND)
@@ -88,6 +76,18 @@ elseif (MSVC)
 elseif (MINGW)
     set (ODBC_LIBS -lodbc32 CACHE STRING "odbc32 lib" FORCE)
 endif ()
+
+else (USE_QT4)
+
+find_package (Qt4 4.4.0 REQUIRED QtCore QtXml QtSql)
+include (${QT_USE_FILE})
+add_definitions (-D YB_USE_QT)
+
+endif ()
+
+if (BOOST_INCLUDEDIR AND (NOT BORLAND))
+    add_definitions (-D YB_USE_TUPLE)
+endif()
 
 function (check_yborm_root YBORM_ROOT)
     if (EXISTS ${YBORM_ROOT})

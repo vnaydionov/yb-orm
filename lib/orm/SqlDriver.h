@@ -158,21 +158,29 @@ typedef std::auto_ptr<Rows> RowsPtr;
 Row::iterator find_in_row(Row &row, const String &name);
 Row::const_iterator find_in_row(const Row &row, const String &name);
 
-class SqlConnectBackend: NonCopyable
+class SqlCursorBackend: NonCopyable
 {
 public:
-    SqlConnectBackend() {}
-    virtual ~SqlConnectBackend();
-    virtual void open(SqlDialect *dialect, const String &db,
-        const String &user, const String &passwd) = 0;
-    virtual void clear_statement() = 0;
+    SqlCursorBackend() {}
+    virtual ~SqlCursorBackend();
+    virtual void exec_direct(const String &sql) = 0;
+    virtual void prepare(const String &sql) = 0;
+    virtual void exec(const Values &params) = 0;
+    virtual RowPtr fetch_row() = 0;
+};
+
+class SqlSource;
+
+class SqlConnectionBackend: NonCopyable
+{
+public:
+    SqlConnectionBackend() {}
+    virtual ~SqlConnectionBackend();
+    virtual void open(SqlDialect *dialect, const SqlSource &source) = 0;
+    virtual std::auto_ptr<SqlCursorBackend> new_cursor() = 0;
     virtual void close() = 0;
     virtual void commit() = 0;
     virtual void rollback() = 0;
-    virtual void exec_direct(const String &sql) = 0;
-    virtual RowPtr fetch_row() = 0;
-    virtual void prepare(const String &sql) = 0;
-    virtual void exec(const Values &params) = 0;
 };
 
 class SqlDriver: NonCopyable
@@ -184,44 +192,45 @@ public:
     {}
     virtual ~SqlDriver();
     const String &get_name() { return name_; }
-    virtual std::auto_ptr<SqlConnectBackend> create_backend() = 0;
+    virtual std::auto_ptr<SqlConnectionBackend> create_backend() = 0;
 };
 
 SqlDriver *sql_driver(const String &name);
 bool register_sql_driver(std::auto_ptr<SqlDriver> driver);
 const Strings list_sql_drivers();
 
-class SqlConnect;
-
-class SqlResultSet: public ResultSetBase<Row>
-{
-    SqlConnect &conn_;
-
-    bool fetch(Row &row);
-    SqlResultSet();
-public:
-    SqlResultSet(SqlConnect &conn): conn_(conn) {}
-};
-
 class SqlSource
 {
     String id_, driver_name_, dialect_name_;
     String db_, user_, passwd_;
-    String encoding_, host_;
+    String encoding_, host_, lowlevel_driver_;
     int port_, timeout_, autocommit_;
 public:
     SqlSource()
-        : port_(-1), timeout_(-1), autocommit_(1)
+        : port_(-1), timeout_(10), autocommit_(0)
     {}
-    SqlSource(const String &id, const String &driver_name, const String &dialect_name,
-            const String &db, const String &user = _T(""), const String &passwd = _T(""),
+    SqlSource(const String &id, const String &driver_name,
+            const String &dialect_name,
+            const String &db, const String &user = _T(""),
+            const String &passwd = _T(""),
             const String &encoding = _T(""), const String &host = _T(""),
-            int port = -1, int timeout = -1, int autocommit = 1)
+            const String &lowlevel_driver = _T(""),
+            int port = -1, int timeout = 10, int autocommit = 0)
         : id_(id), driver_name_(driver_name), dialect_name_(dialect_name)
         , db_(db), user_(user), passwd_(passwd)
-        , encoding_(encoding), host_(host)
+        , encoding_(encoding), host_(host), lowlevel_driver_(lowlevel_driver)
         , port_(port), timeout_(timeout), autocommit_(autocommit)
     {}
+
+    void set_user(const String &user) { user_ = user; }
+    void set_passwd(const String &passwd) { passwd_ = passwd; }
+    void set_encoding(const String &encoding) { encoding_ = encoding; }
+    void set_host(const String &host) { host_ = host; }
+    void set_lowlevel_driver(const String &lowlevel_driver)
+        { lowlevel_driver_ = lowlevel_driver; }
+    void set_port(int port) { port_ = port; }
+    void set_timeout(int timeout) { timeout_ = timeout; }
+    void set_autocommit(int autocommit) { autocommit_ = autocommit; }
 
     const String &get_id() const { return id_; }
     const String &get_driver_name() const { return driver_name_; }
@@ -231,6 +240,7 @@ public:
     const String &get_passwd() const { return passwd_; }
     const String &get_encoding() const { return encoding_; }
     const String &get_host() const { return host_; }
+    const String &get_lowlevel_driver() const { return lowlevel_driver_; }
     int get_port() const { return port_; }
     int get_timeout() const { return timeout_; }
     int get_autocommit() const { return autocommit_; }
@@ -239,25 +249,60 @@ public:
     bool operator< (const SqlSource &obj) const { return id_ < obj.id_; }
 };
 
+class SqlCursor;
+class SqlConnection;
 class SqlPool;
 
-class SqlConnect: NonCopyable
+class SqlResultSet: public ResultSetBase<Row>
+{
+    friend class SqlCursor;
+    SqlCursor &cursor_;
+    mutable std::auto_ptr<SqlCursor> owned_cursor_;
+    bool fetch(Row &row);
+    SqlResultSet(SqlCursor &cursor): cursor_(cursor) {}
+public:
+    SqlResultSet(const SqlResultSet &rs)
+        : cursor_(rs.cursor_)
+        , owned_cursor_(rs.owned_cursor_.release())
+    {}
+    void own(std::auto_ptr<SqlCursor> cursor);
+};
+
+class SqlCursor: NonCopyable
+{
+    friend class SqlConnection;
+    SqlConnection &connection_;
+    std::auto_ptr<SqlCursorBackend> backend_;
+    bool echo_;
+    ILogger *log_;
+    SqlCursor(SqlConnection &connection);
+public:
+    SqlResultSet exec_direct(const String &sql);
+    void prepare(const String &sql);
+    SqlResultSet exec(const Values &params);
+    RowPtr fetch_row();
+    RowsPtr fetch_rows(int max_rows = -1); // -1 = all
+};
+
+class SqlConnection: NonCopyable
 {
     friend class SqlPool;
+    friend class SqlCursor;
     SqlSource source_;
     SqlDriver *driver_;
     SqlDialect *dialect_;
-    std::auto_ptr<SqlConnectBackend> backend_;
+    std::auto_ptr<SqlConnectionBackend> backend_;
+    std::auto_ptr<SqlCursor> cursor_;
     bool activity_, echo_, bad_;
     time_t free_since_;
     ILogger *log_;
     void mark_bad(const std::exception &e);
 public:
-    SqlConnect(const String &driver_name,
+    SqlConnection(const String &driver_name,
             const String &dialect_name, const String &db,
             const String &user = _T(""), const String &passwd = _T(""));
-    explicit SqlConnect(const SqlSource &source);
-    ~SqlConnect();
+    explicit SqlConnection(const SqlSource &source);
+    ~SqlConnection();
     const SqlSource &get_source() const { return source_; }
     SqlDriver *get_driver() const { return driver_; }
     SqlDialect *get_dialect() const { return dialect_; }
@@ -265,15 +310,16 @@ public:
     const String &get_user() const { return source_.get_user(); }
     void set_echo(bool echo) { echo_ = echo; }
     void set_logger(ILogger *log) { log_ = log; }
+    std::auto_ptr<SqlCursor> new_cursor();
     bool bad() const { return bad_; }
-    SqlResultSet exec_direct(const String &sql);
-    RowPtr fetch_row();
-    RowsPtr fetch_rows(int max_rows = -1); // -1 = all
-    void prepare(const String &sql);
-    SqlResultSet exec(const Values &params);
     void commit();
     void rollback();
     void clear();
+    SqlResultSet exec_direct(const String &sql);
+    void prepare(const String &sql);
+    SqlResultSet exec(const Values &params);
+    RowPtr fetch_row();
+    RowsPtr fetch_rows(int max_rows = -1); // -1 = all
 };
 
 } // namespace Yb

@@ -8,21 +8,20 @@
 
 using namespace std;
 Yb::LogAppender appender(cerr);
-Yb::Logger logger(&appender);
 
 int main()
 {
     Yb::Engine engine(Yb::Engine::MANUAL);
     Yb::Session session(Yb::init_default_meta(), &engine);
-    engine.get_connect()->set_echo(true);
-    engine.get_connect()->set_logger(&logger);
+    engine.set_echo(true);
+    engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&appender)));
     Domain::Client client(session);
     string name, email;
     cout << "Enter name, email: \n";
     cin >> name >> email;
     client.set_name(WIDEN(name));
     client.set_email(WIDEN(email));
-    //client.set_dt(Yb::now());
+    client.set_dt(Yb::now());
     Domain::Order order(session);
     string value;
     cout << "Enter order amount: \n";

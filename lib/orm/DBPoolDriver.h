@@ -65,7 +65,7 @@ public:
     DBPoolDriver(std::auto_ptr<DBPoolConfig> conf,
             const String &name = _T("DBPOOL3"));
     ~DBPoolDriver();
-    std::auto_ptr<SqlConnectBackend> create_backend();
+    std::auto_ptr<SqlConnectionBackend> create_backend();
 };
 
 } // namespace Yb

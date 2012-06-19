@@ -7,6 +7,11 @@ using namespace std;
 using namespace Yb;
 using Yb::StrUtils::xgetenv;
 
+static LogAppender appender(cerr);
+#define SETUP_LOG(e) do{ e.set_echo(true); \
+    ILogger::Ptr __log(new Logger(&appender)); \
+    e.set_logger(__log); }while(0)
+
 class TestEngine : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestEngine);
@@ -67,6 +72,7 @@ public:
     void init_sql()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         record_id_ = get_next_test_id(engine, _T("S_ORM_TEST_ID"));
         CPPUNIT_ASSERT(record_id_ > 0);
         std::ostringstream sql;
@@ -76,7 +82,7 @@ public:
         params.push_back(Value(_T("item")));
         params.push_back(Value(now()));
         params.push_back(Value(Decimal(_T("1.2"))));
-        SqlConnect conn(_T("ODBC"), xgetenv(_T("YBORM_DBTYPE")),
+        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
                 xgetenv(_T("YBORM_DB")), xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
@@ -87,7 +93,7 @@ public:
 
     void finish_sql()
     {
-        SqlConnect conn(_T("ODBC"), xgetenv(_T("YBORM_DBTYPE")),
+        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
                 xgetenv(_T("YBORM_DB")), xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
         conn.commit();
@@ -113,6 +119,7 @@ public:
     void test_select_simple()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("A, B"), _T("T"),
@@ -123,6 +130,7 @@ public:
     void test_select_for_update()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("1"), _T("T"),
@@ -133,6 +141,7 @@ public:
     void test_select_where()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("*"), _T("T"),
@@ -146,6 +155,7 @@ public:
     void test_select_groupby()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("A, B"), _T("T"),
@@ -156,6 +166,7 @@ public:
     void test_select_having()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("A, COUNT(*)"), _T("T"),
@@ -166,6 +177,7 @@ public:
     void test_select_having_wo_groupby()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("A, B"), _T("T"), Filter(), _T(""),
@@ -175,6 +187,7 @@ public:
     void test_select_orderby()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("A, B"), _T("T"), Filter(), _T(""),
@@ -185,6 +198,7 @@ public:
     void test_insert_simple()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Row row;
         row.push_back(make_pair(String(_T("ID")), Value(1)));
@@ -201,6 +215,7 @@ public:
     void test_insert_exclude()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Row row;
         row.push_back(make_pair(String(_T("ID")), Value(1)));
@@ -217,6 +232,7 @@ public:
     void test_insert_empty_row()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Values params;
         ParamNums param_nums;
@@ -226,6 +242,7 @@ public:
     void test_update_where()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Row row;
         row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
@@ -242,6 +259,7 @@ public:
     void test_update_combo()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Row row;
         row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
@@ -273,6 +291,7 @@ public:
     void test_update_empty_row()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Values params;
         ParamNums param_nums;
@@ -283,6 +302,7 @@ public:
     void test_update_wo_clause()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Row row;
         row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
@@ -295,6 +315,7 @@ public:
     void test_delete()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_delete(sql, params, _T("T"), filter_eq(_T("ID"), Value(1)));
@@ -305,6 +326,7 @@ public:
     void test_delete_wo_clause()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_delete(sql, params, _T("T"), Filter());
@@ -313,6 +335,7 @@ public:
     void test_select_sql()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         init_sql();
         RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(record_id_)));
@@ -328,6 +351,7 @@ public:
     void test_select_sql_max_rows()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         init_sql();
         RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(record_id_)),
@@ -341,6 +365,7 @@ public:
     {
         init_sql();
         Engine engine(Engine::MANUAL);
+        SETUP_LOG(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         Rows rows;
         LongInt id = get_next_test_id(engine, _T("S_ORM_TEST_ID"));
@@ -366,6 +391,7 @@ public:
     {
         init_sql();
         Engine engine(Engine::MANUAL);
+        SETUP_LOG(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         Rows rows;
         LongInt id = get_next_test_id(engine, _T("S_ORM_TEST_ID"));
@@ -393,42 +419,49 @@ public:
     void test_insert_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         engine.insert(_T(""), Rows());
     }
     
     void test_update_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         engine.update(_T(""), Rows(), Strings(), StringSet());
     }
     
     void test_selforupdate_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         engine.select(_T(""), _T(""), Filter(), StrList(), Filter(), StrList(), -1, true);
     }
     
     void test_commit_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         engine.commit();
     }
     
     void test_delete_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         engine.delete_from(_T(""), Filter());
     }
     
     void test_execpoc_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
+        SETUP_LOG(engine);
         engine.exec_proc(_T(""));
     }
 
     void test_force_select_for_update()
     {
         Engine engine(Engine::FORCE_SELECT_UPDATE);
+        SETUP_LOG(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
         RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), Filter());
         CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
@@ -446,7 +479,7 @@ class TestSqlDriver : public CppUnit::TestFixture
 public:
     void test_fetch()
     {
-        SqlConnect conn(_T("ODBC"), xgetenv(_T("YBORM_DBTYPE")),
+        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
                 xgetenv(_T("YBORM_DB")), xgetenv(_T("YBORM_USER")),
                 xgetenv(_T("YBORM_PASSWD")));
         ///

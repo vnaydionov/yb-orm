@@ -7,8 +7,9 @@ using namespace std;
 int main()
 {
     try {
-        auto_ptr<Yb::SqlConnect> conn(
-            new Yb::SqlConnect("ODBC", "INTERBASE", "test1_db_fb", "test1", "test1_pwd"));
+        auto_ptr<Yb::SqlConnection> conn(
+            new Yb::SqlConnection("ODBC",
+                "INTERBASE", "test1_db_fb", "test1", "test1_pwd"));
         Yb::Engine engine(Yb::Engine::MANUAL, conn);
         Yb::Session session(Yb::init_default_meta(), &engine);
 
