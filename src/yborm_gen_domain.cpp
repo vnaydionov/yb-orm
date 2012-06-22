@@ -17,6 +17,26 @@ const char
     *AUTOGEN_BEGIN = "// AUTOGEN_BEGIN {\n",
     *AUTOGEN_END = "// } AUTOGEN_END\n";
 
+const char *kwords[] = { "and", "and_eq", "asm", "auto", "bitand", "bitor", 
+    "bool", "break", "case", "catch", "char", "class", "compl", "const", 
+    "const_cast", "continue", "default", "delete", "do", "double", 
+    "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false", 
+    "float", "for", "friend", "goto", "if", "inline", "int", "long", 
+    "mutable", "namespace", "new", "not", "not_eq", "operator", "or", "or_eq", 
+    "private", "protected", "public", "register", "reinterpret_cast", 
+    "return", "short", "signed", "sizeof", "static", "static_cast", "struct", 
+    "switch", "template", "this", "throw", "true", "try", "typedef", "typeid", 
+    "typename", "union", "unsigned", "using", "virtual", "void", "volatile", 
+    "wchar_t", "while", "xor", "xor_eq", NULL };
+
+string fix_name(const string &name)
+{
+    for (int i = 0; kwords[i]; ++i)
+        if (!name.compare(kwords[i]))
+            return name + "_";
+    return name;
+}
+
 class OrmDomainGenerator
 {
 public:
@@ -87,23 +107,17 @@ private:
 
         str << "\t// constructors\n"
             << "\t" << class_name << "();\n"
+            << "\t" << class_name << "(const " << class_name << " &other);\n"
             << "\texplicit " << class_name << "(Yb::Session &session);\n";
-        str << "\texplicit " << class_name << "(Yb::DataObject::Ptr d)\n"
-            << "\t\t: Yb::DomainObject(d)\n"
-            << "\t{}\n"
-            << "\t" << class_name << "(Yb::Session &session, const Yb::Key &key)\n"
-            << "\t\t: Yb::DomainObject(session, key)\n";
-        //write_rel_one2many_managed_lists_init(t, str, "key.get_id()"); // FIXME
-        str << "\t" << "{}\n";
+        str << "\texplicit " << class_name << "(Yb::DataObject::Ptr d);\n"
+            << "\t" << class_name << "(Yb::Session &session, const Yb::Key &key);\n";
         try {
             String mega_key = reg_.table(t.get_name()).get_unique_pk();
-            str << "\t" << class_name << "(Yb::Session &session, Yb::LongInt id)\n"
-                << "\t\t: Yb::DomainObject(session, _T(\"" << table_name << "\"), id)\n";
-            //write_rel_one2many_managed_lists_init(t, str, "id");
-            str << "\t{}\n";
+            str << "\t" << class_name << "(Yb::Session &session, Yb::LongInt id);\n";
         }
         catch (const AmbiguousPK &) {}
-        str << "\tstatic void create_tables_meta(Yb::Tables &tbls);\n"
+        str << "\t" << class_name << " &operator=(const " << class_name << " &other);\n"
+            << "\tstatic void create_tables_meta(Yb::Tables &tbls);\n"
             << "\tstatic void create_relations_meta(Yb::Relations &rels);\n";
 
         if (mem_weak) {
@@ -219,12 +233,48 @@ private:
         str << class_name << "::" 
             << class_name << "()\n"
             << "\t: Yb::DomainObject(*tbls[0])\n";
+        write_props_cons_calls(t, str);
         write_cpp_ctor_body(t, str);
         str << "\n"
             << class_name << "::" 
+            << class_name << "(const " << class_name << " &other)\n"
+            << "\t: Yb::DomainObject(other)\n";
+        write_props_cons_calls(t, str);
+        str << "{}\n\n"
+            << class_name << "::" 
             << class_name << "(Yb::Session &session)\n"
             << "\t: Yb::DomainObject(session.schema(), _T(\"" << table_name << "\"))\n";
+        write_props_cons_calls(t, str);
         write_cpp_ctor_body(t, str, true);
+        str << "\n"
+            << class_name << "::" 
+            << class_name << "(Yb::DataObject::Ptr d)\n"
+            << "\t: Yb::DomainObject(d)\n";
+        write_props_cons_calls(t, str);
+        str << "{}\n\n"
+            << class_name << "::"
+            << class_name << "(Yb::Session &session, const Yb::Key &key)\n"
+            << "\t: Yb::DomainObject(session, key)\n";
+        write_props_cons_calls(t, str);
+        str << "{}\n\n";
+        try {
+            String mega_key = reg_.table(t.get_name()).get_unique_pk();
+            str << class_name << "::"
+                << class_name << "(Yb::Session &session, Yb::LongInt id)\n"
+                << "\t: Yb::DomainObject(session, _T(\""
+                << table_name << "\"), id)\n";
+            write_props_cons_calls(t, str);
+            str << "{}\n\n";
+        }
+        catch (const AmbiguousPK &) {}
+        str << class_name << " &" << class_name << "::operator=(const "
+            << class_name << " &other)\n"
+            << "{\n"
+            << "\tif (this != &other) {\n"
+            << "\t\td_ = other.d_;\n"
+            << "\t}\n"
+            << "\treturn *this;\n"
+            << "}\n";
 
         str << "\n" << class_name << "::ListPtr\n"
             << class_name << "::find(Yb::Session &session,\n"
@@ -321,6 +371,7 @@ private:
 
     void write_setters_getters(const Table &table, ostream &out)
     {
+        write_properties(table, out);
         write_getters(table, out);
         write_setters(table, out);
         write_is_nulls(table, out);
@@ -412,6 +463,30 @@ private:
                     << "\t\treturn " << "get_attr_ex(_T(\"" << NARROW(it->get_name()) << "\"))" << ".is_null();\n"
                     << "\t}\n";
             }
+    }
+
+    void write_properties(const Table &t, ostream &str)
+    {
+        str << "\t// properties\n";
+        Columns::const_iterator it = t.begin(), end = t.end();
+        for (int count = 0; it != end; ++it, ++count)
+            if (!it->has_fk()) {
+                str << "\tYb::Property<" << type_by_handle(it->get_type())
+                    << ", " << count << "> "
+                    << fix_name(NARROW(it->get_prop_name())) << ";\n";
+            }
+    }
+
+    void write_props_cons_calls(const Table &t, ostream &str)
+    {
+        str << AUTOGEN_BEGIN;
+        Columns::const_iterator it = t.begin(), end = t.end();
+        for (int count = 0; it != end; ++it, ++count)
+            if (!it->has_fk()) {
+                str << "\t, " << fix_name(NARROW(it->get_prop_name()))
+                    << "(this)\n";
+            }
+        str << AUTOGEN_END;
     }
 
     void write_getters(const Table &t, ostream &str)

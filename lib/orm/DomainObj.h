@@ -215,6 +215,14 @@ public:
         check_ptr();
         d_->set(col_name, value);
     }
+    const Value &get(int col_num) const {
+        check_ptr();
+        return d_->get(col_num);
+    }
+    void set(int col_num, const Value &value) {
+        check_ptr();
+        d_->set(col_num, value);
+    }
     const DomainObject get_master(const String &relation_name = _T("")) const {
         check_ptr();
         return DomainObject(DataObject::get_master(d_, relation_name));
@@ -268,6 +276,75 @@ public:
     static bool register_table_meta(Table::Ptr tbl);
     static bool register_relation_meta(Relation::Ptr rel);
     static void save_registered(Schema &schema);
+};
+
+template <class T, int ColNum>
+class Property {
+    DomainObject *pobj_;
+public:
+    Property(DomainObject *pobj = NULL)
+        : pobj_(pobj)
+    {}
+    Property &operator=(const Property &prop)
+    {
+        if (this != &prop && (pobj_ || prop.pobj_)) {
+            YB_ASSERT(pobj_ != NULL);
+            YB_ASSERT(prop.pobj_ != NULL);
+            pobj_->set(ColNum, prop.pobj_->get(ColNum));
+        }
+        return *this;
+    }
+    T operator=(const T &value)
+    {
+        YB_ASSERT(pobj_ != NULL);
+        pobj_->set(ColNum, Value(value));
+        return value;
+    }
+    operator T()
+    {
+        YB_ASSERT(pobj_ != NULL);
+        Value v = pobj_->get(ColNum);
+        YB_ASSERT(!v.is_null());
+        T t;
+        return from_variant(v, t);
+    }
+    bool is_null()
+    {
+        YB_ASSERT(pobj_ != NULL);
+        return pobj_->get(ColNum).is_null();
+    }
+};
+
+template <class T>
+class ObjectProperty {
+    DomainObject *pobj_;
+    const String rel_name_;
+public:
+    ObjectProperty(DomainObject *pobj, const String &rel_name)
+        : pobj_(pobj), rel_name_(rel_name)
+    {}
+    ObjectProperty &operator=(const ObjectProperty &prop)
+    {
+        if (this != &prop && (pobj_ || prop.pobj_)) {
+            YB_ASSERT(pobj_ != NULL);
+            YB_ASSERT(prop.pobj_ != NULL);
+            pobj_->check_ptr();
+            pobj_->link_to_master((T)prop, rel_name_);
+        }
+        return *this;
+    }
+    void operator=(T &value)
+    {
+        YB_ASSERT(pobj_ != NULL);
+        pobj_->check_ptr();
+        pobj_->link_to_master(value, rel_name_);
+    }
+    operator T()
+    {
+        YB_ASSERT(pobj_ != NULL);
+        pobj_->check_ptr();
+        return T(Yb::DataObject::get_master(pobj_->d_, rel_name_));
+    }
 };
 
 template <class R>

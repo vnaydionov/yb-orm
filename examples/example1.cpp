@@ -28,9 +28,12 @@ int main()
     cin >> value;
     order.set_total_sum(Yb::Decimal(WIDEN(value)));
     order.set_owner(client);
+    order.dt = Yb::now();
+    Domain::Order o2(order);
     session.flush();
     cout << "client created: " << client.get_id() << endl;
     cout << "order created: " << order.get_id() << endl;
+    cout << "order dt: " << Yb::to_stdstring((Yb::DateTime)order.dt) << endl;
     engine.commit();
     cout << order.xmlize(1)->serialize() << endl;
     return 0;

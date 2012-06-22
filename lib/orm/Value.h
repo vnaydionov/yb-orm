@@ -68,6 +68,35 @@ typedef std::map<String, Value> ValueMap;
 typedef std::pair<String, ValueMap> Key;
 typedef std::vector<Key> Keys;
 
+template <class T>
+inline T &from_variant(const Value &x, T &t) {
+    return from_string(x.as_string(), t);
+}
+
+template <>
+inline int &from_variant(const Value &x, int &t) {
+    t = x.as_integer();
+    return t;
+}
+
+template <>
+inline LongInt &from_variant(const Value &x, LongInt &t) {
+    t = x.as_longint();
+    return t;
+}
+
+template <>
+inline Decimal &from_variant(const Value &x, Decimal &t) {
+    t = x.as_decimal();
+    return t;
+}
+
+template <>
+inline DateTime &from_variant(const Value &x, DateTime &t) {
+    t = x.as_date_time();
+    return t;
+}
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
