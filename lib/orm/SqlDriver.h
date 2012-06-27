@@ -203,7 +203,7 @@ class SqlSource
 {
     String id_, driver_name_, dialect_name_;
     String db_, user_, passwd_;
-    String encoding_, host_, lowlevel_driver_;
+    String encoding_, host_;
     int port_, timeout_, autocommit_;
 public:
     SqlSource()
@@ -214,20 +214,18 @@ public:
             const String &db, const String &user = _T(""),
             const String &passwd = _T(""),
             const String &encoding = _T(""), const String &host = _T(""),
-            const String &lowlevel_driver = _T(""),
             int port = -1, int timeout = 10, int autocommit = 0)
         : id_(id), driver_name_(driver_name), dialect_name_(dialect_name)
         , db_(db), user_(user), passwd_(passwd)
-        , encoding_(encoding), host_(host), lowlevel_driver_(lowlevel_driver)
+        , encoding_(encoding), host_(host)
         , port_(port), timeout_(timeout), autocommit_(autocommit)
     {}
 
+    void fix_driver_name(const String &driver_name) { driver_name_ = driver_name; }
     void set_user(const String &user) { user_ = user; }
     void set_passwd(const String &passwd) { passwd_ = passwd; }
     void set_encoding(const String &encoding) { encoding_ = encoding; }
     void set_host(const String &host) { host_ = host; }
-    void set_lowlevel_driver(const String &lowlevel_driver)
-        { lowlevel_driver_ = lowlevel_driver; }
     void set_port(int port) { port_ = port; }
     void set_timeout(int timeout) { timeout_ = timeout; }
     void set_autocommit(int autocommit) { autocommit_ = autocommit; }
@@ -240,7 +238,6 @@ public:
     const String &get_passwd() const { return passwd_; }
     const String &get_encoding() const { return encoding_; }
     const String &get_host() const { return host_; }
-    const String &get_lowlevel_driver() const { return lowlevel_driver_; }
     int get_port() const { return port_; }
     int get_timeout() const { return timeout_; }
     int get_autocommit() const { return autocommit_; }

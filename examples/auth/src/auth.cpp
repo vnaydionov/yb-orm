@@ -225,9 +225,6 @@ public:
                 YB_POOL_IDLE_TIME, YB_POOL_MONITOR_SLEEP, g_log.get()));
         Yb::SqlSource src(_T("auth_db"), _T("DEFAULT"),
                 cfg(_T("DBTYPE")), cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
-#if defined(YB_USE_QT)
-        src.set_lowlevel_driver(_T("QODBC"));
-#endif
         pool->add_source(src);
         engine.reset(new Yb::Engine(Yb::Engine::MANUAL, pool, _T("auth_db")));
         Yb::Logger::Ptr ormlog = g_log->new_logger("orm");

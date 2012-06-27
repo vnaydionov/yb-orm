@@ -9,18 +9,9 @@
 using namespace std;
 Yb::LogAppender appender(cerr);
 
-const Yb::String
-cfg(const Yb::String &key) { return Yb::StrUtils::xgetenv(_T("YBORM_") + key); }
-
 int main()
 {
-    Yb::SqlSource src(_T("ex1_db"), _T("DEFAULT"), cfg(_T("DBTYPE")),
-            cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
-#if defined(YB_USE_QT)
-    src.set_lowlevel_driver(_T("QODBC"));
-#endif
-    auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(src));
-    Yb::Engine engine(Yb::Engine::MANUAL, conn);
+    Yb::Engine engine(Yb::Engine::MANUAL);
     Yb::Session session(Yb::init_default_meta(), &engine);
     engine.set_echo(true);
     engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&appender)));

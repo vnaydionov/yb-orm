@@ -512,7 +512,8 @@ const Row DataObject::values(bool include_key)
     for (size_t i = 0; i < table_.size(); ++i) {
         const Column &c = table_.get_column(i);
         if (!c.is_pk() || include_key)
-            values.push_back(RowItem(c.get_name(), values_[i]));
+            values.push_back(RowItem(c.get_name(),
+                        values_[i].get_typed_value(c.get_type())));
     }
     return values;
 }
