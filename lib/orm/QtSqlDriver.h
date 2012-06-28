@@ -46,7 +46,7 @@ class QtSqlDriver: public SqlDriver
     int seq_;
     Mutex conn_mux_;
 public:
-    QtSqlDriver();
+    QtSqlDriver(bool use_qodbc);
     std::auto_ptr<SqlConnectionBackend> create_backend();
 };
 

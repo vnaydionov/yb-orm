@@ -1,7 +1,8 @@
 install (FILES 
+    Internals.en.odt Internals.ru.odt 
+    XmlFormat.en.odt XmlFormat.ru.odt 
+    Tutorial1.en.odt Tutorial1.ru.odt 
     build-yborm-under-mingw.odt 
-    internals-en.odt internals-ru.odt 
-    xml-format.txt xml-format-ru.txt 
     msvc-settings.odt msvc-settings.pdf 
-    postgres.txt tutorial1-en.odt tutorial1-ru.odt 
+    postgres.txt 
     DESTINATION doc)
