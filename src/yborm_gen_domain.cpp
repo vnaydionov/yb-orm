@@ -90,6 +90,8 @@ private:
 
         str << AUTOGEN_BEGIN;
         write_rel_one2many_fwdecl_classes(t, str);
+        str << "\nclass " << class_name << ";"
+            << "\ntypedef Yb::DomainObjHolder<" << class_name << "> " << class_name << "Holder;\n";
         str << AUTOGEN_END << "\nclass " << class_name << ": public Yb::DomainObject\n"
             << "{\n";
         str << AUTOGEN_BEGIN;
@@ -106,6 +108,7 @@ private:
             << "\t\t\tconst Yb::Filter &filter, const Yb::StrList order_by = _T(\"\"), int max_n = -1);\n";
 
         str << "\t// constructors\n"
+            << "\t" << class_name << "(Yb::DomainObject *owner, const Yb::String &prop_name);\n"
             << "\t" << class_name << "();\n"
             << "\t" << class_name << "(const " << class_name << " &other);\n"
             << "\texplicit " << class_name << "(Yb::Session &session);\n";
@@ -217,7 +220,10 @@ private:
     void write_cpp_data(const Table &t, ostream &str)
     {
         string class_name = NARROW(t.get_class_name()), table_name = NARROW(t.get_name());
-        str << "#include \"" << inc_prefix_ << class_name << ".h\"\n"
+        str << "#include \"" << inc_prefix_ << class_name << ".h\"\n";
+        str << AUTOGEN_BEGIN;
+        write_include_dependencies(t, str);
+        str << AUTOGEN_END
             << "#include <orm/DomainFactorySingleton.h>\n"
             << "namespace Domain {\n\n";
 
@@ -229,6 +235,11 @@ private:
         str << AUTOGEN_END;
         str << "\n";
 
+        str << class_name << "::" 
+            << class_name << "(Yb::DomainObject *owner, const Yb::String &prop_name)\n"
+            << "\t: Yb::DomainObject(*tbls[0], owner, prop_name)\n";
+        write_props_cons_calls(t, str);
+        str << "{}\n\n";
 // Constructor for creating new objects
         str << class_name << "::" 
             << class_name << "()\n"
@@ -271,7 +282,7 @@ private:
             << class_name << " &other)\n"
             << "{\n"
             << "\tif (this != &other) {\n"
-            << "\t\td_ = other.d_;\n"
+            << "\t\t*(Yb::DomainObject *)this = (const Yb::DomainObject &)other;\n"
             << "\t}\n"
             << "\treturn *this;\n"
             << "}\n";
@@ -372,6 +383,7 @@ private:
     void write_setters_getters(const Table &table, ostream &out)
     {
         write_properties(table, out);
+        write_rel_properties(table, out);
         write_getters(table, out);
         write_setters(table, out);
         write_is_nulls(table, out);
@@ -471,21 +483,78 @@ private:
         Columns::const_iterator it = t.begin(), end = t.end();
         for (int count = 0; it != end; ++it, ++count)
             if (!it->has_fk()) {
-                str << "\tYb::Property<" << type_by_handle(it->get_type())
+                str << "\tYb::Property<" << type_nc_by_handle(it->get_type())
                     << ", " << count << "> "
                     << fix_name(NARROW(it->get_prop_name())) << ";\n";
             }
     }
 
+    void write_rel_properties(const Table &t, ostream &str)
+    {
+        str << "\t// relation properties\n";
+        typedef map<String, String> MapString;
+        MapString map_fk;
+        Columns::const_iterator it = t.begin(), end = t.end();
+        for (; it != end; ++it) {
+            if (it->has_fk())
+                map_fk.insert(MapString::value_type(
+                            it->get_fk_table_name(), it->get_name()));
+        }
+        Schema::RelMap::const_iterator
+            i = t.schema().rels_lower_bound(t.get_class_name()),
+            iend = t.schema().rels_upper_bound(t.get_class_name());
+        for (; i != iend; ++i) {
+            if (i->second->type() == Relation::ONE2MANY &&
+                    t.get_class_name() == i->second->side(1) &&
+                    i->second->has_attr(1, _T("property")))
+            {
+                const Table &table_one = i->second->table(0);
+                String prop = i->second->attr(1, _T("property")),
+                       class_one = i->second->side(0),
+                       fk_name = map_fk[table_one.get_name()];
+                String fk_table_pk_prop = table_one.get_column(
+                        table_one.find_synth_pk()).get_prop_name();
+                const Column &c = t.get_column(fk_name);
+                str << "\t" << NARROW(class_one) << "Holder " << NARROW(prop) << ";\n";
+            }
+        }
+    }
+
     void write_props_cons_calls(const Table &t, ostream &str)
     {
         str << AUTOGEN_BEGIN;
+        typedef map<String, String> MapString;
+        MapString map_fk;
         Columns::const_iterator it = t.begin(), end = t.end();
-        for (int count = 0; it != end; ++it, ++count)
+        for (int count = 0; it != end; ++it, ++count) {
             if (!it->has_fk()) {
                 str << "\t, " << fix_name(NARROW(it->get_prop_name()))
                     << "(this)\n";
             }
+            else {
+                map_fk.insert(MapString::value_type(
+                            it->get_fk_table_name(), it->get_name()));
+            }
+        }
+        Schema::RelMap::const_iterator
+            i = t.schema().rels_lower_bound(t.get_class_name()),
+            iend = t.schema().rels_upper_bound(t.get_class_name());
+        for (; i != iend; ++i) {
+            if (i->second->type() == Relation::ONE2MANY &&
+                    t.get_class_name() == i->second->side(1) &&
+                    i->second->has_attr(1, _T("property")))
+            {
+                const Table &table_one = i->second->table(0);
+                String prop = i->second->attr(1, _T("property")),
+                       class_one = i->second->side(0),
+                       fk_name = map_fk[table_one.get_name()];
+                String fk_table_pk_prop = table_one.get_column(
+                        table_one.find_synth_pk()).get_prop_name();
+                const Column &c = t.get_column(fk_name);
+                str << "\t, " << NARROW(prop) << "(this, _T(\"" << NARROW(prop)
+                    << "\"))\n";
+            }
+        }
         str << AUTOGEN_END;
     }
 
@@ -569,6 +638,24 @@ private:
                 return "Yb::DateTime";
             case Value::STRING:
                 return "const Yb::String";
+            case Value::DECIMAL:
+                return "Yb::Decimal";
+            default:
+                throw runtime_error("Unknown type while parsing metadata");
+        }
+    }
+
+    string type_nc_by_handle(int type)
+    {
+        switch (type) {
+            case Value::INTEGER:
+                return "int";
+            case Value::LONGINT:
+                return "Yb::LongInt";
+            case Value::DATETIME:
+                return "Yb::DateTime";
+            case Value::STRING:
+                return "Yb::String";
             case Value::DECIMAL:
                 return "Yb::Decimal";
             default:
@@ -685,20 +772,17 @@ private:
                 const Column &c = t.get_column(fk_name);
                 if (c.is_nullable()) {
                     str << "\tbool has_" << NARROW(prop) << "() const {\n"
-                        << "\t\tcheck_ptr();\n"
-                        << "\t\treturn Yb::DataObject::has_master(d_, _T(\""
+                        << "\t\treturn Yb::DataObject::has_master(get_data_object(), _T(\""
                         << NARROW(prop) << "\"));\n"
                         << "\t}\n";
                 }
                 str << "\tvoid set_" << NARROW(prop) << "("
                     << NARROW(class_one) << " &" << NARROW(prop) << "__) {\n"
-                    << "\t\tcheck_ptr();\n"
                     << "\t\tlink_to_master(" << NARROW(prop) << "__, _T(\"" << NARROW(prop) << "\"));\n"
                     << "\t}\n"
                     << "\t" << NARROW(class_one) <<  " get_"
                     << NARROW(prop) << "() const {\n"
-                    << "\t\tcheck_ptr();\n"
-                    << "\t\treturn " << NARROW(class_one) << "(Yb::DataObject::get_master(d_, _T(\""
+                    << "\t\treturn " << NARROW(class_one) << "(Yb::DataObject::get_master(get_data_object(), _T(\""
                     << NARROW(prop) << "\")));\n"
                     << "\t}\n";
             }
@@ -716,7 +800,7 @@ private:
                     << NARROW(prop) << "() {\n"
                     << "\t\tif (!" << NARROW(prop) << "_.relation_object())\n"
                     << "\t\t\t" << NARROW(prop) << "_ = Yb::ManagedList<" << NARROW(class_many)
-                    << ">(get_slaves_ro(_T(\"" << NARROW(prop) << "\")), d_);\n"
+                    << ">(get_slaves_ro(_T(\"" << NARROW(prop) << "\")), get_data_object());\n"
                     << "\t\treturn " << NARROW(prop) << "_;\n"
                     << "\t}\n";
             }

@@ -174,104 +174,141 @@ public:
 class DomainObject: public XMLizable
 {
     static char init_[16];
-protected:
-    DataObject::Ptr d_;
     void check_ptr() const {
         if (!shptr_get(d_))
             throw NoRawData();
     }
+    DataObject::Ptr d_;
+    DomainObject *owner_;
+    String prop_name_;
+protected:
+    explicit DomainObject(const Table &table,
+            DomainObject *owner, const String &prop_name)
+        : owner_(owner)
+        , prop_name_(prop_name)
+    {}
 public:
+    DataObject::Ptr get_data_object(bool check = true) const
+    {
+        if (owner_) {
+            owner_->check_ptr();
+            return DataObject::get_master(owner_->d_, prop_name_);
+        }
+        if (check)
+            check_ptr();
+        return d_;
+    }
+    void set_data_object(DataObject::Ptr d)
+    {
+        if (owner_) {
+            owner_->check_ptr();
+            DomainObject master(d);
+            owner_->link_to_master(master, prop_name_);
+        }
+        else
+            d_ = d;
+    }
     DomainObject()
+        : owner_(NULL)
     {}
-    DomainObject(DataObject::Ptr d)
+    explicit DomainObject(DataObject::Ptr d)
         : d_(d)
+        , owner_(NULL)
     {}
-    DomainObject(const Table &table)
+    explicit DomainObject(const Table &table)
         : d_(DataObject::create_new(table))
+        , owner_(NULL)
     {}
-    DomainObject(const Schema &schema, const String &table_name)
+    explicit DomainObject(const Schema &schema, const String &table_name)
         : d_(DataObject::create_new(schema.table(table_name)))
+        , owner_(NULL)
     {}
-    DomainObject(Session &session, const Key &key)
+    explicit DomainObject(Session &session, const Key &key)
         : d_(session.get_lazy(key))
+        , owner_(NULL)
     {}
-    DomainObject(Session &session, const String &tbl_name, LongInt id)
+    explicit DomainObject(Session &session, const String &tbl_name, LongInt id)
         : d_(session.get_lazy(session.schema().table(tbl_name).mk_key(id)))
+        , owner_(NULL)
+    {}
+    DomainObject(const DomainObject &obj)
+        : d_(obj.get_data_object())
+        , owner_(NULL)
     {}
     virtual ~DomainObject() {}
-    void save(Session &session) { check_ptr(); session.save(d_); }
-    void detach(Session &session) { check_ptr(); session.detach(d_); }
-    bool empty() const { return !shptr_get(d_); }
-    Session *session() const {
-        check_ptr();
-        return d_->session();
+    DomainObject &operator=(const DomainObject &obj)
+    {
+        if (this != &obj)
+            set_data_object(obj.get_data_object());
+        return *this;
     }
-    DataObject::Ptr data_object() const { return d_; }
+    void save(Session &session) { session.save(get_data_object()); }
+    void detach(Session &session) { session.detach(get_data_object()); }
+    bool is_empty() const { return !shptr_get(get_data_object(false)); }
+    Session *get_session() const { return get_data_object()->session(); }
     const Value &get(const String &col_name) const {
-        check_ptr();
-        return d_->get(col_name);
+        return get_data_object()->get(col_name);
     }
     void set(const String &col_name, const Value &value) {
-        check_ptr();
-        d_->set(col_name, value);
+        get_data_object()->set(col_name, value);
     }
     const Value &get(int col_num) const {
-        check_ptr();
-        return d_->get(col_num);
+        return get_data_object()->get(col_num);
     }
     void set(int col_num, const Value &value) {
-        check_ptr();
-        d_->set(col_num, value);
+        get_data_object()->set(col_num, value);
     }
     const DomainObject get_master(const String &relation_name = _T("")) const {
-        check_ptr();
-        return DomainObject(DataObject::get_master(d_, relation_name));
+        return DomainObject(
+                DataObject::get_master(get_data_object(), relation_name));
     }
     RelationObject *get_slaves_ro(const String &relation_name = _T("")) const {
-        check_ptr();
-        return d_->get_slaves(relation_name);
+        return get_data_object()->get_slaves(relation_name);
     }
-    ManagedList<DomainObject> get_slaves(const String &relation_name = _T("")) const {
-        check_ptr();
-        return ManagedList<DomainObject>(d_->get_slaves(relation_name), d_);
+    ManagedList<DomainObject> get_slaves(const String &relation_name = _T(""))
+        const
+    {
+        DataObject::Ptr p = get_data_object();
+        return ManagedList<DomainObject>(p->get_slaves(relation_name), p);
     }
-    void link_to_master(DomainObject &master, const String relation_name = _T("")) {
-        check_ptr();
-        master.check_ptr();
-        DataObject::link_slave_to_master(d_, master.d_, relation_name);
+    void link_to_master(DomainObject &master,
+            const String relation_name = _T(""))
+    {
+        DataObject::link_slave_to_master(get_data_object(),
+                master.get_data_object(), relation_name);
     }
-    void link_to_slave(DomainObject &slave, const String relation_name = _T("")) {
-        check_ptr();
-        slave.check_ptr();
-        DataObject::link_master_to_slave(d_, slave.d_, relation_name);
+    void link_to_slave(DomainObject &slave,
+            const String relation_name = _T(""))
+    {
+        DataObject::link_master_to_slave(get_data_object(),
+                slave.get_data_object(), relation_name);
     }
     void delete_object() {
-        check_ptr();
-        d_->delete_object();
+        get_data_object()->delete_object();
     }
     DataObject::Status status() const {
-        check_ptr();
-        return d_->status();
+        return get_data_object()->status();
     }
-    const Table &table() const {
-        check_ptr();
-        return d_->table();
+    const Table &get_table() const {
+        return get_data_object()->table();
     }
     int cmp(const DomainObject &x) const {
-        if (d_ == x.d_)
+        DataObject::Ptr p1 = get_data_object(false), p2 = x.get_data_object(false);
+        if (p1 == p2)
             return 0;
-        if (!shptr_get(d_))
+        if (!shptr_get(p1))
             return -1;
-        if (!shptr_get(x.d_))
+        if (!shptr_get(p2))
             return 1;
-        if (d_->values() == x.d_->values())
+        if (p1->values() == p2->values())
             return 0;
-        return d_->values() < x.d_->values()? -1: 1;
+        return p1->values() < p2->values()? -1: 1;
     }
     ElementTree::ElementPtr xmlize(int depth = 0, const String &alt_name = _T("")) const {
-        if (!session())
+        Session *s = get_session();
+        if (!s)
             throw NoSessionBaseGiven();
-        return deep_xmlize(*session(), d_, depth, alt_name);
+        return deep_xmlize(*s, get_data_object(), depth, alt_name);
     }
     static bool register_table_meta(Table::Ptr tbl);
     static bool register_relation_meta(Relation::Ptr rel);
@@ -300,14 +337,17 @@ public:
         pobj_->set(ColNum, Value(value));
         return value;
     }
-    operator T()
+    template <class U>
+    U as()
     {
         YB_ASSERT(pobj_ != NULL);
         Value v = pobj_->get(ColNum);
         YB_ASSERT(!v.is_null());
-        T t;
-        return from_variant(v, t);
+        U u;
+        return from_variant(v, u);
     }
+    T value() { return as<T>(); }
+    operator T() { return as<T>(); }
     bool is_null()
     {
         YB_ASSERT(pobj_ != NULL);
@@ -315,36 +355,36 @@ public:
     }
 };
 
-template <class T>
-class ObjectProperty {
-    DomainObject *pobj_;
-    const String rel_name_;
+template <class DObj>
+class DomainObjHolder {
+    std::auto_ptr<DObj> p_;
 public:
-    ObjectProperty(DomainObject *pobj, const String &rel_name)
-        : pobj_(pobj), rel_name_(rel_name)
-    {}
-    ObjectProperty &operator=(const ObjectProperty &prop)
+    DomainObjHolder(Yb::DomainObject *owner, const Yb::String &prop_name)
+        : p_(new DObj(owner, prop_name)) {}
+    DomainObjHolder()
+        : p_(new DObj) {}
+    explicit DomainObjHolder(Yb::Session &session)
+        : p_(new DObj(session)) {}
+    explicit DomainObjHolder(Yb::DataObject::Ptr d)
+        : p_(new DObj(d)) {}
+    DomainObjHolder(Yb::Session &session, const Yb::Key &key)
+        : p_(new DObj(session, key)) {}
+    DomainObjHolder(Yb::Session &session, Yb::LongInt id)
+        : p_(new DObj(session, id)) {}
+    DomainObjHolder(const DomainObjHolder &other)
+        : p_(new DObj(other.p_->get_data_object())) {}
+    DomainObjHolder &operator=(const DomainObjHolder &other)
     {
-        if (this != &prop && (pobj_ || prop.pobj_)) {
-            YB_ASSERT(pobj_ != NULL);
-            YB_ASSERT(prop.pobj_ != NULL);
-            pobj_->check_ptr();
-            pobj_->link_to_master((T)prop, rel_name_);
+        if (this != &other) {
+            *p_ = *other.p_;
         }
         return *this;
     }
-    void operator=(T &value)
+    bool operator==(const DomainObjHolder &other) const
     {
-        YB_ASSERT(pobj_ != NULL);
-        pobj_->check_ptr();
-        pobj_->link_to_master(value, rel_name_);
+        return *p_ == *other.p_;
     }
-    operator T()
-    {
-        YB_ASSERT(pobj_ != NULL);
-        pobj_->check_ptr();
-        return T(Yb::DataObject::get_master(pobj_->d_, rel_name_));
-    }
+    DObj *operator->() const { return p_.get(); }
 };
 
 template <class R>
