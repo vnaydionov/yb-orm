@@ -40,26 +40,26 @@ int main()
     Yb::Session session(Yb::theMetaData::instance(), &engine);
     engine.set_echo(true);
     engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&appender)));
-    Domain::Client client(session);
+    Domain::ClientHolder client(session);
     string name, email;
     cout << "Enter name, email: \n";
     cin >> name >> email;
-    client.set_name(WIDEN(name));
-    client.set_email(WIDEN(email));
-    client.set_dt(Yb::now());
-    Domain::Client client_x(session);
-    client_x.set_name(WIDEN(name + "x"));
-    client_x.set_email(WIDEN(email));
-    client_x.set_dt(Yb::now());
+    client->name = WIDEN(name);
+    client->email = WIDEN(email);
+    client->dt = Yb::now();
+    Domain::ClientHolder client_x(session);
+    client_x->name = WIDEN(name + "x");
+    client_x->email = WIDEN(email);
+    client_x->dt = Yb::now();
     {
     Domain::Order order(session);
     string value;
     cout << "Enter order amount: \n";
     cin >> value;
     order.set_total_sum(Yb::Decimal(WIDEN(value)));
-    cout << "orders size: " << client.get_orders().size() << endl;
-    order.set_owner(client);
-    cout << "orders size: " << client.get_orders().size() << endl;
+    cout << "orders size: " << client->orders.size() << endl;
+    order.owner = client;
+    cout << "orders size: " << client->orders.size() << endl;
     }
     {
     Domain::Order order(session);
@@ -67,23 +67,23 @@ int main()
     cout << "Enter order amount: \n";
     cin >> value;
     order.set_total_sum(Yb::Decimal(WIDEN(value)));
-    cout << "orders size: " << client.get_orders().size() << endl;
-    order.set_owner(client);
-    cout << "orders size: " << client.get_orders().size() << endl;
+    cout << "orders size: " << client->orders.size() << endl;
+    order.owner = client;
+    cout << "orders size: " << client->orders.size() << endl;
     session.flush();
-    cout << "client created: " << client.get_id() << endl;
+    cout << "client created: " << client->id.value() << endl;
     cout << "order created: " << order.get_id() << endl;
     engine.commit();
-    order.set_owner(client_x);
+    order.owner = client_x;
     cout << order.xmlize(1)->serialize() << endl;
     session.flush();
     cout << order.xmlize(1)->serialize() << endl;
     engine.commit();
     }
     
-    Domain::Client c2(session, client.get_id());
-    cout << "c2.orders size: " << c2.get_orders().size() << endl;
-    Yb::ManagedList<Domain::Order> &lst = c2.get_orders();
+    Domain::ClientHolder c2(session, client->id.value());
+    cout << "c2.orders size: " << c2->orders.size() << endl;
+    Yb::ManagedList<Domain::Order> &lst = c2->orders;
     Yb::ManagedList<Domain::Order>::iterator it = lst.begin(), end = lst.end();
     for (; it != end; ++it)
         cout << "order in list: " << it->get_id() << endl;
@@ -98,28 +98,29 @@ int main()
 #if defined(YB_USE_TUPLE)
     DomainResultSet<boost::tuple<Order, Client> > rs0 =
         query<boost::tuple<Order, Client> >(session).filter_by(
-            filter_eq(_T("T_CLIENT.ID"), c2.get_id()) &&
+            filter_eq(_T("T_CLIENT.ID"), c2->id.value()) &&
             Filter(_T("T_ORDER.CLIENT_ID = T_CLIENT.ID"))
         ).order_by(_T("T_CLIENT.ID, T_ORDER.ID")).all();
     DomainResultSet<boost::tuple<Order, Client> >
         ::iterator p = rs0.begin(), pend = rs0.end();
     cout << "Order/Client IDs: " << endl; 
     for (; p != pend; ++p)
-        cout << p->get<0>().get_id() << "/" << p->get<1>().get_id() << ",";
+        cout << p->get<0>().id.value() << "/" 
+            << p->get<1>().id.value() << ",";
     cout << endl;
 #endif
 
     Domain::Order::ListPtr olist = Domain::Order::find(
-        session, Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2.get_id()));
+        session, Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2->id.value()));
     Yb::DomainResultSet<Domain::Order> rs =
         Yb::query<Domain::Order>(session,
-            Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2.get_id())).all();
+            Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2->id)).all();
     Yb::DomainResultSet<Domain::Order>::iterator q = rs.begin(), qend = rs.end();
     cout << "Order/Client IDs: " << endl; 
     for (; q != qend; ++q)
         cout << q->get_id() << ",";
     cout << endl;
-    c2.delete_object();
+    c2->delete_object();
     session.flush();
     engine.commit();
     return 0;

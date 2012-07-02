@@ -90,9 +90,10 @@ private:
 
         str << AUTOGEN_BEGIN;
         write_rel_one2many_fwdecl_classes(t, str);
+        str << AUTOGEN_END;
         str << "\nclass " << class_name << ";"
             << "\ntypedef Yb::DomainObjHolder<" << class_name << "> " << class_name << "Holder;\n";
-        str << AUTOGEN_END << "\nclass " << class_name << ": public Yb::DomainObject\n"
+        str << "\nclass " << class_name << ": public Yb::DomainObject\n"
             << "{\n";
         str << AUTOGEN_BEGIN;
         write_rel_one2many_managed_lists(t, str);
@@ -508,14 +509,23 @@ private:
                     t.get_class_name() == i->second->side(1) &&
                     i->second->has_attr(1, _T("property")))
             {
-                const Table &table_one = i->second->table(0);
                 String prop = i->second->attr(1, _T("property")),
-                       class_one = i->second->side(0),
-                       fk_name = map_fk[table_one.get_name()];
-                String fk_table_pk_prop = table_one.get_column(
-                        table_one.find_synth_pk()).get_prop_name();
-                const Column &c = t.get_column(fk_name);
-                str << "\t" << NARROW(class_one) << "Holder " << NARROW(prop) << ";\n";
+                       class_one = i->second->side(0);
+                str << "\t" << NARROW(class_one) << "Holder "
+                    << NARROW(prop) << ";\n";
+            }
+        }
+        i = t.schema().rels_lower_bound(t.get_class_name());
+        iend = t.schema().rels_upper_bound(t.get_class_name());
+        for (; i != iend; ++i) {
+            if (i->second->type() == Relation::ONE2MANY &&
+                    t.get_class_name() == i->second->side(0) &&
+                    i->second->has_attr(0, _T("property")))
+            {
+                String prop = i->second->attr(0, _T("property")),
+                       class_many = i->second->side(1);
+                str << "\tYb::ManagedList<" << NARROW(class_many)
+                    << "> " << NARROW(prop) << ";\n";
             }
         }
     }
@@ -544,13 +554,19 @@ private:
                     t.get_class_name() == i->second->side(1) &&
                     i->second->has_attr(1, _T("property")))
             {
-                const Table &table_one = i->second->table(0);
-                String prop = i->second->attr(1, _T("property")),
-                       class_one = i->second->side(0),
-                       fk_name = map_fk[table_one.get_name()];
-                String fk_table_pk_prop = table_one.get_column(
-                        table_one.find_synth_pk()).get_prop_name();
-                const Column &c = t.get_column(fk_name);
+                String prop = i->second->attr(1, _T("property"));
+                str << "\t, " << NARROW(prop) << "(this, _T(\"" << NARROW(prop)
+                    << "\"))\n";
+            }
+        }
+        i = t.schema().rels_lower_bound(t.get_class_name());
+        iend = t.schema().rels_upper_bound(t.get_class_name());
+        for (; i != iend; ++i) {
+            if (i->second->type() == Relation::ONE2MANY &&
+                    t.get_class_name() == i->second->side(0) &&
+                    i->second->has_attr(0, _T("property")))
+            {
+                String prop = i->second->attr(0, _T("property"));
                 str << "\t, " << NARROW(prop) << "(this, _T(\"" << NARROW(prop)
                     << "\"))\n";
             }
