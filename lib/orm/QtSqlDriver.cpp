@@ -113,8 +113,8 @@ QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
             + _T("_") + to_string(drv_->seq_);
         ++drv_->seq_;
     }
-    String driver = source.get_lowlevel_driver();
-    if (str_empty(driver))
+    String driver = source.get_driver_name();
+    if (driver == _T("QTSQL"))
     {
         if (dialect->get_name() == _T("MYSQL"))
             driver = _T("QMYSQL");
@@ -170,8 +170,8 @@ QtSqlConnectionBackend::rollback()
         throw DBError(conn_->lastError().text());
 }
 
-QtSqlDriver::QtSqlDriver()
-    : SqlDriver(_T("QTSQL"))
+QtSqlDriver::QtSqlDriver(bool use_qodbc)
+    : SqlDriver(use_qodbc? _T("QODBC3"): _T("QTSQL"))
     , seq_(1000)
 {}
 

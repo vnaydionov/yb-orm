@@ -5,7 +5,7 @@
 #if defined(YB_USE_QT)
 #include <orm/QtSqlDriver.h>
 typedef Yb::QtSqlDriver DefaultSqlDriver;
-#define DEFAULT_DRIVER _T("QTSQL")
+#define DEFAULT_DRIVER _T("QODBC3")
 #else
 #include <orm/OdbcDriver.h>
 typedef Yb::OdbcDriver DefaultSqlDriver;
@@ -180,9 +180,19 @@ typedef SingletonHolder<ItemRegistry<SqlDriver> > theDriverRegistry;
 
 void register_std_drivers()
 {
-    auto_ptr<SqlDriver> driver((SqlDriver *)new DefaultSqlDriver());
-    SqlDriver *p = driver.get();
-    theDriverRegistry::instance().register_item(p->get_name(), driver);
+    SqlDriver *p;
+#if defined(YB_USE_QT)
+    auto_ptr<SqlDriver> driver_qtsql((SqlDriver *)new QtSqlDriver(false));
+    p = driver_qtsql.get();
+    theDriverRegistry::instance().register_item(p->get_name(), driver_qtsql);
+    auto_ptr<SqlDriver> driver_qodbc((SqlDriver *)new QtSqlDriver(true));
+    p = driver_qodbc.get();
+    theDriverRegistry::instance().register_item(p->get_name(), driver_qodbc);
+#else
+    auto_ptr<SqlDriver> driver_odbc((SqlDriver *)new OdbcDriver());
+    p = driver_odbc.get();
+    theDriverRegistry::instance().register_item(p->get_name(), driver_odbc);
+#endif
 }
 
 SqlDriver *sql_driver(const String &name)
@@ -374,6 +384,7 @@ SqlConnection::SqlConnection(const String &driver_name,
     , free_since_(0)
     , log_(NULL)
 {
+    source_.fix_driver_name(driver_->get_name());
     backend_.reset(driver_->create_backend().release());
     backend_->open(dialect_, source_);
 }
@@ -388,6 +399,7 @@ SqlConnection::SqlConnection(const SqlSource &source)
     , free_since_(0)
     , log_(NULL)
 {
+    source_.fix_driver_name(driver_->get_name());
     backend_.reset(driver_->create_backend().release());
     backend_->open(dialect_, source_);
 }

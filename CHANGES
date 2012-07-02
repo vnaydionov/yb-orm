@@ -1,3 +1,25 @@
+0.2.5
+    * The Big Change: now you can build YB.ORM against wxWidgets or QT,
+      and use their native data structures.  Boost and LibXml are not required.
+      Look at the "configure" script options, please.
+      On Windows cmake script is capable of building with QT from Nokia QT SDK.
+    * QT build utilizes native QtSqlDriver instead of OdbcDriver.
+    * query<>() function now accepts tuples of Domain classes (boost::tuple),
+      useful for joining tables.
+    * New method Session::commit() = Session::flush() + Engine::commit().
+    * Better support for compound foreign keys.
+    * Better diagnostics when yborm_gen_domain checks schema structure.
+    * Now the only thread that opens and closes all connections when using
+      SqlPool is the monitor thread.
+    * Propagate exceptions back from the monitor thread in SqlPool to report
+      about 'failed to connect' conditions immediately.
+    * Rename SqlConnect -> SqlConnection.
+    * Introduce SqlCursor: an SqlConnection now may have more
+      than one open SqlCursor (and SqlResultSet).
+    * Fix Auth example: Fix micro HTTP server in case the client connection is
+      closed unexpectedly. Support POST queries, other than
+      application/x-www-form-urlencoded.
+
 0.2.4
     Add SqlPool for database connection pooling, thanx to Nikita Buyvich.
     ResultSet is now able to cache all rows, i.e. not necessary lazy.
