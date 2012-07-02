@@ -56,7 +56,7 @@ int main()
     string value;
     cout << "Enter order amount: \n";
     cin >> value;
-    order.set_total_sum(Yb::Decimal(WIDEN(value)));
+    order.total_sum = Yb::Decimal(WIDEN(value));
     cout << "orders size: " << client->orders.size() << endl;
     order.owner = client;
     cout << "orders size: " << client->orders.size() << endl;
@@ -66,13 +66,13 @@ int main()
     string value;
     cout << "Enter order amount: \n";
     cin >> value;
-    order.set_total_sum(Yb::Decimal(WIDEN(value)));
+    order.total_sum = Yb::Decimal(WIDEN(value));
     cout << "orders size: " << client->orders.size() << endl;
     order.owner = client;
     cout << "orders size: " << client->orders.size() << endl;
     session.flush();
     cout << "client created: " << client->id.value() << endl;
-    cout << "order created: " << order.get_id() << endl;
+    cout << "order created: " << order.id.value() << endl;
     engine.commit();
     order.owner = client_x;
     cout << order.xmlize(1)->serialize() << endl;
@@ -86,7 +86,7 @@ int main()
     Yb::ManagedList<Domain::Order> &lst = c2->orders;
     Yb::ManagedList<Domain::Order>::iterator it = lst.begin(), end = lst.end();
     for (; it != end; ++it)
-        cout << "order in list: " << it->get_id() << endl;
+        cout << "order in list: " << it->id.value() << endl;
     cout << "list size: " << lst.size() << endl;
     //lst.erase(lst.begin());
     cout << "list size: " << lst.size() << endl;
@@ -98,7 +98,7 @@ int main()
 #if defined(YB_USE_TUPLE)
     DomainResultSet<boost::tuple<Order, Client> > rs0 =
         query<boost::tuple<Order, Client> >(session).filter_by(
-            filter_eq(_T("T_CLIENT.ID"), c2->id.value()) &&
+            filter_eq(_T("T_CLIENT.ID"), c2->id) &&
             Filter(_T("T_ORDER.CLIENT_ID = T_CLIENT.ID"))
         ).order_by(_T("T_CLIENT.ID, T_ORDER.ID")).all();
     DomainResultSet<boost::tuple<Order, Client> >
@@ -111,14 +111,14 @@ int main()
 #endif
 
     Domain::Order::ListPtr olist = Domain::Order::find(
-        session, Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2->id.value()));
+        session, Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2->id));
     Yb::DomainResultSet<Domain::Order> rs =
         Yb::query<Domain::Order>(session,
             Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2->id)).all();
     Yb::DomainResultSet<Domain::Order>::iterator q = rs.begin(), qend = rs.end();
     cout << "Order/Client IDs: " << endl; 
     for (; q != qend; ++q)
-        cout << q->get_id() << ",";
+        cout << q->id.value() << ",";
     cout << endl;
     c2->delete_object();
     session.flush();

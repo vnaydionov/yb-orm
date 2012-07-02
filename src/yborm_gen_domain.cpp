@@ -77,6 +77,7 @@ private:
         str << "#include <orm/DomainObj.h>\n" << AUTOGEN_BEGIN;
         write_include_dependencies(t, str);
         str << AUTOGEN_END << "\nnamespace Domain {\n\n";
+        /*
         if (!mem_weak) {
             str << "class " << class_name << "NotFoundByID: public Yb::ObjectNotFoundByKey\n"
                 << "{\n"
@@ -87,6 +88,7 @@ private:
                 << "\t{}\n"
                 << "};\n\n";
         }
+        */
 
         str << AUTOGEN_BEGIN;
         write_rel_one2many_fwdecl_classes(t, str);
@@ -95,9 +97,12 @@ private:
             << "\ntypedef Yb::DomainObjHolder<" << class_name << "> " << class_name << "Holder;\n";
         str << "\nclass " << class_name << ": public Yb::DomainObject\n"
             << "{\n";
+        /*
         str << AUTOGEN_BEGIN;
         write_rel_one2many_managed_lists(t, str);
-        str << AUTOGEN_END << "public:\n"
+        str << AUTOGEN_END;
+        */
+        str << "public:\n"
             << "\tstatic const Yb::String get_table_name() { return _T(\""
             << table_name << "\"); }\n"
             << "\ttypedef Yb::DomainResultSet<"
@@ -124,6 +129,7 @@ private:
             << "\tstatic void create_tables_meta(Yb::Tables &tbls);\n"
             << "\tstatic void create_relations_meta(Yb::Relations &rels);\n";
 
+        /*
         if (mem_weak) {
             str << "\tconst Yb::Value get_attr_ex(const Yb::String &field) const {\n"
                 << "\t\treturn get_attr(field);\n"
@@ -149,6 +155,7 @@ private:
                 << "\t\t}\n"
                 << "\t}\n";
         }
+        */
     }
 
     void write_include_dependencies(const Table &t, ostream &str)
@@ -385,11 +392,11 @@ private:
     {
         write_properties(table, out);
         write_rel_properties(table, out);
-        write_getters(table, out);
-        write_setters(table, out);
-        write_is_nulls(table, out);
+        //write_getters(table, out);
+        //write_setters(table, out);
+        //write_is_nulls(table, out);
         //write_foreign_keys_link(table, out);
-        write_rel_one2many_link(table, out);
+        //write_rel_one2many_link(table, out);
     }
 
     void generate_h(const Table &table)

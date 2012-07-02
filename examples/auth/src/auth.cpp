@@ -74,12 +74,12 @@ get_checked_session_by_token(Yb::Session &session,
     LoginSession &ls = q->get<0>();
 #endif
     if (admin_flag) {
-        if (ls.get_user().get_status() != 0)
+        if (ls.user->status != 0)
             return -1;
     }
-    if (Yb::now() >= ls.get_end_session())
+    if (Yb::now() >= ls.end_session)
         return -1;
-    return ls.get_id();
+    return ls.id;
 }
 
 std::string 
@@ -124,12 +124,12 @@ registration(StringMap &params)
         return BAD_RESP;
 
     User user(session);
-    user.set_login(WIDEN(params["login"]));
-    user.set_name(WIDEN(params["name"]));
-    user.set_pass(WIDEN(md5_hash(params["pass"])));
+    user.login = WIDEN(params["login"]);
+    user.name = WIDEN(params["name"]);
+    user.pass = WIDEN(md5_hash(params["pass"]));
     int status;
     Yb::from_stdstring(params["status"], status);
-    user.set_status(status);
+    user.status = status;
     session.commit();
     return OK_RESP;
 }
@@ -142,9 +142,9 @@ get_checked_user_by_creds(Yb::Session &session, StringMap &params)
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q == qend)
         return -1;
-    if (q->get_pass() != WIDEN(md5_hash(params["pass"])))
+    if (q->pass != WIDEN(md5_hash(params["pass"])))
         return -1;
-    return q->get_id();
+    return q->id;
 }
 
 std::string 
@@ -155,17 +155,17 @@ login(StringMap &params)
     if (-1 == uid)
         return BAD_RESP;
 
-    User user(session, uid);
-    while (user.get_login_sessions().begin() != user.get_login_sessions().end())
-        user.get_login_sessions().begin()->delete_object();
+    UserHolder user(session, uid);
+    while (user->login_sessions.begin() != user->login_sessions.end())
+        user->login_sessions.begin()->delete_object();
     LoginSession login_session(session);
-    login_session.set_user(user);
+    login_session.user = user;
     Yb::LongInt token = get_random();
-    login_session.set_token(Yb::to_string(token));
-    login_session.set_end_session(Yb::dt_add_seconds(Yb::now(), 11*60*60));
-    login_session.set_app_name(_T("auth"));
+    login_session.token = Yb::to_string(token);
+    login_session.end_session = Yb::dt_add_seconds(Yb::now(), 11*60*60);
+    login_session.app_name = _T("auth");
     Yb::ElementTree::ElementPtr root = Yb::ElementTree::new_element(
-            _T("token"), login_session.get_token());
+            _T("token"), login_session.token);
     session.commit();
     return root->serialize();
 }

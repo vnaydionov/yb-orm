@@ -17,13 +17,13 @@ int main()
         string name, email, budget;
         cout << "Enter name, email, budget:\n";
         cin >> name >> email >> budget;
-        client.set_name(name);
-        client.set_email(email);
-        client.set_budget(Yb::Decimal(budget));
-        client.set_dt(Yb::now());
+        client.name = name;
+        client.email = email;
+        client.budget = Yb::Decimal(budget);
+        client.dt = Yb::now();
         client.save(session);
         session.flush();
-        cout << "New client: " << client.get_id() << endl;
+        cout << "New client: " << client.id.value() << endl;
         engine.commit();
         return 0;
     }
