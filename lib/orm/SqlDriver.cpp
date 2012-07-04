@@ -225,6 +225,11 @@ const Strings list_sql_drivers()
     return theDriverRegistry::instance().list_items();
 }
 
+const SqlSource parse_url(const String &url)
+{
+    return SqlSource();
+}
+
 Row::iterator find_in_row(Row &row, const String &name)
 {
     Row::iterator i = row.begin(), iend = row.end();
@@ -391,6 +396,21 @@ SqlConnection::SqlConnection(const String &driver_name,
 
 SqlConnection::SqlConnection(const SqlSource &source)
     : source_(source)
+    , driver_(sql_driver(source_.get_driver_name()))
+    , dialect_(sql_dialect(source_.get_dialect_name()))
+    , activity_(false)
+    , echo_(false)
+    , bad_(false)
+    , free_since_(0)
+    , log_(NULL)
+{
+    source_.fix_driver_name(driver_->get_name());
+    backend_.reset(driver_->create_backend().release());
+    backend_->open(dialect_, source_);
+}
+
+SqlConnection::SqlConnection(const String &url)
+    : source_(parse_url(url))
     , driver_(sql_driver(source_.get_driver_name()))
     , dialect_(sql_dialect(source_.get_dialect_name()))
     , activity_(false)

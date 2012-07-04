@@ -246,6 +246,8 @@ public:
     bool operator< (const SqlSource &obj) const { return id_ < obj.id_; }
 };
 
+const SqlSource parse_url(const String &url);
+
 class SqlCursor;
 class SqlConnection;
 class SqlPool;
@@ -299,6 +301,7 @@ public:
             const String &dialect_name, const String &db,
             const String &user = _T(""), const String &passwd = _T(""));
     explicit SqlConnection(const SqlSource &source);
+    explicit SqlConnection(const String &url);
     ~SqlConnection();
     const SqlSource &get_source() const { return source_; }
     SqlDriver *get_driver() const { return driver_; }
