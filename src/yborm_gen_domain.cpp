@@ -332,6 +332,7 @@ private:
             fclose(t);
             string new_fname = fname;
             new_fname += ".bak";
+            remove(new_fname.c_str());
             if (rename(fname, new_fname.c_str()) == -1) {
                 ORM_LOG("Can't create backup file: " << new_fname);
                 ORM_LOG("Stop.");

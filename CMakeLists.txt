@@ -105,7 +105,13 @@ else ()
     find_library (CPPUNIT_LIBS cppunit c:/yborm/lib)
 endif ()
 
+install (FILES
+    AUTHORS BUILD BUILD.win32 CHANGES COPYING 
+    README README.rus TODO
+    DESTINATION doc)
+
 add_subdirectory (lib)
 add_subdirectory (src)
 add_subdirectory (examples)
+add_subdirectory (doc)
 
