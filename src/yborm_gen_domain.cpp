@@ -1,7 +1,9 @@
 #include <iostream>
+#include <sstream>
 #include <map>
 #include <fstream>
 #include <util/str_utils.hpp>
+#include <util/Exception.h>
 #include <orm/MetaData.h>
 #include <orm/Value.h>
 #include <orm/XMLMetaDataConfig.h>
@@ -13,9 +15,22 @@ using namespace Yb::StrUtils;
 
 namespace Yb {
 
+class CodeGenError: public RunTimeError {
+public:
+    CodeGenError(const String &msg):
+        RunTimeError(msg)
+    {}
+};
+
 const char
-    *AUTOGEN_BEGIN = "// AUTOGEN_BEGIN {\n",
+    *AUTOGEN_BEGIN = "// AUTOGEN_BEGIN",
     *AUTOGEN_END = "// } AUTOGEN_END\n";
+
+string MK_AUTOGEN_BEGIN(int n) {
+    char buf[100];
+    sprintf(buf, "// AUTOGEN_BEGIN(%03d) {\n", n);
+    return string(buf);
+}
 
 const char *kwords[] = { "and", "and_eq", "asm", "auto", "bitand", "bitor",
     "bool", "break", "case", "catch", "char", "class", "compl", "const",
@@ -126,9 +141,8 @@ bool create_backup(const char *fname)
         new_fname += ".bak";
         remove(new_fname.c_str());
         if (rename(fname, new_fname.c_str()) == -1) {
-            ORM_LOG("Can't create backup file: " << new_fname);
-            ORM_LOG("Stop.");
-            exit(1);
+            throw CodeGenError(_T("Can't create backup file: ") +
+                    WIDEN(new_fname));
         }
         ORM_LOG("Updating existing file: " << fname);
         return true;
@@ -136,9 +150,11 @@ bool create_backup(const char *fname)
     return false;
 }
 
-void split_by_autogen(const string &fname, vector<string> &parts)
+void split_by_autogen(const string &fname,
+        vector<string> &parts, vector<int> &stypes)
 {
     parts.clear();
+    stypes.clear();
     ifstream input((fname + ".bak").c_str());
     string s;
     char buf[4096 + 1];
@@ -156,16 +172,24 @@ void split_by_autogen(const string &fname, vector<string> &parts)
                 parts.push_back(s.substr(spos));
                 break;
             }
-            parts.push_back(s.substr(spos, pos - spos + strlen(AUTOGEN_BEGIN)));
-            spos = pos + strlen(AUTOGEN_BEGIN);
+            size_t eol = s.find("\n", pos);
+            if (eol == string::npos) {
+                throw CodeGenError(
+                    _T("Can't find newline after AUTOGEN_BEGIN, file ")
+                    + WIDEN(fname));
+            }
+            parts.push_back(s.substr(spos, eol - spos + 1));
+            int stype = strtol(&s[pos + strlen(AUTOGEN_BEGIN) + 1], NULL, 10);
+            stypes.push_back(stype);
+            spos = eol + 1;
             search_begin = false;
         }
         else {
             size_t pos = s.find(AUTOGEN_END, spos);
             if (pos == string::npos) {
-                ORM_LOG("Can't find AUTOGEN_END in file: " << fname);
-                ORM_LOG("Stop.");
-                exit(1);
+                throw CodeGenError(
+                    _T("Can't find AUTOGEN_END in file: ")
+                    + WIDEN(fname));
             }
             spos = pos;
             search_begin = true;
@@ -277,11 +301,11 @@ public:
         out << "#ifndef " << def_name << "\n"
             << "#define " << def_name << "\n\n"
             << "#include <orm/DomainObj.h>\n"
-            << AUTOGEN_BEGIN;
+            << MK_AUTOGEN_BEGIN(1);
         write_include_dependencies(out);
         out << AUTOGEN_END << "\n"
             << "namespace Domain {\n\n"
-            << AUTOGEN_BEGIN;
+            << MK_AUTOGEN_BEGIN(2);
         write_decl_relation_classes(out);
         out << AUTOGEN_END << "\n"
             << "class " << class_name_ << ";\n"
@@ -336,7 +360,8 @@ public:
         ostringstream out;
         if (update_h) {
             vector<string> parts;
-            split_by_autogen(file_path, parts);
+            vector<int> stypes;
+            split_by_autogen(file_path, parts, stypes);
             // here we expect exactly 4 autogen sections, thus 5 parts
             if (parts.size() != 4) {
                 ORM_LOG("Wrong number of AUTOGEN sections " << parts.size() - 1
@@ -355,7 +380,7 @@ public:
         }
         else {
             write_h_file_header(out);
-            out << AUTOGEN_BEGIN;
+            out << MK_AUTOGEN_BEGIN(3);
             write_properties(out);
             write_rel_properties(out);
             out << AUTOGEN_END;
@@ -433,7 +458,7 @@ public:
 
     void write_props_cons_calls(ostream &out)
     {
-        out << AUTOGEN_BEGIN;
+        out << MK_AUTOGEN_BEGIN(5);
         typedef map<String, String> MapString;
         MapString map_fk;
         Columns::const_iterator it = table_.begin(), end = table_.end();
@@ -502,7 +527,7 @@ public:
 
     void write_cpp_ctor_body(ostream &out, bool save_to_session)
     {
-        out << "{\n" << AUTOGEN_BEGIN;
+        out << "{\n" << MK_AUTOGEN_BEGIN(save_to_session? 7: 6);
         do_write_cpp_ctor_body(out);
         out << AUTOGEN_END;
         if (save_to_session)
@@ -516,7 +541,7 @@ public:
             << "#include <orm/DomainFactorySingleton.h>\n"
             << "namespace Domain {\n\n";
         write_cpp_meta_globals(out);
-        out << AUTOGEN_BEGIN;
+        out << MK_AUTOGEN_BEGIN(4);
         write_cpp_create_table_meta(out);
         out << "\n";
         write_cpp_create_relations_meta(out);
@@ -608,7 +633,8 @@ public:
         ostringstream out;
         if (update_cpp) {
             vector<string> parts;
-            split_by_autogen(cpp_path, parts);
+            vector<int> stypes;
+            split_by_autogen(cpp_path, parts, stypes);
             // here we expect exactly 10 autogen sections, thus 11 parts
             if (parts.size() != 11) {
                 ORM_LOG("Wrong number of AUTOGEN sections " << parts.size() - 1
