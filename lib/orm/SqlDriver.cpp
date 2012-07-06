@@ -73,6 +73,20 @@ public:
             return _T("timestamp") + x.sql_str();
         return x.sql_str();
     }
+    bool commit_ddl() { return false; }
+    const String type2sql(Value::Type t) {
+        switch (t) {
+            case Value::INTEGER:    return _T("NUMBER(10)");    break;
+            case Value::LONGINT:    return _T("NUMBER");        break;
+            case Value::STRING:     return _T("VARCHAR2");      break;
+            case Value::DECIMAL:    return _T("NUMBER");        break;
+            case Value::DATETIME:   return _T("DATE");          break;
+        }
+        return _T("BAD_TYPE");
+    }
+    const String gen_sequence(const String &seq_name) {
+        return _T("CREATE SEQUENCE ") + seq_name;
+    }
 };
 
 class PostgresDialect: public SqlDialect
@@ -88,6 +102,20 @@ public:
     const String sql_value(const Value &x)
     {
         return x.sql_str();
+    }
+    bool commit_ddl() { return false; }
+    const String type2sql(Value::Type t) {
+        switch (t) {
+            case Value::INTEGER:    return _T("INTEGER");       break;
+            case Value::LONGINT:    return _T("BIGINT");        break;
+            case Value::STRING:     return _T("VARCHAR");       break;
+            case Value::DECIMAL:    return _T("DECIMAL");       break;
+            case Value::DATETIME:   return _T("TIMESTAMP");     break;
+        }
+        return _T("BAD_TYPE");
+    }
+    const String gen_sequence(const String &seq_name) {
+        return _T("CREATE SEQUENCE ") + seq_name;
     }
 };
 
@@ -105,6 +133,20 @@ public:
     {
         return x.sql_str();
     }
+    bool commit_ddl() { return true; }
+    const String type2sql(Value::Type t) {
+        switch (t) {
+            case Value::INTEGER:    return _T("INTEGER");       break;
+            case Value::LONGINT:    return _T("BIGINT");        break;
+            case Value::STRING:     return _T("VARCHAR");       break;
+            case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
+            case Value::DATETIME:   return _T("TIMESTAMP");     break;
+        }
+        return _T("BAD_TYPE");
+    }
+    const String gen_sequence(const String &seq_name) {
+        return _T("CREATE GENERATOR ") + seq_name;
+    }
 };
 
 class MysqlDialect: public SqlDialect
@@ -121,6 +163,18 @@ public:
     {
         return x.sql_str();
     }
+    bool commit_ddl() { return false; }
+    const String type2sql(Value::Type t) {
+        switch (t) {
+            case Value::INTEGER:    return _T("INT");           break;
+            case Value::LONGINT:    return _T("BIGINT");        break;
+            case Value::STRING:     return _T("VARCHAR");       break;
+            case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
+            case Value::DATETIME:   return _T("TIMESTAMP");     break;
+        }
+        return _T("BAD_TYPE");
+    }
+    const String gen_sequence(const String &seq_name) { return String(); }
 };
 
 typedef SingletonHolder<ItemRegistry<SqlDialect> > theDialectRegistry;

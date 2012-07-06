@@ -6,8 +6,8 @@
         </column>
         <column name="dt" type="datetime" null="false" default="sysdate" />
         <column name="name" type="string" size="100" null="false" />
-        <column name="phone" type="string" size="50" null="true" />
         <!--
+        <column name="phone" type="string" size="50" null="true" />
         -->
         <column name="email" type="string" size="100" null="false" />
         <column name="budget" type="decimal" />

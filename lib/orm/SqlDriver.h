@@ -144,6 +144,9 @@ public:
     virtual const String select_next_value(
             const String &seq_name) = 0;
     virtual const String sql_value(const Value &x) = 0;
+    virtual bool commit_ddl() = 0;
+    virtual const String type2sql(Value::Type t) = 0;
+    virtual const String gen_sequence(const String &seq_name) = 0;
 };
 
 SqlDialect *sql_dialect(const String &name);

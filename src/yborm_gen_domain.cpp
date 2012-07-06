@@ -7,6 +7,7 @@
 #include <orm/MetaData.h>
 #include <orm/Value.h>
 #include <orm/XMLMetaDataConfig.h>
+#include <orm/SqlDriver.h>
 
 #define ORM_LOG(x) std::cout << "yborm_gen_domain: " << x << "\n";
 
@@ -61,7 +62,7 @@ string type_nc_by_handle(int type)
         case Value::STRING:   return "Yb::String";
         case Value::DECIMAL:  return "Yb::Decimal";
         default:
-            throw runtime_error("Unknown type while parsing metadata");
+            throw CodeGenError(_T("Unknown type while parsing metadata"));
     }
 }
 
@@ -75,7 +76,7 @@ string type_code_by_handle(int type)
         case Value::STRING:   code = "STRING";   break;
         case Value::DECIMAL:  code = "DECIMAL";  break;
         default:
-            throw runtime_error("Unknown type while parsing metadata");
+            throw CodeGenError(_T("Unknown type while parsing metadata"));
     }
     return "Yb::Value::" + code;
 }
@@ -197,21 +198,84 @@ void split_by_autogen(const string &fname,
     }
 }
 
-class CodeGenerator
+class SqlCodeGenerator
+{
+    const Schema &schema_;
+    const Table &table_;
+    const string table_name_;
+    SqlDialect *dialect_;
+
+public:
+    SqlCodeGenerator(const Schema &schema, const String &table_name,
+            const String &dialect_name)
+        : schema_(schema)
+        , table_(schema_.table(table_name))
+        , table_name_(NARROW(table_.get_name()))
+        , dialect_(sql_dialect(dialect_name))
+    {}
+
+    void gen_commit(ostream &out)
+    {
+        if (dialect_->commit_ddl())
+            out << "COMMIT;\n\n";
+    }
+
+    void gen_create_table(ostream &out)
+    {
+        //prefix_create_table(out);
+        out << "CREATE TABLE " << table_name_ << " (\n";
+        Columns::const_iterator it = table_.begin(), end = table_.end();
+        for (; it != end; ++it) {
+            //gen_typed_column(out, *it);
+        }
+        out << "\tPRIMARY KEY (";
+        for (it = table_.begin(); it != end; ++it)
+            if (it->is_pk()) {
+                out << NARROW(it->get_name());
+                if (it + 1 != end)
+                    out << ", ";
+            }
+        out << ")\n)";
+        //suffix_create_table(out);
+        out << ";\n\n";
+        gen_commit(out);
+    }
+
+    void generate(ostream &out)
+    {
+        out << "-- DBTYPE=" << NARROW(dialect_->get_name()) << "\n\n";
+        gen_create_table(out);
+        //gen_create_fk_constr(out);
+        gen_commit(out);
+        //gen_create_seq(out);
+        gen_commit(out);
+    }
+};
+
+class CppCodeGenerator
 {
     const Schema &schema_;
     const Table &table_;
     const string path_, inc_prefix_, class_name_, table_name_;
+
+    typedef void (CppCodeGenerator::* AutoGenHandler)(ostream &);
+    map<int, AutoGenHandler> autogen_handlers_;
+
 public:
-    CodeGenerator(const Schema &schema, const String &table_name,
-            const string &path, const string &inc_prefix)
-        : schema_(schema)
-        , table_(schema_.table(table_name))
-        , path_(path)
-        , inc_prefix_(inc_prefix)
-        , class_name_(NARROW(table_.get_class_name()))
-        , table_name_(NARROW(table_.get_name()))
-    {}
+    CppCodeGenerator(const Schema &schema, const String &table_name,
+            const string &path, const string &inc_prefix);
+
+    void write_autogen_body(ostream &out, int code)
+    {
+        (this->*(autogen_handlers_[code]))(out);
+    }
+
+    void write_autogen(ostream &out, int code)
+    {
+        out << MK_AUTOGEN_BEGIN(code);
+        write_autogen_body(out, code);
+        out << AUTOGEN_END;
+    }
 
     void write_include_dependencies(ostream &out)
     {
@@ -252,19 +316,13 @@ public:
                     << ", " << count << "> "
                     << fix_name(NARROW(it->get_prop_name())) << ";\n";
             }
-    }
-
-    void write_rel_properties(ostream &out)
-    {
         out << "\t// relation properties\n";
         typedef map<String, String> MapString;
         MapString map_fk;
-        Columns::const_iterator it = table_.begin(), end = table_.end();
-        for (; it != end; ++it) {
+        for (it = table_.begin(); it != end; ++it)
             if (it->has_fk())
                 map_fk.insert(MapString::value_type(
                             it->get_fk_table_name(), it->get_name()));
-        }
         Schema::RelMap::const_iterator
             i = schema_.rels_lower_bound(table_.get_class_name()),
             iend = schema_.rels_upper_bound(table_.get_class_name());
@@ -300,14 +358,12 @@ public:
             NARROW(str_to_upper(table_.get_class_name())) + "__INCLUDED";
         out << "#ifndef " << def_name << "\n"
             << "#define " << def_name << "\n\n"
-            << "#include <orm/DomainObj.h>\n"
-            << MK_AUTOGEN_BEGIN(1);
-        write_include_dependencies(out);
-        out << AUTOGEN_END << "\n"
-            << "namespace Domain {\n\n"
-            << MK_AUTOGEN_BEGIN(2);
-        write_decl_relation_classes(out);
-        out << AUTOGEN_END << "\n"
+            << "#include <orm/DomainObj.h>\n";
+        write_autogen(out, 1); // include_dependencies
+        out << "\n"
+            << "namespace Domain {\n\n";
+        write_autogen(out, 2); // decl_relation_classes
+        out << "\n"
             << "class " << class_name_ << ";\n"
             << "typedef Yb::DomainObjHolder<" << class_name_ << "> " << class_name_ << "Holder;\n\n"
             << "class " << class_name_ << ": public Yb::DomainObject\n"
@@ -355,40 +411,32 @@ public:
     void update_h_file()
     {
         string file_path = path_ + "/" + class_name_ + ".h";
-        ORM_LOG("Generating file: " << file_path << " for table '" << table_name_ << "'");
+        ORM_LOG("Generating file: " << file_path
+                << " for table '" << table_name_ << "'");
         bool update_h = create_backup(file_path.c_str());
         ostringstream out;
         if (update_h) {
             vector<string> parts;
             vector<int> stypes;
             split_by_autogen(file_path, parts, stypes);
-            // here we expect exactly 4 autogen sections, thus 5 parts
-            if (parts.size() != 4) {
-                ORM_LOG("Wrong number of AUTOGEN sections " << parts.size() - 1
-                        << " in file: " << file_path);
-                ORM_LOG("Stop.");
-                exit(1);
+            if (parts.size() != stypes.size() + 1)
+                throw CodeGenError(
+                    _T("Error while parsing AUTOGEN sections in file: ")
+                    + WIDEN(file_path));
+            for (int i = 0; i < stypes.size(); ++i) {
+                out << parts[i];
+                write_autogen_body(out, stypes[i]);
             }
-            out << parts[0];
-            write_include_dependencies(out);
-            out << parts[1];
-            write_decl_relation_classes(out);
-            out << parts[2];
-            write_properties(out);
-            write_rel_properties(out);
-            out << parts[3];
+            out << parts[stypes.size()];
         }
         else {
             write_h_file_header(out);
-            out << MK_AUTOGEN_BEGIN(3);
-            write_properties(out);
-            write_rel_properties(out);
-            out << AUTOGEN_END;
+            write_autogen(out, 3); // properties
             write_h_file_footer(out);
         }
         ofstream file(file_path.c_str());
         if (!file.good())
-            throw std::runtime_error("can't write to file");
+            throw CodeGenError(_T("Can't write to file"));
         expand_tabs_to_stream(out.str(), file);
     }
 
@@ -456,9 +504,15 @@ public:
         out << "}\n";
     }
 
+    void write_meta(ostream &out)
+    {
+        write_cpp_create_table_meta(out);
+        out << "\n";
+        write_cpp_create_relations_meta(out);
+    }
+
     void write_props_cons_calls(ostream &out)
     {
-        out << MK_AUTOGEN_BEGIN(5);
         typedef map<String, String> MapString;
         MapString map_fk;
         Columns::const_iterator it = table_.begin(), end = table_.end();
@@ -497,7 +551,6 @@ public:
                     << "\"))\n";
             }
         }
-        out << AUTOGEN_END;
     }
 
     void do_write_cpp_ctor_body(ostream &out)
@@ -527,9 +580,8 @@ public:
 
     void write_cpp_ctor_body(ostream &out, bool save_to_session)
     {
-        out << "{\n" << MK_AUTOGEN_BEGIN(save_to_session? 7: 6);
-        do_write_cpp_ctor_body(out);
-        out << AUTOGEN_END;
+        out << "{\n";
+        write_autogen(out, 6);
         if (save_to_session)
             out << "\tsave(session);\n";
         out << "}\n";
@@ -541,43 +593,39 @@ public:
             << "#include <orm/DomainFactorySingleton.h>\n"
             << "namespace Domain {\n\n";
         write_cpp_meta_globals(out);
-        out << MK_AUTOGEN_BEGIN(4);
-        write_cpp_create_table_meta(out);
-        out << "\n";
-        write_cpp_create_relations_meta(out);
-        out << AUTOGEN_END;
+        write_autogen(out, 4); // meta
         out << "\n"
             << class_name_ << "::"
             << class_name_ << "(Yb::DomainObject *owner, const Yb::String &prop_name)\n"
             << "\t: Yb::DomainObject(*tbls[0], owner, prop_name)\n";
-        write_props_cons_calls(out);
+        write_autogen(out, 5); // props_cons_calls
         out << "{}\n\n"
             << class_name_ << "::"
             << class_name_ << "()\n"
             << "\t: Yb::DomainObject(*tbls[0])\n";
-        write_props_cons_calls(out);
+        write_autogen(out, 5); // props_cons_calls
         write_cpp_ctor_body(out, false);
         out << "\n"
             << class_name_ << "::"
             << class_name_ << "(const " << class_name_ << " &other)\n"
             << "\t: Yb::DomainObject(other)\n";
-        write_props_cons_calls(out);
+        write_autogen(out, 5); // props_cons_calls
         out << "{}\n\n"
             << class_name_ << "::"
             << class_name_ << "(Yb::Session &session)\n"
             << "\t: Yb::DomainObject(session.schema(), _T(\"" << table_name_ << "\"))\n";
-        write_props_cons_calls(out);
+        write_autogen(out, 5); // props_cons_calls
         write_cpp_ctor_body(out, true);
         out << "\n"
             << class_name_ << "::"
             << class_name_ << "(Yb::DataObject::Ptr d)\n"
             << "\t: Yb::DomainObject(d)\n";
-        write_props_cons_calls(out);
+        write_autogen(out, 5); // props_cons_calls
         out << "{}\n\n"
             << class_name_ << "::"
             << class_name_ << "(Yb::Session &session, const Yb::Key &key)\n"
             << "\t: Yb::DomainObject(session, key)\n";
-        write_props_cons_calls(out);
+        write_autogen(out, 5); // props_cons_calls
         out << "{}\n\n";
         try {
             String mega_key = table_.get_unique_pk();
@@ -585,7 +633,7 @@ public:
                 << class_name_ << "(Yb::Session &session, Yb::LongInt id)\n"
                 << "\t: Yb::DomainObject(session, _T(\""
                 << table_name_ << "\"), id)\n";
-            write_props_cons_calls(out);
+            write_autogen(out, 5); // props_cons_calls
             out << "{}\n\n";
         }
         catch (const AmbiguousPK &)
@@ -627,53 +675,51 @@ public:
 
     void update_cpp_file()
     {
-        string cpp_path = path_ + "/" + class_name_ + ".cpp";
-        ORM_LOG("Generating cpp file: " << cpp_path << " for table '" << table_name_ << "'");
-        bool update_cpp = create_backup(cpp_path.c_str());
+        string file_path = path_ + "/" + class_name_ + ".cpp";
+        ORM_LOG("Generating cpp file: " << file_path
+                << " for table '" << table_name_ << "'");
+        bool update_cpp = create_backup(file_path.c_str());
         ostringstream out;
         if (update_cpp) {
             vector<string> parts;
             vector<int> stypes;
-            split_by_autogen(cpp_path, parts, stypes);
-            // here we expect exactly 10 autogen sections, thus 11 parts
-            if (parts.size() != 11) {
-                ORM_LOG("Wrong number of AUTOGEN sections " << parts.size() - 1
-                        << " in file: " << cpp_path);
-                ORM_LOG("Stop.");
-                exit(1);
+            split_by_autogen(file_path, parts, stypes);
+            if (parts.size() != stypes.size() + 1)
+                throw CodeGenError(
+                    _T("Error while parsing AUTOGEN sections in file: ")
+                    + WIDEN(file_path));
+            for (int i = 0; i < stypes.size(); ++i) {
+                out << parts[i];
+                write_autogen_body(out, stypes[i]);
             }
-            out << parts[0];
-            write_cpp_create_table_meta(out);
-            out << "\n";
-            write_cpp_create_relations_meta(out);
-            out << parts[1];
-            write_props_cons_calls(out);
-            out << parts[2];
-            write_props_cons_calls(out);
-            out << parts[3];
-            do_write_cpp_ctor_body(out);
-            out << parts[4];
-            write_props_cons_calls(out);
-            out << parts[5];
-            write_props_cons_calls(out);
-            out << parts[6];
-            do_write_cpp_ctor_body(out);
-            out << parts[7];
-            write_props_cons_calls(out);
-            out << parts[8];
-            write_props_cons_calls(out);
-            out << parts[9];
-            write_props_cons_calls(out);
-            out << parts[10];
+            out << parts[stypes.size()];
         }
         else
             write_cpp_file(out);
-        ofstream cpp_file(cpp_path.c_str());
+        ofstream cpp_file(file_path.c_str());
         if (!cpp_file.good())
-            throw std::runtime_error("can't write to file");
+            throw CodeGenError(_T("Can't write to file"));
         expand_tabs_to_stream(out.str(), cpp_file);
     }
 };
+
+CppCodeGenerator::CppCodeGenerator(const Schema &schema,
+        const String &table_name,
+        const string &path, const string &inc_prefix)
+    : schema_(schema)
+    , table_(schema_.table(table_name))
+    , path_(path)
+    , inc_prefix_(inc_prefix)
+    , class_name_(NARROW(table_.get_class_name()))
+    , table_name_(NARROW(table_.get_name()))
+{
+    autogen_handlers_[1] = &CppCodeGenerator::write_include_dependencies;
+    autogen_handlers_[2] = &CppCodeGenerator::write_decl_relation_classes;
+    autogen_handlers_[3] = &CppCodeGenerator::write_properties;
+    autogen_handlers_[4] = &CppCodeGenerator::write_meta;
+    autogen_handlers_[5] = &CppCodeGenerator::write_props_cons_calls;
+    autogen_handlers_[6] = &CppCodeGenerator::do_write_cpp_ctor_body;
+}
 
 void generate(const Schema &schema,
         const string &path, const string &inc_prefix)
@@ -682,7 +728,7 @@ void generate(const Schema &schema,
     Schema::TblMap::const_iterator it = schema.tbl_begin(), end = schema.tbl_end();
     for (; it != end; ++it)
         if (!str_empty(schema.table(it->first).get_class_name())) {
-            CodeGenerator cgen(schema, it->first, path, inc_prefix);
+            CppCodeGenerator cgen(schema, it->first, path, inc_prefix);
             cgen.update_h_file();
             cgen.update_cpp_file();
         }
