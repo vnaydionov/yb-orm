@@ -11,6 +11,7 @@ typedef Yb::QtSqlDriver DefaultSqlDriver;
 typedef Yb::OdbcDriver DefaultSqlDriver;
 #define DEFAULT_DRIVER _T("ODBC")
 #endif
+#include <util/str_utils.hpp>
 #include <util/Singleton.h>
 
 using namespace std;
@@ -225,6 +226,50 @@ const Strings list_sql_drivers()
     return theDriverRegistry::instance().list_items();
 }
 
+const SqlSource parse_url(const String &url)
+{
+    using namespace Yb::StrUtils;
+    String dialect, driver = _T("DEFAULT"), db, user, passwd;
+    Strings url_parts, proto_parts, user_host_parts;
+    split_str(url, _T("://"), url_parts);
+    if (url_parts.size() != 2)
+        throw ValueError("url parse error");
+    split_str_by_chars(url_parts[0], _T("+"), proto_parts, 2);
+    if (proto_parts.size() == 1) {
+        dialect = str_to_upper(proto_parts[0]);
+    }
+    else if (proto_parts.size() == 2) {
+        dialect = str_to_upper(proto_parts[0]);
+        driver = str_to_upper(proto_parts[1]);
+    }
+    else
+        throw ValueError("url parse error");
+    split_str_by_chars(url_parts[1], _T("@"), user_host_parts, 2);
+    String host_etc;
+    if (user_host_parts.size() == 1) {
+        host_etc = user_host_parts[0];
+    }
+    else if (user_host_parts.size() == 2) {
+        Strings user_parts;
+        split_str_by_chars(user_host_parts[0], _T(":/"), user_parts, 2);
+        if (user_parts.size() == 1) {
+            user = user_parts[0];
+        }
+        else if (user_parts.size() == 2) {
+            user = user_parts[0];
+            passwd = user_parts[1];
+        }
+        else
+            throw ValueError("url parse error");
+        host_etc = user_host_parts[1];
+    }
+    else
+        throw ValueError("url parse error");
+    ///
+    db = host_etc;
+    return SqlSource(_T(""), driver, dialect, db, user, passwd);
+}
+
 Row::iterator find_in_row(Row &row, const String &name)
 {
     Row::iterator i = row.begin(), iend = row.end();
@@ -391,6 +436,21 @@ SqlConnection::SqlConnection(const String &driver_name,
 
 SqlConnection::SqlConnection(const SqlSource &source)
     : source_(source)
+    , driver_(sql_driver(source_.get_driver_name()))
+    , dialect_(sql_dialect(source_.get_dialect_name()))
+    , activity_(false)
+    , echo_(false)
+    , bad_(false)
+    , free_since_(0)
+    , log_(NULL)
+{
+    source_.fix_driver_name(driver_->get_name());
+    backend_.reset(driver_->create_backend().release());
+    backend_->open(dialect_, source_);
+}
+
+SqlConnection::SqlConnection(const String &url)
+    : source_(parse_url(url))
     , driver_(sql_driver(source_.get_driver_name()))
     , dialect_(sql_dialect(source_.get_dialect_name()))
     , activity_(false)

@@ -651,7 +651,6 @@ bool DataObject::has_master(
 RelationObject *DataObject::get_slaves(
     const String &relation_name)
 {
-    YB_ASSERT(session_);
     // Find relation in metadata.
     const Schema &schema(table_.schema());
     const Relation *r = schema.find_relation

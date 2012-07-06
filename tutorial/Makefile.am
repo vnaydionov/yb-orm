@@ -8,7 +8,7 @@ AM_CXXFLAGS = \
 
 noinst_PROGRAMS=tut1 tut2
 
-tut1_SOURCES=tut1.cpp domain/Client.cpp
+tut1_SOURCES=tut1.cpp domain/Client.cpp domain/Order.cpp
 
 tut1_LDFLAGS = \
 	$(top_builddir)/lib/orm/libyborm.la \
@@ -20,7 +20,7 @@ tut1_LDFLAGS = \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS)
 
-tut2_SOURCES=tut1.cpp domain/Client.cpp domain/Order.cpp
+tut2_SOURCES=tut2.cpp domain/Client.cpp domain/Order.cpp
 
 tut2_LDFLAGS = \
 	$(top_builddir)/lib/orm/libyborm.la \

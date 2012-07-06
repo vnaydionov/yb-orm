@@ -56,24 +56,76 @@ public:
     {}
 };
 
+class DomainObject;
+
+template <class T>
+class ManagedList;
+
+class DomainObject: public XMLizable
+{
+    static char init_[16];
+    void check_ptr() const;
+
+    DataObject::Ptr d_;
+    DomainObject *owner_;
+    String prop_name_;
+protected:
+    explicit DomainObject(const Table &table,
+            DomainObject *owner, const String &prop_name);
+public:
+    DataObject::Ptr get_data_object(bool check = true) const;
+    void set_data_object(DataObject::Ptr d);
+    DomainObject();
+    explicit DomainObject(DataObject::Ptr d);
+    explicit DomainObject(const Table &table);
+    explicit DomainObject(const Schema &schema, const String &table_name);
+    explicit DomainObject(Session &session, const Key &key);
+    explicit DomainObject(Session &session, const String &tbl_name, LongInt id);
+    DomainObject(const DomainObject &obj);
+    virtual ~DomainObject();
+    DomainObject &operator=(const DomainObject &obj);
+    void save(Session &session);
+    void detach(Session &session);
+    bool is_empty() const;
+    Session *get_session() const;
+    const Value &get(const String &col_name) const;
+    void set(const String &col_name, const Value &value);
+    const Value &get(int col_num) const;
+    void set(int col_num, const Value &value);
+    const DomainObject get_master(const String &relation_name = _T("")) const;
+    RelationObject *get_slaves_ro(const String &relation_name = _T("")) const;
+    ManagedList<DomainObject> get_slaves(
+            const String &relation_name = _T("")) const;
+    void link_to_master(DomainObject &master,
+            const String relation_name = _T(""));
+    void link_to_slave(DomainObject &slave,
+            const String relation_name = _T(""));
+    void delete_object();
+    DataObject::Status status() const;
+    const Table &get_table() const;
+    int cmp(const DomainObject &x) const;
+    ElementTree::ElementPtr xmlize(
+            int depth = 0, const String &alt_name = _T("")) const;
+    static bool register_table_meta(Table::Ptr tbl);
+    static bool register_relation_meta(Relation::Ptr rel);
+    static void save_registered(Schema &schema);
+};
+
 template <class T>
 class ManagedList {
     RelationObject *ro_;
     DataObject::Ptr master_;
+    DomainObject *owner_;
+    String prop_name_;
 
-    void check_ptr () const
+    static RelationObject *load_if_needed(RelationObject *ro)
     {
-        if (!ro_)
-            throw NoRawData();
-    }
-    void load_if_needed()
-    {
-        check_ptr();
-        if (ro_->master_object()->status() != DataObject::New &&
-            ro_->status() != RelationObject::Sync)
+        if (ro->master_object()->status() != DataObject::New &&
+            ro->status() != RelationObject::Sync)
         {
-            ro_->lazy_load_slaves();
+            ro->lazy_load_slaves();
         }
+        return ro;
     }
 public:
     template <class U, class V>
@@ -116,203 +168,91 @@ public:
     typedef Iter<RelationObject::SlaveObjects::iterator, T> iterator;
     typedef Iter<RelationObject::SlaveObjects::const_iterator, const T> const_iterator;
 
-    ManagedList(): ro_(NULL) {}
-    ManagedList(RelationObject *ro, DataObject::Ptr m): ro_(ro), master_(m) {
+    ManagedList(): ro_(NULL), owner_(NULL) {}
+    ManagedList(RelationObject *ro, DataObject::Ptr m)
+        : ro_(ro), master_(m), owner_(NULL)
+    {
         YB_ASSERT(ro_);
         YB_ASSERT(ro_->master_object() == shptr_get(master_));
     }
-    RelationObject *relation_object() const { return ro_; }
-    DataObject::Ptr master() { return master_; }
+    ManagedList(DomainObject *owner, const String &prop_name)
+        : ro_(NULL), owner_(owner), prop_name_(prop_name)
+    {
+        YB_ASSERT(owner_);
+    }
+    ManagedList(const ManagedList &obj)
+        : ro_(obj.relation_object()), master_(obj.master()), owner_(NULL)
+    {}
+    ManagedList &operator=(const ManagedList &obj)
+    {
+        if (this != &obj) {
+            YB_ASSERT(!owner_);
+            ro_ = obj.relation_object();
+            master_ = obj.master();
+        }
+        return *this;
+    }
+    RelationObject *relation_object(bool check = true) const {
+        RelationObject *ro = ro_;
+        if (owner_)
+            ro = owner_->get_slaves_ro(prop_name_);
+        if (check && !ro)
+            throw NoRawData();
+        return ro;
+    }
+    DataObject::Ptr master() const {
+        if (owner_)
+            return owner_->get_data_object();
+        return master_;
+    }
 
     iterator begin() {
-        load_if_needed();
-        return iterator(ro_->slave_objects().begin());
+        return iterator(load_if_needed(relation_object())
+                ->slave_objects().begin());
     }
     iterator end() {
-        load_if_needed();
-        return iterator(ro_->slave_objects().end());
+        return iterator(load_if_needed(relation_object())
+                ->slave_objects().end());
     }
     iterator find(const T &x) {
-        load_if_needed();
-        RelationObject::SlaveObjects::iterator
-            it = ro_->slave_objects().find(x.data_object());
+        RelationObject::SlaveObjects::iterator 
+            it = load_if_needed(relation_object())
+                ->slave_objects().find(x.data_object());
         return iterator(it);
     }
     const_iterator begin() const {
-        load_if_needed();
         return const_iterator
-            (((const RelationObject::SlaveObjects &)(ro_->slave_objects())).begin());
+            (((const RelationObject::SlaveObjects &)
+              (load_if_needed(relation_object())->slave_objects())).begin());
     }
     const_iterator end() const {
-        load_if_needed();
         return const_iterator
-            (((const RelationObject::SlaveObjects &)(ro_->slave_objects())).end());
+            (((const RelationObject::SlaveObjects &)
+              (load_if_needed(relation_object())->slave_objects())).end());
     }
     size_t size() const {
-        check_ptr();
-        if (ro_->status() == RelationObject::Sync ||
-                ro_->master_object()->status() == DataObject::New)
-            return ro_->slave_objects().size();
+        RelationObject *ro = relation_object();
+        if (ro->status() == RelationObject::Sync ||
+                ro->master_object()->status() == DataObject::New)
+            return ro->slave_objects().size();
         ///
-        return ro_->count_slaves();
+        return ro->count_slaves();
     }
     iterator insert(const T &x) {
-        load_if_needed(); // ??
+        RelationObject *ro = relation_object();
+        load_if_needed(ro); // ??
         iterator it = find(x);
         if (it != end())
             return it;
-        DataObject::link_master_to_slave(master_, x.data_object(),
-                                         ro_->relation_info().attr(0, _T("property")));
+        DataObject::link_master_to_slave(master(), x.data_object(),
+                                         ro->relation_info().attr(0, _T("property")));
         return find(x);
     }
     void erase(iterator it) {
-        load_if_needed(); // ??
+        RelationObject *ro = relation_object();
+        load_if_needed(ro); // ??
         (*it.it_)->delete_object();
     }
-};
-
-class DomainObject: public XMLizable
-{
-    static char init_[16];
-    void check_ptr() const {
-        if (!shptr_get(d_))
-            throw NoRawData();
-    }
-    DataObject::Ptr d_;
-    DomainObject *owner_;
-    String prop_name_;
-protected:
-    explicit DomainObject(const Table &table,
-            DomainObject *owner, const String &prop_name)
-        : owner_(owner)
-        , prop_name_(prop_name)
-    {}
-public:
-    DataObject::Ptr get_data_object(bool check = true) const
-    {
-        if (owner_) {
-            owner_->check_ptr();
-            return DataObject::get_master(owner_->d_, prop_name_);
-        }
-        if (check)
-            check_ptr();
-        return d_;
-    }
-    void set_data_object(DataObject::Ptr d)
-    {
-        if (owner_) {
-            owner_->check_ptr();
-            DomainObject master(d);
-            owner_->link_to_master(master, prop_name_);
-        }
-        else
-            d_ = d;
-    }
-    DomainObject()
-        : owner_(NULL)
-    {}
-    explicit DomainObject(DataObject::Ptr d)
-        : d_(d)
-        , owner_(NULL)
-    {}
-    explicit DomainObject(const Table &table)
-        : d_(DataObject::create_new(table))
-        , owner_(NULL)
-    {}
-    explicit DomainObject(const Schema &schema, const String &table_name)
-        : d_(DataObject::create_new(schema.table(table_name)))
-        , owner_(NULL)
-    {}
-    explicit DomainObject(Session &session, const Key &key)
-        : d_(session.get_lazy(key))
-        , owner_(NULL)
-    {}
-    explicit DomainObject(Session &session, const String &tbl_name, LongInt id)
-        : d_(session.get_lazy(session.schema().table(tbl_name).mk_key(id)))
-        , owner_(NULL)
-    {}
-    DomainObject(const DomainObject &obj)
-        : d_(obj.get_data_object())
-        , owner_(NULL)
-    {}
-    virtual ~DomainObject() {}
-    DomainObject &operator=(const DomainObject &obj)
-    {
-        if (this != &obj)
-            set_data_object(obj.get_data_object());
-        return *this;
-    }
-    void save(Session &session) { session.save(get_data_object()); }
-    void detach(Session &session) { session.detach(get_data_object()); }
-    bool is_empty() const { return !shptr_get(get_data_object(false)); }
-    Session *get_session() const { return get_data_object()->session(); }
-    const Value &get(const String &col_name) const {
-        return get_data_object()->get(col_name);
-    }
-    void set(const String &col_name, const Value &value) {
-        get_data_object()->set(col_name, value);
-    }
-    const Value &get(int col_num) const {
-        return get_data_object()->get(col_num);
-    }
-    void set(int col_num, const Value &value) {
-        get_data_object()->set(col_num, value);
-    }
-    const DomainObject get_master(const String &relation_name = _T("")) const {
-        return DomainObject(
-                DataObject::get_master(get_data_object(), relation_name));
-    }
-    RelationObject *get_slaves_ro(const String &relation_name = _T("")) const {
-        return get_data_object()->get_slaves(relation_name);
-    }
-    ManagedList<DomainObject> get_slaves(const String &relation_name = _T(""))
-        const
-    {
-        DataObject::Ptr p = get_data_object();
-        return ManagedList<DomainObject>(p->get_slaves(relation_name), p);
-    }
-    void link_to_master(DomainObject &master,
-            const String relation_name = _T(""))
-    {
-        DataObject::link_slave_to_master(get_data_object(),
-                master.get_data_object(), relation_name);
-    }
-    void link_to_slave(DomainObject &slave,
-            const String relation_name = _T(""))
-    {
-        DataObject::link_master_to_slave(get_data_object(),
-                slave.get_data_object(), relation_name);
-    }
-    void delete_object() {
-        get_data_object()->delete_object();
-    }
-    DataObject::Status status() const {
-        return get_data_object()->status();
-    }
-    const Table &get_table() const {
-        return get_data_object()->table();
-    }
-    int cmp(const DomainObject &x) const {
-        DataObject::Ptr p1 = get_data_object(false), p2 = x.get_data_object(false);
-        if (p1 == p2)
-            return 0;
-        if (!shptr_get(p1))
-            return -1;
-        if (!shptr_get(p2))
-            return 1;
-        if (p1->values() == p2->values())
-            return 0;
-        return p1->values() < p2->values()? -1: 1;
-    }
-    ElementTree::ElementPtr xmlize(int depth = 0, const String &alt_name = _T("")) const {
-        Session *s = get_session();
-        if (!s)
-            throw NoSessionBaseGiven();
-        return deep_xmlize(*s, get_data_object(), depth, alt_name);
-    }
-    static bool register_table_meta(Table::Ptr tbl);
-    static bool register_relation_meta(Relation::Ptr rel);
-    static void save_registered(Schema &schema);
 };
 
 template <class T, int ColNum>
@@ -347,7 +287,12 @@ public:
         return from_variant(v, u);
     }
     T value() { return as<T>(); }
-    operator T() { return as<T>(); }
+    operator T () { return as<T>(); }
+    operator Value ()
+    {
+        YB_ASSERT(pobj_ != NULL);
+        return pobj_->get(ColNum);
+    }
     bool is_null()
     {
         YB_ASSERT(pobj_ != NULL);

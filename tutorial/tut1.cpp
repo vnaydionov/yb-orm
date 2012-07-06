@@ -7,9 +7,8 @@ using namespace std;
 int main()
 {
     try {
-        auto_ptr<Yb::SqlConnection> conn(
-            new Yb::SqlConnection("ODBC",
-                "INTERBASE", "test1_db_fb", "test1", "test1_pwd"));
+        auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(
+                    "mysql://test1:test1_pwd@test1_db"));
         Yb::Engine engine(Yb::Engine::MANUAL, conn);
         Yb::Session session(Yb::init_default_meta(), &engine);
 
@@ -17,13 +16,13 @@ int main()
         string name, email, budget;
         cout << "Enter name, email, budget:\n";
         cin >> name >> email >> budget;
-        client.set_name(name);
-        client.set_email(email);
-        client.set_budget(Yb::Decimal(budget));
-        client.set_dt(Yb::now());
+        client.name = name;
+        client.email = email;
+        client.budget = Yb::Decimal(budget);
+        client.dt = Yb::now();
         client.save(session);
         session.flush();
-        cout << "New client: " << client.get_id() << endl;
+        cout << "New client: " << client.id.value() << endl;
         engine.commit();
         return 0;
     }
