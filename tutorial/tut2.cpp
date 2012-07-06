@@ -8,18 +8,16 @@ using namespace std;
 int main()
 {
     try {
-        auto_ptr<Yb::SqlConnection> conn(
-            new Yb::SqlConnection("ODBC",
-                "MYSQL", "test1_db", "test1", "test1_pwd"));
+        auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(
+                    "mysql://test1:test1_pwd@test1_db"));
         Yb::Engine engine(Yb::Engine::MANUAL, conn);
         Yb::Session session(Yb::init_default_meta(), &engine);
 
-        Domain::Order order;
+        Domain::OrderHolder order;
         string amount;
         cout << "Enter order amount: \n";
         cin >> amount;
-        order.total_sum = Yb::Decimal(amount);
-        order.save(session);
+        order->total_sum = Yb::Decimal(amount);
 
         Domain::ClientHolder client;
         string name, email;
@@ -28,13 +26,15 @@ int main()
         client->name = name;
         client->email = email;
         client->dt = Yb::now();
-        client->save(session);
 
         cout << "Client's orders count: " << client->orders.size() << "\n";
-        order.owner = client;
+        order->owner = client;
         cout << "Client's orders count: " << client->orders.size() << "\n";
+
+        order->save(session);
+        client->save(session);
         session.commit();
-        cout << order.xmlize(1)->serialize() << endl;
+        cout << order->xmlize(1)->serialize() << endl;
         return 0;
     }
     catch (const std::exception &ex) {
