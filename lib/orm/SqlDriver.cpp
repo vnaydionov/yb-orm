@@ -325,7 +325,7 @@ const SqlSource parse_url(const String &url)
     Strings url_parts, proto_parts, user_host_parts;
     split_str(url, _T("://"), url_parts);
     if (url_parts.size() != 2)
-        throw ValueError("url parse error");
+        throw ValueError(_T("url parse error"));
     split_str_by_chars(url_parts[0], _T("+"), proto_parts, 2);
     if (proto_parts.size() == 1) {
         dialect = str_to_upper(proto_parts[0]);
@@ -335,7 +335,7 @@ const SqlSource parse_url(const String &url)
         driver = str_to_upper(proto_parts[1]);
     }
     else
-        throw ValueError("url parse error");
+        throw ValueError(_T("url parse error"));
     split_str_by_chars(url_parts[1], _T("@"), user_host_parts, 2);
     String host_etc;
     if (user_host_parts.size() == 1) {
@@ -352,11 +352,11 @@ const SqlSource parse_url(const String &url)
             passwd = user_parts[1];
         }
         else
-            throw ValueError("url parse error");
+            throw ValueError(_T("url parse error"));
         host_etc = user_host_parts[1];
     }
     else
-        throw ValueError("url parse error");
+        throw ValueError(_T("url parse error"));
     ///
     db = host_etc;
     return SqlSource(_T(""), driver, dialect, db, user, passwd);

@@ -211,7 +211,7 @@ public:
     void gen_typed_column(ostream &out, const Column &column)
     {
         out << NARROW(column.get_name()) << " "
-            << dialect_->type2sql(column.get_type());
+            << NARROW(dialect_->type2sql(column.get_type()));
         if (column.get_type() == Value::STRING)
             out << "(" << column.get_size() << ")";
         String default_clause;
@@ -655,7 +655,7 @@ public:
                         out << "(Yb::LongInt)" << default_value;
                         break;
                     case Value::DECIMAL:
-                        out << "Yb::Decimal(\"" << default_value << "\")";
+                        out << "Yb::Decimal(_T(\"" << default_value << "\"))";
                         break;
                     case Value::DATETIME:
                         out << "Yb::now()";
@@ -824,10 +824,10 @@ void generate_domain(const Schema &schema,
 void generate_ddl(const Schema &schema,
         const string &path, const string &dialect_name)
 {
-    SqlSchemaGenerator sql_gen(schema, sql_dialect(dialect_name));
+    SqlSchemaGenerator sql_gen(schema, sql_dialect(WIDEN(dialect_name)));
     ostringstream out;
     sql_gen.generate(out);
-    if (str_empty(path))
+    if (path.empty())
         expand_tabs_to_stream(out.str(), cout);
     else {
         ofstream sql_file(path.c_str());
