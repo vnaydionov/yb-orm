@@ -9,7 +9,7 @@
 #include <orm/XMLMetaDataConfig.h>
 #include <orm/SqlDriver.h>
 
-#define ORM_LOG(x) std::cout << "yborm_gen_domain: " << x << "\n";
+#define ORM_LOG(x) std::cerr << "yborm_gen_domain: " << x << "\n";
 
 using namespace std;
 using namespace Yb::StrUtils;
@@ -198,20 +198,90 @@ void split_by_autogen(const string &fname,
     }
 }
 
-class SqlCodeGenerator
+class SqlTableGenerator
+{
+    const Table &table_;
+    SqlDialect *dialect_;
+public:
+    SqlTableGenerator(const Table &table, SqlDialect *dialect)
+        : table_(table)
+        , dialect_(dialect)
+    {}
+
+    void gen_typed_column(ostream &out, const Column &column)
+    {
+        out << NARROW(column.get_name()) << " "
+            << dialect_->type2sql(column.get_type());
+        if (column.get_type() == Value::STRING)
+            out << "(" << column.get_size() << ")";
+        String default_clause;
+        if (!column.get_default_value().is_null()) {
+            default_clause = _T("DEFAULT ");
+            if (column.get_type() == Value::DATETIME &&
+                    column.get_default_value().as_string() == _T("sysdate"))
+                default_clause += dialect_->sysdate_func();
+            else
+                default_clause += dialect_->sql_value(column.get_default_value());
+        }
+        String not_null_default_clause = dialect_->not_null_default(
+                column.is_nullable() && !column.is_pk()? _T(""): _T("NOT NULL"),
+                default_clause);
+        if (!str_empty(not_null_default_clause))
+            out << " " << NARROW(not_null_default_clause);
+        if (column.is_pk()
+                && (table_.get_autoinc() || !str_empty(table_.get_seq_name()))
+                && !dialect_->has_sequences())
+            out << " " << NARROW(dialect_->autoinc_flag());
+    }
+
+    void gen_create_table(ostream &out)
+    {
+        out << "CREATE TABLE " << NARROW(table_.get_name()) << " (\n";
+        Columns::const_iterator it = table_.begin(), end = table_.end();
+        for (; it != end; ++it) {
+            out << "\t";
+            gen_typed_column(out, *it);
+            out << ",\n";
+        }
+        out << "\tPRIMARY KEY (";
+        bool first = true;
+        for (it = table_.begin(); it != end; ++it)
+            if (it->is_pk()) {
+                if (!first)
+                    out << ", ";
+                else
+                    first = false;
+                out << NARROW(it->get_name());
+            }
+        out << ")\n)";
+        out << NARROW(dialect_->suffix_create_table());
+    }
+
+    void gen_fk_constraints(ostream &out)
+    {
+        Columns::const_iterator it = table_.begin(), end = table_.end();
+        for (; it != end; ++it)
+            if (it->has_fk()) {
+                out << "ALTER TABLE " << NARROW(table_.get_name())
+                    << " ADD ";
+                out << "FOREIGN KEY (" << NARROW(it->get_name())
+                    << ") REFERENCES ";
+                out << NARROW(it->get_fk_table_name())
+                    << "(" << NARROW(it->get_fk_name()) << ")";
+                out << ";\n";
+            }
+    }
+};
+
+class SqlSchemaGenerator
 {
     const Schema &schema_;
-    const Table &table_;
-    const string table_name_;
     SqlDialect *dialect_;
 
 public:
-    SqlCodeGenerator(const Schema &schema, const String &table_name,
-            const String &dialect_name)
+    SqlSchemaGenerator(const Schema &schema, SqlDialect *dialect)
         : schema_(schema)
-        , table_(schema_.table(table_name))
-        , table_name_(NARROW(table_.get_name()))
-        , dialect_(sql_dialect(dialect_name))
+        , dialect_(dialect)
     {}
 
     void gen_commit(ostream &out)
@@ -220,35 +290,52 @@ public:
             out << "COMMIT;\n\n";
     }
 
-    void gen_create_table(ostream &out)
+    void gen_create_tables(ostream &out)
     {
-        //prefix_create_table(out);
-        out << "CREATE TABLE " << table_name_ << " (\n";
-        Columns::const_iterator it = table_.begin(), end = table_.end();
+        Schema::TblMap::const_iterator it = schema_.tbl_begin(),
+            end = schema_.tbl_end();
         for (; it != end; ++it) {
-            //gen_typed_column(out, *it);
+            SqlTableGenerator tgen(*(it->second), dialect_);
+            tgen.gen_create_table(out);
+            out << ";\n\n";
+            gen_commit(out);
         }
-        out << "\tPRIMARY KEY (";
-        for (it = table_.begin(); it != end; ++it)
-            if (it->is_pk()) {
-                out << NARROW(it->get_name());
-                if (it + 1 != end)
-                    out << ", ";
-            }
-        out << ")\n)";
-        //suffix_create_table(out);
-        out << ";\n\n";
+    }
+
+    void gen_create_sequences(ostream &out)
+    {
+        if (dialect_->has_sequences()) {
+            set<String> sequences;
+            Schema::TblMap::const_iterator it = schema_.tbl_begin(),
+                end = schema_.tbl_end();
+            for (; it != end; ++it)
+                if (!str_empty(it->second->get_seq_name()))
+                    sequences.insert(it->second->get_seq_name());
+            set<String>::iterator j = sequences.begin(),
+                jend = sequences.end();
+            for (; j != jend; ++j)
+                out << NARROW(dialect_->gen_sequence(*j)) << ";\n";
+            gen_commit(out);
+        }
+    }
+
+    void gen_create_fk_constraints(ostream &out)
+    {
+        Schema::TblMap::const_iterator it = schema_.tbl_begin(),
+            end = schema_.tbl_end();
+        for (; it != end; ++it) {
+            SqlTableGenerator tgen(*(it->second), dialect_);
+            tgen.gen_fk_constraints(out);
+        }
         gen_commit(out);
     }
 
     void generate(ostream &out)
     {
         out << "-- DBTYPE=" << NARROW(dialect_->get_name()) << "\n\n";
-        gen_create_table(out);
-        //gen_create_fk_constr(out);
-        gen_commit(out);
-        //gen_create_seq(out);
-        gen_commit(out);
+        gen_create_tables(out);
+        gen_create_fk_constraints(out);
+        gen_create_sequences(out);
     }
 };
 
@@ -721,11 +808,11 @@ CppCodeGenerator::CppCodeGenerator(const Schema &schema,
     autogen_handlers_[6] = &CppCodeGenerator::do_write_cpp_ctor_body;
 }
 
-void generate(const Schema &schema,
+void generate_domain(const Schema &schema,
         const string &path, const string &inc_prefix)
 {
-    ORM_LOG("generation started...");
-    Schema::TblMap::const_iterator it = schema.tbl_begin(), end = schema.tbl_end();
+    Schema::TblMap::const_iterator it = schema.tbl_begin(),
+        end = schema.tbl_end();
     for (; it != end; ++it)
         if (!str_empty(schema.table(it->first).get_class_name())) {
             CppCodeGenerator cgen(schema, it->first, path, inc_prefix);
@@ -734,21 +821,55 @@ void generate(const Schema &schema,
         }
 }
 
+void generate_ddl(const Schema &schema,
+        const string &path, const string &dialect_name)
+{
+    SqlSchemaGenerator sql_gen(schema, sql_dialect(dialect_name));
+    ostringstream out;
+    sql_gen.generate(out);
+    if (str_empty(path))
+        expand_tabs_to_stream(out.str(), cout);
+    else {
+        ofstream sql_file(path.c_str());
+        if (!sql_file.good())
+            throw CodeGenError(_T("Can't write to file"));
+        expand_tabs_to_stream(out.str(), sql_file);
+    }
+}
+
 } // end of namespace Yb
 
 using namespace Yb;
 
+void usage()
+{
+    cerr << "Usage:\n"
+        << "    yborm_gen --domain config.xml output_path [include_prefix]\n"
+        << "    yborm_gen --ddl config.xml dialect_name [output.sql]\n\n";
+    exit(1);
+}
+
 int main(int argc, char *argv[])
 {
-    if (argc < 3) {
-        cerr << "orm_domain_generator config.xml output_path [include_prefix]" << endl;
-        return 0;
-    }
+    if (argc < 4 || argc > 5)
+        usage();
     try {
-        string config = argv[1], output_path = argv[2];
-        string include_prefix = "domain/";
-        if (argc == 4)
-            include_prefix = argv[3];
+        bool gen_domain = true;
+        string config, output_path, include_prefix, dialect_name;
+        config = argv[2];
+        if (!strcmp(argv[1], "--ddl")) {
+            gen_domain = false;
+            dialect_name = argv[3];
+            if (argc == 5)
+                output_path = argv[4];
+        }
+        else {
+            output_path = argv[3];
+            if (argc == 5)
+                include_prefix = argv[4];
+            else
+                include_prefix = "domain/";
+        }
         string config_contents;
         load_xml_file(WIDEN(config), config_contents);
         XMLMetaDataConfig cfg(config_contents);
@@ -756,7 +877,11 @@ int main(int argc, char *argv[])
         cfg.parse(r);
         r.check();
         ORM_LOG("table count: " << r.tbl_count());
-        generate(r, output_path, include_prefix);
+        ORM_LOG("generation started...");
+        if (gen_domain)
+            generate_domain(r, output_path, include_prefix);
+        else
+            generate_ddl(r, output_path, dialect_name);
         ORM_LOG("generation successfully finished");
     }
     catch (exception &e) {

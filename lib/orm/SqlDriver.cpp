@@ -57,6 +57,26 @@ SqlDriverError::SqlDriverError(const String &msg)
 
 SqlDialect::~SqlDialect() {}
 
+const String SqlDialect::suffix_create_table() { return String(); }
+
+const String SqlDialect::autoinc_flag() {
+    throw SqlDialectError(_T("No auto_increment"));
+}
+
+const String SqlDialect::sysdate_func() {
+    return _T("CURRENT_TIMESTAMP");
+}
+
+const String SqlDialect::not_null_default(const String &not_null_clause,
+        const String &default_value)
+{
+    if (str_empty(not_null_clause))
+        return default_value;
+    if (str_empty(default_value))
+        return not_null_clause;
+    return default_value + _T(" ") + not_null_clause;
+}
+
 class OracleDialect: public SqlDialect
 {
 public:
@@ -74,7 +94,7 @@ public:
         return x.sql_str();
     }
     bool commit_ddl() { return false; }
-    const String type2sql(Value::Type t) {
+    const String type2sql(int t) {
         switch (t) {
             case Value::INTEGER:    return _T("NUMBER(10)");    break;
             case Value::LONGINT:    return _T("NUMBER");        break;
@@ -82,11 +102,12 @@ public:
             case Value::DECIMAL:    return _T("NUMBER");        break;
             case Value::DATETIME:   return _T("DATE");          break;
         }
-        return _T("BAD_TYPE");
+        throw SqlDialectError(_T("Bad type"));
     }
     const String gen_sequence(const String &seq_name) {
         return _T("CREATE SEQUENCE ") + seq_name;
     }
+    const String sysdate_func() { return _T("SYSDATE"); }
 };
 
 class PostgresDialect: public SqlDialect
@@ -104,7 +125,7 @@ public:
         return x.sql_str();
     }
     bool commit_ddl() { return false; }
-    const String type2sql(Value::Type t) {
+    const String type2sql(int t) {
         switch (t) {
             case Value::INTEGER:    return _T("INTEGER");       break;
             case Value::LONGINT:    return _T("BIGINT");        break;
@@ -112,7 +133,7 @@ public:
             case Value::DECIMAL:    return _T("DECIMAL");       break;
             case Value::DATETIME:   return _T("TIMESTAMP");     break;
         }
-        return _T("BAD_TYPE");
+        throw SqlDialectError(_T("Bad type"));
     }
     const String gen_sequence(const String &seq_name) {
         return _T("CREATE SEQUENCE ") + seq_name;
@@ -134,7 +155,7 @@ public:
         return x.sql_str();
     }
     bool commit_ddl() { return true; }
-    const String type2sql(Value::Type t) {
+    const String type2sql(int t) {
         switch (t) {
             case Value::INTEGER:    return _T("INTEGER");       break;
             case Value::LONGINT:    return _T("BIGINT");        break;
@@ -142,7 +163,7 @@ public:
             case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
             case Value::DATETIME:   return _T("TIMESTAMP");     break;
         }
-        return _T("BAD_TYPE");
+        throw SqlDialectError(_T("Bad type"));
     }
     const String gen_sequence(const String &seq_name) {
         return _T("CREATE GENERATOR ") + seq_name;
@@ -164,7 +185,7 @@ public:
         return x.sql_str();
     }
     bool commit_ddl() { return false; }
-    const String type2sql(Value::Type t) {
+    const String type2sql(int t) {
         switch (t) {
             case Value::INTEGER:    return _T("INT");           break;
             case Value::LONGINT:    return _T("BIGINT");        break;
@@ -172,9 +193,26 @@ public:
             case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
             case Value::DATETIME:   return _T("TIMESTAMP");     break;
         }
-        return _T("BAD_TYPE");
+        throw SqlDialectError(_T("Bad type"));
     }
-    const String gen_sequence(const String &seq_name) { return String(); }
+    const String gen_sequence(const String &seq_name) {
+        throw SqlDialectError(_T("No sequences, please"));
+    }
+    const String suffix_create_table() {
+        return _T(" ENGINE=INNODB DEFAULT CHARSET=utf8");
+    }
+    const String autoinc_flag() {
+        return _T("AUTO_INCREMENT");
+    }
+    const String not_null_default(const String &not_null_clause,
+            const String &default_value)
+    {
+        if (str_empty(not_null_clause))
+            return default_value;
+        if (str_empty(default_value))
+            return not_null_clause;
+        return not_null_clause + _T(" ") + default_value;
+    }
 };
 
 typedef SingletonHolder<ItemRegistry<SqlDialect> > theDialectRegistry;

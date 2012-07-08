@@ -145,8 +145,13 @@ public:
             const String &seq_name) = 0;
     virtual const String sql_value(const Value &x) = 0;
     virtual bool commit_ddl() = 0;
-    virtual const String type2sql(Value::Type t) = 0;
+    virtual const String type2sql(int t) = 0;
     virtual const String gen_sequence(const String &seq_name) = 0;
+    virtual const String suffix_create_table();
+    virtual const String autoinc_flag();
+    virtual const String sysdate_func();
+    virtual const String not_null_default(const String &not_null_clause,
+            const String &default_value);
 };
 
 SqlDialect *sql_dialect(const String &name);

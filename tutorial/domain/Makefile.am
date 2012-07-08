@@ -2,11 +2,10 @@
 BUILT_SOURCES=Client.cpp tut1.sql
 
 Client.cpp: $(top_srcdir)/tutorial/tut1.xml
-	$(top_builddir)/src/yborm_gen_domain $^ ./
+	$(top_builddir)/src/yborm_gen_domain --domain $^ ./
 
 tut1.sql: $(top_srcdir)/tutorial/tut1.xml
-	xsltproc --stringparam dialect ${YBORM_DBTYPE} \
-		$(top_srcdir)/src/yborm_gen_sql.xsl $^ > $@
+	$(top_builddir)/src/yborm_gen_domain --ddl $^ ${YBORM_DBTYPE} $@
 
 export YBORM_DBTYPE=@YBORM_DBTYPE@
 

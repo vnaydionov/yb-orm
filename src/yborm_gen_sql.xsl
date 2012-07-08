@@ -19,8 +19,12 @@
         <xsl:text>
 
 </xsl:text>
-        <xsl:apply-templates select="/schema/table" mode="create-table" />
-        <xsl:apply-templates select="/schema/table" mode="create-fk-constr" />
+        <xsl:apply-templates select="/schema/table" mode="create-table">
+            <xsl:sort select="@name"/>
+        </xsl:apply-templates>
+        <xsl:apply-templates select="/schema/table" mode="create-fk-constr">
+            <xsl:sort select="@name"/>
+        </xsl:apply-templates>
         <xsl:call-template name="commit"/>
         <xsl:for-each select="/schema/table[generate-id(.) =
                     generate-id(key('seq', @sequence)[1])]" >
