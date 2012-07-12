@@ -9,7 +9,7 @@
 #include <orm/XMLMetaDataConfig.h>
 #include <orm/SqlDriver.h>
 
-#define ORM_LOG(x) std::cerr << "yborm_gen_domain: " << x << "\n";
+#define ORM_LOG(x) std::cerr << "yborm_gen: " << x << "\n";
 
 using namespace std;
 using namespace Yb::StrUtils;
@@ -180,6 +180,11 @@ void split_by_autogen(const string &fname,
                     + WIDEN(fname));
             }
             parts.push_back(s.substr(spos, eol - spos + 1));
+            if (s[pos + strlen(AUTOGEN_BEGIN)] != '(' ||
+                    s[pos + strlen(AUTOGEN_BEGIN) + 4] != ')')
+                throw CodeGenError(
+                    _T("Wrong format of AUTOGEN section, file ")
+                    + WIDEN(fname));
             int stype = strtol(&s[pos + strlen(AUTOGEN_BEGIN) + 1], NULL, 10);
             stypes.push_back(stype);
             spos = eol + 1;
@@ -887,9 +892,11 @@ int main(int argc, char *argv[])
     catch (exception &e) {
         string error = string("Exception: ") + e.what();
         ORM_LOG(error);
+        return 1;
     }
     catch (...) {
         ORM_LOG("Unknown exception");
+        return 1;
     }
     return 0;
 }

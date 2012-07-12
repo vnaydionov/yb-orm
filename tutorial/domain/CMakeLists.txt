@@ -1,7 +1,7 @@
 
 add_custom_command (
     OUTPUT Client.cpp Order.cpp
-    COMMAND ${PROJECT_SOURCE_DIR}/../src/yborm_gen_domain ${PROJECT_SOURCE_DIR}/tut1.xml
+    COMMAND ${PROJECT_SOURCE_DIR}/../src/yborm_gen --domain ${PROJECT_SOURCE_DIR}/tut1.xml
         ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${PROJECT_SOURCE_DIR}/tut1.xml
 )

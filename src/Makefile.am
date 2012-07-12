@@ -1,6 +1,6 @@
 
-bin_PROGRAMS = yborm_gen_domain
-yborm_gen_domain_SOURCES = yborm_gen_domain.cpp
+bin_PROGRAMS = yborm_gen
+yborm_gen_SOURCES = yborm_gen.cpp
 
 bin_SCRIPTS = yborm_gen_sql
 yborm_datadir = $(prefix)/share/yborm
@@ -13,7 +13,7 @@ AM_CXXFLAGS = \
 	$(WX_CFLAGS) \
 	$(QT_CFLAGS)
 
-yborm_gen_domain_LDFLAGS = \
+yborm_gen_LDFLAGS = \
 	$(top_builddir)/lib/orm/libyborm.la \
 	$(top_builddir)/lib/util/libybutil.la \
 	$(XML_LIBS) \

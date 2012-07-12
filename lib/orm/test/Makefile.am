@@ -9,7 +9,7 @@ AM_CXXFLAGS = \
 	$(WX_CFLAGS) \
 	$(QT_CFLAGS)
 
-BUILT_SOURCES=mk_tables.sql
+check_SCRIPTS = mk_tables.sql
 
 check_PROGRAMS = unit_tests
 
@@ -53,8 +53,7 @@ export NLS_SORT=RUSSIAN
 export NLS_LANG=AMERICAN_CIS.UTF8
 
 mk_tables.sql: $(srcdir)/test_schema.xml
-	xsltproc --stringparam dialect ${YBORM_DBTYPE} \
-		$(top_srcdir)/src/yborm_gen_sql.xsl $^ > $@
+	$(top_builddir)/src/yborm_gen --ddl $^ ${YBORM_DBTYPE} $@
 
 clean-local:
 	-rm -f mk_tables.sql

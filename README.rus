@@ -58,7 +58,6 @@ SQLAlchemy (http://www.sqlalchemy.org/) для языка Python.
 - boost-thread >= 1.31.0
 - boost-date-time >= 1.31.0
 - libxml2 >= 2.6.16
-- xsltproc >= 1.1.24
 - cppunit >= 1.10.2 (если вы собираетесь запускать юнит-тесты)
 - autoconf >= 2.61, automake >= 1.10.1
 - unixODBC >= 2.2.11 (чтобы заработал драйвер ODBC для Oracle
