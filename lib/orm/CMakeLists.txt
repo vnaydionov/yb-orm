@@ -6,12 +6,13 @@ include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES}
 
 set (SOURCES_CPP Engine.cpp Filters.cpp MetaData.cpp
     Value.cpp XMLMetaDataConfig.cpp XMLNode.cpp SqlDriver.cpp
-    SqlPool.cpp DataObject.cpp DomainObj.cpp DomainFactory.cpp)
+    SqlPool.cpp DataObject.cpp DomainObj.cpp DomainFactory.cpp
+    CodeGen.cpp)
 
 set (SOURCES_H DomainFactorySingleton.h Filters.h
     MetaDataSingleton.h SqlDriver.h SqlPool.h Value.h XMLNode.h
     DomainObj.h DomainFactory.h Engine.h MetaData.h
-    XMLMetaDataConfig.h DataObject.h)
+    XMLMetaDataConfig.h DataObject.h CodeGen.h)
 
 if (NOT USE_QT4)
     set(SOURCES_CPP ${SOURCES_CPP} tiodbc.cpp OdbcDriver.cpp)

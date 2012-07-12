@@ -48,7 +48,8 @@ H_FILES = \
 	MetaDataSingleton.h \
 	XMLMetaDataConfig.h \
 	XMLNode.h \
-	DataObject.h
+	DataObject.h \
+	CodeGen.h
 
 CPP_FILES = \
 	$(H_FILES) \
@@ -62,7 +63,8 @@ CPP_FILES = \
 	XMLNode.cpp \
 	DomainFactory.cpp \
 	DataObject.cpp \
-	DomainObj.cpp
+	DomainObj.cpp \
+	CodeGen.cpp
 
 lib_LTLIBRARIES = libyborm.la
 
