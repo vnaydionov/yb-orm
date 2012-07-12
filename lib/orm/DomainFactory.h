@@ -23,6 +23,7 @@ class ICreator
 {
 public:
     virtual DomainObjectPtr create(Session &session, LongInt id) const = 0;
+    virtual ~ICreator() {}
 };
 
 template <typename T>
@@ -33,6 +34,7 @@ public:
     {
         return DomainObjectPtr(new T(session, id));
     }
+    virtual ~DomainCreator() {}
 };
 
 typedef SharedPtr<ICreator>::Type CreatorPtr;

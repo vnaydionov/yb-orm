@@ -643,9 +643,8 @@ bool DataObject::has_master(
         Ptr p = get_master(obj, relation_name);
         return true;
     }
-    catch (const NullPK &) {
-        return false;
-    }
+    catch (const NullPK &) { }
+    return false;
 }
 
 RelationObject *DataObject::get_slaves(

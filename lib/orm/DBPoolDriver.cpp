@@ -121,7 +121,7 @@ bool find_subst_signs(const String &sql, vector<int> &pos_list)
             case '/': st = SLASH_FOUND; break;
             case '"': st = IN_DQUOT; break;
             case '\'': st = IN_QUOT; break;
-            case '?': pos_list.push_back(i);
+            case '?': pos_list.push_back(i); break;
             }
             ++i;
             break;
@@ -321,11 +321,12 @@ RowPtr DBPoolCursorBackend::fetch_row()
     if (!conn_->stmt_.get())
         throw GenericDBError(
                 _T("fetch_rows(): no statement. context: ") + saved_sql_);
+    RowPtr orm_row;
     try {
-        mypp::Row row;
+    	mypp::Row row;
         if (!conn_->stmt_->Fetch(row))
             return RowPtr();
-        RowPtr orm_row(new Row);
+        orm_row.reset(new Row);
         for (int i = 0; i < row.size(); ++i) {
             const String name = str_to_upper(WIDEN(row[i].getName()));
             if (row[i].isNull())
@@ -333,11 +334,11 @@ RowPtr DBPoolCursorBackend::fetch_row()
             else
                 orm_row->push_back(RowItem(name, Value(WIDEN(row[i].asString()))));
         }
-        return orm_row;
     }
     catch (const mypp::Exception &e) {
         throw GenericDBError(WIDEN(e.error()));
     }
+    return orm_row;
 }
 
 class DBPoolDriverImpl

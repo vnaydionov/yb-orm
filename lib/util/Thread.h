@@ -99,6 +99,9 @@ protected:
     virtual void on_run() = 0;
 public:
     Thread();
+#if !defined(YB_USE_WX) && !defined(YB_USE_QT)
+    virtual ~Thread() {}
+#endif
     void start();
     void terminate();
     void wait();

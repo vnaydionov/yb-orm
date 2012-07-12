@@ -31,8 +31,8 @@ HttpServer::send_response(TcpSocket &cl_sock, Yb::ILogger &logger,
     }
     catch (const std::exception &ex) {
         logger.error(string("exception: ") + ex.what());
-        return false;
     }
+    return false;
 }
 
 void

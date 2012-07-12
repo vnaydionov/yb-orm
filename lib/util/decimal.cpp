@@ -26,12 +26,14 @@ int sign(decimal_numerator x)
 
 int log10(decimal_numerator x)
 {
-    for (int p = 0; ; ++p) {
+	int p;
+    for (p = 0; ; ++p) {
         decimal_numerator xx = x / 10;
         if (!xx)
-            return p;
+            break;
         x = xx;
     }
+    return p;
 }
 
 decimal_numerator add(decimal_numerator x, decimal_numerator y)
