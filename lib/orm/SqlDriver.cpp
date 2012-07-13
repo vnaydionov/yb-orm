@@ -57,11 +57,15 @@ SqlDriverError::SqlDriverError(const String &msg)
 
 SqlDialect::~SqlDialect() {}
 
+bool SqlDialect::commit_ddl() { return false; }
+
+bool SqlDialect::fk_internal() { return false; }
+
 const String SqlDialect::suffix_create_table() { return String(); }
 
-const String SqlDialect::autoinc_flag() {
-    throw SqlDialectError(_T("No auto_increment"));
-}
+const String SqlDialect::primary_key_flag() { return String(); }
+
+const String SqlDialect::autoinc_flag() { return String(); }
 
 const String SqlDialect::sysdate_func() {
     return _T("CURRENT_TIMESTAMP");
@@ -93,7 +97,6 @@ public:
             return _T("timestamp") + x.sql_str();
         return x.sql_str();
     }
-    bool commit_ddl() { return false; }
     const String type2sql(int t) {
         switch (t) {
             case Value::INTEGER:    return _T("NUMBER(10)");    break;
@@ -124,7 +127,6 @@ public:
     {
         return x.sql_str();
     }
-    bool commit_ddl() { return false; }
     const String type2sql(int t) {
         switch (t) {
             case Value::INTEGER:    return _T("INTEGER");       break;
@@ -184,7 +186,6 @@ public:
     {
         return x.sql_str();
     }
-    bool commit_ddl() { return false; }
     const String type2sql(int t) {
         switch (t) {
             case Value::INTEGER:    return _T("INT");           break;
@@ -201,9 +202,7 @@ public:
     const String suffix_create_table() {
         return _T(" ENGINE=INNODB DEFAULT CHARSET=utf8");
     }
-    const String autoinc_flag() {
-        return _T("AUTO_INCREMENT");
-    }
+    const String autoinc_flag() { return _T("AUTO_INCREMENT"); }
     const String not_null_default(const String &not_null_clause,
             const String &default_value)
     {
@@ -213,6 +212,38 @@ public:
             return not_null_clause;
         return not_null_clause + _T(" ") + default_value;
     }
+};
+
+class SQLite3Dialect: public SqlDialect
+{
+public:
+    SQLite3Dialect()
+        : SqlDialect(_T("SQLITE3"), _T(""), false)
+    {}
+    const String select_curr_value(const String &seq_name)
+    { throw SqlDialectError(_T("No sequences, please")); }
+    const String select_next_value(const String &seq_name)
+    { throw SqlDialectError(_T("No sequences, please")); }
+    const String sql_value(const Value &x)
+    {
+        return x.sql_str();
+    }
+    const String type2sql(int t) {
+        switch (t) {
+            case Value::INTEGER:    return _T("INTEGER");       break;
+            case Value::LONGINT:    return _T("INTEGER");       break;
+            case Value::STRING:     return _T("VARCHAR");       break;
+            case Value::DECIMAL:    return _T("NUMERIC");       break;
+            case Value::DATETIME:   return _T("TIMESTAMP");     break;
+        }
+        throw SqlDialectError(_T("Bad type"));
+    }
+    bool fk_internal() { return true; }
+    const String gen_sequence(const String &seq_name) {
+        throw SqlDialectError(_T("No sequences, please"));
+    }
+    const String primary_key_flag() { return _T("PRIMARY KEY"); }
+    const String autoinc_flag() { return _T("AUTOINCREMENT"); }
 };
 
 typedef SingletonHolder<ItemRegistry<SqlDialect> > theDialectRegistry;
@@ -229,11 +260,15 @@ void register_std_dialects()
     p = dialect.get();
     theDialectRegistry::instance().register_item(
             p->get_name(), dialect);
+    dialect.reset((SqlDialect *)new InterbaseDialect());
+    p = dialect.get();
+    theDialectRegistry::instance().register_item(
+            p->get_name(), dialect);
     dialect.reset((SqlDialect *)new MysqlDialect());
     p = dialect.get();
     theDialectRegistry::instance().register_item(
             p->get_name(), dialect);
-    dialect.reset((SqlDialect *)new InterbaseDialect());
+    dialect.reset((SqlDialect *)new SQLite3Dialect());
     p = dialect.get();
     theDialectRegistry::instance().register_item(
             p->get_name(), dialect);
@@ -321,8 +356,8 @@ const Strings list_sql_drivers()
 const SqlSource parse_url(const String &url)
 {
     using namespace Yb::StrUtils;
-    String dialect, driver = _T("DEFAULT"), db, user, passwd;
-    Strings url_parts, proto_parts, user_host_parts;
+    String dialect, driver = _T("DEFAULT"), host, db, user, passwd;
+    Strings url_parts, proto_parts, user_host_parts, host_params;
     split_str(url, _T("://"), url_parts);
     if (url_parts.size() != 2)
         throw ValueError(_T("url parse error"));
@@ -356,6 +391,10 @@ const SqlSource parse_url(const String &url)
         host_etc = user_host_parts[1];
     }
     else
+        throw ValueError(_T("url parse error"));
+    split_str_by_chars(host_etc, _T("?"), host_params, 2);
+    host_etc = host_params[0];
+    if (host_params.size() != 1 && host_params.size() != 2)
         throw ValueError(_T("url parse error"));
     ///
     db = host_etc;
