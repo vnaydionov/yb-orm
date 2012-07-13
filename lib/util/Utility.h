@@ -11,7 +11,7 @@
 #endif
 #elif defined(YB_USE_QT)
 #include <QChar>
-#if QT_VERSION >= 0x040600
+#if QT_VERSION >= 0x040500
 #include <QSharedPointer>
 #else
 #include <boost/shared_ptr.hpp>
@@ -39,7 +39,7 @@ template<class X>
 inline X *shptr_get(const boost::shared_ptr<X> &p) { return p.get(); }
 #endif
 #elif defined(YB_USE_QT)
-#if QT_VERSION >= 0x040600
+#if QT_VERSION >= 0x040500
 template<class X> struct SharedPtr { typedef QSharedPointer<X> Type; };
 template<class X>
 inline X *shptr_get(const QSharedPointer<X> &p) { return p.data(); }
