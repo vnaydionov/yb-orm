@@ -85,6 +85,7 @@ public:
     SqlConnection *get_connection() { return conn_.get(); }
     SqlDialect *get_dialect() { return dialect_; }
     std::auto_ptr<EngineBase> clone();
+    void touch();
     bool is_touched() const { return touched_; }
     void set_echo(bool echo);
     void set_logger(ILogger::Ptr logger);

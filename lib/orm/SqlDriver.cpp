@@ -57,6 +57,12 @@ SqlDriverError::SqlDriverError(const String &msg)
 
 SqlDialect::~SqlDialect() {}
 
+bool SqlDialect::explicit_begin_trans() { return false; }
+
+const String SqlDialect::select_last_inserted_id(const String &table_name) {
+    throw SqlDialectError(_T("No autoincrement flag"));
+}
+
 bool SqlDialect::commit_ddl() { return false; }
 
 bool SqlDialect::fk_internal() { return false; }
@@ -182,6 +188,9 @@ public:
     { throw SqlDialectError(_T("No sequences, please")); }
     const String select_next_value(const String &seq_name)
     { throw SqlDialectError(_T("No sequences, please")); }
+    const String select_last_inserted_id(const String &table_name) {
+        return _T("SELECT LAST_INSERT_ID() LID");
+    }
     const String sql_value(const Value &x)
     {
         return x.sql_str();
@@ -220,10 +229,15 @@ public:
     SQLite3Dialect()
         : SqlDialect(_T("SQLITE3"), _T(""), false)
     {}
+    bool explicit_begin_trans() { return true; }
     const String select_curr_value(const String &seq_name)
     { throw SqlDialectError(_T("No sequences, please")); }
     const String select_next_value(const String &seq_name)
     { throw SqlDialectError(_T("No sequences, please")); }
+    const String select_last_inserted_id(const String &table_name) {
+        return _T("SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = '")
+            + table_name + _T("'");
+    }
     const String sql_value(const Value &x)
     {
         return x.sql_str();
@@ -557,6 +571,7 @@ SqlConnection::SqlConnection(const String &driver_name,
     , activity_(false)
     , echo_(false)
     , bad_(false)
+    , explicit_trans_(false)
     , free_since_(0)
     , log_(NULL)
 {
@@ -572,6 +587,7 @@ SqlConnection::SqlConnection(const SqlSource &source)
     , activity_(false)
     , echo_(false)
     , bad_(false)
+    , explicit_trans_(false)
     , free_since_(0)
     , log_(NULL)
 {
@@ -587,6 +603,7 @@ SqlConnection::SqlConnection(const String &url)
     , activity_(false)
     , echo_(false)
     , bad_(false)
+    , explicit_trans_(false)
     , free_since_(0)
     , log_(NULL)
 {
@@ -600,7 +617,7 @@ SqlConnection::~SqlConnection()
     bool err = false;
     try {
         clear();
-        if (activity_)
+        if (activity_ && (explicit_trans_ || !dialect_->explicit_begin_trans()))
             rollback();
     }
     catch (const std::exception &e) { err = true; }
@@ -619,10 +636,28 @@ SqlConnection::new_cursor()
 }
 
 void
+SqlConnection::begin_trans()
+{
+    try {
+        activity_ = false;
+        explicit_trans_ = true;
+        if (echo_)
+            DBG(_T("begin transaction"));
+        if (dialect_->explicit_begin_trans())
+            exec_direct(_T("BEGIN TRANSACTION"));
+    }
+    catch (const std::exception &e) {
+        mark_bad(e);
+        throw;
+    }
+}
+
+void
 SqlConnection::commit()
 {
     try {
         activity_ = false;
+        explicit_trans_ = false;
         if (echo_)
             DBG(_T("commit"));
         backend_->commit();
@@ -638,6 +673,7 @@ SqlConnection::rollback()
 {
     try {
         activity_ = false;
+        explicit_trans_ = false;
         if (echo_)
             DBG(_T("rollback"));
         backend_->rollback();

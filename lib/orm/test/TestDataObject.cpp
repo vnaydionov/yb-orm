@@ -15,6 +15,14 @@ static LogAppender appender(cerr);
     ILogger::Ptr __log(new Logger(&appender)); \
     e.set_logger(__log); }while(0)
 
+static inline const String cfg(const String &entry, const String &def_value = _T(""))
+{
+    String value = xgetenv(_T("YBORM_") + entry);
+    if (str_empty(value))
+        value = def_value;
+    return value;
+}
+
 class TestDataObject : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestDataObject);
@@ -386,9 +394,9 @@ public:
     void setUp()
     {
         tearDown();
-        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
-                        xgetenv(_T("YBORM_DB")),
-                        xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
+        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
+                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+        conn.begin_trans();
         {
             String sql_str =
                 _T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)");
@@ -454,9 +462,9 @@ public:
 
     void tearDown()
     {
-        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
-                        xgetenv(_T("YBORM_DB")),
-                        xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
+        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
+                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+        conn.begin_trans();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
         conn.commit();

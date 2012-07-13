@@ -14,6 +14,14 @@ using namespace std;
 using namespace Yb;
 using namespace Yb::StrUtils;
 
+static inline const String cfg(const String &entry, const String &def_value = _T(""))
+{
+    String value = xgetenv(_T("YBORM_") + entry);
+    if (str_empty(value))
+        value = def_value;
+    return value;
+}
+
 class OrmTestDomainSimple: public DomainObject
 {
 public:
@@ -135,8 +143,9 @@ public:
             };
             st = st_data;
         }
-        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
-                xgetenv(_T("YBORM_DB")), xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
+        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
+                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+        conn.begin_trans();
         for (size_t i = 0; i < NUM_STMT; ++i)
             conn.exec_direct(WIDEN(st[i]));
         conn.commit();

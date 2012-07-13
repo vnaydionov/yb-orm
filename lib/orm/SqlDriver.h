@@ -139,10 +139,13 @@ public:
     const String &get_name() { return name_; }
     const String &dual_name() { return dual_; }
     bool has_sequences() { return has_sequences_; }
+    virtual bool explicit_begin_trans();
     virtual const String select_curr_value(
             const String &seq_name) = 0;
     virtual const String select_next_value(
             const String &seq_name) = 0;
+    virtual const String select_last_inserted_id(
+            const String &table_name);
     virtual const String sql_value(const Value &x) = 0;
     virtual bool fk_internal();
     virtual bool commit_ddl();
@@ -302,7 +305,7 @@ class SqlConnection: NonCopyable
     SqlDialect *dialect_;
     std::auto_ptr<SqlConnectionBackend> backend_;
     std::auto_ptr<SqlCursor> cursor_;
-    bool activity_, echo_, bad_;
+    bool activity_, echo_, bad_, explicit_trans_;
     time_t free_since_;
     ILogger *log_;
     void mark_bad(const std::exception &e);
@@ -322,6 +325,7 @@ public:
     void set_logger(ILogger *log) { log_ = log; }
     std::auto_ptr<SqlCursor> new_cursor();
     bool bad() const { return bad_; }
+    void begin_trans();
     void commit();
     void rollback();
     void clear();
