@@ -201,8 +201,8 @@ inline int dt_minute(const DateTime &dt) { return dt.time_of_day().minutes(); }
 inline int dt_second(const DateTime &dt) { return dt.time_of_day().seconds(); }
 inline int dt_millisec(const DateTime &dt)
 {
-    return dt.time_of_day().total_milliseconds() -
-        dt.time_of_day().total_seconds() * 1000;
+    return (int)(dt.time_of_day().total_milliseconds() -
+        dt.time_of_day().total_seconds() * 1000);
 }
 inline const DateTime dt_add_seconds(const DateTime &dt, int seconds)
 {
