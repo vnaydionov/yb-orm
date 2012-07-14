@@ -25,12 +25,16 @@ public:
 
 typedef BaseError RunTimeError;
 
+class KeyError : public RunTimeError
+{
+public:
+    KeyError(const String &msg): RunTimeError(msg) {}
+};
+
 class ValueError : public RunTimeError
 {
 public:
-    ValueError(const String &msg) :
-        RunTimeError(msg)
-    {}
+    ValueError(const String &msg): RunTimeError(msg) {}
 };
 
 class ValueBadCast : public ValueError

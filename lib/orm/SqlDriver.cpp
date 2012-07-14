@@ -15,6 +15,7 @@ typedef Yb::OdbcDriver DefaultSqlDriver;
 #include <util/Singleton.h>
 
 using namespace std;
+using namespace Yb::StrUtils;
 
 #if 0
 #define DBG(x) do { char __s[40]; std::ostringstream __log; time_t __t = time(NULL); \
@@ -367,52 +368,60 @@ const Strings list_sql_drivers()
     return theDriverRegistry::instance().list_items();
 }
 
-const SqlSource parse_url(const String &url)
+SqlSource::SqlSource()
 {
-    using namespace Yb::StrUtils;
-    String dialect, driver = _T("DEFAULT"), host, db, user, passwd;
-    Strings url_parts, proto_parts, user_host_parts, host_params;
-    split_str(url, _T("://"), url_parts);
-    if (url_parts.size() != 2)
-        throw ValueError(_T("url parse error"));
-    split_str_by_chars(url_parts[0], _T("+"), proto_parts, 2);
-    if (proto_parts.size() == 1) {
-        dialect = str_to_upper(proto_parts[0]);
-    }
-    else if (proto_parts.size() == 2) {
-        dialect = str_to_upper(proto_parts[0]);
-        driver = str_to_upper(proto_parts[1]);
-    }
+    set(_T("&id"), String());
+    set(_T("&driver"), String());
+    set(_T("&dialect"), String());
+    set(_T("&db"), String());
+    set(_T("&user"), String());
+    set(_T("&passwd"), String());
+    set(_T("&host"), String());
+    set(_T("&port"), String());
+}
+
+SqlSource::SqlSource(const String &url)
+    : Dict(parse_url(url))
+{
+    set(_T("&dialect"), str_to_upper(pop(_T("&proto"))));
+    set(_T("&driver"), str_to_upper(pop(_T("&proto_ext"), _T("DEFAULT"))));
+    if (!empty(_T("&host")) && empty(_T("&port")) && empty(_T("&path")))
+        set(_T("&db"), pop(_T("&host")));
     else
-        throw ValueError(_T("url parse error"));
-    split_str_by_chars(url_parts[1], _T("@"), user_host_parts, 2);
-    String host_etc;
-    if (user_host_parts.size() == 1) {
-        host_etc = user_host_parts[0];
-    }
-    else if (user_host_parts.size() == 2) {
-        Strings user_parts;
-        split_str_by_chars(user_host_parts[0], _T(":/"), user_parts, 2);
-        if (user_parts.size() == 1) {
-            user = user_parts[0];
-        }
-        else if (user_parts.size() == 2) {
-            user = user_parts[0];
-            passwd = user_parts[1];
-        }
-        else
-            throw ValueError(_T("url parse error"));
-        host_etc = user_host_parts[1];
-    }
+        set(_T("&db"), pop(_T("&path")));
+    set(_T("&user"), pop(_T("&user")));
+    set(_T("&passwd"), pop(_T("&passwd")));
+    set(_T("&host"), pop(_T("&host")));
+    set(_T("&port"), pop(_T("&port")));
+    set(_T("&id"), format(true));
+}
+
+SqlSource::SqlSource(const String &id,
+        const String &driver, const String &dialect,
+        const String &db, const String &user, const String &passwd)
+{
+    set(_T("&id"), id);
+    set(_T("&driver"), driver);
+    set(_T("&dialect"), dialect);
+    set(_T("&db"), db);
+    set(_T("&user"), user);
+    set(_T("&passwd"), passwd);
+    set(_T("&host"), String());
+    set(_T("&port"), String());
+}
+
+const String SqlSource::format(bool hide_passwd) const
+{
+    Dict params = *(Dict *)this;
+    params[_T("&proto")] = str_to_lower(params[_T("&dialect")]);
+    String driver = params[_T("&driver")];
+    if (driver != _T("DEFAULT"))
+        params[_T("&proto_ext")] = str_to_lower(driver);
+    if (look_like_absolute_path(params[_T("&db")]))
+        params[_T("&path")] = params[_T("&db")];
     else
-        throw ValueError(_T("url parse error"));
-    split_str_by_chars(host_etc, _T("?"), host_params, 2);
-    host_etc = host_params[0];
-    if (host_params.size() != 1 && host_params.size() != 2)
-        throw ValueError(_T("url parse error"));
-    ///
-    db = host_etc;
-    return SqlSource(_T(""), driver, dialect, db, user, passwd);
+        params[_T("&host")] = params[_T("&db")];
+    return format_url(params, hide_passwd);
 }
 
 Row::iterator find_in_row(Row &row, const String &name)
@@ -566,8 +575,8 @@ SqlConnection::SqlConnection(const String &driver_name,
         const String &dialect_name, const String &db,
         const String &user, const String &passwd)
     : source_(SqlSource(db, driver_name, dialect_name, db, user, passwd))
-    , driver_(sql_driver(source_.get_driver_name()))
-    , dialect_(sql_dialect(source_.get_dialect_name()))
+    , driver_(sql_driver(source_.driver()))
+    , dialect_(sql_dialect(source_.dialect()))
     , activity_(false)
     , echo_(false)
     , bad_(false)
@@ -575,15 +584,15 @@ SqlConnection::SqlConnection(const String &driver_name,
     , free_since_(0)
     , log_(NULL)
 {
-    source_.fix_driver_name(driver_->get_name());
+    source_[_T("&driver")] = driver_->get_name();
     backend_.reset(driver_->create_backend().release());
     backend_->open(dialect_, source_);
 }
 
 SqlConnection::SqlConnection(const SqlSource &source)
     : source_(source)
-    , driver_(sql_driver(source_.get_driver_name()))
-    , dialect_(sql_dialect(source_.get_dialect_name()))
+    , driver_(sql_driver(source_.driver()))
+    , dialect_(sql_dialect(source_.dialect()))
     , activity_(false)
     , echo_(false)
     , bad_(false)
@@ -591,15 +600,15 @@ SqlConnection::SqlConnection(const SqlSource &source)
     , free_since_(0)
     , log_(NULL)
 {
-    source_.fix_driver_name(driver_->get_name());
+    source_[_T("&driver")] = driver_->get_name();
     backend_.reset(driver_->create_backend().release());
     backend_->open(dialect_, source_);
 }
 
 SqlConnection::SqlConnection(const String &url)
-    : source_(parse_url(url))
-    , driver_(sql_driver(source_.get_driver_name()))
-    , dialect_(sql_dialect(source_.get_dialect_name()))
+    : source_(url)
+    , driver_(sql_driver(source_.driver()))
+    , dialect_(sql_dialect(source_.dialect()))
     , activity_(false)
     , echo_(false)
     , bad_(false)
@@ -607,7 +616,7 @@ SqlConnection::SqlConnection(const String &url)
     , free_since_(0)
     , log_(NULL)
 {
-    source_.fix_driver_name(driver_->get_name());
+    source_[_T("&driver")] = driver_->get_name();
     backend_.reset(driver_->create_backend().release());
     backend_->open(dialect_, source_);
 }

@@ -1,5 +1,7 @@
 
+#include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <util/str_utils.hpp>
 
 namespace Yb {
@@ -54,6 +56,13 @@ bool is_id(const Yb::String &s)
         if (!is_symbol_of_id(*it))
             return false;
     return true;
+}
+
+bool look_like_absolute_path(const Yb::String &s)
+{
+    return !str_empty(s) && (
+            char_code(s[0]) == '/' || (str_length(s) > 2 && is_alpha(s[0])
+                && char_code(s[1]) == ':' && char_code(s[2]) == '/'));
 }
 
 bool starts_with(const Yb::String &s, const Yb::String &subs)
@@ -218,6 +227,190 @@ const Yb::String join_str(const Yb::String &delim, const vector<Yb::String> &par
         }
     }
     return result;
+}
+
+int hex_digit(Char ch)
+{
+    int c = char_code(ch);
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    throw ValueError(_T("invalid hex digit"));
+}
+
+const string url_decode(const String &s)
+{
+    string result;
+    for (int i = 0; i < str_length(s); ++i) {
+        if (char_code(s[i]) != '%')
+            result.push_back((unsigned char)char_code(s[i]));
+        else {
+            ++i;
+            if (str_length(s) - i < 2)
+                throw ValueError(_T("url_decode: short read"));
+            unsigned char c = hex_digit(s[i]) * 16 +
+                hex_digit(s[i + 1]);
+            ++i;
+            result.push_back(c);
+        }
+    }
+    return result;
+}
+
+const String url_encode(const string &s, bool path_mode)
+{
+    String result;
+    const char *replace;
+    if (path_mode)
+        replace = "!*'();@&=+$,?%#[]";
+    else
+        replace = "!*'();:@&=+$,/?%#[]";
+    char buf[10];
+    for (int i = 0; i < s.size(); ++i) {
+        unsigned char c = s[i];
+        if (c <= 32 || c >= 127 || strchr(replace, c)) {
+            sprintf(buf, "%%%02X", c);
+            result += WIDEN(buf);
+        }
+        else
+            result += Char(c);
+    }
+    return result;
+}
+
+const Dict parse_url(const String &url)
+{
+    Dict params;
+    Strings url_parts, proto_parts;
+    split_str(url, _T("://"), url_parts);
+    if (url_parts.size() != 2)
+        throw ValueError(_T("url parse error"));
+    split_str(url_parts[0], _T("+"), proto_parts);
+    if (proto_parts.size() == 1) {
+        params.set(_T("&proto"), proto_parts[0]);
+    }
+    else if (proto_parts.size() == 2) {
+        params.set(_T("&proto"), proto_parts[0]);
+        params.set(_T("&proto_ext"), proto_parts[1]);
+    }
+    else
+        throw ValueError(_T("url parse error"));
+
+    String host_etc;
+    Strings user_host_parts;
+    split_str(url_parts[1], _T("@"), user_host_parts);
+    if (user_host_parts.size() == 1) {
+        host_etc = user_host_parts[0];
+    }
+    else if (user_host_parts.size() == 2) {
+        Strings user_parts;
+        split_str(user_host_parts[0], _T(":"), user_parts);
+        if (user_parts.size() == 1) {
+            params.set(_T("&user"), user_parts[0]);
+        }
+        else if (user_parts.size() == 2) {
+            params.set(_T("&user"), user_parts[0]);
+            params.set(_T("&passwd"), user_parts[1]);
+        }
+        else
+            throw ValueError(_T("url parse error"));
+        host_etc = user_host_parts[1];
+    }
+    else
+        throw ValueError(_T("url parse error"));
+
+    Strings anchor_parts;
+    split_str(host_etc, _T("#"), anchor_parts);
+    if (anchor_parts.size() == 1) {
+        host_etc = anchor_parts[0];
+    }
+    else if (anchor_parts.size() == 2) {
+        host_etc = anchor_parts[0];
+        params.set(_T("&anchor"), WIDEN(url_decode(anchor_parts[1])));
+    }
+    else
+        throw ValueError(_T("url parse error"));
+
+    Strings query_parts, items;
+    split_str(host_etc, _T("?"), query_parts);
+    if (query_parts.size() == 1) {
+        host_etc = query_parts[0];
+    }
+    else if (query_parts.size() == 2) {
+        host_etc = query_parts[0];
+        split_str_by_chars(query_parts[1], _T("&"), items);
+        Strings::const_iterator it = items.begin(), end = items.end();
+        for (; it != end; ++it) {
+            Strings kv;
+            split_str_by_chars(*it, _T("="), kv, 2);
+            if (kv.size() > 0) {
+                String key = WIDEN(url_decode(kv[0])), value;
+                if (kv.size() > 1)
+                    value = WIDEN(url_decode(kv[1]));
+                params.set(key, value);
+            }
+        }
+    }
+    else
+        throw ValueError(_T("url parse error"));
+
+    if (look_like_absolute_path(host_etc)) {
+        params.set(_T("&path"), WIDEN(url_decode(host_etc)));
+    }
+    else {
+        int pos = str_find(host_etc, _T("/"));
+        if (pos >= 0) {
+            params.set(_T("&path"),
+                    WIDEN(url_decode(str_substr(host_etc, pos))));
+            host_etc = str_substr(host_etc, 0, pos);
+        }
+        pos = str_find(host_etc, _T(":"));
+        if (pos >= 0) {
+            params.set(_T("&port"), str_substr(host_etc, pos + 1));
+            host_etc = str_substr(host_etc, 0, pos);
+        }
+        params.set(_T("&host"), host_etc);
+    }
+
+    return params;
+}
+
+const String format_url(const Dict &params, bool hide_passwd)
+{
+    String r = params[_T("&proto")];
+    if (!params.empty(_T("&proto_ext")))
+        r += _T("+") + params[_T("&proto_ext")];
+    r += _T("://");
+    if (!params.empty(_T("&user"))) {
+        r += params[_T("&user")];
+        if (!hide_passwd && !params.empty(_T("&passwd")))
+            r += _T(":") + params[_T("&passwd")];
+        r += _T("@");
+    }
+    if (!params.empty(_T("&host"))) {
+        r += params[_T("&host")];
+        if (!params.empty(_T("&port")))
+            r += _T(":") + params[_T("&port")];
+    }
+    if (!params.empty(_T("&path")))
+        r += url_encode(NARROW(params[_T("&path")]), true);
+    String q;
+    Strings keys = params.keys();
+    for (size_t i = 0; i < keys.size(); ++i)
+        if (!starts_with(keys[i], _T("&"))) {
+            if (!str_empty(q))
+                q += _T("&");
+            q += url_encode(NARROW(keys[i]))
+                + _T("=") + url_encode(NARROW(params[keys[i]]));
+        }
+    if (!str_empty(q))
+        r += _T("?") + q;
+    if (!params.empty(_T("&anchor")))
+        r += _T("#") + url_encode(NARROW(params[_T("&anchor")]));
+    return r;
 }
 
 const Yb::String quote(const Yb::String &s)

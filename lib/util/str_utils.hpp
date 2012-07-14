@@ -4,7 +4,7 @@
 
 #include <string>
 #include <vector>
-#include <util/String.h>
+#include <util/DataTypes.h>
 
 namespace Yb {
 
@@ -31,6 +31,8 @@ bool is_start_symbol_of_id(Yb::Char c);
 bool is_symbol_of_id(Yb::Char c);
 
 bool is_id(const Yb::String &s);
+
+bool look_like_absolute_path(const String &s);
 
 bool starts_with(const Yb::String &s, const Yb::String &subs);
 
@@ -65,6 +67,16 @@ void split_str_by_chars(const Yb::String &s, const Yb::String &delim,
 
 const Yb::String join_str(const Yb::String &delim,
         const std::vector<Yb::String> &parts);
+
+int hex_digit(Yb::Char ch);
+
+const std::string url_decode(const Yb::String &s);
+
+const Yb::String url_encode(const std::string &s, bool path_mode = false);
+
+const Dict parse_url(const String &url);
+
+const String format_url(const Dict &params, bool hide_passwd = true);
 
 // Code generation helpers
 

@@ -109,11 +109,11 @@ QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 {
     {
         ScopedLock lock(drv_->conn_mux_);
-        conn_name_ = dialect->get_name() + _T("_") + source.get_db()
+        conn_name_ = dialect->get_name() + _T("_") + source.db()
             + _T("_") + to_string(drv_->seq_);
         ++drv_->seq_;
     }
-    String driver = source.get_driver_name();
+    String driver = source.driver();
     if (driver == _T("QTSQL"))
     {
         if (dialect->get_name() == _T("MYSQL"))
@@ -128,13 +128,13 @@ QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
             driver = _T("QSQLITE");
     }
     conn_.reset(new QSqlDatabase(QSqlDatabase::addDatabase(driver, conn_name_)));
-    conn_->setDatabaseName(source.get_db());
-    conn_->setUserName(source.get_user());
-    conn_->setPassword(source.get_passwd());
-    if (source.get_port() > 0)
-        conn_->setPort(source.get_port());
-    if (!str_empty(source.get_host()))
-        conn_->setHostName(source.get_host());
+    conn_->setDatabaseName(source.db());
+    conn_->setUserName(source.user());
+    conn_->setPassword(source.passwd());
+    if (source.port() > 0)
+        conn_->setPort(source.port());
+    if (!str_empty(source.host()))
+        conn_->setHostName(source.host());
     if (!conn_->open())
         throw DBError(conn_->lastError().text());
 }

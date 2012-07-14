@@ -196,9 +196,9 @@ SqlPool::~SqlPool()
 void
 SqlPool::add_source(const SqlSource &source)
 {
-    sources_[source.get_id()] = source;
-    counts_[source.get_id()] = 0;
-    pools_[source.get_id()] = Pool();
+    sources_[source.id()] = source;
+    counts_[source.id()] = 0;
+    pools_[source.id()] = Pool();
 }
 
 SqlPool::SqlConnectionPtr
@@ -265,7 +265,7 @@ SqlPool::put(SqlConnectionPtr handle, bool close_now, bool new_conn)
         close_now = true;
     SqlConnectionPtr del_handle = NULL;
     int del_count = 0, del_pool_sz = 0;
-    String id = handle->get_source().get_id();
+    String id = handle->get_source().id();
     {
         ScopedLock lock(pool_mux_);
         if (!new_conn)

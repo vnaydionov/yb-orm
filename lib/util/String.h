@@ -4,9 +4,6 @@
 
 #include <cstring>
 #include <string>
-#include <vector>
-#include <set>
-#include <map>
 #if defined(YB_USE_WX)
 #include <wx/string.h>
 #elif defined(YB_USE_QT)
@@ -213,10 +210,6 @@ template <class T>
 T &from_stdstring(const std::string &s, T &x);
 template <class T>
 T &from_string(const String &s, T &x);
-
-typedef std::vector<String> Strings;
-typedef std::set<String> StringSet;
-typedef std::map<String, String> StringMap;
 
 } // namespace Yb
 

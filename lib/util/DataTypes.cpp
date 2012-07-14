@@ -64,6 +64,49 @@ DateTime &from_stdstring(const std::string &s, DateTime &x)
 }
 #endif
 
+bool Dict::has(const String &key) const
+{
+    return dict_.find(key) != dict_.end();
+}
+
+const String &Dict::get(const String &key) const
+{
+    StringMap::const_iterator it = dict_.find(key);
+    if (it == dict_.end())
+        throw KeyError(key);
+    return it->second;
+}
+
+const String Dict::get(const String &key, const String &def_val) const
+{
+    StringMap::const_iterator it = dict_.find(key);
+    if (it == dict_.end())
+        return def_val;
+    return it->second;
+}
+
+const String Dict::pop(const String &key, const String &def_val)
+{
+    String r;
+    StringMap::iterator it = dict_.find(key);
+    if (it == dict_.end())
+        r = def_val;
+    else {
+        r = it->second;
+        dict_.erase(it);
+    }
+    return r;
+}
+
+const Strings Dict::keys() const
+{
+    Strings k;
+    StringMap::const_iterator it = dict_.begin(), end = dict_.end();
+    for (; it != end; ++it)
+        k.push_back(it->first);
+    return k;
+}
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

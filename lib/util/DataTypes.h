@@ -2,6 +2,9 @@
 #ifndef YB__UTIL__DATA_TYPES__INCLUDED
 #define YB__UTIL__DATA_TYPES__INCLUDED
 
+#include <vector>
+#include <set>
+#include <map>
 #include <util/Utility.h>
 #include <util/String.h>
 #include <util/Exception.h>
@@ -237,6 +240,48 @@ inline Decimal &from_stdstring(const std::string &s, Decimal &x)
 {
     return from_string(WIDEN(s), x);
 }
+
+typedef std::vector<String> Strings;
+typedef std::set<String> StringSet;
+typedef std::map<String, String> StringMap;
+
+// a Python-like dict
+class Dict
+{
+    StringMap dict_;
+public:
+    bool has(const String &key) const;
+    const String &get(const String &key) const;
+    const String &operator[] (const String &key) const { return get(key); }
+    String &operator[] (const String &key) { return dict_[key]; }
+    const String get(const String &key, const String &def_val) const;
+    template <class T>
+    const T get_as(const String &key, const T &def_val = T()) const
+    {
+        String r = get(key, _T(""));
+        try {
+            T val;
+            from_string(r, val);
+            return val;
+        }
+        catch (const std::exception &) {}
+        return def_val;
+    }
+    bool empty(const String &key) const
+    {
+        return !has(key) || str_empty(get(key));
+    }
+    const String pop(const String &key, const String &def_val = _T(""));
+    template <class T>
+    void set(const String &key, const T &value)
+    {
+        dict_[key] = to_string(value);
+    }
+    size_t size() const { return dict_.size(); }
+    const Strings keys() const;
+    Dict() {}
+    explicit Dict(const StringMap &dict): dict_(dict) {}
+};
 
 } // namespace Yb
 

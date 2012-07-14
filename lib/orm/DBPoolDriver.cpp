@@ -249,7 +249,7 @@ public:
     void open(SqlDialect *dialect, const SqlSource &source)
     {
         close();
-        DBPoolDataSource ds(conf_.get_data_source(source.get_db()));
+        DBPoolDataSource ds(conf_.get_data_source(source.db()));
         mypp::DSN mypp_dsn(NARROW(ds.driver), NARROW(ds.host), ds.port,
                 NARROW(ds.user), NARROW(ds.pass), NARROW(ds.db));
         handle_ = pool_.get(mypp_dsn, ds.timeout);

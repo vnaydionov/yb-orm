@@ -182,7 +182,27 @@ public:
     virtual RowPtr fetch_row() = 0;
 };
 
-class SqlSource;
+class SqlSource: public Dict
+{
+public:
+    SqlSource();
+    explicit SqlSource(const String &url);
+    SqlSource(const String &id, const String &driver, const String &dialect,
+            const String &db, const String &user = _T(""),
+            const String &passwd = _T(""));
+    const String &id() const { return get(_T("&id")); }
+    const String &driver() const { return get(_T("&driver")); }
+    const String &dialect() const { return get(_T("&dialect")); }
+    const String &db() const { return get(_T("&db")); }
+    const String &user() const { return get(_T("&user")); }
+    const String &passwd() const { return get(_T("&passwd")); }
+    const String &host() const { return get(_T("&host")); }
+    int port() const { return get_as<int>(_T("&port")); }
+    const String format(bool hide_passwd = true) const;
+
+    bool operator== (const SqlSource &obj) const { return id() == obj.id(); }
+    bool operator< (const SqlSource &obj) const { return id() < obj.id(); }
+};
 
 class SqlConnectionBackend: NonCopyable
 {
@@ -211,55 +231,6 @@ public:
 SqlDriver *sql_driver(const String &name);
 bool register_sql_driver(std::auto_ptr<SqlDriver> driver);
 const Strings list_sql_drivers();
-
-class SqlSource
-{
-    String id_, driver_name_, dialect_name_;
-    String db_, user_, passwd_;
-    String encoding_, host_;
-    int port_, timeout_, autocommit_;
-public:
-    SqlSource()
-        : port_(-1), timeout_(10), autocommit_(0)
-    {}
-    SqlSource(const String &id, const String &driver_name,
-            const String &dialect_name,
-            const String &db, const String &user = _T(""),
-            const String &passwd = _T(""),
-            const String &encoding = _T(""), const String &host = _T(""),
-            int port = -1, int timeout = 10, int autocommit = 0)
-        : id_(id), driver_name_(driver_name), dialect_name_(dialect_name)
-        , db_(db), user_(user), passwd_(passwd)
-        , encoding_(encoding), host_(host)
-        , port_(port), timeout_(timeout), autocommit_(autocommit)
-    {}
-
-    void fix_driver_name(const String &driver_name) { driver_name_ = driver_name; }
-    void set_user(const String &user) { user_ = user; }
-    void set_passwd(const String &passwd) { passwd_ = passwd; }
-    void set_encoding(const String &encoding) { encoding_ = encoding; }
-    void set_host(const String &host) { host_ = host; }
-    void set_port(int port) { port_ = port; }
-    void set_timeout(int timeout) { timeout_ = timeout; }
-    void set_autocommit(int autocommit) { autocommit_ = autocommit; }
-
-    const String &get_id() const { return id_; }
-    const String &get_driver_name() const { return driver_name_; }
-    const String &get_dialect_name() const { return dialect_name_; }
-    const String &get_db() const { return db_; }
-    const String &get_user() const { return user_; }
-    const String &get_passwd() const { return passwd_; }
-    const String &get_encoding() const { return encoding_; }
-    const String &get_host() const { return host_; }
-    int get_port() const { return port_; }
-    int get_timeout() const { return timeout_; }
-    int get_autocommit() const { return autocommit_; }
-
-    bool operator== (const SqlSource &obj) const { return id_ == obj.id_; }
-    bool operator< (const SqlSource &obj) const { return id_ < obj.id_; }
-};
-
-const SqlSource parse_url(const String &url);
 
 class SqlCursor;
 class SqlConnection;
@@ -319,8 +290,8 @@ public:
     const SqlSource &get_source() const { return source_; }
     SqlDriver *get_driver() const { return driver_; }
     SqlDialect *get_dialect() const { return dialect_; }
-    const String &get_db() const { return source_.get_db(); }
-    const String &get_user() const { return source_.get_user(); }
+    const String &get_db() const { return source_.db(); }
+    const String &get_user() const { return source_.user(); }
     void set_echo(bool echo) { echo_ = echo; }
     void set_logger(ILogger *log) { log_ = log; }
     std::auto_ptr<SqlCursor> new_cursor();
