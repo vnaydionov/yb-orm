@@ -111,11 +111,12 @@ inline DateTime &from_string(const String &s, DateTime &x)
 {
     x = wxDateTime(0, 0, 0);
     const wxChar *pos = x.ParseFormat(s.GetData(),
+            s.Len() == 10? _T("%Y-%m-%d"): (
             s.Len() > 19?
             (s[10] == _T('T')? _T("%Y-%m-%dT%H:%M:%S.%l"):
                 _T("%Y-%m-%d %H:%M:%S.%l")):
             (s.Len() > 10 && s[10] == _T('T')? _T("%Y-%m-%dT%H:%M:%S"):
-                _T("%Y-%m-%d %H:%M:%S")));
+                _T("%Y-%m-%d %H:%M:%S"))));
     if (!pos || *pos)
         throw ValueBadCast(s, _T("DateTime (YYYY-MM-DD HH:MI:SS)"));
     return x;
@@ -162,11 +163,12 @@ inline const std::string to_stdstring(const DateTime &dt, bool msec = false)
 inline DateTime &from_string(const String &s, DateTime &x)
 {
     x = QDateTime::fromString(s,
+            s.length() == 10? _T("yyyy-MM-dd"): (
             s.length() > 19?
             (s[10] == 'T'? "yyyy-MM-dd'T'hh:mm:ss.zzz":
                 "yyyy-MM-dd hh:mm:ss.zzz"):
             (s.length() > 10 && s[10] == 'T'? "yyyy-MM-dd'T'hh:mm:ss":
-                "yyyy-MM-dd hh:mm:ss"));
+                "yyyy-MM-dd hh:mm:ss")));
     if (!x.isValid())
         throw ValueBadCast(s, _T("DateTime (YYYY-MM-DD HH:MI:SS)"));
     return x;

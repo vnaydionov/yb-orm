@@ -227,7 +227,7 @@ class SQLite3Dialect: public SqlDialect
 {
 public:
     SQLite3Dialect()
-        : SqlDialect(_T("SQLITE3"), _T(""), false)
+        : SqlDialect(_T("SQLITE"), _T(""), false)
     {}
     bool explicit_begin_trans() { return true; }
     const String select_curr_value(const String &seq_name)
@@ -641,8 +641,8 @@ SqlConnection::begin_trans()
     try {
         activity_ = false;
         explicit_trans_ = true;
-        if (echo_)
-            DBG(_T("begin transaction"));
+//      if (echo_)
+//          DBG(_T("begin transaction"));
         if (dialect_->explicit_begin_trans())
             exec_direct(_T("BEGIN TRANSACTION"));
     }

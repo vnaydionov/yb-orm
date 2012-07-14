@@ -60,7 +60,7 @@ class TestEngine : public CppUnit::TestFixture
 
     LongInt get_next_test_id(Engine &engine, const String &seq_name)
     {
-        if (db_type_ == _T("MYSQL")) {
+        if (!engine.get_dialect()->has_sequences()) {
             RowsPtr ptr = engine.select(_T("MAX(ID) MAX_ID"), _T("T_ORM_TEST"), Filter());
             CPPUNIT_ASSERT(1 == ptr->size() && 1 == ptr->begin()->size());
             Value x = find_in_row(*ptr->begin(), _T("MAX_ID"))->second;
@@ -471,10 +471,12 @@ public:
     void test_force_select_for_update()
     {
         Engine engine(Engine::FORCE_SELECT_UPDATE);
-        SETUP_LOG(engine);
-        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
-        RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), Filter());
-        CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
+        if (engine.get_dialect()->get_name() != _T("SQLITE")) {
+            SETUP_LOG(engine);
+            CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
+            RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), Filter());
+            CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
+        }
     }
 };
 
@@ -489,9 +491,8 @@ class TestSqlDriver : public CppUnit::TestFixture
 public:
     void test_fetch()
     {
-        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
-                xgetenv(_T("YBORM_DB")), xgetenv(_T("YBORM_USER")),
-                xgetenv(_T("YBORM_PASSWD")));
+        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
+                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
         ///
     }
 };

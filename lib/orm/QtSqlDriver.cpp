@@ -124,7 +124,7 @@ QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
             driver = _T("QOCI");
         else if (dialect->get_name() == _T("INTERBASE"))
             driver = _T("QIBASE");
-        else if (dialect->get_name() == _T("SQLITE3"))
+        else if (dialect->get_name() == _T("SQLITE"))
             driver = _T("QSQLITE");
     }
     conn_.reset(new QSqlDatabase(QSqlDatabase::addDatabase(driver, conn_name_)));
