@@ -12,6 +12,14 @@ static LogAppender appender(cerr);
     ILogger::Ptr __log(new Logger(&appender)); \
     e.set_logger(__log); }while(0)
 
+static inline const String cfg(const String &entry, const String &def_value = _T(""))
+{
+    String value = xgetenv(_T("YBORM_") + entry);
+    if (str_empty(value))
+        value = def_value;
+    return value;
+}
+
 class TestEngine : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestEngine);
@@ -52,7 +60,7 @@ class TestEngine : public CppUnit::TestFixture
 
     LongInt get_next_test_id(Engine &engine, const String &seq_name)
     {
-        if (db_type_ == _T("MYSQL")) {
+        if (!engine.get_dialect()->has_sequences()) {
             RowsPtr ptr = engine.select(_T("MAX(ID) MAX_ID"), _T("T_ORM_TEST"), Filter());
             CPPUNIT_ASSERT(1 == ptr->size() && 1 == ptr->begin()->size());
             Value x = find_in_row(*ptr->begin(), _T("MAX_ID"))->second;
@@ -82,8 +90,9 @@ public:
         params.push_back(Value(_T("item")));
         params.push_back(Value(now()));
         params.push_back(Value(Decimal(_T("1.2"))));
-        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
-                xgetenv(_T("YBORM_DB")), xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
+        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
+                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+        conn.begin_trans();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
         conn.prepare(WIDEN(sql.str()));
@@ -93,8 +102,9 @@ public:
 
     void finish_sql()
     {
-        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
-                xgetenv(_T("YBORM_DB")), xgetenv(_T("YBORM_USER")), xgetenv(_T("YBORM_PASSWD")));
+        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
+                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+        conn.begin_trans();
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
         conn.commit();
     }
@@ -461,10 +471,12 @@ public:
     void test_force_select_for_update()
     {
         Engine engine(Engine::FORCE_SELECT_UPDATE);
-        SETUP_LOG(engine);
-        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
-        RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), Filter());
-        CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
+        if (engine.get_dialect()->get_name() != _T("SQLITE")) {
+            SETUP_LOG(engine);
+            CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
+            RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), Filter());
+            CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
+        }
     }
 };
 
@@ -479,9 +491,8 @@ class TestSqlDriver : public CppUnit::TestFixture
 public:
     void test_fetch()
     {
-        SqlConnection conn(_T("DEFAULT"), xgetenv(_T("YBORM_DBTYPE")),
-                xgetenv(_T("YBORM_DB")), xgetenv(_T("YBORM_USER")),
-                xgetenv(_T("YBORM_PASSWD")));
+        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
+                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
         ///
     }
 };

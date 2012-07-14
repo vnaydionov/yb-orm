@@ -32,23 +32,32 @@ static int extract_int(const char *s, int len)
 
 DateTime &from_stdstring(const std::string &s, DateTime &x)
 {
-    if (s.size() < 19 || s[4] != '-' || s[7] != '-' ||
-        (s[10] != ' ' && s[10] != 'T') || s[13] != ':' ||
-        s[16] != ':' || (s.size() > 19 && s[19] != '.'))
-    {
-        throw ValueBadCast(WIDEN(s), _T("DateTime (YYYY-MM-DD HH:MI:SS)"));
-    }
+#define DT_FORMAT_REX _T("DateTime YYYY-mm-dd([T ]HH:MM:SS(.XXX)?)?")
     const char *cs = s.c_str();
+    if (s.size() < 10 || s[4] != '-' || s[7] != '-')
+        throw ValueBadCast(WIDEN(s), DT_FORMAT_REX);
     int year = extract_int(cs, 4), month = extract_int(cs + 5, 2),
-        day = extract_int(cs + 8, 2), hours = extract_int(cs + 11, 2),
-        minutes = extract_int(cs + 14, 2), seconds = extract_int(cs + 17, 2),
-        millis = 0;
-    if (s.size() > 19)
-        millis = extract_int(cs + 19, 3);
+        day = extract_int(cs + 8, 2),
+        hours = 0, minutes = 0, seconds = 0, millis = 0;
+    if (s.size() > 10) {
+        if (s.size() < 19 || (s[10] != ' ' && s[10] != 'T')
+                || s[13] != ':' || s[16] != ':')
+        {
+            throw ValueBadCast(WIDEN(s), DT_FORMAT_REX);
+        }
+        hours = extract_int(cs + 11, 2);
+        minutes = extract_int(cs + 14, 2);
+        seconds = extract_int(cs + 17, 2);
+        if (s.size() > 19) {
+            if (s.size() < 23 || s[19] != '.')
+                throw ValueBadCast(WIDEN(s), DT_FORMAT_REX);
+            millis = extract_int(cs + 19, 3);
+        }
+    }
     if (year < 0 || month < 0 || day < 0
         || hours < 0 || minutes < 0 || seconds < 0 || millis < 0)
     {
-        throw ValueBadCast(WIDEN(s), _T("DateTime (YYYY-MM-DD HH:MI:SS)"));
+        throw ValueBadCast(WIDEN(s), DT_FORMAT_REX);
     }
     x = dt_make(year, month, day, hours, minutes, seconds, millis);
     return x;

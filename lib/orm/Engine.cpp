@@ -8,8 +8,13 @@ using namespace Yb::StrUtils;
 
 namespace Yb {
 
-static inline const String cfg(const String &entry)
-{ return xgetenv(_T("YBORM_") + entry); }
+static inline const String cfg(const String &entry, const String &def_value = _T(""))
+{
+    String value = xgetenv(_T("YBORM_") + entry);
+    if (str_empty(value))
+        value = def_value;
+    return value;
+}
 
 EngineBase::~EngineBase()
 {}
@@ -56,7 +61,7 @@ Engine::Engine(Mode work_mode)
     , echo_(false)
     , mode_(work_mode)
     , timeout_(0)
-    , conn_(new SqlConnection(_T("DEFAULT"), cfg(_T("DBTYPE")),
+    , conn_(new SqlConnection(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
                 cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD"))))
     , logger_ptr_(NULL)
     , pool_ptr_(NULL)
@@ -125,6 +130,16 @@ Engine::clone()
         conn_.get()));
 }
 
+void
+Engine::touch()
+{
+    if (!touched_) {
+        touched_ = true;
+        if (dialect_->explicit_begin_trans())
+            get_conn()->begin_trans();
+    }
+}
+
 SqlPool *
 Engine::get_pool()
 {
@@ -186,12 +201,12 @@ Engine::select_iter(const StrList &what,
     Values params;
     do_gen_sql_select(sql, params,
             what, from, where, group_by, having, order_by, for_update);
+    if (select_mode)
+        touch();
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
     SqlResultSet rs = cursor->exec(params);
     rs.own(cursor);
-    if (select_mode)
-        touched_ = true;
     return rs;
 }
 
@@ -205,10 +220,10 @@ Engine::select(const StrList &what,
     if ((mode_ == READ_ONLY) && select_mode)
         throw BadOperationInMode(
                 _T("Using SELECT FOR UPDATE in read-only mode"));
+    if (select_mode)
+        touch();
     RowsPtr rows = on_select(what, from, where,
                 group_by, having, order_by, max_rows, select_mode);
-    if (select_mode)
-        touched_ = true;
     return rows;
 }
 
@@ -220,7 +235,7 @@ Engine::insert(const String &table_name,
     if (mode_ == READ_ONLY)
         throw BadOperationInMode(
                 _T("Using INSERT operation in read-only mode"));
-    touched_ = true;
+    touch();
     return on_insert(table_name, rows, exclude_fields, collect_new_ids);
 }
 
@@ -232,8 +247,8 @@ Engine::update(const String &table_name,
     if (mode_ == READ_ONLY)
         throw BadOperationInMode(
                 _T("Using UPDATE operation in read-only mode"));
+    touch();
     on_update(table_name, rows, key_fields, exclude_fields, where);
-    touched_ = true;
 }
 
 void
@@ -242,8 +257,8 @@ Engine::delete_from(const String &table_name, const Filter &where)
     if (mode_ == READ_ONLY)
         throw BadOperationInMode(
                 _T("Using DELETE operation in read-only mode"));
+    touch();
     on_delete(table_name, where);
-    touched_ = true;
 }
 
 void
@@ -252,10 +267,10 @@ Engine::delete_from(const String &table_name, const Keys &keys)
     if (mode_ == READ_ONLY)
         throw BadOperationInMode(
                 _T("Using DELETE operation in read-only mode"));
+    touch();
     Keys::const_iterator i = keys.begin(), iend = keys.end();
     for (; i != iend; ++i)
         on_delete(table_name, KeyFilter(*i));
-    touched_ = true;
 }
 
 void
@@ -264,8 +279,8 @@ Engine::exec_proc(const String &proc_code)
     if (mode_ == READ_ONLY)
         throw BadOperationInMode(
                 _T("Trying to invoke a PROCEDURE in read-only mode"));
+    touch();
     on_exec_proc(proc_code);
-    touched_ = true;
 }
 
 void
@@ -387,7 +402,7 @@ Engine::on_insert(const String &table_name,
                 cursor->exec(params);
             }
             auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
-            cursor->exec_direct(_T("SELECT LAST_INSERT_ID() LID"));
+            cursor->exec_direct(dialect_->select_last_inserted_id(table_name));
             RowsPtr id_rows = cursor->fetch_rows();
             ids.push_back((*id_rows)[0][0].second.as_longint());
         }

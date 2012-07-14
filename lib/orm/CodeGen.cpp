@@ -115,6 +115,13 @@ void dump_rel_attr(const Relation::AttrMap &attr, int n, ostream &out)
             << "\")] = _T(\"" << NARROW(i->second) << "\");\n";
 }
 
+const string fk_rule(const Column &c)
+{
+    return "FOREIGN KEY (" + NARROW(c.get_name())
+        + ") REFERENCES " + NARROW(c.get_fk_table_name())
+        + "(" + NARROW(c.get_fk_name()) + ")";
+}
+
 } // end of anonymous namespace
 
 void expand_tabs_to_stream(const string &in, ostream &out)
@@ -225,10 +232,16 @@ void SqlTableGenerator::gen_typed_column(ostream &out,
             default_clause);
     if (!str_empty(not_null_default_clause))
         out << " " << NARROW(not_null_default_clause);
+    String autoinc_flag = dialect_->autoinc_flag();
     if (column.is_pk()
             && (table_.get_autoinc() || !str_empty(table_.get_seq_name()))
-            && !dialect_->has_sequences())
-        out << " " << NARROW(dialect_->autoinc_flag());
+            && !str_empty(autoinc_flag))
+    {
+        String pk_flag = dialect_->primary_key_flag();
+        if (!str_empty(pk_flag))
+            out << " " << NARROW(pk_flag);
+        out << " " << NARROW(autoinc_flag);
+    }
 }
 
 void SqlTableGenerator::gen_create_table(ostream &out)
@@ -238,35 +251,43 @@ void SqlTableGenerator::gen_create_table(ostream &out)
     for (; it != end; ++it) {
         out << "\t";
         gen_typed_column(out, *it);
-        out << ",\n";
+        if (it + 1 != end)
+            out << ",";
+        out << "\n";
     }
-    out << "\tPRIMARY KEY (";
-    bool first = true;
-    for (it = table_.begin(); it != end; ++it)
-        if (it->is_pk()) {
-            if (!first)
-                out << ", ";
-            else
-                first = false;
-            out << NARROW(it->get_name());
-        }
-    out << ")\n)";
-    out << NARROW(dialect_->suffix_create_table());
+    String autoinc_flag = dialect_->autoinc_flag();
+    if (str_empty(autoinc_flag)
+            || !(table_.get_autoinc() || !str_empty(table_.get_seq_name())))
+    {
+        out << "\t, PRIMARY KEY (";
+        bool first = true;
+        for (it = table_.begin(); it != end; ++it)
+            if (it->is_pk()) {
+                if (!first)
+                    out << ", ";
+                else
+                    first = false;
+                out << NARROW(it->get_name());
+            }
+        out << ")\n";
+    }
+    if (dialect_->fk_internal()) {
+        for (it = table_.begin(); it != end; ++it)
+            if (it->has_fk())
+                out << "\t, " << fk_rule(*it) << "\n";
+    }
+    out << ")" << NARROW(dialect_->suffix_create_table());
 }
 
 void SqlTableGenerator::gen_fk_constraints(ostream &out)
 {
-    Columns::const_iterator it = table_.begin(), end = table_.end();
-    for (; it != end; ++it)
-        if (it->has_fk()) {
-            out << "ALTER TABLE " << NARROW(table_.get_name())
-                << " ADD ";
-            out << "FOREIGN KEY (" << NARROW(it->get_name())
-                << ") REFERENCES ";
-            out << NARROW(it->get_fk_table_name())
-                << "(" << NARROW(it->get_fk_name()) << ")";
-            out << ";\n";
-        }
+    if (!dialect_->fk_internal()) {
+        Columns::const_iterator it = table_.begin(), end = table_.end();
+        for (; it != end; ++it)
+            if (it->has_fk())
+                out << "ALTER TABLE " << NARROW(table_.get_name())
+                    << " ADD " << fk_rule(*it) << ";\n";
+    }
 }
 
 SqlSchemaGenerator::SqlSchemaGenerator(
