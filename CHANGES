@@ -10,11 +10,13 @@
       I.e. all object references are implemented using DomainHolder, and
       therefore they must be dereferenced using arrow (->),
       and not just dot (.).
+      This change breaks backward compatibility of the generated code.
     * The code generator utility now is named yborm_gen and is able to produce
       C++ domain classes as well as SQL DDL statements.  No more need for
       xsltproc tool.  See tutorial1 for example.
       Also, internally code generator has moved to libyborm.
-    * Broken backward compatibility for the generated code.
+    * Initial support for SQLite3 dialect, via QtSql driver.
+    * Construct SqlSource from URL, using simple URL parser.
 
 0.2.5
     * The Big Change: now you can build YB.ORM against wxWidgets or QT,

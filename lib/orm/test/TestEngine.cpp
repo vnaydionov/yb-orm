@@ -346,10 +346,10 @@ public:
     {
         Engine engine(Engine::READ_ONLY);
         SETUP_LOG(engine);
-        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
+        CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         init_sql();
         RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(record_id_)));
-        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
+        CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("item"),
                              NARROW(find_in_row(*ptr->begin(), _T("A"))->second.as_string()));
@@ -362,11 +362,11 @@ public:
     {
         Engine engine(Engine::READ_ONLY);
         SETUP_LOG(engine);
-        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
+        CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         init_sql();
         RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(record_id_)),
                 StrList(), Filter(), StrList(), 0);
-        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
+        CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         CPPUNIT_ASSERT_EQUAL(0, (int)ptr->size());
         finish_sql();
     }
@@ -376,7 +376,7 @@ public:
         init_sql();
         Engine engine(Engine::MANUAL);
         SETUP_LOG(engine);
-        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
+        CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         Rows rows;
         LongInt id = get_next_test_id(engine, _T("S_ORM_TEST_ID"));
         Row row;
@@ -386,7 +386,7 @@ public:
         row.push_back(make_pair(String(_T("C")), Value(Decimal(_T("1.1")))));
         rows.push_back(row);
         engine.insert(_T("T_ORM_TEST"), rows);
-        CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
+        CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(id)));
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("inserted"),
@@ -402,7 +402,7 @@ public:
         init_sql();
         Engine engine(Engine::MANUAL);
         SETUP_LOG(engine);
-        CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
+        CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         Rows rows;
         LongInt id = get_next_test_id(engine, _T("S_ORM_TEST_ID"));
         Row row;
@@ -415,7 +415,7 @@ public:
         StringSet exclude;
         exclude.insert(_T("B"));
         engine.update(_T("T_ORM_TEST"), rows, key, exclude);
-        CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
+        CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(record_id_)));
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("updated"),
@@ -473,9 +473,9 @@ public:
         Engine engine(Engine::FORCE_SELECT_UPDATE);
         if (engine.get_dialect()->get_name() != _T("SQLITE")) {
             SETUP_LOG(engine);
-            CPPUNIT_ASSERT_EQUAL(false, engine.touched_);
+            CPPUNIT_ASSERT_EQUAL(false, engine.activity());
             RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), Filter());
-            CPPUNIT_ASSERT_EQUAL(true, engine.touched_);
+            CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         }
     }
 };

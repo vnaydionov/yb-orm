@@ -86,7 +86,7 @@ public:
     SqlDialect *get_dialect() { return dialect_; }
     std::auto_ptr<EngineBase> clone();
     void touch();
-    bool is_touched() const { return touched_; }
+    bool activity() { return get_conn()->activity(); }
     void set_echo(bool echo);
     void set_logger(ILogger::Ptr logger);
 
@@ -181,7 +181,7 @@ private:
 
 private:
     Engine *master_ptr_;
-    bool touched_, echo_;
+    bool echo_;
     Mode mode_;
     ILogger::Ptr logger_;
     std::auto_ptr<SqlPool> pool_;

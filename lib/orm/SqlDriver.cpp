@@ -617,7 +617,7 @@ SqlConnection::~SqlConnection()
     bool err = false;
     try {
         clear();
-        if (activity_ && (explicit_trans_ || !dialect_->explicit_begin_trans()))
+        if (activity_)
             rollback();
     }
     catch (const std::exception &e) { err = true; }
@@ -639,12 +639,12 @@ void
 SqlConnection::begin_trans()
 {
     try {
-        activity_ = false;
-        explicit_trans_ = true;
-//      if (echo_)
-//          DBG(_T("begin transaction"));
-        if (dialect_->explicit_begin_trans())
+        if (dialect_->explicit_begin_trans()) {
+            bool a = activity_;
             exec_direct(_T("BEGIN TRANSACTION"));
+            explicit_trans_ = true;
+            activity_ = a;
+        }
     }
     catch (const std::exception &e) {
         mark_bad(e);
@@ -656,11 +656,13 @@ void
 SqlConnection::commit()
 {
     try {
+        if (!dialect_->explicit_begin_trans() || explicit_trans_) {
+            if (echo_)
+                DBG(_T("commit"));
+            backend_->commit();
+        }
         activity_ = false;
         explicit_trans_ = false;
-        if (echo_)
-            DBG(_T("commit"));
-        backend_->commit();
     }
     catch (const std::exception &e) {
         mark_bad(e);
@@ -672,11 +674,13 @@ void
 SqlConnection::rollback()
 {
     try {
+        if (!dialect_->explicit_begin_trans() || explicit_trans_) {
+            if (echo_)
+                DBG(_T("rollback"));
+            backend_->rollback();
+        }
         activity_ = false;
         explicit_trans_ = false;
-        if (echo_)
-            DBG(_T("rollback"));
-        backend_->rollback();
     }
     catch (const std::exception &e) {
         mark_bad(e);

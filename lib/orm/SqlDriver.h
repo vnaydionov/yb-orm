@@ -325,6 +325,8 @@ public:
     void set_logger(ILogger *log) { log_ = log; }
     std::auto_ptr<SqlCursor> new_cursor();
     bool bad() const { return bad_; }
+    bool activity() const { return activity_; }
+    bool explicit_trans() const { return explicit_trans_; }
     void begin_trans();
     void commit();
     void rollback();

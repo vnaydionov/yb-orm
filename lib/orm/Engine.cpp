@@ -22,7 +22,6 @@ EngineBase::~EngineBase()
 Engine::Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
                SqlConnection *conn)
     : master_ptr_(master)
-    , touched_(false)
     , echo_(echo)
     , mode_(work_mode)
     , timeout_(0)
@@ -38,7 +37,6 @@ Engine::Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
 Engine::Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
                SqlPool *pool, const String &source_id, int timeout)
     : master_ptr_(master)
-    , touched_(false)
     , echo_(echo)
     , mode_(work_mode)
     , source_id_(source_id)
@@ -57,7 +55,6 @@ Engine::Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
 
 Engine::Engine(Mode work_mode)
     : master_ptr_(NULL)
-    , touched_(false)
     , echo_(false)
     , mode_(work_mode)
     , timeout_(0)
@@ -71,7 +68,6 @@ Engine::Engine(Mode work_mode)
 
 Engine::Engine(Mode work_mode, auto_ptr<SqlConnection> conn)
     : master_ptr_(NULL)
-    , touched_(false)
     , echo_(false)
     , mode_(work_mode)
     , timeout_(0)
@@ -85,7 +81,6 @@ Engine::Engine(Mode work_mode, auto_ptr<SqlConnection> conn)
 Engine::Engine(Mode work_mode, auto_ptr<SqlPool> pool,
                const String &source_id, int timeout)
     : master_ptr_(NULL)
-    , touched_(false)
     , echo_(false)
     , mode_(work_mode)
     , pool_(pool)
@@ -99,7 +94,6 @@ Engine::Engine(Mode work_mode, auto_ptr<SqlPool> pool,
 
 Engine::Engine(Mode work_mode, SqlDialect *dialect)
     : master_ptr_(NULL)
-    , touched_(false)
     , echo_(false)
     , mode_(work_mode)
     , timeout_(0)
@@ -133,11 +127,8 @@ Engine::clone()
 void
 Engine::touch()
 {
-    if (!touched_) {
-        touched_ = true;
-        if (dialect_->explicit_begin_trans())
-            get_conn()->begin_trans();
-    }
+    if (dialect_->explicit_begin_trans() && !get_conn()->explicit_trans())
+        get_conn()->begin_trans();
 }
 
 SqlPool *
@@ -290,7 +281,6 @@ Engine::commit()
         throw BadOperationInMode(
                 _T("Using COMMIT operation in read-only mode"));
     on_commit();
-    touched_ = false;
 }
 
 void
@@ -300,7 +290,6 @@ Engine::rollback()
         throw BadOperationInMode(
                 _T("Using ROLLBACK operation in read-only mode"));
     on_rollback();
-    touched_ = false;
 }
 
 RowPtr
