@@ -12,14 +12,6 @@ static LogAppender appender(cerr);
     ILogger::Ptr __log(new Logger(&appender)); \
     e.set_logger(__log); }while(0)
 
-static inline const String cfg(const String &entry, const String &def_value = _T(""))
-{
-    String value = xgetenv(_T("YBORM_") + entry);
-    if (str_empty(value))
-        value = def_value;
-    return value;
-}
-
 class TestEngine : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestEngine);
@@ -55,7 +47,6 @@ class TestEngine : public CppUnit::TestFixture
     CPPUNIT_TEST(test_force_select_for_update);
     CPPUNIT_TEST_SUITE_END();
 
-    String db_type_;
     LongInt record_id_;
 
     LongInt get_next_test_id(Engine &engine, const String &seq_name)
@@ -72,10 +63,7 @@ class TestEngine : public CppUnit::TestFixture
     }
 
 public:
-    TestEngine()
-        : db_type_(xgetenv(_T("YBORM_DBTYPE")))
-        , record_id_(0)
-    {}
+    TestEngine() : record_id_(0) {}
 
     void init_sql()
     {
@@ -90,8 +78,7 @@ public:
         params.push_back(Value(_T("item")));
         params.push_back(Value(now()));
         params.push_back(Value(Decimal(_T("1.2"))));
-        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
-                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+        SqlConnection conn(Engine::sql_source_from_env());
         conn.begin_trans();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
@@ -102,8 +89,7 @@ public:
 
     void finish_sql()
     {
-        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
-                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+        SqlConnection conn(Engine::sql_source_from_env());
         conn.begin_trans();
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
         conn.commit();
@@ -491,8 +477,7 @@ class TestSqlDriver : public CppUnit::TestFixture
 public:
     void test_fetch()
     {
-        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
-                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+        SqlConnection conn(Engine::sql_source_from_env());
         ///
     }
 };

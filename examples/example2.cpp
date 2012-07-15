@@ -32,7 +32,7 @@ int main()
     Yb::register_sql_driver(drv);
     auto_ptr<Yb::SqlConnection> conn(
             new Yb::SqlConnection(_T("MY_DBPOOL"),
-                Yb::StrUtils::xgetenv(_T("YBORM_DBTYPE")), _T("default")));
+                Yb::env_cfg(_T("DBTYPE")), _T("default")));
     Yb::Engine engine(Yb::Engine::MANUAL, conn);
 #else
     Yb::Engine engine(Yb::Engine::MANUAL);

@@ -58,6 +58,8 @@ SqlDriverError::SqlDriverError(const String &msg)
 
 SqlDialect::~SqlDialect() {}
 
+bool SqlDialect::native_driver_eats_slash() { return true; }
+
 bool SqlDialect::explicit_begin_trans() { return false; }
 
 const String SqlDialect::select_last_inserted_id(const String &table_name) {
@@ -230,6 +232,7 @@ public:
     SQLite3Dialect()
         : SqlDialect(_T("SQLITE"), _T(""), false)
     {}
+    bool native_driver_eats_slash() { return false; }
     bool explicit_begin_trans() { return true; }
     const String select_curr_value(const String &seq_name)
     { throw SqlDialectError(_T("No sequences, please")); }
@@ -422,6 +425,16 @@ const String SqlSource::format(bool hide_passwd) const
     else
         params[_T("&host")] = params[_T("&db")];
     return format_url(params, hide_passwd);
+}
+
+const Strings SqlSource::options() const
+{
+    Strings options;
+    Strings k = keys();
+    for (size_t i = 0; i < k.size(); ++i)
+        if (!starts_with(k[i], _T("&")))
+            options.push_back(k[i]);
+    return options;
 }
 
 Row::iterator find_in_row(Row &row, const String &name)

@@ -114,6 +114,7 @@ QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
         ++drv_->seq_;
     }
     String driver = source.driver();
+    bool eat_slash = false;
     if (driver == _T("QTSQL"))
     {
         if (dialect->get_name() == _T("MYSQL"))
@@ -126,15 +127,31 @@ QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
             driver = _T("QIBASE");
         else if (dialect->get_name() == _T("SQLITE"))
             driver = _T("QSQLITE");
+        if (dialect->native_driver_eats_slash()
+                && !str_empty(source.db())
+                && char_code(source.db()[0]) == '/')
+            eat_slash = true;
     }
     conn_.reset(new QSqlDatabase(QSqlDatabase::addDatabase(driver, conn_name_)));
-    conn_->setDatabaseName(source.db());
+    if (eat_slash)
+        conn_->setDatabaseName(str_substr(source.db(), 1));
+    else
+        conn_->setDatabaseName(source.db());
     conn_->setUserName(source.user());
     conn_->setPassword(source.passwd());
     if (source.port() > 0)
         conn_->setPort(source.port());
     if (!str_empty(source.host()))
         conn_->setHostName(source.host());
+    String options;
+    Strings keys = source.options();
+    for (int i = 0; i < keys.size(); ++i) {
+        if (!str_empty(options))
+            options += _T(";");
+        options += keys[i] + _T("=") + source[keys[i]];
+    }
+    if (!str_empty(options))
+        conn_->setConnectOptions(options);
     if (!conn_->open())
         throw DBError(conn_->lastError().text());
 }

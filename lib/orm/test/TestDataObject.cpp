@@ -15,14 +15,6 @@ static LogAppender appender(cerr);
     ILogger::Ptr __log(new Logger(&appender)); \
     e.set_logger(__log); }while(0)
 
-static inline const String cfg(const String &entry, const String &def_value = _T(""))
-{
-    String value = xgetenv(_T("YBORM_") + entry);
-    if (str_empty(value))
-        value = def_value;
-    return value;
-}
-
 class TestDataObject : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestDataObject);
@@ -394,8 +386,7 @@ public:
     void setUp()
     {
         tearDown();
-        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
-                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+        SqlConnection conn(Engine::sql_source_from_env());
         conn.begin_trans();
         {
             String sql_str =
@@ -462,8 +453,7 @@ public:
 
     void tearDown()
     {
-        SqlConnection conn(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
-                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+        SqlConnection conn(Engine::sql_source_from_env());
         conn.begin_trans();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));

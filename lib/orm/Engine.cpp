@@ -8,11 +8,11 @@ using namespace Yb::StrUtils;
 
 namespace Yb {
 
-static inline const String cfg(const String &entry, const String &def_value = _T(""))
+const String env_cfg(const String &entry, const String &def_val)
 {
     String value = xgetenv(_T("YBORM_") + entry);
     if (str_empty(value))
-        value = def_value;
+        return def_val;
     return value;
 }
 
@@ -53,13 +53,30 @@ Engine::Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
     conn_ptr_->set_logger(logger_ptr_);
 }
 
+SqlSource Engine::sql_source_from_env(const String &id)
+{
+    SqlSource src;
+    String url = env_cfg(_T("URL"));
+    if (!str_empty(url))
+        src = SqlSource(url);
+    else
+        src = SqlSource(_T(""),
+            env_cfg(_T("DRIVER"), _T("DEFAULT")),
+            env_cfg(_T("DBTYPE")), env_cfg(_T("DB")),
+            env_cfg(_T("USER")), env_cfg(_T("PASSWD")));
+    if (str_empty(id))
+        src[_T("&id")] = src.format();
+    else
+        src[_T("&id")] = id;
+    return src;
+}
+
 Engine::Engine(Mode work_mode)
     : master_ptr_(NULL)
     , echo_(false)
     , mode_(work_mode)
     , timeout_(0)
-    , conn_(new SqlConnection(cfg(_T("DRIVER"), _T("DEFAULT")), cfg(_T("DBTYPE")),
-                cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD"))))
+    , conn_(new SqlConnection(sql_source_from_env()))
     , logger_ptr_(NULL)
     , pool_ptr_(NULL)
     , conn_ptr_(NULL)

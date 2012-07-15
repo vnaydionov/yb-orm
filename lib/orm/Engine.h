@@ -67,6 +67,9 @@ public:
     virtual std::auto_ptr<EngineBase> clone() = 0;
 };
 
+const String env_cfg(const String &entry,
+        const String &def_val = _T(""));
+
 class Engine
     : public EngineBase, private NonCopyable
 {
@@ -74,6 +77,7 @@ class Engine
 public:
     enum Mode { READ_ONLY, MANUAL, FORCE_SELECT_UPDATE }; 
 
+    static SqlSource sql_source_from_env(const String &id = _T(""));
     Engine(Mode work_mode = MANUAL);
     Engine(Mode work_mode, std::auto_ptr<SqlConnection> conn);
     Engine(Mode work_mode, std::auto_ptr<SqlPool> pool,

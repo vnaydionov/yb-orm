@@ -139,6 +139,7 @@ public:
     const String &get_name() { return name_; }
     const String &dual_name() { return dual_; }
     bool has_sequences() { return has_sequences_; }
+    virtual bool native_driver_eats_slash();
     virtual bool explicit_begin_trans();
     virtual const String select_curr_value(
             const String &seq_name) = 0;
@@ -198,6 +199,7 @@ public:
     const String &passwd() const { return get(_T("&passwd")); }
     const String &host() const { return get(_T("&host")); }
     int port() const { return get_as<int>(_T("&port")); }
+    const Strings options() const;
     const String format(bool hide_passwd = true) const;
 
     bool operator== (const SqlSource &obj) const { return id() == obj.id(); }

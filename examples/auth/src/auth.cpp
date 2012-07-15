@@ -194,9 +194,6 @@ logout(StringMap &params)
     return OK_RESP;
 }
 
-const Yb::String
-cfg(const Yb::String &key) { return Yb::StrUtils::xgetenv(_T("YBORM_") + key); }
-
 #if defined(YB_USE_WX)
 class MyApp : public wxAppConsole {
 public:
@@ -223,8 +220,7 @@ public:
         Yb::init_default_meta();
         std::auto_ptr<Yb::SqlPool> pool(new Yb::SqlPool(YB_POOL_MAX_SIZE,
                 YB_POOL_IDLE_TIME, YB_POOL_MONITOR_SLEEP, g_log.get()));
-        Yb::SqlSource src(_T("auth_db"), _T("DEFAULT"),
-                cfg(_T("DBTYPE")), cfg(_T("DB")), cfg(_T("USER")), cfg(_T("PASSWD")));
+        Yb::SqlSource src = Yb::Engine::sql_source_from_env(_T("auth_db"));
         pool->add_source(src);
         engine.reset(new Yb::Engine(Yb::Engine::MANUAL, pool, _T("auth_db")));
         Yb::Logger::Ptr ormlog = g_log->new_logger("orm");
