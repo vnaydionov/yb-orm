@@ -4,19 +4,31 @@
       The generated domain class code becomes much cleaner.
       Property accessors are implemented for simple data types,
       as well as for object references and object collections.
-      To implement recurrent object references there DomainHolder class
-      has been introduced.  Take a look at ProductGroup class from
-      examples/ex2_schema.xml.
+      To implement recurrent object references there is DomainHolder class.
+      Take a look at ProductGroup class from examples/ex2_schema.xml.
       I.e. all object references are implemented using DomainHolder, and
-      therefore they must be dereferenced using arrow (->),
-      and not just dot (.).
-      This change breaks backward compatibility of the generated code.
-    * The code generator utility now is named yborm_gen and is able to produce
-      C++ domain classes as well as SQL DDL statements.  No more need for
-      xsltproc tool.  See tutorial1 for example.
-      Also, internally code generator has moved to libyborm.
+      therefore they must be dereferenced using arrow (->), not just dot (.).
+      This change breaks the backward compatibility of the generated code.
+    * The code generator utility itself is named yborm_gen now and
+      and is able to produce C++ domain classes as well as SQL DDL statements.
+      No more need for xsltproc tool.  See tutorial1 for example.
+      Also, internally the code generator has moved to libyborm.
     * Initial support for SQLite3 dialect, via QtSql driver.
     * Construct SqlSource from URL, using simple URL parser.
+      See examples below.
+      1) In a QT build there are native drivers
+          'sqlite+qtsql:///home/vaclav/test1_db'
+          'mysql+qtsql://test1:test1_pwd@localhost:3306/test1_db'
+         as well as ODBC driver (used by default)
+          'mysql+qodbc3://test1:test1_pwd@test1_db'
+          or 'mysql://test1:test1_pwd@test1_db'
+      2) In a non-QT build there's only one ODBC driver available yet:
+          'mysql+odbc://test1:test1_pwd@test1_db'
+          or just 'mysql://test1:test1_pwd@test1_db'
+      You can pass single environment variable YBORM_URL to Engine instance,
+      instead of combination of YBORM_DBTYPE, YBORM_DRIVER, YBORM_DB,
+      YBORM_USER, YBORM_PASSWD environment variables.  This is mostly
+      useful for testing.
 
 0.2.5
     * The Big Change: now you can build YB.ORM against wxWidgets or QT,
