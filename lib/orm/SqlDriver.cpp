@@ -80,6 +80,8 @@ const String SqlDialect::sysdate_func() {
     return _T("CURRENT_TIMESTAMP");
 }
 
+bool SqlDialect::explicit_null() { return false; }
+
 const String SqlDialect::not_null_default(const String &not_null_clause,
         const String &default_value)
 {
@@ -215,6 +217,7 @@ public:
         return _T(" ENGINE=INNODB DEFAULT CHARSET=utf8");
     }
     const String autoinc_flag() { return _T("AUTO_INCREMENT"); }
+    bool explicit_null() { return true; }
     const String not_null_default(const String &not_null_clause,
             const String &default_value)
     {

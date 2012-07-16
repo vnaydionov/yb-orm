@@ -228,7 +228,8 @@ void SqlTableGenerator::gen_typed_column(ostream &out,
             default_clause += dialect_->sql_value(column.get_default_value());
     }
     String not_null_default_clause = dialect_->not_null_default(
-            column.is_nullable() && !column.is_pk()? _T(""): _T("NOT NULL"),
+            column.is_nullable() && !column.is_pk()? (
+                dialect_->explicit_null()? _T("NULL"): _T("")): _T("NOT NULL"),
             default_clause);
     if (!str_empty(not_null_default_clause))
         out << " " << NARROW(not_null_default_clause);

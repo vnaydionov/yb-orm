@@ -156,6 +156,7 @@ public:
     virtual const String primary_key_flag();
     virtual const String autoinc_flag();
     virtual const String sysdate_func();
+    virtual bool explicit_null();
     virtual const String not_null_default(const String &not_null_clause,
             const String &default_value);
 };
