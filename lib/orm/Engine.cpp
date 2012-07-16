@@ -549,8 +549,10 @@ Engine::do_gen_sql_update(String &sql, Values &params,
     sql_query << "UPDATE " << NARROW(table_name) << " SET ";
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it) {
-        if (exclude_fields.find(it->first) == exclude_fields.end() &&
-            std::find(key_fields.begin(), key_fields.end(), it->first) == key_fields.end())
+        if (exclude_fields.find(it->first)
+                == const_cast<StringSet &>(exclude_fields).end() &&
+            std::find(key_fields.begin(), key_fields.end(), it->first) 
+                == key_fields.end())
         {
             excluded_row.push_back(make_pair(it->first, it->second));
         }
@@ -579,8 +581,9 @@ Engine::do_gen_sql_update(String &sql, Values &params,
             where_sql << " AND ";
     }
     Strings::const_iterator it_where = key_fields.begin(), end_where = key_fields.end();
-    Strings::const_iterator it_last =
-        (key_fields.empty()) ? key_fields.end() : --key_fields.end();
+    Strings::const_iterator it_last = key_fields.end();
+    if (!key_fields.empty())
+        --it_last;
     for (; it_where != end_where; ++it_where) {
         Row::const_iterator it_find = find_in_row(row, *it_where);
         if (it_find != row.end()) {

@@ -14,7 +14,7 @@ const String BaseError::format_base(const String &msg)
 }
 
 BaseError::BaseError(const String &msg)
-    : logic_error(NARROW(format_base(msg)))
+    : std::logic_error(NARROW(format_base(msg)))
 {}
 
 const String AssertError::format_assert(const char *file, int line,

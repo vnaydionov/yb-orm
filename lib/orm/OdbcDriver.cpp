@@ -112,8 +112,8 @@ OdbcConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
     ScopedLock lock(drv_->conn_mux_);
     conn_.reset(new tiodbc::connection());
     if (!conn_->connect(source.db(), source.user(), source.passwd(),
-                source.get_as<int>(_T("timeout"), 10),
-                source.get_as<int>(_T("autocommit"), 0)))
+                source.get_as<int>(String(_T("timeout")), 10),
+                source.get_as<int>(String(_T("autocommit")), 0)))
         throw DBError(conn_->last_error_ex());
 }
 

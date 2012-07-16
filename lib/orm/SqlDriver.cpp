@@ -470,7 +470,7 @@ SqlResultSet::own(auto_ptr<SqlCursor> cursor)
 
 SqlCursor::SqlCursor(SqlConnection &connection)
     : connection_(connection)
-    , backend_(connection.backend_->new_cursor())
+    , backend_(connection.backend_->new_cursor().release())
     , echo_(connection.echo_)
     , log_(connection.log_)
 {}

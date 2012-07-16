@@ -135,7 +135,7 @@ convert_node(wxXmlNode *node)
             p->children_.push_back(convert_node(cur));
         else if (wxXML_TEXT_NODE == cur->GetType()) {
             Yb::String value = cur->GetContent();
-            if (!str_empty(value))
+            if (!Yb::str_empty(value))
                 p->text_.push_back(value);
         }
     }
@@ -202,7 +202,7 @@ convert_node(xmlNodePtr node)
             p->children_.push_back(convert_node(cur));
         else if (XML_TEXT_NODE == cur->type) {
             Yb::String value = get_node_content(cur);
-            if (!str_empty(value))
+            if (!Yb::str_empty(value))
                 p->text_.push_back(value);
         }
     }

@@ -40,8 +40,6 @@ public:
     void serve();
 };
 
-int hex_digit(char c);
-std::string url_decode(const std::string &s);
 StringMap parse_params(const std::string &s);
 StringMap parse_http(const std::string &s);
 

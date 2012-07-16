@@ -435,12 +435,12 @@ const Yb::String comma(const Yb::String &item1, const Yb::String &item2)
 
 const Yb::String xgetenv(const Yb::String &var_name)
 {
-    char *x;
+    char *x = NULL;
     Yb::String s;
 #if defined(_MSC_VER)
     size_t len;
     errno_t err = _dupenv_s(&x, &len, NARROW(var_name).c_str());
-    if (!err) {
+    if (!err && x) {
         s = Yb::String(WIDEN(x));
         free(x);
     }

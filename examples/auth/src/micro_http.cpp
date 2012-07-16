@@ -174,36 +174,6 @@ HttpServer::serve()
     }
 }
 
-int hex_digit(char c)
-{
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    throw ParserEx("hex_digit", "invalid digit");
-}
-
-string url_decode(const string &s)
-{
-    string result;
-    for (size_t i = 0; i < s.size(); ++i) {
-        if (s[i] != '%')
-            result.push_back(s[i]);
-        else {
-            ++i;
-            if (s.size() - i < 2)
-                throw ParserEx("url_decode", "short read");
-            unsigned char c = hex_digit(s[i]) * 16 +
-                hex_digit(s[i + 1]);
-            ++i;
-            result.push_back(c);
-        }
-    }
-    return result;
-}
-
 StringMap parse_params(const string &msg)
 {
     StringMap params;
@@ -216,7 +186,7 @@ StringMap parse_params(const string &msg)
             throw ParserEx("parse_params", "value_parts.size() < 1");
         string v, n = NARROW(value_parts[0]);
         if (value_parts.size() == 2)
-            v = url_decode(NARROW(value_parts[1]));
+            v = url_decode(value_parts[1]);
         StringMap::iterator it = params.find(n);
         if (it == params.end())
             params[n] = v;

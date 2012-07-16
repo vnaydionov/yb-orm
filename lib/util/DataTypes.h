@@ -256,7 +256,20 @@ public:
     String &operator[] (const String &key) { return dict_[key]; }
     const String get(const String &key, const String &def_val) const;
     template <class T>
-    const T get_as(const String &key, const T &def_val = T()) const
+    const T get_as(const String &key) const
+    {
+        String &r = get(key);
+        try {
+            T val;
+            from_string(r, val);
+            return val;
+        }
+        catch (const std::exception &) {
+            throw ValueError(r);
+        }
+    }
+    template <class T>
+    const T get_as(const String &key, const T &def_val) const
     {
         String r = get(key, _T(""));
         try {

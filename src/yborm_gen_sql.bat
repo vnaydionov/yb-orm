@@ -1,4 +1,4 @@
-rem Supported dialects are: MYSQL, INTERBASE, ORACLE, POSTGRES
+rem Supported dialects are: MYSQL, INTERBASE, ORACLE, POSTGRES, SQLITE
 set DIALECT=MYSQL
 set PATH=c:\yborm\bin;c:\QtSDK\Desktop\Qt\4.8.1\mingw\bin;%PATH%
 yborm_gen --ddl test_schema.xml %DIALECT% test_schema.sql

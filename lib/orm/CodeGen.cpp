@@ -255,8 +255,8 @@ void SqlTableGenerator::gen_create_table(ostream &out)
             out << ",";
         out << "\n";
     }
-    String autoinc_flag = dialect_->autoinc_flag();
-    if (str_empty(autoinc_flag)
+    String pk_flag = dialect_->primary_key_flag();
+    if (str_empty(pk_flag)
             || !(table_.get_autoinc() || !str_empty(table_.get_seq_name())))
     {
         out << "\t, PRIMARY KEY (";

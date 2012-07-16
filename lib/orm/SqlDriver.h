@@ -198,7 +198,7 @@ public:
     const String &user() const { return get(_T("&user")); }
     const String &passwd() const { return get(_T("&passwd")); }
     const String &host() const { return get(_T("&host")); }
-    int port() const { return get_as<int>(_T("&port")); }
+    int port() const { return get_as<int>(String(_T("&port")), 0); }
     const Strings options() const;
     const String format(bool hide_passwd = true) const;
 
