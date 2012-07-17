@@ -594,10 +594,12 @@ AC_DEFUN([YB_TEST_DB],
     AC_SUBST(YBORM_DB)
     AC_SUBST(YBORM_USER)
     AC_SUBST(YBORM_PASSWD)
+    AC_SUBST(YBORM_URL)
     YBORM_DBTYPE=""
     YBORM_DB=""
     YBORM_USER=""
     YBORM_PASSWD=""
+    YBORM_URL=""
     AC_ARG_WITH([test-dbtype],
         AC_HELP_STRING([--with-test-dbtype=MYSQL|INTERBASE|ORACLE],
             [Specify SQL dialect of the test database]),
@@ -614,6 +616,12 @@ AC_DEFUN([YB_TEST_DB],
         AC_HELP_STRING([--with-test-passwd=PASSWD],
             [Specify database password to connect to the test database]),
         [YBORM_PASSWD="$withval"],[YBORM_PASSWD=""])
+    AC_ARG_WITH([test-db-url],
+        AC_HELP_STRING([--with-test-db-url=dialect+driver://user:password@database or like],
+            [Specify the URL to connect to the test database]),
+        [YBORM_URL="$withval";
+        YBORM_DBTYPE=`echo "$withval" | awk '{sub(/[[:+]].*/, ""); print toupper($][0)}'`
+        ],[YBORM_URL=""])
 ])
 
 dnl

@@ -57,12 +57,12 @@ AC_DEFUN([YB_QT],
     if test "x$ac_qt_includes" != "x" || test "x$ac_qt_libs" != "x" ; then
         AC_MSG_CHECKING([for the QT4 C++ libraries])
         if test "x$ac_qt_includes" != "x" ; then
-            QT_CFLAGS="-I$ac_qt_includes -I$ac_qt_includes/QtCore -I$ac_qt_includes/QtXml"
+            QT_CFLAGS="-I$ac_qt_includes -I$ac_qt_includes/QtCore -I$ac_qt_includes/QtXml -I$ac_qt_includes/QtSql"
         fi
         if test "x$ac_qt_libs" != "x" ; then
             QT_LDFLAGS="-L$ac_qt_libs"
         fi
-        QT_LIBS="$QT_LIBS -lQtCore -lQtXml"
+        QT_LIBS="$QT_LIBS -lQtCore -lQtXml -lQtSql"
         ac_save_cxxflags="$CXXFLAGS"
         ac_save_ldflags="$LDFLAGS"
         ac_save_libs="$LIBS"
@@ -594,10 +594,12 @@ AC_DEFUN([YB_TEST_DB],
     AC_SUBST(YBORM_DB)
     AC_SUBST(YBORM_USER)
     AC_SUBST(YBORM_PASSWD)
+    AC_SUBST(YBORM_URL)
     YBORM_DBTYPE=""
     YBORM_DB=""
     YBORM_USER=""
     YBORM_PASSWD=""
+    YBORM_URL=""
     AC_ARG_WITH([test-dbtype],
         AC_HELP_STRING([--with-test-dbtype=MYSQL|INTERBASE|ORACLE],
             [Specify SQL dialect of the test database]),
@@ -614,6 +616,12 @@ AC_DEFUN([YB_TEST_DB],
         AC_HELP_STRING([--with-test-passwd=PASSWD],
             [Specify database password to connect to the test database]),
         [YBORM_PASSWD="$withval"],[YBORM_PASSWD=""])
+    AC_ARG_WITH([test-db-url],
+        AC_HELP_STRING([--with-test-db-url=dialect+driver://user:password@database or like],
+            [Specify the URL to connect to the test database]),
+        [YBORM_URL="$withval";
+        YBORM_DBTYPE=`echo "$withval" | awk '{sub(/[[:+]].*/, ""); print toupper($][0)}'`
+        ],[YBORM_URL=""])
 ])
 
 dnl

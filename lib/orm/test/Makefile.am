@@ -43,6 +43,7 @@ export YBORM_DBTYPE=@YBORM_DBTYPE@
 export YBORM_DB=@YBORM_DB@
 export YBORM_USER=@YBORM_USER@
 export YBORM_PASSWD=@YBORM_PASSWD@
+export YBORM_URL=@YBORM_URL@
 
 # Oracle specific
 export TWO_TASK=balance-dev.yandex.ru
