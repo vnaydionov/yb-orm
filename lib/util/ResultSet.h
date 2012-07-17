@@ -56,11 +56,11 @@ public:
             RowType, ptrdiff_t, RowType *, RowType & >
     {
         ResultSetBase &result_set_;
-        bool flag_end_;
+        mutable bool flag_end_;
 
         iterator();
 
-        void lazy_fetch() {
+        void lazy_fetch() const {
             if (!flag_end_ && !result_set_.ready())
                 flag_end_ = !result_set_.fetch_next();
         }
@@ -96,14 +96,14 @@ public:
             return *this;
         }
 
-        bool operator ==(iterator &other) { 
+        bool operator ==(const iterator &other) const { 
             lazy_fetch();
             other.lazy_fetch();
             return (flag_end_ == other.flag_end_
                     ) && (&result_set_ == &other.result_set_);
         }
 
-        bool operator !=(iterator &other) {
+        bool operator !=(const iterator &other) const {
             lazy_fetch();
             other.lazy_fetch();
             return (flag_end_ != other.flag_end_

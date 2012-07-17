@@ -20,7 +20,7 @@ public:
     AssertError(const char *file, int line, const char *expr);
 };
 
-#define YB_ASSERT(X) do { if (!(X)) throw AssertError(__FILE__, __LINE__, \
+#define YB_ASSERT(X) do { if (!(X)) throw ::Yb::AssertError(__FILE__, __LINE__, \
     #X); } while (0)
 
 typedef BaseError RunTimeError;
