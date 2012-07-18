@@ -81,7 +81,8 @@ mk_xml_name(const String &name, const String &xml_name)
 
 Column::Column(const String &name, int type, size_t size, int flags,
         const String &fk_table, const String &fk,
-        const String &xml_name, const String &prop_name)
+        const String &xml_name, const String &prop_name,
+        const String &index)
     : name_(name)
     , type_(type)
     , size_(size)
@@ -90,6 +91,7 @@ Column::Column(const String &name, int type, size_t size, int flags,
     , fk_name_(fk)
     , xml_name_(mk_xml_name(name, xml_name))
     , prop_name_(str_empty(prop_name)? str_to_lower(name): prop_name)
+    , index_(index)
     , table_(NULL)
 {}
 

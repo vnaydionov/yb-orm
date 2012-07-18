@@ -188,7 +188,7 @@ void XMLMetaDataConfig::parse_column(ElementTree::ElementPtr node, Table &table_
 
 Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
 {
-    String name, type, fk_table, fk_field, prop_name, xml_name;
+    String name, type, fk_table, fk_field, prop_name, xml_name, index;
     int flags = 0, size = 0, col_type = 0;
     Yb::Value default_val;
     if (!node->has_attr(_T("name")))
@@ -243,6 +243,9 @@ Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
     if (node->has_attr(_T("xml-name")))
         xml_name = node->get_attr(_T("xml-name"));
 
+    if (node->has_attr(_T("index")))
+        index = node->get_attr(_T("index"));
+
     ElementTree::Elements::const_iterator child = node->children_.begin(),
         cend = node->children_.end();
     for (; child != cend; ++child) {
@@ -267,7 +270,7 @@ Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
 
     if((size > 0) && (col_type != Value::STRING))
         throw InvalidCombination(_T("Size musn't me used for not a String type"));
-    Column result(name, col_type, size, flags, fk_table, fk_field, xml_name, prop_name);
+    Column result(name, col_type, size, flags, fk_table, fk_field, xml_name, prop_name, index);
     result.set_default_value(default_val);
     return result;
 }

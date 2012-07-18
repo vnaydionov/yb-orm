@@ -126,7 +126,8 @@ public:
             int type = 0, size_t size = 0, int flags = 0,
             const String &fk_table = _T(""), const String &fk = _T(""),
             const String &xml_name = _T(""),
-            const String &prop_name = _T(""));
+            const String &prop_name = _T(""),
+            const String &index = _T(""));
     Table &table() const {
         return *check_not_null(table_, _T("get column's parent table")); }
     void table(Table &t) { table_ = &t; }
@@ -143,10 +144,14 @@ public:
     bool is_pk() const { return (flags_ & PK) != 0; }
     bool is_ro() const { return (flags_ & RO) != 0; }
     bool is_nullable() const { return (flags_ & NULLABLE) != 0; }
+    const String &get_index() const { return index_; }
     const String &get_fk_table_name() const { return fk_table_name_; }
     const String &get_fk_name() const { return fk_name_; }
     bool has_fk() const {
         return !str_empty(fk_table_name_) && !str_empty(fk_name_);
+    }
+    bool has_index() const {
+        return !str_empty(index_);
     }
     void set_fk_name(const String &fk_name) { fk_name_ = fk_name; }
     const String &get_xml_name() const { return xml_name_; }
@@ -156,6 +161,7 @@ private:
     int type_;
     size_t size_;
     int flags_;
+    String index_;
     String fk_table_name_;
     String fk_name_;
     String xml_name_;

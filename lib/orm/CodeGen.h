@@ -31,6 +31,7 @@ public:
     void gen_typed_column(std::ostream &out, const Column &column);
     void gen_create_table(std::ostream &out);
     void gen_fk_constraints(std::ostream &out);
+    void gen_create_indexes(std::ostream &out);
 };
 
 class SqlSchemaGenerator
@@ -43,6 +44,7 @@ public:
     void gen_create_tables(std::ostream &out);
     void gen_create_sequences(std::ostream &out);
     void gen_create_fk_constraints(std::ostream &out);
+    void gen_create_indexes(std::ostream &out);
     void generate(std::ostream &out);
 };
 

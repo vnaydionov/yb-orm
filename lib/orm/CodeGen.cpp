@@ -291,6 +291,17 @@ void SqlTableGenerator::gen_fk_constraints(ostream &out)
     }
 }
 
+void SqlTableGenerator::gen_create_indexes(ostream &out)
+{
+    Columns::const_iterator it = table_.begin(), end = table_.end();
+    for (; it != end; ++it) {
+        if (it->has_index())
+            out << "CREATE INDEX " << NARROW(it->get_index())
+                << " ON " << NARROW(table_.get_name()) << "("
+                << NARROW(it->get_name()) << ");\n";
+    }
+}
+
 SqlSchemaGenerator::SqlSchemaGenerator(
         const Schema &schema, SqlDialect *dialect)
     : schema_(schema)
@@ -343,11 +354,23 @@ void SqlSchemaGenerator::gen_create_fk_constraints(ostream &out)
     gen_commit(out);
 }
 
+void SqlSchemaGenerator::gen_create_indexes(ostream &out)
+{
+    Schema::TblMap::const_iterator it = schema_.tbl_begin(),
+        end = schema_.tbl_end();
+    for (; it != end; ++it) {
+        SqlTableGenerator tgen(*(it->second), dialect_);
+        tgen.gen_create_indexes(out);
+    }
+    gen_commit(out);
+}
+
 void SqlSchemaGenerator::generate(ostream &out)
 {
     out << "-- DBTYPE=" << NARROW(dialect_->get_name()) << "\n\n";
     gen_create_tables(out);
     gen_create_fk_constraints(out);
+    gen_create_indexes(out);
     gen_create_sequences(out);
 }
 
