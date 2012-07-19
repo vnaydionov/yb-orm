@@ -653,6 +653,15 @@ AC_DEFUN([YB_CHECK_YBORM],
         AC_HELP_STRING([--with-yborm-bin=DIR],
             [Place where YB.ORM executables are]),
         [ac_yborm_bin="$withval"],[ac_yborm_bin=""])
+    AC_ARG_WITH([yborm-root],
+        AC_HELP_STRING([--with-yborm-root=DIR],
+            [Place where is the root of YB.ORM]),
+        [
+        ac_yborm_bin="$withval/bin"
+        ac_yborm_libs="$withval/lib"
+        ac_yborm_includes="$withval/include/yb"
+        ]
+        ,[])
 
     AC_MSG_CHECKING([for YB.ORM])
 
