@@ -24,7 +24,5 @@ public:
     ~Log();
 };
 
-extern std::auto_ptr<Log> g_log;
-
-#endif
+#endif // _AUTH__LOGGER_H_
 // vim:ts=4:sts=4:sw=4:et:

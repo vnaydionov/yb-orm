@@ -15,16 +15,16 @@
 #include <orm/SqlPool.h>
 #include <orm/MetaDataSingleton.h>
 #include "md5.h"
-#include "logger.h"
+#include "App.h"
 #include "micro_http.h"
 #include "domain/User.h"
 #include "domain/LoginSession.h"
 
 using namespace std;
 using namespace Domain;
-using namespace Domain;
 
-std::auto_ptr<Yb::Engine> engine;
+Yb::Engine *engine = NULL;
+Yb::ILogger *logger = NULL;
 
 Yb::LongInt
 get_random()
@@ -85,7 +85,7 @@ get_checked_session_by_token(Yb::Session &session,
 std::string 
 check(StringMap &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), engine.get());
+    Yb::Session session(Yb::theMetaData::instance(), engine);
     return get_checked_session_by_token(session, params) == -1? BAD_RESP: OK_RESP;
 }
 
@@ -108,7 +108,7 @@ md5_hash(const std::string &str)
 std::string 
 registration(StringMap &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), engine.get());
+    Yb::Session session(Yb::theMetaData::instance(), engine);
     User::ResultSet all = Yb::query<User>(session).all();
     User::ResultSet::iterator p = all.begin(), pend = all.end();
     if (p != pend) {
@@ -150,7 +150,7 @@ get_checked_user_by_creds(Yb::Session &session, StringMap &params)
 std::string 
 login(StringMap &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), engine.get());
+    Yb::Session session(Yb::theMetaData::instance(), engine);
     Yb::LongInt uid = get_checked_user_by_creds(session, params);
     if (-1 == uid)
         return BAD_RESP;
@@ -173,7 +173,7 @@ login(StringMap &params)
 std::string
 session_info(StringMap &params)
 { 
-    Yb::Session session(Yb::theMetaData::instance(), engine.get());
+    Yb::Session session(Yb::theMetaData::instance(), engine);
     Yb::LongInt sid = get_checked_session_by_token(session, params);
     if (-1 == sid)
         return BAD_RESP;
@@ -184,7 +184,7 @@ session_info(StringMap &params)
 std::string
 logout(StringMap &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), engine.get());
+    Yb::Session session(Yb::theMetaData::instance(), engine);
     Yb::LongInt sid = get_checked_session_by_token(session, params);
     if (-1 == sid)
         return BAD_RESP;
@@ -206,26 +206,17 @@ public:
 #if defined(YB_USE_QT)
     QCoreApplication app(argc, argv);
 #endif
+    Yb::ILogger::Ptr xlog;
     try {
-        const char *log_fname = "log.txt"; // TODO: read from config
-        g_log.reset(new Log(log_fname));
-        g_log->info("start log");
+        engine = theApp::instance().get_engine();
+        xlog.reset(theApp::instance().new_logger("main").release());
+        logger = xlog.get();
     }
     catch (const std::exception &ex) {
         std::cerr << "exception: " << ex.what() << "\n";
-        std::cerr << "Can't open log file! Stop!\n";
         return 1;
     }
     try {
-        Yb::init_default_meta();
-        std::auto_ptr<Yb::SqlPool> pool(new Yb::SqlPool(YB_POOL_MAX_SIZE,
-                YB_POOL_IDLE_TIME, YB_POOL_MONITOR_SLEEP, g_log.get()));
-        Yb::SqlSource src = Yb::Engine::sql_source_from_env(_T("auth_db"));
-        pool->add_source(src);
-        engine.reset(new Yb::Engine(Yb::Engine::MANUAL, pool, _T("auth_db")));
-        Yb::Logger::Ptr ormlog = g_log->new_logger("orm");
-        engine->set_echo(true);
-        engine->set_logger(ormlog);
         int port = 9090; // TODO: read from config
         HttpHandlerMap handlers;
         handlers["/session_info"] = session_info;
@@ -233,15 +224,13 @@ public:
         handlers["/check"] = check;
         handlers["/login"] = login;
         handlers["/logout"] = logout;
-        HttpServer server(port, handlers);
+        HttpServer server(port, handlers, &theApp::instance());
         server.serve();
     }
     catch (const std::exception &ex) {
-        g_log->error(string("exception: ") + ex.what());
-        engine.reset(NULL);
+        logger->error(string("exception: ") + ex.what());
         return 1;
     }
-    engine.reset(NULL);
     return 0;
 }
 #if defined(YB_USE_WX)

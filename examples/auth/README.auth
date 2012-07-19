@@ -27,18 +27,17 @@ c:\yborm\build-auth\build*.bat.
 To build Auth under Unix, please use autogen.sh/configure scripts.
 For instance, you can build and install YB.ORM locally as follows:
 sh autogen.sh
-./configure --with-test-dbtype=MYSQL --with-test-db=test1_db \
-  --with-test-user=test1 --with-test-passwd=test1_pwd --disable-static \
-  --prefix=/home/vaclav/inst1
+./configure --with-test-db-url=mysql://test1:test1_pwd@test1_db \
+  --disable-static --prefix=/home/vaclav/inst1
 make check && make install
 
 Then you can build Auth itself, like this:
 sh autogen.sh
-./configure --with-test-dbtype=MYSQL --with-test-db=test1_db \
-  --with-test-user=test1 --with-test-passwd=test1_pwd --disable-static \
-  --prefix=/home/vaclav/inst1 \
-  --with-yborm-includes=/home/vaclav/inst1/include/yb \
-  --with-yborm-libs=/home/vaclav/inst1/lib \
-  --with-yborm-bin=/home/vaclav/inst1/bin
+./configure --with-test-db-url=mysql://test1:test1_pwd@test1_db \
+  --with-yborm-root=/home/vaclav/inst1 --disable-static
 make
+
+On start it will create a log-file named "log.txt" in the working directory.
+You can start this little web-server like this:
+sh src/auth.sh
 

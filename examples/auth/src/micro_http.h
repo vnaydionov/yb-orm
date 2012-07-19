@@ -36,7 +36,8 @@ class HttpServer
     HttpServer(const HttpServer &);
     HttpServer &operator=(const HttpServer &);
 public:
-    HttpServer(int port, const HttpHandlerMap &handlers);
+    HttpServer(int port, const HttpHandlerMap &handlers,
+            Yb::ILogger *root_logger);
     void serve();
 };
 

@@ -2,8 +2,6 @@
 #include <sstream>
 #include <stdexcept>
 
-std::auto_ptr<Log> g_log;
-
 Log::Log(const std::string& path)
     : should_close(false)
     , file_stream(path.c_str(), std::ios::app)
@@ -13,6 +11,7 @@ Log::Log(const std::string& path)
     if (file_stream.fail())
         throw std::runtime_error("can't open logfile: " + path);
     should_close = true;
+    info("log started");
 }
 
 Log::~Log()

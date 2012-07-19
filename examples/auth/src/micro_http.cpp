@@ -8,10 +8,11 @@
 using namespace std;
 using namespace Yb::StrUtils;
 
-HttpServer::HttpServer(int port, const HttpHandlerMap &handlers)
+HttpServer::HttpServer(int port, const HttpHandlerMap &handlers,
+            Yb::ILogger *root_logger)
     : port_(port)
     , handlers_(handlers)
-    , log_(g_log->new_logger("http_serv").release())
+    , log_(root_logger->new_logger("http_serv").release())
 {}
 
 bool
