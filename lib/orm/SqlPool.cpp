@@ -180,7 +180,7 @@ SqlPool::SqlPool(int pool_max_size, int idle_time,
     , monitor_(this)
 {
     if (logger) {
-        ILogger::Ptr pool_logger = logger->new_logger("sql_pool");
+        ILogger::Ptr pool_logger = logger->new_logger("pool");
         logger_.reset(pool_logger.release());
     }
     monitor_.start();

@@ -18,14 +18,15 @@ class App: public Yb::ILogger
     void init_engine(Yb::ILogger *root_logger)
     {
         if (!engine_.get()) {
+            Yb::ILogger::Ptr yb_logger(root_logger->new_logger("yb").release());
             Yb::init_default_meta();
             std::auto_ptr<Yb::SqlPool> pool(
                     new Yb::SqlPool(YB_POOL_MAX_SIZE, YB_POOL_IDLE_TIME,
-                        YB_POOL_MONITOR_SLEEP, root_logger));
+                        YB_POOL_MONITOR_SLEEP, yb_logger.get()));
             pool->add_source(Yb::Engine::sql_source_from_env(_T("auth_db")));
             engine_.reset(new Yb::Engine(Yb::Engine::MANUAL, pool, _T("auth_db")));
             engine_->set_echo(true);
-            engine_->set_logger(root_logger->new_logger("orm"));
+            engine_->set_logger(yb_logger);
         }
     }
 
