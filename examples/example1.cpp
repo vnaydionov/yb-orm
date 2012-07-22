@@ -7,14 +7,15 @@
 #include "domain/Order.h"
 
 using namespace std;
-Yb::LogAppender appender(cerr);
 
 int main()
 {
+    Yb::LogAppender appender(cerr);
+    Yb::Logger root_logger(&appender);
     Yb::Engine engine(Yb::Engine::MANUAL);
-    Yb::Session session(Yb::init_default_meta(), &engine);
     engine.set_echo(true);
-    engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&appender)));
+    engine.set_logger(root_logger.new_logger(_T("yb")));
+    Yb::Session session(Yb::init_default_meta(), &engine);
     Domain::ClientHolder client(session);
     string name, email;
     cout << "Enter name, email: \n";

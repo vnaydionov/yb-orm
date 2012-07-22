@@ -55,10 +55,12 @@ class Session: NonCopyable {
     friend class ::TestDataObjectSaveLoad;
     typedef std::set<DataObjectPtr> Objects;
     typedef std::map<Key, DataObjectPtr> IdentityMap;
+    ILogger::Ptr logger_;
     Objects objects_;
     IdentityMap identity_map_;
     const Schema *schema_;
     std::auto_ptr<EngineBase> engine_;
+    void debug(const String &s) { if (logger_.get()) logger_->debug(NARROW(s)); }
     DataObjectPtr add_to_identity_map(DataObjectPtr obj, bool return_found);
     void flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs);
     void flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs);
@@ -69,8 +71,11 @@ public:
     Session(const Schema &schema, EngineBase *engine = NULL)
         : schema_(&schema)
     {
-        if (engine)
+        if (engine) {
             engine_.reset(engine->clone().release());
+            if (engine->logger())
+                logger_.reset(engine->logger()->new_logger(_T("orm")).release());
+        }
     }
     ~Session();
     const Schema &schema() const { return *schema_; }

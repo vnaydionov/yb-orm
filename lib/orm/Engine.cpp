@@ -31,7 +31,7 @@ Engine::Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
     , dialect_(conn->get_dialect())
 {
     conn_ptr_->set_echo(echo_);
-    conn_ptr_->set_logger(logger_ptr_);
+    conn_ptr_->init_logger(logger_ptr_);
 }
 
 Engine::Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
@@ -50,7 +50,7 @@ Engine::Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
         throw GenericDBError(_T("Can't get connection"));
     dialect_ = conn_ptr_->get_dialect();
     conn_ptr_->set_echo(echo_);
-    conn_ptr_->set_logger(logger_ptr_);
+    conn_ptr_->init_logger(logger_ptr_);
 }
 
 SqlSource Engine::sql_source_from_env(const String &id)
@@ -192,7 +192,7 @@ Engine::set_logger(ILogger::Ptr logger)
     logger_ = logger;
     SqlConnection *conn = get_conn(false);
     if (conn)
-        conn->set_logger(logger_.get());
+        conn->init_logger(logger_.get());
 }
 
 SqlResultSet

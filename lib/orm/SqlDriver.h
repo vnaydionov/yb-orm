@@ -261,6 +261,7 @@ class SqlCursor: NonCopyable
     std::auto_ptr<SqlCursorBackend> backend_;
     bool echo_;
     ILogger *log_;
+    void debug(const String &s) { if (log_) log_->debug(NARROW(s)); }
     SqlCursor(SqlConnection &connection);
 public:
     SqlResultSet exec_direct(const String &sql);
@@ -281,7 +282,8 @@ class SqlConnection: NonCopyable
     std::auto_ptr<SqlCursor> cursor_;
     bool activity_, echo_, bad_, explicit_trans_;
     time_t free_since_;
-    ILogger *log_;
+    ILogger::Ptr log_;
+    void debug(const String &s) { if (log_.get()) log_->debug(NARROW(s)); }
     void mark_bad(const std::exception &e);
 public:
     SqlConnection(const String &driver_name,
@@ -296,7 +298,11 @@ public:
     const String &get_db() const { return source_.db(); }
     const String &get_user() const { return source_.user(); }
     void set_echo(bool echo) { echo_ = echo; }
-    void set_logger(ILogger *log) { log_ = log; }
+    void init_logger(ILogger *parent) {
+        log_.reset(NULL);
+        if (parent)
+            log_.reset(parent->new_logger(_T("sql")).release());
+    }
     std::auto_ptr<SqlCursor> new_cursor();
     bool bad() const { return bad_; }
     bool activity() const { return activity_; }

@@ -395,20 +395,28 @@ void Session::flush_delete(IdentityMap &idmap_copy)
 
 void Session::flush()
 {
-    IdentityMap idmap_copy = identity_map_;
-    flush_new();
-    flush_update(idmap_copy);
-    flush_delete(idmap_copy);
-    // Delete the deleted objects
-    Objects obj_copy = objects_;
-    Objects::iterator i = obj_copy.begin(), iend = obj_copy.end();
-    for (; i != iend; ++i)
-        if ((*i)->status() == DataObject::Deleted) {
-            IdentityMap::iterator k = identity_map_.find((*i)->key());
-            if (k != identity_map_.end())
-                identity_map_.erase(k);
-            objects_.erase(objects_.find(*i));
-        }
+    debug(_T("flush started"));
+    try {
+        IdentityMap idmap_copy = identity_map_;
+        flush_new();
+        flush_update(idmap_copy);
+        flush_delete(idmap_copy);
+        // Delete the deleted objects
+        Objects obj_copy = objects_;
+        Objects::iterator i = obj_copy.begin(), iend = obj_copy.end();
+        for (; i != iend; ++i)
+            if ((*i)->status() == DataObject::Deleted) {
+                IdentityMap::iterator k = identity_map_.find((*i)->key());
+                if (k != identity_map_.end())
+                    identity_map_.erase(k);
+                objects_.erase(objects_.find(*i));
+            }
+        debug(_T("flush finished OK"));
+    }
+    catch (...) {
+        debug(_T("flush finished with an ERROR"));
+        throw;
+    }
 }
 
 void Session::commit()

@@ -64,6 +64,7 @@ public:
     virtual LongInt get_curr_value(const String &seq_name) = 0;
     virtual LongInt get_next_value(const String &seq_name) = 0;
     virtual SqlDialect *get_dialect() = 0;
+    virtual ILogger *logger() = 0;
     virtual std::auto_ptr<EngineBase> clone() = 0;
 };
 
@@ -93,6 +94,7 @@ public:
     bool activity() { return get_conn()->activity(); }
     void set_echo(bool echo);
     void set_logger(ILogger::Ptr logger);
+    ILogger *logger() { return logger_ptr_? logger_ptr_: logger_.get(); }
 
     // SQL operator wrappers
     SqlResultSet select_iter(

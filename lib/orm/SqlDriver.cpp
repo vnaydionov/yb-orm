@@ -22,8 +22,6 @@ using namespace Yb::StrUtils;
     strcpy(__s, ctime(&__t)); __s[strlen(__s) - 1] = 0; \
     __log << __s << ": " << NARROW(x) << '\n'; \
     std::cerr << __log.str(); } while(0)
-#else
-#define DBG(x) do { if (log_) { log_->debug(NARROW(x)); } } while(0)
 #endif
 
 namespace Yb {
@@ -475,7 +473,7 @@ SqlCursor::SqlCursor(SqlConnection &connection)
     : connection_(connection)
     , backend_(connection.backend_->new_cursor().release())
     , echo_(connection.echo_)
-    , log_(connection.log_)
+    , log_(connection.log_.get())
 {}
 
 SqlResultSet
@@ -483,7 +481,7 @@ SqlCursor::exec_direct(const String &sql)
 {
     try {
         if (echo_)
-            DBG(_T("exec_direct: ") + sql);
+            debug(_T("exec_direct: ") + sql);
         connection_.activity_ = true;
         backend_->exec_direct(sql);
         return SqlResultSet(*this);
@@ -499,7 +497,7 @@ SqlCursor::prepare(const String &sql)
 {
     try {
         if (echo_)
-            DBG(_T("prepare: ") + sql);
+            debug(_T("prepare: ") + sql);
         connection_.activity_ = true;
         backend_->prepare(sql);
     }
@@ -519,7 +517,7 @@ SqlCursor::exec(const Values &params)
             for (unsigned i = 0; i < params.size(); ++i)
                 out << " p" << (i + 1) << "=\""
                     << NARROW(params[i].sql_str()) << "\"";
-            DBG(WIDEN(out.str()));
+            debug(WIDEN(out.str()));
         }
         connection_.activity_ = true;
         backend_->exec(params);
@@ -545,10 +543,10 @@ SqlCursor::fetch_row()
                 for (; j != jend; ++j)
                     out << NARROW(j->first) << "="
                         << NARROW(j->second.sql_str()) << " ";
-                DBG(WIDEN(out.str()));
+                debug(WIDEN(out.str()));
             }
             else
-                DBG(_T("fetch: no more rows"));
+                debug(_T("fetch: no more rows"));
         }
         return row;
     }
@@ -582,7 +580,7 @@ SqlConnection::mark_bad(const std::exception &e)
         size_t pos = s.find('\n');
         if (pos != string::npos)
             s = s.substr(0, pos);
-        DBG(_T("mark connection bad, because of ") + String(WIDEN(s)));
+        debug(_T("mark connection bad, because of ") + String(WIDEN(s)));
         bad_ = true;
     }
 }
@@ -598,7 +596,6 @@ SqlConnection::SqlConnection(const String &driver_name,
     , bad_(false)
     , explicit_trans_(false)
     , free_since_(0)
-    , log_(NULL)
 {
     source_[_T("&driver")] = driver_->get_name();
     backend_.reset(driver_->create_backend().release());
@@ -614,7 +611,6 @@ SqlConnection::SqlConnection(const SqlSource &source)
     , bad_(false)
     , explicit_trans_(false)
     , free_since_(0)
-    , log_(NULL)
 {
     source_[_T("&driver")] = driver_->get_name();
     backend_.reset(driver_->create_backend().release());
@@ -630,7 +626,6 @@ SqlConnection::SqlConnection(const String &url)
     , bad_(false)
     , explicit_trans_(false)
     , free_since_(0)
-    , log_(NULL)
 {
     source_[_T("&driver")] = driver_->get_name();
     backend_.reset(driver_->create_backend().release());
@@ -651,7 +646,7 @@ SqlConnection::~SqlConnection()
     }
     catch (const std::exception &e) { err = true; }
     if (err)
-        DBG(_T("error while closing connection"));
+        debug(_T("error while closing connection"));
 }
 
 auto_ptr<SqlCursor>
@@ -683,7 +678,7 @@ SqlConnection::commit()
     try {
         if (!dialect_->explicit_begin_trans() || explicit_trans_) {
             if (echo_)
-                DBG(_T("commit"));
+                debug(_T("commit"));
             backend_->commit();
         }
         activity_ = false;
@@ -701,7 +696,7 @@ SqlConnection::rollback()
     try {
         if (!dialect_->explicit_begin_trans() || explicit_trans_) {
             if (echo_)
-                DBG(_T("rollback"));
+                debug(_T("rollback"));
             backend_->rollback();
         }
         activity_ = false;
