@@ -167,6 +167,8 @@ private:
             const StringSet &exclude_fields, const Filter &where);
     virtual void on_delete(const String &table_name,
             const Filter &where);
+    virtual void on_delete(const String &table_name,
+            const Keys &keys);
     virtual void on_exec_proc(const String &proc_code);
     virtual void on_commit();
     virtual void on_rollback();

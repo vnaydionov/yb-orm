@@ -90,7 +90,7 @@ Session::Session(const Schema &schema, EngineBase *engine)
     if (engine) {
         engine_.reset(engine->clone().release());
         if (engine->logger())
-            logger_.reset(engine->logger()->new_logger(_T("orm")).release());
+            logger_.reset(engine->logger()->new_logger("orm").release());
     }
 }
 
@@ -366,6 +366,7 @@ void Session::flush_update(IdentityMap &idmap_copy)
 
 void Session::flush_delete(IdentityMap &idmap_copy)
 {
+    ILogger::Ptr log(logger_->new_logger("flush_delete").release());
     typedef vector<Key> Keys;
     typedef map<String, Keys> KeysByTable;
     typedef map<int, KeysByTable> GroupsByDepth;
@@ -396,14 +397,17 @@ void Session::flush_delete(IdentityMap &idmap_copy)
         i->second->set_status(DataObject::Deleted);
     }
     for (int d = max_depth; d >= 0; --d) {
+        log->debug("depth: " + to_stdstring(d));
         GroupsByDepth::iterator k = groups_by_depth.find(d);
         if (k == groups_by_depth.end())
             continue;
         KeysByTable &keys_by_table = k->second;
         KeysByTable::iterator j = keys_by_table.begin(),
             jend = keys_by_table.end();
-        for (; j != jend; ++j)
+        for (; j != jend; ++j) {
+            log->debug("table: " + NARROW(j->first));
             engine_->delete_from(j->first, j->second);
+        }
     }
 }
 
@@ -730,7 +734,7 @@ void DataObject::delete_object(DeletionMode mode, int depth)
             status_ = Deleted;
         }
         else {
-            depth_ = depth;
+            //depth_ = depth; // why the hell I did that?
             status_ = ToBeDeleted;
         }
     }

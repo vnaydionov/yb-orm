@@ -276,9 +276,7 @@ Engine::delete_from(const String &table_name, const Keys &keys)
         throw BadOperationInMode(
                 _T("Using DELETE operation in read-only mode"));
     touch();
-    Keys::const_iterator i = keys.begin(), iend = keys.end();
-    for (; i != iend; ++i)
-        on_delete(table_name, KeyFilter(*i));
+    on_delete(table_name, keys);
 }
 
 void
@@ -451,6 +449,26 @@ Engine::on_delete(const String &table_name, const Filter &where)
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
     cursor->exec(params);
+}
+
+void
+Engine::on_delete(const String &table_name, const Keys &keys)
+{
+    if (keys.size()) {
+        String sql;
+        Values params;
+        do_gen_sql_delete(sql, params, table_name, KeyFilter(*keys.begin()));
+        auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+        cursor->prepare(sql);
+        Keys::const_iterator i = keys.begin(), iend = keys.end();
+        for (; i != iend; ++i) {
+            ValueMap::const_iterator j = i->second.begin(),
+                jend = i->second.end();
+            for (int pos = 0; j != jend; ++j, ++pos)
+                params[pos] = j->second;
+            cursor->exec(params);
+        }
+    }
 }
 
 void

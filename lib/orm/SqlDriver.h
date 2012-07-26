@@ -301,7 +301,7 @@ public:
     void init_logger(ILogger *parent) {
         log_.reset(NULL);
         if (parent)
-            log_.reset(parent->new_logger(_T("sql")).release());
+            log_.reset(parent->new_logger("sql").release());
     }
     std::auto_ptr<SqlCursor> new_cursor();
     bool bad() const { return bad_; }
