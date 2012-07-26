@@ -60,13 +60,13 @@ public:
         CPPUNIT_ASSERT_EQUAL(2, (int)reg.tbl_count());
         const Table &t = reg.table(_T("A"));
         CPPUNIT_ASSERT_EQUAL(1, (int)t.size());
-        CPPUNIT_ASSERT_EQUAL(string("AA"), NARROW(t.begin()->get_name()));
-        CPPUNIT_ASSERT_EQUAL(10, (int)t.begin()->get_size());
-        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, t.begin()->get_type());
+        CPPUNIT_ASSERT_EQUAL(string("AA"), NARROW(t.begin()->name()));
+        CPPUNIT_ASSERT_EQUAL(10, (int)t.begin()->size());
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, t.begin()->type());
         const Table &t2 = reg.table(_T("B"));
         CPPUNIT_ASSERT_EQUAL(1, (int)t2.size());
-        CPPUNIT_ASSERT_EQUAL(string("BA"), NARROW(t2.begin()->get_name()));
-        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, t2.begin()->get_type());
+        CPPUNIT_ASSERT_EQUAL(string("BA"), NARROW(t2.begin()->name()));
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, t2.begin()->type());
 
         CPPUNIT_ASSERT_EQUAL(1, (int)reg.rel_count());
         CPPUNIT_ASSERT_EQUAL((int)Relation::ONE2MANY, (*reg.rel_begin())->type());
@@ -89,18 +89,18 @@ public:
             "</table>";
         ElementTree::ElementPtr node(ElementTree::parse(xml));
         Table::Ptr t = cfg_.parse_table(node);
-        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(t->get_name()));
-        CPPUNIT_ASSERT_EQUAL(string("S"), NARROW(t->get_seq_name()));
+        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(t->name()));
+        CPPUNIT_ASSERT_EQUAL(string("S"), NARROW(t->seq_name()));
         CPPUNIT_ASSERT_EQUAL(2, (int)t->size());
         Columns::const_iterator it = t->begin();
-        CPPUNIT_ASSERT_EQUAL(string("ASTR"), NARROW(it->get_name()));
-        CPPUNIT_ASSERT_EQUAL(10, (int)it->get_size());
-        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, it->get_type());
+        CPPUNIT_ASSERT_EQUAL(string("ASTR"), NARROW(it->name()));
+        CPPUNIT_ASSERT_EQUAL(10, (int)it->size());
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, it->type());
         ++it;
-        CPPUNIT_ASSERT_EQUAL(string("B_ID"), NARROW(it->get_name()));
-        CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(it->get_fk_name()));
-        CPPUNIT_ASSERT_EQUAL(string("T_B"), NARROW(it->get_fk_table_name()));
-        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, it->get_type()); 
+        CPPUNIT_ASSERT_EQUAL(string("B_ID"), NARROW(it->name()));
+        CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(it->fk_name()));
+        CPPUNIT_ASSERT_EQUAL(string("T_B"), NARROW(it->fk_table_name()));
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, it->type()); 
     }
 
     void testNoAutoInc()
@@ -113,8 +113,8 @@ public:
             "</table>"
         ));
         Table::Ptr t = cfg_.parse_table(node);
-        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->get_seq_name()));
-        CPPUNIT_ASSERT_EQUAL(false, t->get_autoinc());
+        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->seq_name()));
+        CPPUNIT_ASSERT_EQUAL(false, t->autoinc());
     }
 
     void testAutoInc()
@@ -127,8 +127,8 @@ public:
             "</table>"
         ));
         Table::Ptr t = cfg_.parse_table(node);
-        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->get_seq_name()));
-        CPPUNIT_ASSERT_EQUAL(true, t->get_autoinc());
+        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->seq_name()));
+        CPPUNIT_ASSERT_EQUAL(true, t->autoinc());
     }
 
     void testNullable()
@@ -143,9 +143,9 @@ public:
             "</table>"
         ));
         Table::Ptr t = cfg_.parse_table(node);
-        CPPUNIT_ASSERT_EQUAL(false, t->get_column(_T("B")).is_nullable());
-        CPPUNIT_ASSERT_EQUAL(true, t->get_column(_T("C")).is_nullable());
-        CPPUNIT_ASSERT_EQUAL(false, t->get_column(_T("D")).is_nullable());
+        CPPUNIT_ASSERT_EQUAL(false, t->column(_T("B")).is_nullable());
+        CPPUNIT_ASSERT_EQUAL(true, t->column(_T("C")).is_nullable());
+        CPPUNIT_ASSERT_EQUAL(false, t->column(_T("D")).is_nullable());
     }
 
     void testClassName()
@@ -157,13 +157,13 @@ public:
             "</table>"
         ));
         Table::Ptr t = cfg_.parse_table(node);
-        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(t->get_name()));
-        CPPUNIT_ASSERT_EQUAL(string("bb"), NARROW(t->get_xml_name()));
-        CPPUNIT_ASSERT_EQUAL(string("aa"), NARROW(t->get_class_name()));
-        CPPUNIT_ASSERT_EQUAL(string("b"), NARROW(t->get_column(_T("B")).get_xml_name()));
-        CPPUNIT_ASSERT_EQUAL(string("c"), NARROW(t->get_column(_T("C")).get_prop_name()));
-        CPPUNIT_ASSERT_EQUAL(string("xx"), NARROW(t->get_column(_T("B")).get_prop_name()));
-        CPPUNIT_ASSERT_EQUAL(string("dd"), NARROW(t->get_column(_T("C")).get_xml_name()));
+        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(t->name()));
+        CPPUNIT_ASSERT_EQUAL(string("bb"), NARROW(t->xml_name()));
+        CPPUNIT_ASSERT_EQUAL(string("aa"), NARROW(t->class_name()));
+        CPPUNIT_ASSERT_EQUAL(string("b"), NARROW(t->column(_T("B")).xml_name()));
+        CPPUNIT_ASSERT_EQUAL(string("c"), NARROW(t->column(_T("C")).prop_name()));
+        CPPUNIT_ASSERT_EQUAL(string("xx"), NARROW(t->column(_T("B")).prop_name()));
+        CPPUNIT_ASSERT_EQUAL(string("dd"), NARROW(t->column(_T("C")).xml_name()));
     }
 
     void testClassNameDefault()
@@ -174,9 +174,9 @@ public:
             "</table>"
         ));
         Table::Ptr t = cfg_.parse_table(node);
-        CPPUNIT_ASSERT_EQUAL(string("ABC"), NARROW(t->get_name()));
-        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->get_class_name()));
-        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(t->get_xml_name()));
+        CPPUNIT_ASSERT_EQUAL(string("ABC"), NARROW(t->name()));
+        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t->class_name()));
+        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(t->xml_name()));
     }
 
     void testGetWrongNodeValue()
@@ -211,11 +211,11 @@ public:
                      "<read-only/><primary-key/></column>";
         ElementTree::ElementPtr node(ElementTree::parse(xml));
         Column col = XMLMetaDataConfig::fill_column_meta(node);
-        CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(col.get_name()));
+        CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(col.name()));
         CPPUNIT_ASSERT_EQUAL(true, col.is_pk());
         CPPUNIT_ASSERT_EQUAL(true, col.is_ro());
-        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, col.get_type());
-        CPPUNIT_ASSERT_EQUAL(string("i-d"), NARROW(col.get_xml_name()));
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, col.type());
+        CPPUNIT_ASSERT_EQUAL(string("i-d"), NARROW(col.xml_name()));
     }
 
     void testParseForeignKey()

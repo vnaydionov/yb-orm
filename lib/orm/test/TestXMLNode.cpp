@@ -75,7 +75,8 @@ class TestXMLNode : public CppUnit::TestFixture
             Table::Ptr t2(new Table(_T("T_ORM_XML"), _T("orm-xml"), _T("OrmXml")));
             t2->set_seq_name(_T("S_ORM_TEST_ID"));
             t2->add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t2->add_column(Column(_T("ORM_TEST_ID"), Value::LONGINT, 0, 0, _T("T_ORM_TEST"), _T("ID")));
+            t2->add_column(Column(_T("ORM_TEST_ID"), Value::LONGINT, 0, 0,
+                        Value(), _T("T_ORM_TEST"), _T("ID")));
             t2->add_column(Column(_T("B"), Value::DECIMAL, 0, 0));
             r.add_table(t2);
             Relation::AttrMap a1, a2;

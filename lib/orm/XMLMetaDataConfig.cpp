@@ -267,8 +267,8 @@ Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
 
     if((size > 0) && (col_type != Value::STRING))
         throw InvalidCombination(_T("Size musn't me used for not a String type"));
-    Column result(name, col_type, size, flags, fk_table, fk_field, xml_name, prop_name);
-    result.set_default_value(default_val);
+    Column result(name, col_type, size, flags, default_val,
+            fk_table, fk_field, xml_name, prop_name);
     return result;
 }
 

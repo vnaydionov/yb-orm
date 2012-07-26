@@ -54,13 +54,15 @@ public:
         Table::Ptr t(new Table(_T("A"), _T(""), _T("A")));
         t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK));
         t->add_column(Column(_T("Y"), Value::STRING, 4));
-        t->add_column(Column(_T("P"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
+        t->add_column(Column(_T("P"), Value::LONGINT, 0, 0, 
+                    Value(), _T("A"), _T("X")));
         t->add_column(Column(_T("R"), Value::LONGINT, 0, Column::RO));
         t->set_seq_name(_T("S_A_X"));
         r_.add_table(t);
         Table::Ptr u(new Table(_T("B"), _T(""), _T("B")));
         u->add_column(Column(_T("Z"), Value::LONGINT, 0, Column::PK));
-        u->add_column(Column(_T("X"), Value::LONGINT, 0, 0, _T("A"), _T("X")));
+        u->add_column(Column(_T("X"), Value::LONGINT, 0, 0,
+                    Value(), _T("A"), _T("X")));
         u->add_column(Column(_T("Q"), Value::DECIMAL));
         u->set_seq_name(_T("S_B_Z"));
         r_.add_table(u);
@@ -345,7 +347,7 @@ public:
     {
         try {
             DataObject::Ptr d = DataObject::create_new(r_.table(_T("A")));
-            const Column &c = r_.table(_T("A")).get_column(_T("P"));
+            const Column &c = r_.table(_T("A")).column(_T("P"));
             Value x; // !! this is required for bcc code not to fall !!
             d->get_typed_value(c, Value(_T("100"))); // should be OK
             d->get_typed_value(c, Value(_T("#")));

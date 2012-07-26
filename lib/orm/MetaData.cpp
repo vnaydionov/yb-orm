@@ -79,18 +79,30 @@ mk_xml_name(const String &name, const String &xml_name)
     return translate(str_to_lower(name), underscore_to_dash);
 }
 
+Column::Column(const String &name, int type, size_t size, int flags)
+    : table_(NULL)
+    , type_(type)
+    , flags_(flags)
+    , size_(size)
+    , name_(name)
+    , xml_name_(mk_xml_name(name, _T("")))
+    , prop_name_(str_to_lower(name))
+{}
+
 Column::Column(const String &name, int type, size_t size, int flags,
+        const Value &default_value,
         const String &fk_table, const String &fk,
         const String &xml_name, const String &prop_name)
-    : name_(name)
+    : table_(NULL)
     , type_(type)
-    , size_(size)
     , flags_(flags)
-    , fk_table_name_(fk_table)
-    , fk_name_(fk)
+    , size_(size)
+    , name_(name)
     , xml_name_(mk_xml_name(name, xml_name))
     , prop_name_(str_empty(prop_name)? str_to_lower(name): prop_name)
-    , table_(NULL)
+    , fk_name_(fk)
+    , fk_table_name_(fk_table)
+    , default_value_(default_value)
 {}
 
 Table::Table(const String &name, const String &xml_name,
@@ -107,16 +119,16 @@ const String &
 Table::get_unique_pk() const
 {
     if (pk_fields_.size() != 1)
-        throw AmbiguousPK(get_name());
+        throw AmbiguousPK(name());
     return *pk_fields_.begin();
 }
 
 void
 Table::add_column(const Column &column)
 {
-    if (!is_id(column.get_name()))
-        throw BadColumnName(get_name(), column.get_name());
-    String column_uname = str_to_upper(column.get_name());
+    if (!is_id(column.name()))
+        throw BadColumnName(name(), column.name());
+    String column_uname = str_to_upper(column.name());
     IndexMap::const_iterator it = indicies_.find(column_uname);
     int idx = -1;
     if (it == indicies_.end()) {
@@ -128,7 +140,7 @@ Table::add_column(const Column &column)
         idx = it->second;
         cols_[idx] = column;
     }
-    cols_[idx].table(*this);
+    cols_[idx].set_table(*this);
     if (column.is_pk())
         pk_fields_.push_back(column_uname);
 }
@@ -139,7 +151,7 @@ Table::idx_by_name(const String &col_name) const
     String column_uname = str_to_upper(col_name);
     IndexMap::const_iterator it = indicies_.find(column_uname);
     if (it == indicies_.end())
-        throw ColumnNotFoundInMetaData(get_name(), col_name);
+        throw ColumnNotFoundInMetaData(name(), col_name);
     return it->second;
 }
 
@@ -154,14 +166,14 @@ Table::find_synth_pk() const
 {
     // This call assumes that we have a table with
     // a synth. numeric primary key.
-    if (str_empty(get_seq_name()) && !get_autoinc())
+    if (str_empty(seq_name()) && !autoinc())
         return String();
     if (pk_fields_.size() != 1)
         return String();
-    const Column &c = get_column(*pk_fields_.begin());
-    if (c.get_type() != Value::LONGINT)
+    const Column &c = column(*pk_fields_.begin());
+    if (c.type() != Value::LONGINT)
         return String();
-    return c.get_name();
+    return c.name();
 }
 
 const String
@@ -171,35 +183,23 @@ Table::get_synth_pk() const
     // a synth. numeric primary key.
     String pk_name = find_synth_pk();
     if (str_empty(pk_name))
-        throw NotSuitableForAutoCreating(get_name());
+        throw NotSuitableForAutoCreating(name());
     return pk_name;
 }
 
 Strings &
 Table::get_fk_for(const Relation &rel, Strings &fkey_parts) const
 {
-    const String &master_tbl = rel.table(0).get_name();
+    const String &master_tbl = rel.table(0).name();
     if (rel.has_attr(1, _T("key")))
         StrUtils::split_str(rel.attr(1, _T("key")), _T(","), fkey_parts);
     else {
         Columns::const_iterator i = begin(), iend = end();
         for (; i != iend; ++i)
-            if (i->has_fk() && i->get_fk_table_name() == master_tbl)
-                fkey_parts.push_back(i->get_name());
+            if (i->has_fk() && i->fk_table_name() == master_tbl)
+                fkey_parts.push_back(i->name());
     }
     return fkey_parts;
-}
-
-const String
-Table::get_seq_name() const
-{
-    return seq_name_;
-}
-
-bool
-Table::get_autoinc() const
-{
-    return autoinc_;
 }
 
 const Key
@@ -277,11 +277,11 @@ Schema::operator=(Schema &x)
 void
 Schema::add_table(Table::Ptr table)
 {
-    if (!is_id(table->get_name()))
-        throw BadTableName(table->get_name());
+    if (!is_id(table->name()))
+        throw BadTableName(table->name());
     if (table->size() == 0)
-        throw TableWithoutColumns(table->get_name());
-    String table_uname = str_to_upper(table->get_name());
+        throw TableWithoutColumns(table->name());
+    String table_uname = str_to_upper(table->name());
     tables_[table_uname] = table;
     tables_[table_uname]->set_schema(this);
 }
@@ -301,7 +301,7 @@ Schema::find_table_by_class(const String &class_name) const
 {
     TblMap::const_iterator it = tables_.begin(), end = tables_.end();
     for (; it != end; ++it)
-        if (it->second->get_class_name() == class_name)
+        if (it->second->class_name() == class_name)
             return *it->second;
     throw ClassNotFoundInMetaData(class_name);
 }
@@ -330,12 +330,12 @@ Schema::fill_fkeys()
         Table &tbl = *i->second;
         Columns::const_iterator j = tbl.begin(), jend = tbl.end(); 
         for (; j != jend; ++j) {
-            if (!str_empty(j->get_fk_table_name()) &&
-                    str_empty(j->get_fk_name()))
+            if (!str_empty(j->fk_table_name()) &&
+                    str_empty(j->fk_name()))
             {
                 Column &c = const_cast<Column &> (*j);
                 try {
-                    c.set_fk_name(table(j->get_fk_table_name()).get_unique_pk());
+                    c.set_fk_name(table(j->fk_table_name()).get_unique_pk());
                 }
                 catch (const TableNotFoundInMetaData &)
                 {}
@@ -352,7 +352,7 @@ Schema::fill_fkeys()
             Strings fkey_parts;
             t1->get_fk_for(r, fkey_parts);
             if (!fkey_parts.size() || fkey_parts.size() != t0->pk_fields().size())
-                throw FkNotFoundInMetaData(t0->get_name(), t1->get_name());
+                throw FkNotFoundInMetaData(t0->name(), t1->name());
         }
     }
 }
@@ -417,7 +417,7 @@ Schema::fill_unique_tables(set<String> &unique_tables)
 {
     TblMap::const_iterator it = tables_.begin(), end = tables_.end();
     for (; it != end; ++it)
-        unique_tables.insert(it->second->get_name());
+        unique_tables.insert(it->second->name());
 }
 
 void
@@ -431,15 +431,15 @@ Schema::fill_map_tree_by_meta(const set<String> &unique_tables, StrMap &tree_map
         for (; it_col != end_col; ++it_col) {
             // if found a foreign key table in the set, add it with this dependent table
             if (it_col->has_fk()) {
-                String fk_field = it_col->get_fk_name();
-                String fk_table = it_col->get_fk_table_name(); 
-                check_foreign_key(t.get_name(), fk_table, fk_field);
-                tree_map.insert(StrMap::value_type(it_col->get_fk_table_name(), t.get_name()));
+                String fk_field = it_col->fk_name();
+                String fk_table = it_col->fk_table_name(); 
+                check_foreign_key(t.name(), fk_table, fk_field);
+                tree_map.insert(StrMap::value_type(it_col->fk_table_name(), t.name()));
                 has_parent = true;
             }
         }
         if (!has_parent)
-            tree_map.insert(StrMap::value_type(_T(""), t.get_name()));
+            tree_map.insert(StrMap::value_type(_T(""), t.name()));
     }
     // little hack, if no a root found(parent '' in map), the tree contains cycle
     if (tree_map.find(_T("")) == tree_map.end())
@@ -454,7 +454,7 @@ Schema::check_foreign_key(const String &table, const String &fk_table, const Str
         throw IntegrityCheckFailed(String(_T("Table '")) + fk_table +
                 _T("' not found as foreign key for '") + table + _T("'"));
     try {
-        tables_[fk_table_uname]->get_column(fk_field);
+        tables_[fk_table_uname]->column(fk_field);
     }
     catch (ColumnNotFoundInMetaData &) {
         throw IntegrityCheckFailed(String(_T("Field '")) + fk_field +

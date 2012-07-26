@@ -59,19 +59,13 @@ DataObjectResultSet::DataObjectResultSet(const SqlResultSet &rs, Session &sessio
     for (; i != iend; ++i)
         tables_.push_back(&schema.table(*i));
 }
-                                             
-Session::~Session()
+
+DataObjectResultSet::DataObjectResultSet(const DataObjectResultSet &obj)
+    : rs_(obj.rs_)
+    , tables_(obj.tables_)
+    , session_(obj.session_)
 {
-    Objects objects_copy = objects_;
-#if 0
-    using namespace boost::lambda;
-    for_each(objects_copy.begin(), objects_copy.end(),
-             bind(&Session::detach, this, _1));
-#else
-    Objects::iterator i = objects_copy.begin(), iend = objects_copy.end();
-    for (; i != iend; ++i)
-        detach(*i);
-#endif
+    YB_ASSERT(!obj.it_.get());
 }
 
 const String key2str(const Key &key)
@@ -90,6 +84,30 @@ DataObjectAlreadyInSession::DataObjectAlreadyInSession(const Key &key)
     : ORMError(_T("DataObject is already registered in the identity map: ") + key2str(key))
 {}
 
+Session::Session(const Schema &schema, EngineBase *engine)
+    : schema_(schema)
+{
+    if (engine) {
+        engine_.reset(engine->clone().release());
+        if (engine->logger())
+            logger_.reset(engine->logger()->new_logger(_T("orm")).release());
+    }
+}
+
+Session::~Session()
+{
+    Objects objects_copy = objects_;
+#if 0
+    using namespace boost::lambda;
+    for_each(objects_copy.begin(), objects_copy.end(),
+             bind(&Session::detach, this, _1));
+#else
+    Objects::iterator i = objects_copy.begin(), iend = objects_copy.end();
+    for (; i != iend; ++i)
+        detach(*i);
+#endif
+}
+
 DataObjectPtr Session::add_to_identity_map(DataObjectPtr obj, bool return_found)
 {
     if (obj->assigned_key()) {
@@ -100,11 +118,9 @@ DataObjectPtr Session::add_to_identity_map(DataObjectPtr obj, bool return_found)
                 throw DataObjectAlreadyInSession(key);
             DataObjectPtr eobj = i->second;
             const Table &table = obj->table();
-            for (size_t i = 0; i < table.size(); ++i) {
-                const Column &c = table.get_column(i);
-                if (!c.is_pk())
+            for (size_t i = 0; i < table.size(); ++i)
+                if (!table[i].is_pk())
                     eobj->values_[i] = obj->values_[i];
-            }
             eobj->status_ = obj->status_;
             return eobj;
         }
@@ -171,10 +187,9 @@ DataObjectResultSet Session::load_collection(
     Strings cols;
     Strings::const_iterator i = tables.begin(), iend = tables.end();
     for (; i != iend; ++i) {
-        const Table &table = schema_->table(*i);
-        Columns::const_iterator j = table.begin(), jend = table.end();
-        for (; j != jend; ++j)
-            cols.push_back(table.get_name() + _T(".") + j->get_name());
+        const Table &table = schema_[*i];
+        for (size_t j = 0; j < table.size(); ++j)
+            cols.push_back(table.name() + _T(".") + table[j].name());
     }
     SqlResultSet result = engine_->select_iter
         (StrList(cols), StrList(tables), filter,
@@ -196,7 +211,7 @@ DataObject::Ptr Session::get_lazy(const Key &key)
     if (empty_key)
         throw NullPK(key.first);
     DataObjectPtr new_obj =
-        DataObject::create_new(schema_->table(key.first), DataObject::Ghost);
+        DataObject::create_new(schema_[key.first], DataObject::Ghost);
     for (it = key.second.begin(); it != end; ++it)
         new_obj->set(it->first, it->second);
     new_obj->set_session(this);
@@ -229,20 +244,20 @@ void Session::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
         (*i)->refresh_master_fkeys();
         rows.push_back((*i)->values());
     }
-    engine_->insert(tbl.get_name(), rows, StringSet());
+    engine_->insert(tbl.name(), rows, StringSet());
 }
 
 void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
 {
     bool sql_seq = engine_->get_dialect()->has_sequences();
-    bool use_seq = sql_seq && !str_empty(tbl.get_seq_name());
+    bool use_seq = sql_seq && !str_empty(tbl.seq_name());
     bool use_autoinc = !sql_seq &&
-        (tbl.get_autoinc() || !str_empty(tbl.get_seq_name()));
+        (tbl.autoinc() || !str_empty(tbl.seq_name()));
     Objects::iterator i, iend = unkeyed_objs.end();
     if (use_seq) {
         String pk = tbl.get_synth_pk();
         for (i = unkeyed_objs.begin(); i != iend; ++i)
-            (*i)->set(pk, engine_->get_next_value(tbl.get_seq_name()));
+            (*i)->set(pk, engine_->get_next_value(tbl.seq_name()));
     }
     Rows rows;
     for (i = unkeyed_objs.begin(); i != iend; ++i) {
@@ -250,7 +265,7 @@ void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
         rows.push_back((*i)->values(!use_autoinc));
     }
     vector<LongInt> ids = engine_->insert
-        (tbl.get_name(), rows, StringSet(), use_autoinc);
+        (tbl.name(), rows, StringSet(), use_autoinc);
     if (use_autoinc) {
         String pk = tbl.get_synth_pk();
         i = unkeyed_objs.begin();
@@ -293,7 +308,7 @@ void Session::flush_new()
             k = groups_by_depth.find(d);
         }
         ObjectsByTable &objs_by_table = k->second;
-        const String &tbl_name = (*i)->table().get_name();
+        const String &tbl_name = (*i)->table().name();
         ObjectsByTable::iterator q = objs_by_table.find(tbl_name);
         if (q == objs_by_table.end()) {
             objs_by_table.insert(pair<String, Objects>
@@ -310,8 +325,7 @@ void Session::flush_new()
         ObjectsByTable &objs_by_table = k->second;
         ObjectsByTable::iterator j = objs_by_table.begin(), jend = objs_by_table.end();
         for (; j != jend; ++j) {
-            const String &tbl_name = j->first;
-            const Table &tbl = schema_->table(tbl_name);
+            const Table &tbl = schema_[j->first];
             Objects &objs = j->second, unkeyed_objs, keyed_objs;
             Objects::iterator l, lend = objs.end();
             for (l = objs.begin(); l != lend; ++l) {
@@ -346,7 +360,7 @@ void Session::flush_update(IdentityMap &idmap_copy)
         jend = rows_by_table.end();
     for (; j != jend; ++j) {
         engine_->update(j->first, j->second,
-                        schema_->table(j->first).pk_fields());
+                        schema_[j->first].pk_fields());
     }
 }
 
@@ -371,7 +385,7 @@ void Session::flush_delete(IdentityMap &idmap_copy)
             k = groups_by_depth.find(d);
         }
         KeysByTable &keys_by_table = k->second;
-        const String &tbl_name = i->second->table().get_name();
+        const String &tbl_name = i->second->table().name();
         KeysByTable::iterator q = keys_by_table.find(tbl_name);
         if (q == keys_by_table.end()) {
             keys_by_table.insert(pair<String, Keys> (tbl_name, Keys()));
@@ -446,12 +460,12 @@ void DataObject::forget_session()
 const Value DataObject::get_typed_value(const Column &col, const Value &v)
 {
     try {
-        return v.get_typed_value(col.get_type());
+        return v.get_typed_value(col.type());
     }
     catch (ValueBadCast &) {
-        throw BadTypeCast(table_.get_name(), col.get_name(),
+        throw BadTypeCast(table_.name(), col.name(),
                           v.as_string(),
-                          Value::get_type_name(col.get_type()));
+                          Value::get_type_name(col.type()));
     }
 }
 
@@ -463,21 +477,20 @@ void DataObject::touch()
     
 void DataObject::set(int i, const Value &v)
 {
-    const Column &c = table_.get_column(i);
+    const Column &c = table_[i];
     lazy_load(&c);
     if (c.is_pk() && session_ != NULL
         && values_[i] != v && !values_[i].is_null())
     {
-        throw ReadOnlyColumn(table_.get_name(), c.get_name());
+        throw ReadOnlyColumn(table_.name(), c.name());
     }
     if (c.is_ro() && !c.is_pk())
-        throw ReadOnlyColumn(table_.get_name(), c.get_name());
+        throw ReadOnlyColumn(table_.name(), c.name());
     Value new_value;
-    if (c.get_type() == Value::STRING) {
+    if (c.type() == Value::STRING) {
         String s = v.as_string();
-        if (c.get_size() && c.get_size() < s.size())
-            throw StringTooLong(table_.get_name(), c.get_name(),
-                                c.get_size(), s);
+        if (c.size() && c.size() < s.size())
+            throw StringTooLong(table_.name(), c.name(), c.size(), s);
         new_value = Value(s);
     }
     else
@@ -493,17 +506,15 @@ void DataObject::set(int i, const Value &v)
 
 void DataObject::update_key()
 {
-    key_.first = table_.get_name();
+    key_.first = table_.name();
     assigned_key_ = true;
     ValueMap new_values;
-    for (size_t i = 0; i < table_.size(); ++i) {
-        const Column &c = table_.get_column(i);
-        if (c.is_pk()) {
-            new_values[c.get_name()] = values_[i];
+    for (size_t i = 0; i < table_.size(); ++i)
+        if (table_[i].is_pk()) {
+            new_values[table_[i].name()] = values_[i];
             if (values_[i].is_null())
                 assigned_key_ = false;
         }
-    }
     key_.second.swap(new_values);
 }
 
@@ -517,12 +528,10 @@ const Key &DataObject::key()
 const Row DataObject::values(bool include_key)
 {
     Row values;
-    for (size_t i = 0; i < table_.size(); ++i) {
-        const Column &c = table_.get_column(i);
-        if (!c.is_pk() || include_key)
-            values.push_back(RowItem(c.get_name(),
-                        values_[i].get_typed_value(c.get_type())));
-    }
+    for (size_t i = 0; i < table_.size(); ++i)
+        if (!table_[i].is_pk() || include_key)
+            values.push_back(RowItem(table_[i].name(),
+                        values_[i].get_typed_value(table_[i].type())));
     return values;
 }
 
@@ -540,11 +549,11 @@ void DataObject::load()
     Strings cols;
     Columns::const_iterator it = table_.begin(), end = table_.end();
     for (; it != end; ++it)
-        cols.push_back(it->get_name());
+        cols.push_back(it->name());
     RowsPtr result = session_->engine()->select
-        (StrList(cols), table_.get_name(), f);
+        (StrList(cols), table_.name(), f);
     if (result->size() != 1)
-        throw ObjectNotFoundByKey(table_.get_name() + _T("(")
+        throw ObjectNotFoundByKey(table_.name() + _T("(")
                                   + f.get_sql() + _T(")"));
     fill_from_row(*result->begin());
 }
@@ -608,8 +617,8 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     // Find relation in metadata.
     const Schema &schema(master->table().schema());
     const Relation *r = schema.find_relation
-        (master->table().get_class(), relation_name,
-         slave->table().get_class(), mode);
+        (master->table().class_name(), relation_name,
+         slave->table().class_name(), mode);
     link(master, slave, *r);
 }
 
@@ -624,7 +633,7 @@ Key DataObject::fk_value_for(const Relation &r)
     ValueMap fk_values;
     for (; i != iend && j != jend; ++i, ++j)
         fk_values[*j] = get(*i);
-    return Key(master_tbl.get_name(), fk_values);
+    return Key(master_tbl.name(), fk_values);
 }
 
 DataObject::Ptr DataObject::get_master(
@@ -635,7 +644,7 @@ DataObject::Ptr DataObject::get_master(
     // Find relation in metadata.
     const Schema &schema(obj->table_.schema());
     const Relation *r = schema.find_relation
-        (obj->table_.get_class(), relation_name, _T(""), 1);
+        (obj->table_.class_name(), relation_name, _T(""), 1);
     YB_ASSERT(r != NULL);
     // Find FK value.
     Key fkey = obj->fk_value_for(*r);
@@ -661,7 +670,7 @@ RelationObject *DataObject::get_slaves(
     // Find relation in metadata.
     const Schema &schema(table_.schema());
     const Relation *r = schema.find_relation
-        (table_.get_class(), relation_name, _T(""), 0);
+        (table_.class_name(), relation_name, _T(""), 0);
     YB_ASSERT(r != NULL);
     // Try to find relation object in master's relations
     RelationObject *ro = NULL;
@@ -687,10 +696,8 @@ DataObject::~DataObject()
 size_t DataObject::fill_from_row(const Row &r, size_t pos)
 {
     size_t i = 0;
-    for (; i < table_.size(); ++i) {
-        const Column &c = table_.get_column(i);
-        values_[i] = get_typed_value(c, r[pos + i].second);
-    }
+    for (; i < table_.size(); ++i)
+        values_[i] = get_typed_value(table_[i], r[pos + i].second);
     update_key();
     status_ = Sync;
     return pos + i;
@@ -807,7 +814,7 @@ const Key RelationObject::gen_fkey() const
     ValueMap fk_values;
     for (; i != iend && j != jend; ++i, ++j)
         fk_values[*i] = master_object_->get(*j);
-    return Key(slave_tbl.get_name(), fk_values);
+    return Key(slave_tbl.name(), fk_values);
 }
 
 size_t RelationObject::count_slaves()
@@ -822,9 +829,9 @@ size_t RelationObject::count_slaves()
     Strings cols;
     cols.push_back(_T("COUNT(*) RCNT"));
     RowsPtr result = session.engine()->
-        select(StrList(cols), slave_tbl.get_name(), f);
+        select(StrList(cols), slave_tbl.name(), f);
     if (result->size() != 1)
-        throw ObjectNotFoundByKey(_T("COUNT(*) FOR ") + slave_tbl.get_name() + _T("(")
+        throw ObjectNotFoundByKey(_T("COUNT(*) FOR ") + slave_tbl.name() + _T("(")
                                   + f.get_sql() + _T(")"));
     return result->begin()->begin()->second.as_longint();
 }
@@ -840,17 +847,17 @@ void RelationObject::lazy_load_slaves()
     Strings cols;
     Columns::const_iterator j = slave_tbl.begin(), jend = slave_tbl.end();
     for (; j != jend; ++j)
-        cols.push_back(j->get_name());
+        cols.push_back(j->name());
     RowsPtr result = session.engine()->
-        select(StrList(cols), slave_tbl.get_name(), KeyFilter(gen_fkey()));
+        select(StrList(cols), slave_tbl.name(), KeyFilter(gen_fkey()));
     Rows::const_iterator k = result->begin(), kend = result->end();
     for (; k != kend; ++k) {
         ValueMap pk_values;
         j = slave_tbl.begin(), jend = slave_tbl.end();
         for (; j != jend; ++j)
             if (j->is_pk())
-                pk_values[j->get_name()] = find_in_row(*k, j->get_name())->second;
-        Key pkey(slave_tbl.get_name(), pk_values);
+                pk_values[j->name()] = find_in_row(*k, j->name())->second;
+        Key pkey(slave_tbl.name(), pk_values);
         DataObject::Ptr o = session.get_lazy(pkey);
         o->fill_from_row(*k);
         DataObject::link(master_object_, o, relation_info_);

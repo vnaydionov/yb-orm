@@ -41,13 +41,7 @@ class DataObjectResultSet: public ResultSetBase<ObjectList>
 public:
     DataObjectResultSet(const SqlResultSet &rs, Session &session,
                         const Strings &tables);
-    DataObjectResultSet(const DataObjectResultSet &obj)
-        : rs_(obj.rs_)
-        , tables_(obj.tables_)
-        , session_(obj.session_)
-    {
-        YB_ASSERT(!obj.it_.get());
-    }
+    DataObjectResultSet(const DataObjectResultSet &obj);
 };
 
 class Session: NonCopyable {
@@ -55,11 +49,13 @@ class Session: NonCopyable {
     friend class ::TestDataObjectSaveLoad;
     typedef std::set<DataObjectPtr> Objects;
     typedef std::map<Key, DataObjectPtr> IdentityMap;
+
     ILogger::Ptr logger_;
     Objects objects_;
     IdentityMap identity_map_;
-    const Schema *schema_;
+    const Schema &schema_;
     std::auto_ptr<EngineBase> engine_;
+
     void debug(const String &s) { if (logger_.get()) logger_->debug(NARROW(s)); }
     DataObjectPtr add_to_identity_map(DataObjectPtr obj, bool return_found);
     void flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs);
@@ -68,17 +64,9 @@ class Session: NonCopyable {
     void flush_update(IdentityMap &idmap_copy);
     void flush_delete(IdentityMap &idmap_copy);
 public:
-    Session(const Schema &schema, EngineBase *engine = NULL)
-        : schema_(&schema)
-    {
-        if (engine) {
-            engine_.reset(engine->clone().release());
-            if (engine->logger())
-                logger_.reset(engine->logger()->new_logger(_T("orm")).release());
-        }
-    }
+    Session(const Schema &schema, EngineBase *engine = NULL);
     ~Session();
-    const Schema &schema() const { return *schema_; }
+    const Schema &schema() const { return schema_; }
     void save(DataObjectPtr obj);
     DataObjectPtr save_or_update(DataObjectPtr obj);
     void detach(DataObjectPtr obj);
@@ -223,7 +211,7 @@ public:
     size_t size() const { return values_.size(); }
     int depth() const { return depth_; }
     Value &get(int i) {
-        lazy_load(&table_.get_column(i));
+        lazy_load(&table_[i]);
         return values_[i];
     }
     Value &get(const String &name) {

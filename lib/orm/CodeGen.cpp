@@ -117,9 +117,9 @@ void dump_rel_attr(const Relation::AttrMap &attr, int n, ostream &out)
 
 const string fk_rule(const Column &c)
 {
-    return "FOREIGN KEY (" + NARROW(c.get_name())
-        + ") REFERENCES " + NARROW(c.get_fk_table_name())
-        + "(" + NARROW(c.get_fk_name()) + ")";
+    return "FOREIGN KEY (" + NARROW(c.name())
+        + ") REFERENCES " + NARROW(c.fk_table_name())
+        + "(" + NARROW(c.fk_name()) + ")";
 }
 
 } // end of anonymous namespace
@@ -214,18 +214,18 @@ SqlTableGenerator::SqlTableGenerator(
 void SqlTableGenerator::gen_typed_column(ostream &out,
         const Column &column)
 {
-    out << NARROW(column.get_name()) << " "
-        << NARROW(dialect_->type2sql(column.get_type()));
-    if (column.get_type() == Value::STRING)
-        out << "(" << column.get_size() << ")";
+    out << NARROW(column.name()) << " "
+        << NARROW(dialect_->type2sql(column.type()));
+    if (column.type() == Value::STRING)
+        out << "(" << column.size() << ")";
     String default_clause;
-    if (!column.get_default_value().is_null()) {
+    if (!column.default_value().is_null()) {
         default_clause = _T("DEFAULT ");
-        if (column.get_type() == Value::DATETIME &&
-                column.get_default_value().as_string() == _T("sysdate"))
+        if (column.type() == Value::DATETIME &&
+                column.default_value().as_string() == _T("sysdate"))
             default_clause += dialect_->sysdate_func();
         else
-            default_clause += dialect_->sql_value(column.get_default_value());
+            default_clause += dialect_->sql_value(column.default_value());
     }
     String not_null_default_clause = dialect_->not_null_default(
             column.is_nullable() && !column.is_pk()? (
@@ -235,7 +235,7 @@ void SqlTableGenerator::gen_typed_column(ostream &out,
         out << " " << NARROW(not_null_default_clause);
     String autoinc_flag = dialect_->autoinc_flag();
     if (column.is_pk()
-            && (table_.get_autoinc() || !str_empty(table_.get_seq_name()))
+            && (table_.autoinc() || !str_empty(table_.seq_name()))
             && !str_empty(autoinc_flag))
     {
         String pk_flag = dialect_->primary_key_flag();
@@ -247,7 +247,7 @@ void SqlTableGenerator::gen_typed_column(ostream &out,
 
 void SqlTableGenerator::gen_create_table(ostream &out)
 {
-    out << "CREATE TABLE " << NARROW(table_.get_name()) << " (\n";
+    out << "CREATE TABLE " << NARROW(table_.name()) << " (\n";
     Columns::const_iterator it = table_.begin(), end = table_.end();
     for (; it != end; ++it) {
         out << "\t";
@@ -258,7 +258,7 @@ void SqlTableGenerator::gen_create_table(ostream &out)
     }
     String pk_flag = dialect_->primary_key_flag();
     if (str_empty(pk_flag)
-            || !(table_.get_autoinc() || !str_empty(table_.get_seq_name())))
+            || !(table_.autoinc() || !str_empty(table_.seq_name())))
     {
         out << "\t, PRIMARY KEY (";
         bool first = true;
@@ -268,7 +268,7 @@ void SqlTableGenerator::gen_create_table(ostream &out)
                     out << ", ";
                 else
                     first = false;
-                out << NARROW(it->get_name());
+                out << NARROW(it->name());
             }
         out << ")\n";
     }
@@ -286,7 +286,7 @@ void SqlTableGenerator::gen_fk_constraints(ostream &out)
         Columns::const_iterator it = table_.begin(), end = table_.end();
         for (; it != end; ++it)
             if (it->has_fk())
-                out << "ALTER TABLE " << NARROW(table_.get_name())
+                out << "ALTER TABLE " << NARROW(table_.name())
                     << " ADD " << fk_rule(*it) << ";\n";
     }
 }
@@ -322,8 +322,8 @@ void SqlSchemaGenerator::gen_create_sequences(ostream &out)
         Schema::TblMap::const_iterator it = schema_.tbl_begin(),
             end = schema_.tbl_end();
         for (; it != end; ++it)
-            if (!str_empty(it->second->get_seq_name()))
-                sequences.insert(it->second->get_seq_name());
+            if (!str_empty(it->second->seq_name()))
+                sequences.insert(it->second->seq_name());
         set<String>::iterator j = sequences.begin(),
             jend = sequences.end();
         for (; j != jend; ++j)
@@ -358,8 +358,8 @@ CppCodeGenerator::CppCodeGenerator(const Schema &schema,
     , table_(schema_.table(table_name))
     , path_(path)
     , inc_prefix_(inc_prefix)
-    , class_name_(NARROW(table_.get_class_name()))
-    , table_name_(NARROW(table_.get_name()))
+    , class_name_(NARROW(table_.class_name()))
+    , table_name_(NARROW(table_.name()))
 {
     autogen_handlers_[1] = &CppCodeGenerator::write_include_dependencies;
     autogen_handlers_[2] = &CppCodeGenerator::write_decl_relation_classes;
@@ -387,19 +387,19 @@ void CppCodeGenerator::write_include_dependencies(ostream &out)
     for (; it != end; ++it)
         if (it->has_fk())
             out << "#include \"" << inc_prefix_ <<
-                NARROW(schema_.table(it->get_fk_table_name()).get_class_name())
+                NARROW(schema_.table(it->fk_table_name()).class_name())
                 << ".h\"\n";
 }
 
 void CppCodeGenerator::write_decl_relation_classes(ostream &out)
 {
     Schema::RelMap::const_iterator
-        i = schema_.rels_lower_bound(table_.get_class_name()),
-        iend = schema_.rels_upper_bound(table_.get_class_name());
+        i = schema_.rels_lower_bound(table_.class_name()),
+        iend = schema_.rels_upper_bound(table_.class_name());
     set<String> classes;
     for (; i != iend; ++i) {
         if (i->second->type() == Relation::ONE2MANY &&
-                table_.get_class_name() == i->second->side(0) &&
+                table_.class_name() == i->second->side(0) &&
                 i->second->has_attr(0, _T("property")))
         {
             classes.insert(i->second->side(1));
@@ -416,9 +416,9 @@ void CppCodeGenerator::write_properties(ostream &out)
     Columns::const_iterator it = table_.begin(), end = table_.end();
     for (int count = 0; it != end; ++it, ++count)
         if (!it->has_fk()) {
-            out << "\tYb::Property<" << type_nc_by_handle(it->get_type())
+            out << "\tYb::Property<" << type_nc_by_handle(it->type())
                 << ", " << count << "> "
-                << fix_name(NARROW(it->get_prop_name())) << ";\n";
+                << fix_name(NARROW(it->prop_name())) << ";\n";
         }
     out << "\t// relation properties\n";
     typedef map<String, String> MapString;
@@ -426,13 +426,13 @@ void CppCodeGenerator::write_properties(ostream &out)
     for (it = table_.begin(); it != end; ++it)
         if (it->has_fk())
             map_fk.insert(MapString::value_type(
-                        it->get_fk_table_name(), it->get_name()));
+                        it->fk_table_name(), it->name()));
     Schema::RelMap::const_iterator
-        i = schema_.rels_lower_bound(table_.get_class_name()),
-        iend = schema_.rels_upper_bound(table_.get_class_name());
+        i = schema_.rels_lower_bound(table_.class_name()),
+        iend = schema_.rels_upper_bound(table_.class_name());
     for (; i != iend; ++i) {
         if (i->second->type() == Relation::ONE2MANY &&
-                table_.get_class_name() == i->second->side(1) &&
+                table_.class_name() == i->second->side(1) &&
                 i->second->has_attr(1, _T("property")))
         {
             String prop = i->second->attr(1, _T("property")),
@@ -441,11 +441,11 @@ void CppCodeGenerator::write_properties(ostream &out)
                 << NARROW(prop) << ";\n";
         }
     }
-    i = schema_.rels_lower_bound(table_.get_class_name());
-    iend = schema_.rels_upper_bound(table_.get_class_name());
+    i = schema_.rels_lower_bound(table_.class_name());
+    iend = schema_.rels_upper_bound(table_.class_name());
     for (; i != iend; ++i) {
         if (i->second->type() == Relation::ONE2MANY &&
-                table_.get_class_name() == i->second->side(0) &&
+                table_.class_name() == i->second->side(0) &&
                 i->second->has_attr(0, _T("property")))
         {
             String prop = i->second->attr(0, _T("property")),
@@ -459,7 +459,7 @@ void CppCodeGenerator::write_properties(ostream &out)
 void CppCodeGenerator::write_h_file_header(ostream &out)
 {
     string def_name = "ORM_DOMAIN__" +
-        NARROW(str_to_upper(table_.get_class_name())) + "__INCLUDED";
+        NARROW(str_to_upper(table_.class_name())) + "__INCLUDED";
     out << "#ifndef " << def_name << "\n"
         << "#define " << def_name << "\n\n"
         << "#include <orm/DomainObj.h>\n";
@@ -555,29 +555,32 @@ void CppCodeGenerator::write_cpp_meta_globals(ostream &out)
 
 void CppCodeGenerator::write_cpp_create_table_meta(ostream &out)
 {
-    string xml_name = NARROW(table_.get_xml_name());
+    string xml_name = NARROW(table_.xml_name());
     out << "void " << class_name_ << "::create_tables_meta(Yb::Tables &tbls)\n"
         << "{\n"
         << "\tYb::Table::Ptr t(new Yb::Table(_T(\"" << table_name_
         << "\"), _T(\"" << xml_name << "\"), _T(\"" << class_name_ << "\")));\n";
-    if (!str_empty(table_.get_seq_name()))
-        out << "\tt->set_seq_name(_T(\"" << NARROW(table_.get_seq_name()) << "\"));\n";
+    if (!str_empty(table_.seq_name()))
+        out << "\tt->set_seq_name(_T(\"" << NARROW(table_.seq_name()) << "\"));\n";
     Columns::const_iterator i = table_.begin(), iend = table_.end();
     for (; i != iend; ++i) {
         const Column &c = *i;
-        out << "\t{\n"
-            << "\t\tYb::Column c(_T(\"" << NARROW(c.get_name()) << "\"), "
-            << type_code_by_handle(c.get_type()) << ", " << c.get_size()
-            << ", " << flags_code_by_handle(c.get_flags())
-            << ", _T(\"" << NARROW(c.get_fk_table_name())
-            << "\"), _T(\"" << NARROW(c.get_fk_name())
-            << "\"), _T(\"" << NARROW(c.get_xml_name())
-            << "\"), _T(\"" << NARROW(c.get_prop_name()) << "\"));\n";
-        if (!c.get_default_value().is_null())
-            out << "\t\tc.set_default_value(Yb::Value(_T(\""
-                << NARROW(c.get_default_value().as_string()) << "\")));\n";
-        out << "\t\tt->add_column(c);\n"
-            << "\t}\n";
+        if (i == table_.begin())
+            out << "\t*t  ";
+        else
+            out << "\t\t";
+        out << "<< Yb::Column(_T(\"" << NARROW(c.name())
+            << "\"), " << type_code_by_handle(c.type()) << ", " << c.size()
+            << ", " << flags_code_by_handle(c.flags()) << ", Yb::Value(";
+        if (!c.default_value().is_null())
+            out << "_T(\"" << NARROW(c.default_value().as_string()) << "\")";
+        out << "), _T(\"" << NARROW(c.fk_table_name())
+            << "\"), _T(\"" << NARROW(c.fk_name())
+            << "\"), _T(\"" << NARROW(c.xml_name())
+            << "\"), _T(\"" << NARROW(c.prop_name()) << "\"))";
+        if (i + 1 == iend)
+            out << ";";
+        out << "\n";
     }
     out << "\ttbls.push_back(t);\n"
         << "}\n";
@@ -585,12 +588,12 @@ void CppCodeGenerator::write_cpp_create_table_meta(ostream &out)
 
 void CppCodeGenerator::write_cpp_create_relations_meta(ostream &out)
 {
-    string xml_name = NARROW(table_.get_xml_name());
+    string xml_name = NARROW(table_.xml_name());
     out << "void " << class_name_ << "::create_relations_meta(Yb::Relations &rels)\n"
         << "{\n";
     Schema::RelMap::const_iterator
-        i = schema_.rels_lower_bound(table_.get_class_name()),
-        iend = schema_.rels_upper_bound(table_.get_class_name());
+        i = schema_.rels_lower_bound(table_.class_name()),
+        iend = schema_.rels_upper_bound(table_.class_name());
     for (; i != iend; ++i)
     {
         out << "\t{\n"
@@ -622,20 +625,20 @@ void CppCodeGenerator::write_props_cons_calls(ostream &out)
     Columns::const_iterator it = table_.begin(), end = table_.end();
     for (int count = 0; it != end; ++it, ++count) {
         if (!it->has_fk()) {
-            out << "\t, " << fix_name(NARROW(it->get_prop_name()))
+            out << "\t, " << fix_name(NARROW(it->prop_name()))
                 << "(this)\n";
         }
         else {
             map_fk.insert(MapString::value_type(
-                        it->get_fk_table_name(), it->get_name()));
+                        it->fk_table_name(), it->name()));
         }
     }
     Schema::RelMap::const_iterator
-        i = schema_.rels_lower_bound(table_.get_class_name()),
-        iend = schema_.rels_upper_bound(table_.get_class_name());
+        i = schema_.rels_lower_bound(table_.class_name()),
+        iend = schema_.rels_upper_bound(table_.class_name());
     for (; i != iend; ++i) {
         if (i->second->type() == Relation::ONE2MANY &&
-                table_.get_class_name() == i->second->side(1) &&
+                table_.class_name() == i->second->side(1) &&
                 i->second->has_attr(1, _T("property")))
         {
             String prop = i->second->attr(1, _T("property"));
@@ -643,11 +646,11 @@ void CppCodeGenerator::write_props_cons_calls(ostream &out)
                 << "\"))\n";
         }
     }
-    i = schema_.rels_lower_bound(table_.get_class_name());
-    iend = schema_.rels_upper_bound(table_.get_class_name());
+    i = schema_.rels_lower_bound(table_.class_name());
+    iend = schema_.rels_upper_bound(table_.class_name());
     for (; i != iend; ++i) {
         if (i->second->type() == Relation::ONE2MANY &&
-                table_.get_class_name() == i->second->side(0) &&
+                table_.class_name() == i->second->side(0) &&
                 i->second->has_attr(0, _T("property")))
         {
             String prop = i->second->attr(0, _T("property"));
@@ -661,10 +664,10 @@ void CppCodeGenerator::do_write_cpp_ctor_body(ostream &out)
 {
     Columns::const_iterator it = table_.begin(), end = table_.end();
     for (int i = 0; it != end; ++it, ++i)
-        if (!it->get_default_value().is_null()) {
+        if (!it->default_value().is_null()) {
             out << "\tset(" << i << ", Yb::Value(";
-            string default_value = NARROW(it->get_default_value().as_string());
-            switch (it->get_type()) {
+            string default_value = NARROW(it->default_value().as_string());
+            switch (it->type()) {
                 case Value::INTEGER:
                     out << "(int)" << default_value;
                     break;
@@ -812,7 +815,7 @@ void generate_domain(const Schema &schema,
     Schema::TblMap::const_iterator it = schema.tbl_begin(),
         end = schema.tbl_end();
     for (; it != end; ++it)
-        if (!str_empty(schema.table(it->first).get_class_name())) {
+        if (!str_empty(schema.table(it->first).class_name())) {
             CppCodeGenerator cgen(schema, it->first, path, inc_prefix);
             cgen.update_h_file();
             cgen.update_cpp_file();

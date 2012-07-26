@@ -123,45 +123,38 @@ class Column
 public:
     enum { PK = 1, RO = 2, NULLABLE = 4 };
     Column(const String &name = _T(""),
-            int type = 0, size_t size = 0, int flags = 0,
+            int type = 0, size_t size = 0, int flags = 0);
+    Column(const String &name, int type, size_t size, int flags,
+            const Value &default_value,
             const String &fk_table = _T(""), const String &fk = _T(""),
             const String &xml_name = _T(""),
             const String &prop_name = _T(""));
-    Table &table() const {
-        return *check_not_null(table_, _T("get column's parent table")); }
-    void table(Table &t) { table_ = &t; }
-    void set_default_value(const Value &value) {
-        default_value_ = value;
-    }
-    const Value &get_default_value() const {
-        return default_value_;
-    }
-    const String &get_name() const { return name_; }
-    int get_type() const { return type_; }
-    size_t get_size() const { return size_; }
-    int get_flags() const { return flags_; }
+    const String &name() const { return name_; }
+    int type() const { return type_; }
+    size_t size() const { return size_; }
+    int flags() const { return flags_; }
+    const Value &default_value() const { return default_value_; }
+    const String &xml_name() const { return xml_name_; }
+    const String &prop_name() const { return prop_name_; }
+    const String &fk_table_name() const { return fk_table_name_; }
+    const String &fk_name() const { return fk_name_; }
     bool is_pk() const { return (flags_ & PK) != 0; }
     bool is_ro() const { return (flags_ & RO) != 0; }
     bool is_nullable() const { return (flags_ & NULLABLE) != 0; }
-    const String &get_fk_table_name() const { return fk_table_name_; }
-    const String &get_fk_name() const { return fk_name_; }
     bool has_fk() const {
         return !str_empty(fk_table_name_) && !str_empty(fk_name_);
     }
+    const Table &table() const {
+        return *check_not_null(table_, _T("get column's parent table"));
+    }
+    void set_table(const Table &t) { table_ = &t; }
     void set_fk_name(const String &fk_name) { fk_name_ = fk_name; }
-    const String &get_xml_name() const { return xml_name_; }
-    const String &get_prop_name() const { return prop_name_; }
 private:
-    String name_;
-    int type_;
+    const Table *table_;
+    int type_, flags_;
     size_t size_;
-    int flags_;
-    String fk_table_name_;
-    String fk_name_;
-    String xml_name_;
-    String prop_name_;
+    String name_, xml_name_, prop_name_, fk_name_, fk_table_name_;
     Value default_value_;
-    Table *table_;
 };
 
 typedef std::vector<Column> Columns;
@@ -182,26 +175,30 @@ public:
     const Schema &schema() const {
         return *check_not_null(schema_, _T("get table's schema"));
     }
-    const String &get_name() const { return name_; }
-    const String &get_xml_name() const { return xml_name_; }
-    const String &get_class_name() const { return get_class(); }
-    const String &get_class() const { return class_name_; }
+
+    const String &name() const { return name_; }
+    const String &xml_name() const { return xml_name_; }
+    const String &class_name() const { return class_name_; }
+    const String &seq_name() const { return seq_name_; }
+    bool autoinc() const { return autoinc_; }
+    const Column &column(size_t idx) const { return cols_[idx]; }
+    const Column &column(const String &col_name) const
+        { return cols_[idx_by_name(col_name)]; }
+    const Column &operator[] (size_t idx) const { return column(idx); }
+    const Column &operator[] (const String &col_name) const
+        { return column(col_name); }
+
     Columns::const_iterator begin() const { return cols_.begin(); }
     Columns::const_iterator end() const { return cols_.end(); }
     size_t size() const { return cols_.size(); }
     size_t idx_by_name(const String &col_name) const;
-    const Column &get_column(const String &col_name) const
-        { return cols_[idx_by_name(col_name)]; }
-    const Column &get_column(size_t idx) const
-        { return cols_[idx]; }
-    const String get_seq_name() const;
-    bool get_autoinc() const;
     const String &get_unique_pk() const;
     const String find_synth_pk() const;
     const String get_synth_pk() const;
     Strings &get_fk_for(const Relation &rel, Strings &fkey_parts) const;
     int get_depth() const { return depth_; }
     void add_column(const Column &column);
+    Table &operator << (const Column &c) { add_column(c); return *this; }
     void set_seq_name(const String &seq_name);
     void set_autoinc(bool autoinc) { autoinc_ = autoinc; }
     void set_name(const String &name) { name_ = name; }
@@ -213,10 +210,7 @@ public:
     const Key mk_key(LongInt id) const;
     void refresh();
 private:
-    String name_;
-    String xml_name_;
-    String class_name_;
-    String seq_name_;
+    String name_, xml_name_, class_name_, seq_name_;
     bool autoinc_;
     Columns cols_;
     IndexMap indicies_;
@@ -304,6 +298,7 @@ public:
     RelVect::const_iterator rel_end() const { return relations_.end(); }
     size_t rel_count() const { return relations_.size(); }
     void add_table(Table::Ptr table);
+    Schema &operator << (Table::Ptr t) { add_table(t); return *this; }
     const Table &table(const String &name) const;
     const Table &find_table_by_class(const String &class_name) const;
     void add_relation(Relation::Ptr rel);
@@ -311,6 +306,10 @@ public:
                             const String &relation_name = _T(""),
                             const String &class2 = _T(""),
                             int prop_side = 0) const;
+
+    const Table &operator[] (const String &tbl_name) const
+        { return table(tbl_name); }
+
     void fill_fkeys();
     void check();
 private:
