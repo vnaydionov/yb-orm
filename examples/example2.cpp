@@ -12,10 +12,11 @@
 #endif
 
 using namespace std;
-Yb::LogAppender appender(cerr);
 
 int main()
 {
+    Yb::LogAppender appender(cerr);
+    Yb::Logger root_logger(&appender);
     Yb::String conf_dir = Yb::StrUtils::xgetenv(_T("EX1_DIR"));
     if (Yb::str_empty(conf_dir))
         conf_dir = _T(".");
@@ -37,9 +38,9 @@ int main()
 #else
     Yb::Engine engine(Yb::Engine::MANUAL);
 #endif
-    Yb::Session session(Yb::theMetaData::instance(), &engine);
     engine.set_echo(true);
-    engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&appender)));
+    engine.set_logger(root_logger.new_logger("yb"));
+    Yb::Session session(Yb::theMetaData::instance(), &engine);
     Domain::ClientHolder client(session);
     string name, email;
     cout << "Enter name, email: \n";

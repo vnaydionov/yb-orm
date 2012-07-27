@@ -366,7 +366,6 @@ void Session::flush_update(IdentityMap &idmap_copy)
 
 void Session::flush_delete(IdentityMap &idmap_copy)
 {
-    ILogger::Ptr log(logger_->new_logger("flush_delete").release());
     typedef vector<Key> Keys;
     typedef map<String, Keys> KeysByTable;
     typedef map<int, KeysByTable> GroupsByDepth;
@@ -397,7 +396,7 @@ void Session::flush_delete(IdentityMap &idmap_copy)
         i->second->set_status(DataObject::Deleted);
     }
     for (int d = max_depth; d >= 0; --d) {
-        log->debug("depth: " + to_stdstring(d));
+        debug(_T("flush_delete: depth: ") + to_string(d));
         GroupsByDepth::iterator k = groups_by_depth.find(d);
         if (k == groups_by_depth.end())
             continue;
@@ -405,7 +404,7 @@ void Session::flush_delete(IdentityMap &idmap_copy)
         KeysByTable::iterator j = keys_by_table.begin(),
             jend = keys_by_table.end();
         for (; j != jend; ++j) {
-            log->debug("table: " + NARROW(j->first));
+            debug(_T("flush_delete: table: ") + j->first);
             engine_->delete_from(j->first, j->second);
         }
     }
