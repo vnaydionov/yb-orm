@@ -54,119 +54,128 @@ public:
     const String &get_str() const { return str_list_; }
 };
 
-class FilterBackend
+
+class ExpressionBackend
 {
 public:
     virtual const String do_get_sql() const = 0;
-    virtual const String do_collect_params_and_build_sql(
-            Values &seq) const = 0;
-    virtual ~FilterBackend();
+    virtual const String do_collect_params_and_build_sql(Values &seq) const = 0;
+    virtual ~ExpressionBackend();
 };
 
-class Filter
+typedef SharedPtr<ExpressionBackend>::Type ExprBEPtr;
+
+class Expression
 {
-    SharedPtr<FilterBackend>::Type backend_;
+protected:
+    ExprBEPtr backend_;
     String sql_;
 public:
-    Filter();
-    Filter(const String &sql);
-    Filter(FilterBackend *backend);
-    bool is_empty() const;
+    Expression();
+    Expression(const String &sql);
+    Expression(SharedPtr<ExpressionBackend>::Type backend);
     const String get_sql() const;
-    const String collect_params_and_build_sql(
-            Values &seq) const;
-    const FilterBackend *get_backend() const { return shptr_get(backend_); }
+    const String collect_params_and_build_sql(Values &seq) const;
+    bool is_empty() const { return str_empty(sql_) && !shptr_get(backend_); }
 };
 
-class FilterBackendCmp : public FilterBackend
+const String sql_parentheses_as_needed(const String &s);
+const String sql_prefix(const String &s, const String &prefix);
+const String sql_alias(const String &s, const String &alias);
+
+class ColumnExprBackend: public ExpressionBackend
 {
-    String name_, op_;
+    Expression expr_;
+    String tbl_name_, col_name_, alias_;
+public:
+    ColumnExprBackend(const Expression &expr, const String &alias);
+    ColumnExprBackend(const String &tbl_name, const String &col_name,
+            const String &alias);
+    const String do_get_sql() const;
+    const String do_collect_params_and_build_sql(Values &seq) const;
+    const String &alias() const { return alias_; }
+};
+
+class ColumnExpr: public Expression
+{
+public:
+    ColumnExpr(const Expression &expr, const String &alias = _T(""));
+    ColumnExpr(const String &tbl_name, const String &col_name,
+            const String &alias = _T(""));
+    const String &alias() const;
+};
+
+class ConstExprBackend: public ExpressionBackend
+{
     Value value_;
 public:
-    FilterBackendCmp(const String &name, const String &op, const Value &value);
+    ConstExprBackend(const Value &x);
     const String do_get_sql() const;
-    const String do_collect_params_and_build_sql(
-            Values &seq) const;
-    const String &get_name() const;
-    const String &get_op() const;
-    const Value &get_value() const;
+    const String do_collect_params_and_build_sql(Values &seq) const;
+    const Value &const_value() const { return value_; }
 };
 
-inline const Filter filter_eq(const String &name, const Value &value)
+class ConstExpr: public Expression
 {
-    return Filter(new FilterBackendCmp(name, _T("="), value));
-}
-inline const Filter filter_ne(const String &name, const Value &value)
-{
-    return Filter(new FilterBackendCmp(name, _T("<>"), value));
-}
-inline const Filter filter_lt(const String &name, const Value &value)
-{
-    return Filter(new FilterBackendCmp(name, _T("<"), value));
-}
-inline const Filter filter_gt(const String &name, const Value &value)
-{
-    return Filter(new FilterBackendCmp(name, _T(">"), value));
-}
-inline const Filter filter_le(const String &name, const Value &value)
-{
-    return Filter(new FilterBackendCmp(name, _T("<="), value));
-}
-inline const Filter filter_ge(const String &name, const Value &value)
-{
-    return Filter(new FilterBackendCmp(name, _T(">="), value));
-}
-
-class FilterBackendAnd : public FilterBackend
-{
-    Filter f1_;
-    Filter f2_;
 public:
-    FilterBackendAnd(const Filter &f1, const Filter &f2);
-    const String do_get_sql() const;
-    const String do_collect_params_and_build_sql(
-            Values &seq) const;
+    ConstExpr();
+    ConstExpr(const Value &x);
+    const Value &const_value() const;
 };
 
-class FilterBackendOr : public FilterBackend
+class BinaryOpExprBackend: public ExpressionBackend
 {
-    Filter f1_;
-    Filter f2_;
+    Expression expr1_, expr2_;
+    String op_;
 public:
-    FilterBackendOr(const Filter &f1, const Filter &f2);
+    BinaryOpExprBackend(const Expression &expr1,
+            const String &op, const Expression &expr2);
     const String do_get_sql() const;
-    const String do_collect_params_and_build_sql(
-            Values &seq) const;
+    const String do_collect_params_and_build_sql(Values &seq) const;
+    const String &op() const { return op_; }
+    const Expression &expr1() const { return expr1_; }
+    const Expression &expr2() const { return expr2_; }
 };
 
-inline const Filter operator && (const Filter &a, const Filter &b)
+class BinaryOpExpr: public Expression
 {
-    return Filter(new FilterBackendAnd(a, b));
-}
+public:
+    BinaryOpExpr(const Expression &expr1,
+            const String &op, const Expression &expr2);
+    const String &op() const;
+    const Expression &expr1() const;
+    const Expression &expr2() const;
+};
 
-inline const Filter operator || (const Filter &a, const Filter &b)
-{
-    return Filter(new FilterBackendOr(a, b));
-}
+const Expression filter_eq(const String &name, const Value &value);
+const Expression filter_ne(const String &name, const Value &value);
+const Expression filter_lt(const String &name, const Value &value);
+const Expression filter_gt(const String &name, const Value &value);
+const Expression filter_le(const String &name, const Value &value);
+const Expression filter_ge(const String &name, const Value &value);
+const Expression operator && (const Expression &a, const Expression &b);
+const Expression operator || (const Expression &a, const Expression &b);
 
-class FilterBackendByPK : public FilterBackend
+class FilterBackendByPK: public ExpressionBackend
 {
+    Expression expr_;
     Key key_;
+    static const Expression build_expr(const Key &key);
 public:
-    FilterBackendByPK(const Key &key) : key_(key) {}
+    FilterBackendByPK(const Key &key);
     const String do_get_sql() const;
-    const String do_collect_params_and_build_sql(
-            Values &seq) const;
-    const Key &get_key() const { return key_; }
+    const String do_collect_params_and_build_sql(Values &seq) const;
+    const Key &key() const { return key_; }
 };
 
-class KeyFilter : public Filter
+class KeyFilter: public Expression
 {
 public:
-    KeyFilter(const Key &key)
-        : Filter(new FilterBackendByPK(key))
-    {}
+    KeyFilter(const Key &key);
+    const Key &key() const;
 };
+
+typedef Expression Filter;
 
 class ORMError : public BaseError
 {

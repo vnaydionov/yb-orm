@@ -17,7 +17,7 @@ class TestFilters : public CppUnit::TestFixture
 public:
     void testFilterAll()
     {
-        CPPUNIT_ASSERT_EQUAL(string("1=1"), NARROW(Filter().get_sql()));
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(Filter().get_sql()));
     }
 
     void testFilterEq()
@@ -27,16 +27,16 @@ public:
 
     void testOperatorOr()
     {
-        CPPUNIT_ASSERT_EQUAL(string("(ID = 1) OR (A = 'a')"), 
+        CPPUNIT_ASSERT_EQUAL(string("(ID = 1) OR (A = ('a'))"), 
                              NARROW((filter_eq(_T("ID"), Value(1)) ||
                                      filter_eq(_T("A"), Value(_T("a")))).get_sql()));
     }
 
     void testOperatorAnd()
     {
-        CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A = 'a')"), 
+        CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A <> ('a'))"), 
                              NARROW((filter_eq(_T("ID"), Value(1)) &&
-                                     filter_eq(_T("A"), Value(_T("a")))).get_sql()));
+                                     filter_ne(_T("A"), Value(_T("a")))).get_sql()));
     }
 };
 

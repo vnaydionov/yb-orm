@@ -4,29 +4,20 @@ using namespace std;
 
 namespace Yb {
 
-FilterBackend::~FilterBackend()
-{}
+ExpressionBackend::~ExpressionBackend() {}
 
-Filter::Filter()
-    : sql_(_T("1=1"))
-{}
+Expression::Expression() {}
 
-Filter::Filter(const String &sql)
+Expression::Expression(const String &sql)
     : sql_(sql)
 {}
 
-Filter::Filter(FilterBackend *backend)
+Expression::Expression(SharedPtr<ExpressionBackend>::Type backend)
     : backend_(backend)
 {}
 
-bool
-Filter::is_empty() const
-{
-    return !shptr_get(backend_) && !sql_.compare(_T("1=1"));
-}
-
 const String
-Filter::get_sql() const
+Expression::get_sql() const
 {
     if (shptr_get(backend_))
         return backend_->do_get_sql();
@@ -34,112 +25,264 @@ Filter::get_sql() const
 }
 
 const String
-Filter::collect_params_and_build_sql(Values &seq) const
+Expression::collect_params_and_build_sql(Values &seq) const
 {
     if (shptr_get(backend_))
         return backend_->do_collect_params_and_build_sql(seq);
     return sql_;
 }
 
-FilterBackendCmp::FilterBackendCmp(const String &name, const String &op, const Value &value)
-    : name_(name)
-    , op_(op)
-    , value_(value)
+const String sql_parentheses_as_needed(const String &s)
+{
+    bool needed = false;
+    for (int i = 0; i < str_length(s); ++i) {
+        int c = char_code(s[i]);
+        if (!((c >= 'a' && c <= 'z') ||
+                (c >= 'A' && c <= 'Z') ||
+                (c >= '0' && c <= '9') ||
+                c == '_' || c == '#' || c == '$' ||
+                c == '.' || c == ':' || c == '?'))
+        {
+            needed = true;
+            break;
+        }
+    }
+    if (needed && !(str_length(s) >= 2 && char_code(s[0]) == '('
+                && char_code(s[(int)(str_length(s) - 1)]) == ')'))
+        return _T("(") + s + _T(")");
+    return s;
+}
+
+const String sql_prefix(const String &s, const String &prefix)
+{
+    if (str_empty(prefix))
+        return s;
+    return prefix + _T(".") + s;
+}
+
+const String sql_alias(const String &s, const String &alias)
+{
+    if (str_empty(alias))
+        return s;
+    return s + _T(" ") + alias;
+}
+
+ColumnExprBackend::ColumnExprBackend(const Expression &expr, const String &alias)
+    : expr_(expr)
+    , alias_(alias)
+{}
+
+ColumnExprBackend::ColumnExprBackend(const String &tbl_name, const String &col_name,
+        const String &alias)
+    : tbl_name_(tbl_name)
+    , col_name_(col_name)
+    , alias_(alias)
 {}
 
 const String
-FilterBackendCmp::do_get_sql() const
+ColumnExprBackend::do_get_sql() const
 {
-    return name_ + _T(" ") + op_ + _T(" ") + value_.sql_str();
+    String r;
+    if (!str_empty(col_name_))
+        r = sql_prefix(col_name_, tbl_name_);
+    else
+        r += sql_parentheses_as_needed(expr_.get_sql());
+    return sql_alias(r, alias_);
 }
 
 const String
-FilterBackendCmp::do_collect_params_and_build_sql(Values &seq) const
+ColumnExprBackend::do_collect_params_and_build_sql(Values &seq) const
+{
+    String r;
+    if (!str_empty(col_name_))
+        r = sql_prefix(col_name_, tbl_name_);
+    else
+        r += sql_parentheses_as_needed(
+                expr_.collect_params_and_build_sql(seq));
+    return sql_alias(r, alias_);
+}
+
+ColumnExpr::ColumnExpr(const Expression &expr, const String &alias)
+    : Expression(ExprBEPtr(new ColumnExprBackend(expr, alias)))
+{}
+
+ColumnExpr::ColumnExpr(const String &tbl_name, const String &col_name,
+        const String &alias)
+    : Expression(ExprBEPtr(new ColumnExprBackend(tbl_name, col_name, alias)))
+{}
+
+const String &
+ColumnExpr::alias() const {
+    return dynamic_cast<ColumnExprBackend *>(shptr_get(backend_))->alias();
+}
+
+ConstExprBackend::ConstExprBackend(const Value &x): value_(x) {}
+
+const String
+ConstExprBackend::do_get_sql() const { return value_.sql_str(); }
+
+const String
+ConstExprBackend::do_collect_params_and_build_sql(Values &seq) const
 {
     seq.push_back(value_);
-    return name_ + _T(" ") + op_ + _T(" ?");
+    return _T("?");
 }
 
-const String &
-FilterBackendCmp::get_name() const
-{
-    return name_;
-}
+ConstExpr::ConstExpr()
+    : Expression(ExprBEPtr(new ConstExprBackend(Value())))
+{}
 
-const String &
-FilterBackendCmp::get_op() const
-{
-    return op_;
-}
+ConstExpr::ConstExpr(const Value &x)
+    : Expression(ExprBEPtr(new ConstExprBackend(x)))
+{}
 
 const Value &
-FilterBackendCmp::get_value() const
-{
-    return value_;
+ConstExpr::const_value() const {
+    return dynamic_cast<ConstExprBackend *>(shptr_get(backend_))->const_value();
 }
 
-FilterBackendAnd::FilterBackendAnd(const Filter &f1, const Filter &f2)
-    : f1_(f1)
-    , f2_(f2)
+BinaryOpExprBackend::BinaryOpExprBackend(const Expression &expr1,
+        const String &op, const Expression &expr2)
+    : expr1_(expr1)
+    , expr2_(expr2)
+    , op_(op)
 {}
 
 const String
-FilterBackendAnd::do_get_sql() const
+BinaryOpExprBackend::do_get_sql() const
 {
-    return _T("(") + f1_.get_sql() + _T(") AND (") + f2_.get_sql() + _T(")");
+    return sql_parentheses_as_needed(expr1_.get_sql())
+        + _T(" ") + op_ + _T(" ")
+        + sql_parentheses_as_needed(expr2_.get_sql());
 }
 
 const String
-FilterBackendAnd::do_collect_params_and_build_sql(Values &seq) const
+BinaryOpExprBackend::do_collect_params_and_build_sql(Values &seq) const
 {
-    String p1 = f1_.collect_params_and_build_sql(seq);
-    String p2 = f2_.collect_params_and_build_sql(seq);
-    return _T("(") + p1 + _T(") AND (") + p2 + _T(")");
+    return sql_parentheses_as_needed(
+            expr1_.collect_params_and_build_sql(seq))
+        + _T(" ") + op_ + _T(" ")
+        + sql_parentheses_as_needed(
+                expr2_.collect_params_and_build_sql(seq));
 }
 
-FilterBackendOr::FilterBackendOr(const Filter &f1, const Filter &f2)
-    : f1_(f1)
-    , f2_(f2)
+BinaryOpExpr::BinaryOpExpr(const Expression &expr1,
+        const String &op, const Expression &expr2)
+    : Expression(ExprBEPtr(new BinaryOpExprBackend(expr1, op, expr2)))
 {}
 
-const String
-FilterBackendOr::do_get_sql() const
-{
-    return _T("(") + f1_.get_sql() + _T(") OR (") + f2_.get_sql() + _T(")");
+const String &
+BinaryOpExpr::op() const {
+    return dynamic_cast<BinaryOpExprBackend *>(shptr_get(backend_))->op();
 }
 
-const String
-FilterBackendOr::do_collect_params_and_build_sql(Values &seq) const
-{
-    String p1 = f1_.collect_params_and_build_sql(seq);
-    String p2 = f2_.collect_params_and_build_sql(seq);
-    return _T("(") + p1 + _T(") OR (") + p2 + _T(")");
+const Expression &
+BinaryOpExpr::expr1() const {
+    return dynamic_cast<BinaryOpExprBackend *>(shptr_get(backend_))->expr1();
 }
 
-const String
-FilterBackendByPK::do_get_sql() const
+const Expression &
+BinaryOpExpr::expr2() const {
+    return dynamic_cast<BinaryOpExprBackend *>(shptr_get(backend_))->expr2();
+}
+
+const Expression
+filter_eq(const String &name, const Value &value)
 {
-    std::ostringstream sql;
-    sql << "1=1";
-    ValueMap::const_iterator i = key_.second.begin(),
-        iend = key_.second.end();
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
+                _T("="), ConstExpr(value))));
+}
+
+const Expression
+filter_ne(const String &name, const Value &value)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
+                _T("<>"), ConstExpr(value))));
+}
+
+const Expression
+filter_lt(const String &name, const Value &value)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
+                _T("<"), ConstExpr(value))));
+}
+
+const Expression
+filter_gt(const String &name, const Value &value)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
+                _T(">"), ConstExpr(value))));
+}
+
+const Expression
+filter_le(const String &name, const Value &value)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
+                _T("<="), ConstExpr(value))));
+}
+
+const Expression
+filter_ge(const String &name, const Value &value)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
+                _T(">="), ConstExpr(value))));
+}
+
+const Expression
+operator && (const Expression &a, const Expression &b)
+{
+    if (a.is_empty())
+        return b;
+    if (b.is_empty())
+        return a;
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("AND"), b)));
+}
+
+const Expression
+operator || (const Expression &a, const Expression &b)
+{
+    if (a.is_empty())
+        return b;
+    if (b.is_empty())
+        return a;
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("OR"), b)));
+}
+
+const Expression
+FilterBackendByPK::build_expr(const Key &key)
+{
+    Expression expr;
+    ValueMap::const_iterator i = key.second.begin(),
+        iend = key.second.end();
     for (; i != iend; ++i)
-        sql << " AND " << NARROW(i->first) << " = " << NARROW(i->second.sql_str());
-    return WIDEN(sql.str());
+        expr = expr && BinaryOpExpr(
+                ColumnExpr(key.first, i->first),
+                _T("="), ConstExpr(i->second));
+    return expr;
 }
+
+FilterBackendByPK::FilterBackendByPK(const Key &key)
+    : expr_(build_expr(key))
+    , key_(key)
+{}
+
+const String
+FilterBackendByPK::do_get_sql() const { return expr_.get_sql(); }
 
 const String
 FilterBackendByPK::do_collect_params_and_build_sql(Values &seq) const
 {
-    std::ostringstream sql;
-    sql << "1=1";
-    ValueMap::const_iterator i = key_.second.begin(),
-        iend = key_.second.end();
-    for (; i != iend; ++i) {
-        sql << " AND " << NARROW(i->first) << " = ?";
-        seq.push_back(i->second);
-    }
-    return WIDEN(sql.str());
+    return expr_.collect_params_and_build_sql(seq);
+}
+
+KeyFilter::KeyFilter(const Key &key)
+    : Expression(ExprBEPtr(new FilterBackendByPK(key)))
+{}
+
+const Key &
+KeyFilter::key() const
+{
+    return dynamic_cast<FilterBackendByPK *>(shptr_get(backend_))->key();
 }
 
 ORMError::ORMError(const String &msg)

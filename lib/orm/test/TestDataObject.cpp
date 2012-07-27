@@ -340,7 +340,7 @@ public:
         Session session(r_);
         DataObject::Ptr d = session.get_lazy(Key(_T("A"), values));
         KeyFilter kf(d->key());
-        CPPUNIT_ASSERT_EQUAL(string("1=1 AND X = 10"), NARROW(kf.get_sql()));
+        CPPUNIT_ASSERT_EQUAL(string("A.X = 10"), NARROW(kf.get_sql()));
     }
 
     void test_bad_type_cast_format()
