@@ -7,29 +7,29 @@
 #include <orm/SqlDriver.h>
 #include <sqlite3.h>
 
-typedef sqlite3 SQLiteDatabase;
-typedef sqlite3_stmt SQLiteQuery;
-
 namespace Yb {
+
+typedef ::sqlite3 SQLiteDatabase;
+typedef ::sqlite3_stmt SQLiteQuery;
 
 class SQLiteCursorBackend: public SqlCursorBackend
 {
     SQLiteDatabase *conn_;
-    std::auto_ptr<SQLiteQuery> stmt_;
-//  SQLiteQuery *stmt_;
+    SQLiteQuery *stmt_;
 public:
     SQLiteCursorBackend(SQLiteDatabase *conn);
+    ~SQLiteCursorBackend();
+    void close();
     void exec_direct(const String &sql);
     void prepare(const String &sql);
     void exec(const Values &params);
-    RowPtr fetch_row(); 
+    RowPtr fetch_row();
 };
 
 class SQLiteDriver;
 
 class SQLiteConnectionBackend: public SqlConnectionBackend
 {
-    //std::auto_ptr<SQLiteDatabase> conn_;
     SQLiteDatabase *conn_;
     SQLiteDriver *drv_;
 public:
@@ -51,7 +51,7 @@ public:
     std::auto_ptr<SqlConnectionBackend> create_backend();
 };
 
-} //namespace Yb 
+} //namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
 #endif // YB__ORM__SQLITE_DRIVER__INCLUDED

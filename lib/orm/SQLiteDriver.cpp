@@ -6,10 +6,24 @@ using namespace std;
 namespace Yb {
 
 SQLiteCursorBackend::SQLiteCursorBackend(SQLiteDatabase *conn)
-    :conn_(conn)
+    :conn_(conn), stmt_(NULL)
 {}
 
-/*static int 
+SQLiteCursorBackend::~SQLiteCursorBackend()
+{
+    close();
+}
+
+void
+SQLiteCursorBackend::close()
+{
+    if (stmt_) {
+        sqlite3_finalize(stmt_);
+        stmt_ = NULL;
+    }
+}
+
+/*static int
 exec_callback(void *NotUsed, int argc, char **argv, char **azColName)
 {
     int i;
@@ -24,68 +38,65 @@ void
 SQLiteCursorBackend::exec_direct(const String &sql)
 {
     int rs = sqlite3_exec(conn_, NARROW(sql).c_str(), 0, 0, 0);
-     if (SQLITE_OK != sqlite3_errcode(conn_)) {
+    if (SQLITE_OK != sqlite3_errcode(conn_)) {
         const char *err = sqlite3_errmsg(conn_);
         throw DBError(WIDEN(err));
-    } 
+    }
 }
 
 void
 SQLiteCursorBackend::prepare(const String &sql)
 {
-//    sqlite3_reset(stmt_.get());
-    SQLiteQuery *stmt = NULL;
-//    sqlite3_reset(stmt);
-    sqlite3_prepare_v2(conn_, NARROW(sql).c_str(), -1, &stmt, 0); 
+    close();
+    sqlite3_prepare_v2(conn_, NARROW(sql).c_str(), -1, &stmt_, 0);
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
         const char *err = sqlite3_errmsg(conn_);
         throw DBError(WIDEN(err));
     }
-//    stmt_.reset(stmt);
 }
 
 void
 SQLiteCursorBackend::exec(const Values &params)
 {
-    for (unsigned i = 0, rs; i < params.size(); ++i) {
+    for (size_t i = 0; i < params.size(); ++i) {
         if (params[i].get_type() == Value::DATETIME) {
-            sqlite3_bind_text(stmt_.get(), i + 1, params[i].as_string().c_str(), (params[i].as_string()).length(), SQLITE_STATIC);
+            sqlite3_bind_text(stmt_, i + 1, params[i].as_string().c_str(), (params[i].as_string()).length(), SQLITE_STATIC);
             if (SQLITE_OK != sqlite3_errcode(conn_)) {
                 const char *err = sqlite3_errmsg(conn_);
                 throw DBError(WIDEN(err));
             }
         } else if (params[i].get_type() == Value::INTEGER) {
-            sqlite3_bind_int(stmt_.get(), i + 1, params[i].as_integer()); 
+            sqlite3_bind_int(stmt_, i + 1, params[i].as_integer());
             if (SQLITE_OK != sqlite3_errcode(conn_)) {
                 const char *err = sqlite3_errmsg(conn_);
                 throw DBError(WIDEN(err));
             }
         } else {
-            sqlite3_bind_text(stmt_.get(), i + 1, params[i].as_string().c_str(), (params[i].as_string()).length(), SQLITE_STATIC);
+            sqlite3_bind_text(stmt_, i + 1, params[i].as_string().c_str(), (params[i].as_string()).length(), SQLITE_STATIC);
             if (SQLITE_OK != sqlite3_errcode(conn_)) {
                 const char *err = sqlite3_errmsg(conn_);
                 throw DBError(WIDEN(err));
-            }  
+            }
         }
     }
-    sqlite3_step(stmt_.get());
-    if (SQLITE_OK != sqlite3_errcode(conn_)) {
-        const char *err = sqlite3_errmsg(conn_);
-        throw DBError(WIDEN(err));
-    }   
-    sqlite3_reset(stmt_.get());
-    sqlite3_finalize(stmt_.get());  
 }
 
 RowPtr SQLiteCursorBackend::fetch_row()
 {
     RowPtr q;
+    sqlite3_step(stmt_);
+    // TODO: analyze the result and fill the row
+    if (SQLITE_OK != sqlite3_errcode(conn_)) {
+        const char *err = sqlite3_errmsg(conn_);
+        throw DBError(WIDEN(err));
+    }
+    // ...
     return q;
 }
 
 SQLiteConnectionBackend::SQLiteConnectionBackend(SQLiteDriver *drv)
     : conn_(NULL), drv_(drv)
-{} 
+{}
 
 SQLiteConnectionBackend::~SQLiteConnectionBackend()
 {
@@ -103,7 +114,7 @@ SQLiteConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
         conn_ = NULL;
         const char *err = sqlite3_errmsg(conn_);
         throw DBError(WIDEN(err));
-    } 
+    }
 }
 
 auto_ptr<SqlCursorBackend>
@@ -130,7 +141,7 @@ SQLiteConnectionBackend::commit()
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
         const char *err = sqlite3_errmsg(conn_);
         throw DBError(WIDEN(err));
-    } 
+    }
 }
 
 void
@@ -140,10 +151,10 @@ SQLiteConnectionBackend::rollback()
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
         const char *err = sqlite3_errmsg(conn_);
         throw DBError(WIDEN(err));
-    } 
+    }
 }
 
-SQLiteDriver::SQLiteDriver(): 
+SQLiteDriver::SQLiteDriver():
     SqlDriver(_T("SQLITE"))
 {}
 

@@ -484,7 +484,7 @@ SqlCursor::SqlCursor(SqlConnection &connection)
     , log_(connection.log_.get())
 {}
 
-SqlResultSet
+void
 SqlCursor::exec_direct(const String &sql)
 {
     try {
@@ -492,7 +492,6 @@ SqlCursor::exec_direct(const String &sql)
             debug(_T("exec_direct: ") + sql);
         connection_.activity_ = true;
         backend_->exec_direct(sql);
-        return SqlResultSet(*this);
     }
     catch (const std::exception &e) {
         connection_.mark_bad(e);
@@ -728,7 +727,7 @@ SqlConnection::clear()
     }
 }
 
-SqlResultSet
+void
 SqlConnection::exec_direct(const String &sql)
 {
     auto_ptr<SqlCursor> cursor;
@@ -740,9 +739,7 @@ SqlConnection::exec_direct(const String &sql)
         mark_bad(e);
         throw;
     }
-    SqlResultSet rs = cursor->exec_direct(sql);
-    rs.own(cursor);
-    return rs;
+    cursor->exec_direct(sql);
 }
 
 void

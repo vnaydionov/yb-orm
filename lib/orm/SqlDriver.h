@@ -264,7 +264,7 @@ class SqlCursor: NonCopyable
     void debug(const String &s) { if (log_) log_->debug(NARROW(s)); }
     SqlCursor(SqlConnection &connection);
 public:
-    SqlResultSet exec_direct(const String &sql);
+    void exec_direct(const String &sql);
     void prepare(const String &sql);
     SqlResultSet exec(const Values &params);
     RowPtr fetch_row();
@@ -311,7 +311,7 @@ public:
     void commit();
     void rollback();
     void clear();
-    SqlResultSet exec_direct(const String &sql);
+    void exec_direct(const String &sql);
     void prepare(const String &sql);
     SqlResultSet exec(const Values &params);
     RowPtr fetch_row();
