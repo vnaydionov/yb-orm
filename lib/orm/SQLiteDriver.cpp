@@ -109,14 +109,14 @@ SQLiteConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 auto_ptr<SqlCursorBackend>
 SQLiteConnectionBackend::new_cursor()
 {
-	auto_ptr<SqlCursorBackend> p(
-			(SqlCursorBackend *)new SQLiteCursorBackend(conn_));
-	return p;
+    auto_ptr<SqlCursorBackend> p(
+            (SqlCursorBackend *)new SQLiteCursorBackend(conn_));
+    return p;
 }
 
 void SQLiteConnectionBackend::close()
 {
-	ScopedLock lock(drv_->conn_mux_);
+    ScopedLock lock(drv_->conn_mux_);
     if (conn_) {
         sqlite3_close(conn_);
         conn_ = NULL;
@@ -151,9 +151,9 @@ SQLiteDriver::SQLiteDriver():
 auto_ptr<SqlConnectionBackend>
 SQLiteDriver::create_backend()
 {
-	auto_ptr<SqlConnectionBackend> p(
-			(SqlConnectionBackend *)new SQLiteConnectionBackend(this));
-	return p;
+    auto_ptr<SqlConnectionBackend> p(
+            (SqlConnectionBackend *)new SQLiteConnectionBackend(this));
+    return p;
 }
 
 } //namespace Yb
