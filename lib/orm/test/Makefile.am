@@ -5,6 +5,7 @@ AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
+	$(SQLITE3_CFLAGS) \
 	$(CPPUNIT_CFLAGS) \
 	$(WX_CFLAGS) \
 	$(QT_CFLAGS)
@@ -31,6 +32,7 @@ unit_tests_LDFLAGS = \
 	$(BOOST_LIBS_R) \
 	$(CPPUNIT_LIBS) \
 	$(ODBC_LIBS) \
+	$(SQLITE3_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS) \
 	$(WX_LIBS) \

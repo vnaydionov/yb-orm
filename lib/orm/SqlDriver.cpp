@@ -10,6 +10,9 @@ typedef Yb::QtSqlDriver DefaultSqlDriver;
 #include <orm/OdbcDriver.h>
 typedef Yb::OdbcDriver DefaultSqlDriver;
 #define DEFAULT_DRIVER _T("ODBC")
+#if defined(YB_USE_SQLITE3)
+#include <orm/SQLiteDriver.h>
+#endif
 #endif
 #include <util/str_utils.hpp>
 #include <util/Singleton.h>
@@ -339,6 +342,11 @@ void register_std_drivers()
     auto_ptr<SqlDriver> driver_odbc((SqlDriver *)new OdbcDriver());
     p = driver_odbc.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver_odbc);
+#if defined(YB_USE_SQLITE3)
+    auto_ptr<SqlDriver> driver_sqlite3((SqlDriver *)new SQLiteDriver());
+    p = driver_sqlite3.get();
+    theDriverRegistry::instance().register_item(p->get_name(), driver_sqlite3);
+#endif
 #endif
 }
 

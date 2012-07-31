@@ -23,10 +23,10 @@ exec_callback(void *NotUsed, int argc, char **argv, char **azColName)
 void
 SQLiteCursorBackend::exec_direct(const String &sql)
 {
-    int rs = sqlite3_exec(conn_, _T(sql.c_str()), 0, 0, 0);
+    int rs = sqlite3_exec(conn_, NARROW(sql).c_str(), 0, 0, 0);
      if (SQLITE_OK != sqlite3_errcode(conn_)) {
         const char *err = sqlite3_errmsg(conn_);
-        throw DBError(_T(err));
+        throw DBError(WIDEN(err));
     } 
 }
 
@@ -36,10 +36,10 @@ SQLiteCursorBackend::prepare(const String &sql)
 //    sqlite3_reset(stmt_.get());
     SQLiteQuery *stmt = NULL;
 //    sqlite3_reset(stmt);
-    sqlite3_prepare_v2(conn_, _T(sql.c_str()), -1, &stmt, 0); 
+    sqlite3_prepare_v2(conn_, NARROW(sql).c_str(), -1, &stmt, 0); 
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
         const char *err = sqlite3_errmsg(conn_);
-        throw DBError(_T(err));
+        throw DBError(WIDEN(err));
     }
 //    stmt_.reset(stmt);
 }
@@ -52,26 +52,26 @@ SQLiteCursorBackend::exec(const Values &params)
             sqlite3_bind_text(stmt_.get(), i + 1, params[i].as_string().c_str(), (params[i].as_string()).length(), SQLITE_STATIC);
             if (SQLITE_OK != sqlite3_errcode(conn_)) {
                 const char *err = sqlite3_errmsg(conn_);
-                throw DBError(_T(err));
+                throw DBError(WIDEN(err));
             }
         } else if (params[i].get_type() == Value::INTEGER) {
             sqlite3_bind_int(stmt_.get(), i + 1, params[i].as_integer()); 
             if (SQLITE_OK != sqlite3_errcode(conn_)) {
                 const char *err = sqlite3_errmsg(conn_);
-                throw DBError(_T(err));
+                throw DBError(WIDEN(err));
             }
         } else {
             sqlite3_bind_text(stmt_.get(), i + 1, params[i].as_string().c_str(), (params[i].as_string()).length(), SQLITE_STATIC);
             if (SQLITE_OK != sqlite3_errcode(conn_)) {
                 const char *err = sqlite3_errmsg(conn_);
-                throw DBError(_T(err));
+                throw DBError(WIDEN(err));
             }  
         }
     }
     sqlite3_step(stmt_.get());
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
         const char *err = sqlite3_errmsg(conn_);
-        throw DBError(_T(err));
+        throw DBError(WIDEN(err));
     }   
     sqlite3_reset(stmt_.get());
     sqlite3_finalize(stmt_.get());  
@@ -84,18 +84,25 @@ RowPtr SQLiteCursorBackend::fetch_row()
 }
 
 SQLiteConnectionBackend::SQLiteConnectionBackend(SQLiteDriver *drv)
-    : drv_(drv)
+    : conn_(NULL), drv_(drv)
 {} 
+
+SQLiteConnectionBackend::~SQLiteConnectionBackend()
+{
+    close();
+}
 
 void
 SQLiteConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 {
     close();
     ScopedLock lock(drv_->conn_mux_);
-    int rs = sqlite3_open_v2(_T(source.db().c_str()), &conn_, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+    sqlite3_open_v2(NARROW(source.db()).c_str(), &conn_,
+            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
+        conn_ = NULL;
         const char *err = sqlite3_errmsg(conn_);
-        throw DBError(_T(err));
+        throw DBError(WIDEN(err));
     } 
 }
 
@@ -110,7 +117,10 @@ SQLiteConnectionBackend::new_cursor()
 void SQLiteConnectionBackend::close()
 {
 	ScopedLock lock(drv_->conn_mux_);
-    sqlite3_close(conn_);
+    if (conn_) {
+        sqlite3_close(conn_);
+        conn_ = NULL;
+    }
 }
 
 void
@@ -119,7 +129,7 @@ SQLiteConnectionBackend::commit()
     sqlite3_exec(conn_, _T("COMMIT"), NULL, 0, 0);
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
         const char *err = sqlite3_errmsg(conn_);
-        throw DBError(_T(err));
+        throw DBError(WIDEN(err));
     } 
 }
 
@@ -129,7 +139,7 @@ SQLiteConnectionBackend::rollback()
     sqlite3_exec(conn_, _T("ROLLBACK"), NULL, 0, 0);
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
         const char *err = sqlite3_errmsg(conn_);
-        throw DBError(_T(err));
+        throw DBError(WIDEN(err));
     } 
 }
 

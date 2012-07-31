@@ -400,6 +400,52 @@ AC_DEFUN([YB_ODBC],
     LIBS="$ac_save_libs"
 ])
 
+dnl YB_SQLITE3([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
+dnl Test for the SQLite3 library
+dnl Defines
+dnl   SQLITE3_CFLAGS to the set of flags required to include SQLite3 headers
+dnl   SQLITE3_LIBS to the set of flags required to link against SQLite3
+AC_DEFUN([YB_SQLITE3],
+[
+    AC_SUBST(SQLITE3_CFLAGS)
+    AC_SUBST(SQLITE3_LIBS)
+    AC_MSG_CHECKING([whether we can use SQLite3 library])
+
+    SQLITE3_CFLAGS=`pkg-config sqlite3 --cflags`
+    SQLITE3_LIBS=`pkg-config sqlite3 --libs`
+    ac_save_cflags="$CFLAGS"
+    ac_save_libs="$LIBS"
+    CFLAGS="$ac_save_cflags $SQLITE3_CFLAGS"
+    LIBS="$ac_save_libs $SQLITE3_LIBS"
+
+    AC_LANG_PUSH(C)
+    AC_TRY_LINK(
+        [
+#include <stdlib.h>
+#include <sqlite3.h>
+        ],
+        [
+        sqlite3 *conn;
+        sqlite3_open_v2("dfsfsdf", &conn,
+            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+        return 0;
+        ], 
+        [
+        AC_MSG_RESULT([yes])
+        have_sqlite3="yes"
+        ifelse([$1], , :, [$1])
+        ],
+        [ 
+        AC_MSG_RESULT([no])
+        have_sqlite3="no"
+        ifelse([$2], , :, [$2])
+        ])
+
+    AC_LANG_POP(C)
+    CFLAGS="$ac_save_cflags"
+    LIBS="$ac_save_libs"
+])
+
 dnl
 dnl YB_PATH_CPPUNIT(MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
 dnl

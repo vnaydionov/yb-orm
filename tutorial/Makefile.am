@@ -4,6 +4,7 @@ SUBDIRS=domain
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \
+	$(SQLITE3_CFLAGS) \
 	$(BOOST_CPPFLAGS)
 
 noinst_PROGRAMS=tut1 tut2
@@ -17,6 +18,7 @@ tut1_LDFLAGS = \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_LIBS_R) \
 	$(ODBC_LIBS) \
+	$(SQLITE3_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS)
 
@@ -29,6 +31,7 @@ tut2_LDFLAGS = \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_LIBS_R) \
 	$(ODBC_LIBS) \
+	$(SQLITE3_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS)
 

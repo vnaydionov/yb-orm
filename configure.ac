@@ -24,8 +24,12 @@ YB_QT([
     ])
     YB_ODBC([],
         AC_MSG_ERROR([ODBC library is required!]))
+    YB_SQLITE3([
+        CPPFLAGS="$CPPFLAGS -DYB_USE_SQLITE3"
+    ], [])
 ])
 AM_CONDITIONAL([QT4_PRESENT], [test x$have_qt = xyes])
+AM_CONDITIONAL([SQLITE3_PRESENT], [test x$have_sqlite3 = xyes])
 
 # optional dependencies
 YB_PATH_CPPUNIT([1.10.0],[],

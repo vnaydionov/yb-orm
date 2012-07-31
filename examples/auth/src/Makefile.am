@@ -5,6 +5,7 @@ AM_CXXFLAGS=\
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
+	$(SQLITE3_CFLAGS) \
 	$(YBORM_CXXFLAGS) \
 	$(WX_CFLAGS) \
 	$(QT_CFLAGS)
@@ -26,6 +27,7 @@ auth_LDFLAGS=\
 	$(BOOST_LDFLAGS) \
 	$(BOOST_LIBS_R) \
 	$(ODBC_LIBS) \
+	$(SQLITE3_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS) \
 	$(WX_LIBS) \

@@ -34,6 +34,7 @@ class SQLiteConnectionBackend: public SqlConnectionBackend
 	SQLiteDriver *drv_;
 public:
 	SQLiteConnectionBackend(SQLiteDriver *drv);
+	~SQLiteConnectionBackend();
 	void open(SqlDialect *dialect, const SqlSource &source);
 	std::auto_ptr<SqlCursorBackend> new_cursor();
 	void close();
