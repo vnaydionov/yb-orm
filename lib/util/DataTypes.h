@@ -258,7 +258,7 @@ public:
     template <class T>
     const T get_as(const String &key) const
     {
-        String &r = get(key);
+        const String &r = get(key);
         try {
             T val;
             from_string(r, val);
@@ -271,7 +271,7 @@ public:
     template <class T>
     const T get_as(const String &key, const T &def_val) const
     {
-        String r = get(key, _T(""));
+        const String r = get(key, _T(""));
         try {
             T val;
             from_string(r, val);
