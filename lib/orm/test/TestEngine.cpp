@@ -5,12 +5,6 @@
 
 using namespace std;
 using namespace Yb;
-using Yb::StrUtils::xgetenv;
-
-static LogAppender appender(cerr);
-#define SETUP_LOG(e) do{ e.set_echo(true); \
-    ILogger::Ptr __log(new Logger(&appender)); \
-    e.set_logger(__log); }while(0)
 
 class TestEngine : public CppUnit::TestFixture
 {
@@ -33,68 +27,15 @@ class TestEngine : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_update_wo_clause, BadSQLOperation);
     CPPUNIT_TEST(test_delete);
     CPPUNIT_TEST_EXCEPTION(test_delete_wo_clause, BadSQLOperation);
-    // Real DB tests
-    CPPUNIT_TEST(test_insert_sql);
-    CPPUNIT_TEST(test_update_sql);
-    CPPUNIT_TEST(test_select_sql);
-    CPPUNIT_TEST(test_select_sql_max_rows);
     CPPUNIT_TEST_EXCEPTION(test_insert_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_update_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_selforupdate_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_commit_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_delete_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_execpoc_ro_mode, BadOperationInMode);
-    CPPUNIT_TEST(test_force_select_for_update);
     CPPUNIT_TEST_SUITE_END();
 
-    LongInt record_id_;
-
-    LongInt get_next_test_id(Engine &engine, const String &seq_name)
-    {
-        if (!engine.get_dialect()->has_sequences()) {
-            RowsPtr ptr = engine.select(_T("MAX(ID) MAX_ID"), _T("T_ORM_TEST"), Filter());
-            CPPUNIT_ASSERT(1 == ptr->size() && 1 == ptr->begin()->size());
-            Value x = find_in_row(*ptr->begin(), _T("MAX_ID"))->second;
-            return x.is_null()? 1: x.as_longint() + 1;
-        }
-        else {
-            return engine.get_next_value(seq_name);
-        }
-    }
-
 public:
-    TestEngine() : record_id_(0) {}
-
-    void init_sql()
-    {
-        Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
-        record_id_ = get_next_test_id(engine, _T("S_ORM_TEST_ID"));
-        //CPPUNIT_ASSERT(record_id_ > 0);
-        std::ostringstream sql;
-        sql << "INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)";
-        Values params;
-        params.push_back(Value(record_id_));
-        params.push_back(Value(_T("item")));
-        params.push_back(Value(now()));
-        params.push_back(Value(Decimal(_T("1.2"))));
-        SqlConnection conn(Engine::sql_source_from_env());
-        conn.begin_trans();
-        conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
-        conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
-        conn.prepare(WIDEN(sql.str()));
-        conn.exec(params);
-        conn.commit();
-    }
-
-    void finish_sql()
-    {
-        SqlConnection conn(Engine::sql_source_from_env());
-        conn.begin_trans();
-        conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
-        conn.commit();
-    }
-
     void test_strlist_one()
     {
         StringSet fields;
@@ -115,7 +56,6 @@ public:
     void test_select_simple()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("A, B"), _T("T"),
@@ -126,7 +66,6 @@ public:
     void test_select_for_update()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("1"), _T("T"),
@@ -137,7 +76,6 @@ public:
     void test_select_where()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("*"), _T("T"),
@@ -151,7 +89,6 @@ public:
     void test_select_groupby()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("A, B"), _T("T"),
@@ -162,18 +99,18 @@ public:
     void test_select_having()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("A, COUNT(*)"), _T("T"),
                 Filter(), _T("A"), Filter(_T("COUNT(*) > 2")), StrList(), false);
-        CPPUNIT_ASSERT_EQUAL(string("SELECT A, COUNT(*) FROM T GROUP BY A HAVING COUNT(*) > 2"), NARROW(sql));
+        CPPUNIT_ASSERT_EQUAL(
+                string("SELECT A, COUNT(*) FROM T GROUP BY A HAVING COUNT(*) > 2"),
+                NARROW(sql));
     }
 
     void test_select_having_wo_groupby()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("A, B"), _T("T"), Filter(), _T(""),
@@ -183,7 +120,6 @@ public:
     void test_select_orderby()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, _T("A, B"), _T("T"), Filter(), _T(""),
@@ -194,7 +130,6 @@ public:
     void test_insert_simple()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Row row;
         row.push_back(make_pair(String(_T("ID")), Value(1)));
@@ -211,7 +146,6 @@ public:
     void test_insert_exclude()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Row row;
         row.push_back(make_pair(String(_T("ID")), Value(1)));
@@ -228,7 +162,6 @@ public:
     void test_insert_empty_row()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Values params;
         ParamNums param_nums;
@@ -238,7 +171,6 @@ public:
     void test_update_where()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Row row;
         row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
@@ -255,7 +187,6 @@ public:
     void test_update_combo()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Row row;
         row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
@@ -287,7 +218,6 @@ public:
     void test_update_empty_row()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Values params;
         ParamNums param_nums;
@@ -298,7 +228,6 @@ public:
     void test_update_wo_clause()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Row row;
         row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
@@ -311,7 +240,6 @@ public:
     void test_delete()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_delete(sql, params, _T("T"), filter_eq(_T("ID"), Value(1)));
@@ -322,49 +250,175 @@ public:
     void test_delete_wo_clause()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
         String sql;
         Values params;
         engine.do_gen_sql_delete(sql, params, _T("T"), Filter());
     }
 
+    void test_insert_ro_mode()
+    {
+        Engine engine(Engine::READ_ONLY);
+        engine.insert(_T(""), Rows());
+    }
+    
+    void test_update_ro_mode()
+    {
+        Engine engine(Engine::READ_ONLY);
+        engine.update(_T(""), Rows(), Strings(), StringSet());
+    }
+    
+    void test_selforupdate_ro_mode()
+    {
+        Engine engine(Engine::READ_ONLY);
+        engine.select(_T(""), _T(""), Filter(), StrList(), Filter(), StrList(), -1, true);
+    }
+    
+    void test_commit_ro_mode()
+    {
+        Engine engine(Engine::READ_ONLY);
+        engine.commit();
+    }
+    
+    void test_delete_ro_mode()
+    {
+        Engine engine(Engine::READ_ONLY);
+        engine.delete_from(_T(""), Filter());
+    }
+    
+    void test_execpoc_ro_mode()
+    {
+        Engine engine(Engine::READ_ONLY);
+        engine.exec_proc(_T(""));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(TestEngine);
+
+// Real DB tests
+
+static LogAppender appender(cerr);
+static ILogger::Ptr root_logger;
+
+static void init_log()
+{
+    if (!root_logger.get())
+        root_logger.reset(new Logger(&appender));
+}
+
+static void setup_log(Engine &e)
+{
+    init_log();
+    e.set_logger(root_logger->new_logger("engine"));
+    e.set_echo(true);
+}
+
+static void setup_log(SqlConnection &c)
+{
+    init_log();
+    c.init_logger(root_logger.get());
+    c.set_echo(true);
+}
+
+static LongInt get_next_test_id(SqlConnection *conn)
+{
+    CPPUNIT_ASSERT(conn != NULL);
+    std::auto_ptr<SqlCursor> cur = conn->new_cursor();
+    cur->prepare(_T("SELECT MAX(ID) MAX_ID FROM T_ORM_TEST"));
+    cur->exec(Values());
+    RowPtr ptr = cur->fetch_row();
+    CPPUNIT_ASSERT(ptr.get() != NULL);
+    RowPtr end = cur->fetch_row();
+    CPPUNIT_ASSERT(end.get() == NULL);
+    Value x = find_in_row(*ptr, _T("MAX_ID"))->second;
+    return x.is_null()? 1: x.as_longint() + 1;
+}
+
+class TestEngineSql : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(TestEngineSql);
+    CPPUNIT_TEST(test_select_sql);
+    CPPUNIT_TEST(test_select_sql_max_rows);
+    CPPUNIT_TEST(test_force_select_for_update);
+    CPPUNIT_TEST(test_insert_sql);
+    CPPUNIT_TEST(test_update_sql);
+    CPPUNIT_TEST_SUITE_END();
+
+    LongInt record_id_;
+public:
+    TestEngineSql() : record_id_(0) {}
+
+    void setUp()
+    {
+        SqlConnection conn(Engine::sql_source_from_env());
+        setup_log(conn);
+        conn.begin_trans();
+        record_id_ = get_next_test_id(&conn);
+        //CPPUNIT_ASSERT(record_id_ > 0);
+        Values params;
+        params.push_back(Value(record_id_));
+        params.push_back(Value(_T("item")));
+        params.push_back(Value(now()));
+        params.push_back(Value(Decimal(_T("1.2"))));
+        conn.prepare(_T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)"));
+        conn.exec(params);
+        conn.commit();
+    }
+
+    void tearDown()
+    {
+        SqlConnection conn(Engine::sql_source_from_env());
+        setup_log(conn);
+        conn.begin_trans();
+        conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
+        conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
+        conn.commit();
+    }
+
     void test_select_sql()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
+        setup_log(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
-        init_sql();
-        RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(record_id_)));
+        RowsPtr ptr = engine.select(_T("*"),
+                _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(record_id_)));
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("item"),
-                             NARROW(find_in_row(*ptr->begin(), _T("A"))->second.as_string()));
+                NARROW(find_in_row(*ptr->begin(), _T("A"))->second.as_string()));
         CPPUNIT_ASSERT(Decimal(_T("1.2")) ==
                        find_in_row(*ptr->begin(), _T("C"))->second.as_decimal());
-        finish_sql();
     }
 
     void test_select_sql_max_rows()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
+        setup_log(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
-        init_sql();
-        RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(record_id_)),
+        RowsPtr ptr = engine.select(_T("*"),
+                _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(record_id_)),
                 StrList(), Filter(), StrList(), 0);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         CPPUNIT_ASSERT_EQUAL(0, (int)ptr->size());
-        finish_sql();
+    }
+
+    void test_force_select_for_update()
+    {
+        Engine engine(Engine::FORCE_SELECT_UPDATE);
+        if (engine.get_dialect()->get_name() != _T("SQLITE")) {
+            setup_log(engine);
+            CPPUNIT_ASSERT_EQUAL(false, engine.activity());
+            RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), Filter());
+            CPPUNIT_ASSERT_EQUAL(true, engine.activity());
+        }
     }
 
     void test_insert_sql()
     {
-        init_sql();
         Engine engine(Engine::MANUAL);
-        SETUP_LOG(engine);
+        setup_log(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         Rows rows;
-        LongInt id = get_next_test_id(engine, _T("S_ORM_TEST_ID"));
+        LongInt id = get_next_test_id(engine.get_connection());
         Row row;
         row.push_back(make_pair(String(_T("ID")), Value(id)));
         row.push_back(make_pair(String(_T("A")), Value(_T("inserted"))));
@@ -373,24 +427,23 @@ public:
         rows.push_back(row);
         engine.insert(_T("T_ORM_TEST"), rows);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
-        RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(id)));
+        RowsPtr ptr = engine.select(_T("*"),
+                _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(id)));
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("inserted"),
-                             NARROW(find_in_row(*ptr->begin(), _T("A"))->second.as_string()));
+                NARROW(find_in_row(*ptr->begin(), _T("A"))->second.as_string()));
         CPPUNIT_ASSERT(Decimal(_T("1.1")) ==
-                       find_in_row(*ptr->begin(), _T("C"))->second.as_decimal());
+                find_in_row(*ptr->begin(), _T("C"))->second.as_decimal());
         engine.commit();
-        finish_sql();
     }
 
     void test_update_sql()
     {
-        init_sql();
         Engine engine(Engine::MANUAL);
-        SETUP_LOG(engine);
+        setup_log(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         Rows rows;
-        LongInt id = get_next_test_id(engine, _T("S_ORM_TEST_ID"));
+        LongInt id = get_next_test_id(engine.get_connection());
         Row row;
         row.push_back(make_pair(String(_T("A")), Value(_T("updated"))));
         row.push_back(make_pair(String(_T("C")), Value(Decimal(_T("1.3")))));
@@ -402,86 +455,17 @@ public:
         exclude.insert(_T("B"));
         engine.update(_T("T_ORM_TEST"), rows, key, exclude);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
-        RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(record_id_)));
+        RowsPtr ptr = engine.select(_T("*"),
+                _T("T_ORM_TEST"), filter_eq(_T("ID"), Value(record_id_)));
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("updated"),
-                             NARROW(find_in_row(*ptr->begin(), _T("A"))->second.as_string()));
+                NARROW(find_in_row(*ptr->begin(), _T("A"))->second.as_string()));
         CPPUNIT_ASSERT(Decimal(_T("1.3")) ==
-                       find_in_row(*ptr->begin(), _T("C"))->second.as_decimal());
+                find_in_row(*ptr->begin(), _T("C"))->second.as_decimal());
         engine.commit();
-        finish_sql();
-    }
-    
-    void test_insert_ro_mode()
-    {
-        Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
-        engine.insert(_T(""), Rows());
-    }
-    
-    void test_update_ro_mode()
-    {
-        Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
-        engine.update(_T(""), Rows(), Strings(), StringSet());
-    }
-    
-    void test_selforupdate_ro_mode()
-    {
-        Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
-        engine.select(_T(""), _T(""), Filter(), StrList(), Filter(), StrList(), -1, true);
-    }
-    
-    void test_commit_ro_mode()
-    {
-        Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
-        engine.commit();
-    }
-    
-    void test_delete_ro_mode()
-    {
-        Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
-        engine.delete_from(_T(""), Filter());
-    }
-    
-    void test_execpoc_ro_mode()
-    {
-        Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
-        engine.exec_proc(_T(""));
-    }
-
-    void test_force_select_for_update()
-    {
-        Engine engine(Engine::FORCE_SELECT_UPDATE);
-        if (engine.get_dialect()->get_name() != _T("SQLITE")) {
-            SETUP_LOG(engine);
-            CPPUNIT_ASSERT_EQUAL(false, engine.activity());
-            RowsPtr ptr = engine.select(_T("*"), _T("T_ORM_TEST"), Filter());
-            CPPUNIT_ASSERT_EQUAL(true, engine.activity());
-        }
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(TestEngine);
-
-class TestSqlDriver : public CppUnit::TestFixture
-{
-    CPPUNIT_TEST_SUITE(TestSqlDriver);
-    CPPUNIT_TEST(test_fetch);
-    CPPUNIT_TEST_SUITE_END();
-
-public:
-    void test_fetch()
-    {
-        SqlConnection conn(Engine::sql_source_from_env());
-        ///
-    }
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(TestSqlDriver);
+CPPUNIT_TEST_SUITE_REGISTRATION(TestEngineSql);
 
 // vim:ts=4:sts=4:sw=4:et:

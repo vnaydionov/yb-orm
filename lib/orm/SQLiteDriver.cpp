@@ -81,15 +81,15 @@ SQLiteCursorBackend::exec(const Values &params)
             }
         }
     }
-    sqlite3_step(stmt_);
-    last_code_ = sqlite3_errcode(conn_);
-    if (last_code_ != SQLITE_DONE && last_code_ != SQLITE_ROW)
+    last_code_ = sqlite3_step(stmt_);
+    if (last_code_ != SQLITE_DONE && last_code_ != SQLITE_ROW
+            && last_code_ != SQLITE_OK)
         throw DBError(WIDEN(sqlite3_errmsg(conn_)));
 }
 
 RowPtr SQLiteCursorBackend::fetch_row()
 {
-    if (SQLITE_DONE == last_code_)
+    if (SQLITE_DONE == last_code_ || SQLITE_OK == last_code_)
         return RowPtr();
     if (SQLITE_ROW != last_code_)
         throw DBError(WIDEN(sqlite3_errmsg(conn_)));
@@ -103,10 +103,7 @@ RowPtr SQLiteCursorBackend::fetch_row()
             v = Value(WIDEN((const char *)sqlite3_column_text(stmt_, i)));
         row->push_back(RowItem(name, v));
     }
-    sqlite3_step(stmt_);
-    last_code_ = sqlite3_errcode(conn_);
-    if (last_code_ != SQLITE_DONE && last_code_ != SQLITE_ROW)
-        throw DBError(WIDEN(sqlite3_errmsg(conn_)));
+    last_code_ = sqlite3_step(stmt_);
     return row;
 }
 
