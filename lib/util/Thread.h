@@ -17,6 +17,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/xtime.hpp>
 #include <boost/thread/condition.hpp>
+#include <boost/version.hpp>
 #endif
 
 namespace Yb {

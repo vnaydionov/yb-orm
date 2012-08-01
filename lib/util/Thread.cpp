@@ -85,7 +85,11 @@ bool Condition::wait(ScopedLock &lock, long milliSec)
     }
     else {
         boost::xtime xt;
+#if BOOST_VERSION < 104900
         boost::xtime_get(&xt, boost::TIME_UTC);
+#else
+        boost::xtime_get(&xt, boost::TIME_UTC_);
+#endif
         xt.sec += ((unsigned long )milliSec)/1000;
         xt.nsec += (((unsigned long )milliSec)%1000) * 1000000;
         return cond_.timed_wait(lock.lock_, xt);
