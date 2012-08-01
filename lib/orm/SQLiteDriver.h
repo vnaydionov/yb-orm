@@ -16,6 +16,7 @@ class SQLiteCursorBackend: public SqlCursorBackend
 {
     SQLiteDatabase *conn_;
     SQLiteQuery *stmt_;
+    int last_code_;
 public:
     SQLiteCursorBackend(SQLiteDatabase *conn);
     ~SQLiteCursorBackend();

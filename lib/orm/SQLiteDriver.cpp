@@ -2,11 +2,12 @@
 #include <util/str_utils.hpp>
 
 using namespace std;
+using Yb::StrUtils::str_to_upper;
 
 namespace Yb {
 
 SQLiteCursorBackend::SQLiteCursorBackend(SQLiteDatabase *conn)
-    :conn_(conn), stmt_(NULL)
+    :conn_(conn), stmt_(NULL), last_code_(0)
 {}
 
 SQLiteCursorBackend::~SQLiteCursorBackend()
@@ -20,6 +21,7 @@ SQLiteCursorBackend::close()
     if (stmt_) {
         sqlite3_finalize(stmt_);
         stmt_ = NULL;
+        last_code_ = 0;
     }
 }
 
@@ -79,19 +81,33 @@ SQLiteCursorBackend::exec(const Values &params)
             }
         }
     }
+    sqlite3_step(stmt_);
+    last_code_ = sqlite3_errcode(conn_);
+    if (last_code_ != SQLITE_DONE && last_code_ != SQLITE_ROW)
+        throw DBError(WIDEN(sqlite3_errmsg(conn_)));
 }
 
 RowPtr SQLiteCursorBackend::fetch_row()
 {
-    RowPtr q;
-    sqlite3_step(stmt_);
-    // TODO: analyze the result and fill the row
-    if (SQLITE_OK != sqlite3_errcode(conn_)) {
-        const char *err = sqlite3_errmsg(conn_);
-        throw DBError(WIDEN(err));
+    if (SQLITE_DONE == last_code_)
+        return RowPtr();
+    if (SQLITE_ROW != last_code_)
+        throw DBError(WIDEN(sqlite3_errmsg(conn_)));
+    RowPtr row(new Row);
+    int col_count = sqlite3_column_count(stmt_);
+    for (int i = 0; i < col_count; ++i) {
+        String name = str_to_upper(WIDEN(sqlite3_column_name(stmt_, i)));
+        int type = sqlite3_column_type(stmt_, i);
+        Value v;
+        if (SQLITE_NULL != type)
+            v = Value(WIDEN((const char *)sqlite3_column_text(stmt_, i)));
+        row->push_back(RowItem(name, v));
     }
-    // ...
-    return q;
+    sqlite3_step(stmt_);
+    last_code_ = sqlite3_errcode(conn_);
+    if (last_code_ != SQLITE_DONE && last_code_ != SQLITE_ROW)
+        throw DBError(WIDEN(sqlite3_errmsg(conn_)));
+    return row;
 }
 
 SQLiteConnectionBackend::SQLiteConnectionBackend(SQLiteDriver *drv)
