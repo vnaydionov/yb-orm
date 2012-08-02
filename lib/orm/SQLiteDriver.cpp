@@ -7,7 +7,7 @@ using Yb::StrUtils::str_to_upper;
 namespace Yb {
 
 SQLiteCursorBackend::SQLiteCursorBackend(SQLiteDatabase *conn)
-    :conn_(conn), stmt_(NULL), last_code_(0)
+    :conn_(conn), stmt_(NULL), last_code_(0), exec_count_(0)
 {}
 
 SQLiteCursorBackend::~SQLiteCursorBackend()
@@ -22,19 +22,9 @@ SQLiteCursorBackend::close()
         sqlite3_finalize(stmt_);
         stmt_ = NULL;
         last_code_ = 0;
+        exec_count_ = 0;
     }
 }
-
-/*static int
-exec_callback(void *NotUsed, int argc, char **argv, char **azColName)
-{
-    int i;
-    for(i = 0; i < argc; i++) {
-        cout << azColName[i] <<" = " << (argv[i] ? argv[i] : "NULL") << "\n";
-    }
-    cout << endl;
-    return 0;
-}*/
 
 void
 SQLiteCursorBackend::exec_direct(const String &sql)
@@ -51,7 +41,7 @@ SQLiteCursorBackend::prepare(const String &sql)
 {
     close();
     sqlite3_prepare_v2(conn_, NARROW(sql).c_str(), -1, &stmt_, 0);
-    if (SQLITE_OK != sqlite3_errcode(conn_)) {
+    if (SQLITE_OK != sqlite3_errcode(conn_) || !stmt_) {
         const char *err = sqlite3_errmsg(conn_);
         throw DBError(WIDEN(err));
     }
@@ -60,21 +50,29 @@ SQLiteCursorBackend::prepare(const String &sql)
 void
 SQLiteCursorBackend::exec(const Values &params)
 {
+    if (exec_count_)
+        sqlite3_reset(stmt_);
+    ++exec_count_;
+    vector<string> str_params(params.size());
     for (size_t i = 0; i < params.size(); ++i) {
-        if (params[i].get_type() == Value::DATETIME) {
-            sqlite3_bind_text(stmt_, i + 1, params[i].as_string().c_str(), (params[i].as_string()).length(), SQLITE_STATIC);
-            if (SQLITE_OK != sqlite3_errcode(conn_)) {
-                const char *err = sqlite3_errmsg(conn_);
-                throw DBError(WIDEN(err));
-            }
-        } else if (params[i].get_type() == Value::INTEGER) {
+        if (params[i].get_type() == Value::INTEGER 
+                || params[i].get_type() == Value::LONGINT)
+        {
             sqlite3_bind_int(stmt_, i + 1, params[i].as_integer());
             if (SQLITE_OK != sqlite3_errcode(conn_)) {
                 const char *err = sqlite3_errmsg(conn_);
                 throw DBError(WIDEN(err));
             }
+        } else if (params[i].is_null()) {
+            sqlite3_bind_null(stmt_, i + 1);
+            if (SQLITE_OK != sqlite3_errcode(conn_)) {
+                const char *err = sqlite3_errmsg(conn_);
+                throw DBError(WIDEN(err));
+            }
         } else {
-            sqlite3_bind_text(stmt_, i + 1, params[i].as_string().c_str(), (params[i].as_string()).length(), SQLITE_STATIC);
+            str_params[i] = NARROW(params[i].as_string());
+            sqlite3_bind_text(stmt_, i + 1,
+                    str_params[i].c_str(), str_params[i].size(), SQLITE_STATIC);
             if (SQLITE_OK != sqlite3_errcode(conn_)) {
                 const char *err = sqlite3_errmsg(conn_);
                 throw DBError(WIDEN(err));

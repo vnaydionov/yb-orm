@@ -406,7 +406,8 @@ Engine::on_insert(const String &table_name,
                 cursor->exec(params);
             }
             auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
-            cursor->exec_direct(dialect_->select_last_inserted_id(table_name));
+            cursor->prepare(dialect_->select_last_inserted_id(table_name));
+            cursor->exec(Values());
             RowsPtr id_rows = cursor->fetch_rows();
             ids.push_back((*id_rows)[0][0].second.as_longint());
         }

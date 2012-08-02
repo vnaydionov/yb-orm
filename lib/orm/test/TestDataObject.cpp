@@ -8,12 +8,6 @@
 
 using namespace std;
 using namespace Yb;
-using Yb::StrUtils::xgetenv;
-
-static LogAppender appender(cerr);
-#define SETUP_LOG(e) do{ e.set_echo(true); \
-    ILogger::Ptr __log(new Logger(&appender)); \
-    e.set_logger(__log); }while(0)
 
 class TestDataObject : public CppUnit::TestFixture
 {
@@ -366,6 +360,31 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestDataObject);
 
+// Real DB tests
+
+static LogAppender appender(cerr);
+static ILogger::Ptr root_logger;
+
+static void init_log()
+{
+    if (!root_logger.get())
+        root_logger.reset(new Logger(&appender));
+}
+
+static void setup_log(Engine &e)
+{
+    init_log();
+    e.set_logger(root_logger->new_logger("engine"));
+    e.set_echo(true);
+}
+
+static void setup_log(SqlConnection &c)
+{
+    init_log();
+    c.init_logger(root_logger.get());
+    c.set_echo(true);
+}
+
 
 class TestDataObjectSaveLoad : public CppUnit::TestFixture
 {
@@ -387,8 +406,8 @@ class TestDataObjectSaveLoad : public CppUnit::TestFixture
 public:
     void setUp()
     {
-        tearDown();
         SqlConnection conn(Engine::sql_source_from_env());
+        setup_log(conn);
         conn.begin_trans();
         {
             String sql_str =
@@ -456,6 +475,7 @@ public:
     void tearDown()
     {
         SqlConnection conn(Engine::sql_source_from_env());
+        setup_log(conn);
         conn.begin_trans();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
@@ -465,7 +485,7 @@ public:
     void test_lazy_load()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
+        setup_log(engine);
         Session session(r_, &engine);
         DataObject::Ptr e = session.get_lazy
             (r_.table(_T("T_ORM_XML")).mk_key(-20));
@@ -488,7 +508,7 @@ public:
         Key k;
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr e = DataObject::create_new(r_.table(_T("T_ORM_XML")));
             e->set(_T("B"), Value(Decimal(_T("0.01"))));
@@ -499,7 +519,7 @@ public:
         }
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr e = session.get_lazy(k);
             CPPUNIT_ASSERT(Decimal(_T("0.01")) == e->get(_T("B")).as_decimal());
@@ -511,7 +531,7 @@ public:
     void test_lazy_load_slaves()
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
+        setup_log(engine);
         Session session(r_, &engine);
         DataObject::Ptr d = session.get_lazy
             (r_.table(_T("T_ORM_TEST")).mk_key(-10));
@@ -530,7 +550,7 @@ public:
     {
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(r_.table(_T("T_ORM_TEST")).mk_key(-10));
             CPPUNIT_ASSERT_EQUAL(string("item"), NARROW(d->get(_T("A")).as_string()));
@@ -542,7 +562,7 @@ public:
         }
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(r_.table(_T("T_ORM_TEST")).mk_key(-10));
             CPPUNIT_ASSERT_EQUAL(string("xyz"), NARROW(d->get(_T("A")).as_string()));
@@ -555,7 +575,7 @@ public:
         Key k;
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = DataObject::create_new(r_.table(_T("T_ORM_TEST")));
             d->set(_T("A"), Value(_T("abc")));
@@ -571,7 +591,7 @@ public:
         }
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(d->get(_T("A")).as_string()));
@@ -584,7 +604,7 @@ public:
         Key k;
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = DataObject::create_new
                 (r_.table(_T("T_ORM_TEST")));
@@ -598,7 +618,7 @@ public:
         }
         {
             Engine engine(Engine::READ_ONLY);
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("qwerty"), NARROW(d->get(_T("A")).as_string()));
@@ -610,7 +630,7 @@ public:
         Key k;
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr e = DataObject::create_new(r_.table(_T("T_ORM_XML")));
             e->set(_T("B"), Value(Decimal(_T("0.01"))));
@@ -632,7 +652,7 @@ public:
         }
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(d->get(_T("A")).as_string()));
@@ -647,7 +667,7 @@ public:
         Key k;
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = DataObject::create_new(r_.table(_T("T_ORM_TEST")));
             d->set(_T("A"), Value(_T("abc")));
@@ -658,7 +678,7 @@ public:
         }
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             d->get(_T("A"));
@@ -681,7 +701,7 @@ public:
         }
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy(k);
             CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(d->get(_T("A")).as_string()));
@@ -696,7 +716,7 @@ public:
         Key k;
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             DataObject::Ptr d = session.get_lazy
                 (r_.table(_T("T_ORM_TEST")).mk_key(-10));
@@ -709,7 +729,7 @@ public:
         }
         {
             Engine engine;
-            SETUP_LOG(engine);
+            setup_log(engine);
             Session session(r_, &engine);
             int count = 0;
             DataObject::Ptr d = session.get_lazy
@@ -731,7 +751,7 @@ public:
     void test_domain_object(void)
     {
         Engine engine(Engine::READ_ONLY);
-        SETUP_LOG(engine);
+        setup_log(engine);
         Session session(r_, &engine);
         DomainObject d(session, r_.table(_T("T_ORM_TEST")).mk_key(-10));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)d.status());
