@@ -148,7 +148,7 @@ void SQLiteConnectionBackend::close()
 void
 SQLiteConnectionBackend::commit()
 {
-    sqlite3_exec(conn_, _T("COMMIT"), NULL, 0, 0);
+    sqlite3_exec(conn_, "COMMIT", NULL, 0, 0);
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
         const char *err = sqlite3_errmsg(conn_);
         throw DBError(WIDEN(err));
@@ -158,7 +158,7 @@ SQLiteConnectionBackend::commit()
 void
 SQLiteConnectionBackend::rollback()
 {
-    sqlite3_exec(conn_, _T("ROLLBACK"), NULL, 0, 0);
+    sqlite3_exec(conn_, "ROLLBACK", NULL, 0, 0);
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
         const char *err = sqlite3_errmsg(conn_);
         throw DBError(WIDEN(err));
