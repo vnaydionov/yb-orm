@@ -426,8 +426,7 @@ AC_DEFUN([YB_SQLITE3],
         ],
         [
         sqlite3 *conn;
-        sqlite3_open_v2("dfsfsdf", &conn,
-            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+        sqlite3_open("dfsfsdf", &conn);
         return 0;
         ], 
         [

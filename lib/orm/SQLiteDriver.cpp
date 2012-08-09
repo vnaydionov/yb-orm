@@ -119,8 +119,7 @@ SQLiteConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 {
     close();
     ScopedLock lock(drv_->conn_mux_);
-    sqlite3_open_v2(NARROW(source.db()).c_str(), &conn_,
-            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+    sqlite3_open(NARROW(source.db()).c_str(), &conn_);
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
         conn_ = NULL;
         const char *err = sqlite3_errmsg(conn_);
