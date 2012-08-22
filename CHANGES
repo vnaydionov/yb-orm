@@ -1,3 +1,24 @@
+0.3.1
+    * Integrate native SQLITE driver for use in non-QT builds.
+      Now this driver is used in Windows examples by default.
+      Thanx to Andrey Skobenkov.
+    * Improved logging in the ORM core.
+    * Support URL for specifying connection thruout the examples
+      and the build system.
+      Now it's possible to just use --with-test-db-url option
+      and YBORM_URL environment variable.
+    * Applied patches from Sebastian Lauwers,
+      See closed tasks here: http://code.google.com/p/yb-orm/issues
+    * Fixed Session::flush_delete(): respect the depth.
+    * Fixed Engine::on_delete(): once prepare, many times exec.
+    * Cleaned up MetaData classes' interfaces for sake of convenience.
+      Now the generated code looks more readable.
+    * New class Expression replaced old Filter class.
+      This is the first step to develop a comprehensive query language.
+    * For convenience added --with-yborm-root to configure script
+      in Auth sample.
+    * Application singleton for Auth example.
+
 0.3.0
     * New and more convenient method of access to domain object properties:
       via property-proxy accessors, instead of old setters/getters.
