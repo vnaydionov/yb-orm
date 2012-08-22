@@ -245,7 +245,9 @@ const string url_decode(const String &s)
 {
     string result;
     for (int i = 0; i < str_length(s); ++i) {
-        if (char_code(s[i]) != '%')
+        if (char_code(s[i]) == '+')
+            result.push_back(' ');
+        else if (char_code(s[i]) != '%')
             result.push_back((unsigned char)char_code(s[i]));
         else {
             ++i;

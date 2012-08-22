@@ -9,7 +9,7 @@ add_executable (yborm_unit_tests
 
 target_link_libraries (yborm_unit_tests testmain ybutil yborm
     ${LIBXML2_LIBS} ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY}
-    ${ODBC_LIBS} ${CPPUNIT_LIBS} ${QT_LIBRARIES})
+    ${ODBC_LIBS} ${SQLITE3_LIBS} ${CPPUNIT_LIBS} ${QT_LIBRARIES})
 
 add_test (yborm_unit_tests yborm_unit_tests)
 

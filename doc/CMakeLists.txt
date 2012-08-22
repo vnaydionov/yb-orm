@@ -5,5 +5,5 @@ install (FILES
     Tutorial2.en.odt Tutorial2.ru.odt 
     build-yborm-under-mingw.odt 
     msvc-settings.odt msvc-settings.pdf 
-    postgres.txt 
+    README.msvc2008.txt
     DESTINATION doc)

@@ -1,5 +1,5 @@
 
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8)
 project (yborm)
 
 
@@ -75,6 +75,31 @@ elseif (MSVC)
     find_library (ODBC_LIBS odbc32)
 elseif (MINGW)
     set (ODBC_LIBS -lodbc32 CACHE STRING "odbc32 lib" FORCE)
+endif ()
+
+if (SQLITE3_INCLUDEDIR)
+    find_path (SQLITE3_INCLUDEDIR sqlite3.h ${SQLITE3_INCLUDEDIR})
+elseif (UNIX)
+    find_path (SQLITE3_INCLUDEDIR sqlite3.h /usr/include)
+else ()
+    find_path (SQLITE3_INCLUDEDIR sqlite3.h c:/yborm/include)
+endif ()
+
+if (SQLITE3_LIBDIR)
+    find_library (SQLITE3_LIBS sqlite3 ${SQLITE3_LIBDIR})
+elseif (UNIX)
+    find_library (SQLITE3_LIBS sqlite3)
+else ()
+    find_library (SQLITE3_LIBS sqlite3 c:/yborm/lib c:/yborm/bin)
+endif ()
+
+if (SQLITE3_INCLUDEDIR AND SQLITE3_LIBS)
+    add_definitions (-D YB_USE_SQLITE3)
+    set (USE_SQLITE3 ON)
+else ()
+    set (SQLITE3_LIBS "")
+    set (SQLITE3_INCLUDEDIR "")
+    set (USE_SQLITE3 OFF)
 endif ()
 
 else (USE_QT4)

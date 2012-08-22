@@ -6,7 +6,6 @@ include_directories (
     ${LIBXML2_INCLUDES}
     ${BOOST_INCLUDEDIR}
     ${YBORM_INCLUDES}
-    ${PROJECT_SOURCE_DIR}/lib
     ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable (auth
@@ -24,11 +23,11 @@ add_dependencies (auth generate_domain)
 if (UNIX)
 target_link_libraries (auth ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
     ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
-    ${QT_LIBRARIES})
+    ${SQLITE3_LIBS} ${QT_LIBRARIES})
 else ()
 target_link_libraries (auth ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
     ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
-    ${QT_LIBRARIES} ${SOCKET_LIB} ${UUID_LIB})
+    ${SQLITE3_LIBS} ${QT_LIBRARIES} ${SOCKET_LIB} ${UUID_LIB})
 endif ()
 
 install (TARGETS auth DESTINATION examples)
