@@ -23,9 +23,6 @@
 using namespace std;
 using namespace Domain;
 
-Yb::Engine *engine = NULL;
-Yb::ILogger *logger = NULL;
-
 Yb::LongInt
 get_random()
 {
@@ -85,7 +82,7 @@ get_checked_session_by_token(Yb::Session &session,
 std::string 
 check(StringMap &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), engine);
+    Yb::Session session(Yb::theMetaData::instance(), theApp::instance().get_engine());
     return get_checked_session_by_token(session, params) == -1? BAD_RESP: OK_RESP;
 }
 
@@ -108,7 +105,7 @@ md5_hash(const std::string &str)
 std::string 
 registration(StringMap &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), engine);
+    Yb::Session session(Yb::theMetaData::instance(), theApp::instance().get_engine());
     User::ResultSet all = Yb::query<User>(session).all();
     User::ResultSet::iterator p = all.begin(), pend = all.end();
     if (p != pend) {
@@ -150,7 +147,7 @@ get_checked_user_by_creds(Yb::Session &session, StringMap &params)
 std::string 
 login(StringMap &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), engine);
+    Yb::Session session(Yb::theMetaData::instance(), theApp::instance().get_engine());
     Yb::LongInt uid = get_checked_user_by_creds(session, params);
     if (-1 == uid)
         return BAD_RESP;
@@ -173,7 +170,7 @@ login(StringMap &params)
 std::string
 session_info(StringMap &params)
 { 
-    Yb::Session session(Yb::theMetaData::instance(), engine);
+    Yb::Session session(Yb::theMetaData::instance(), theApp::instance().get_engine());
     Yb::LongInt sid = get_checked_session_by_token(session, params);
     if (-1 == sid)
         return BAD_RESP;
@@ -184,7 +181,7 @@ session_info(StringMap &params)
 std::string
 logout(StringMap &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), engine);
+    Yb::Session session(Yb::theMetaData::instance(), theApp::instance().get_engine());
     Yb::LongInt sid = get_checked_session_by_token(session, params);
     if (-1 == sid)
         return BAD_RESP;
@@ -206,11 +203,9 @@ public:
 #if defined(YB_USE_QT)
     QCoreApplication app(argc, argv);
 #endif
-    Yb::ILogger::Ptr xlog;
+    Yb::ILogger::Ptr log;
     try {
-        engine = theApp::instance().get_engine();
-        xlog.reset(theApp::instance().new_logger("main").release());
-        logger = xlog.get();
+        log.reset(theApp::instance().new_logger("main").release());
     }
     catch (const std::exception &ex) {
         std::cerr << "exception: " << ex.what() << "\n";
@@ -228,7 +223,7 @@ public:
         server.serve();
     }
     catch (const std::exception &ex) {
-        logger->error(string("exception: ") + ex.what());
+        log->error(string("exception: ") + ex.what());
         return 1;
     }
     return 0;
@@ -237,4 +232,5 @@ public:
 };
 IMPLEMENT_APP(MyApp)
 #endif
+
 // vim:ts=4:sts=4:sw=4:et:

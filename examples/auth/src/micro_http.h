@@ -5,8 +5,8 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <util/nlogger.h>
 #include "tcp_socket.h"
-#include "logger.h"
 
 typedef std::vector<std::string> Strings;
 typedef std::map<std::string, std::string> StringMap;

@@ -19,7 +19,7 @@ auth_SOURCES=\
 	auth.cpp \
 	tcp_socket.cpp \
 	micro_http.cpp \
-	logger.cpp \
+	App.cpp \
 	md5.c
 
 auth_LDFLAGS=\
