@@ -2,6 +2,12 @@
 #ifndef YB__ORM__DATA_OBJECT__INCLUDED
 #define YB__ORM__DATA_OBJECT__INCLUDED
 
+/** @file
+ * This is the core part of the ORM.  Mapped objects can form a graph,
+ * consisting of DataObject instances interconnected with RelationObject
+ * instances.
+ */
+
 #include <string>
 #include <memory>
 #include <iterator>
@@ -44,6 +50,11 @@ public:
     DataObjectResultSet(const DataObjectResultSet &obj);
 };
 
+//! Session handles persisted DataObjects
+/** Session class rules all over the mapped objects that should be
+ * persisted in the database.  Session has associated Schema object
+ * to consult to, and Engine instance to send queries to.
+ */
 class Session: NonCopyable {
     friend class ::TestDataObject;
     friend class ::TestDataObjectSaveLoad;
@@ -67,9 +78,17 @@ public:
     Session(const Schema &schema, EngineBase *engine = NULL);
     ~Session();
     const Schema &schema() const { return schema_; }
+    //! Save a detached or new DataObject into Session
     void save(DataObjectPtr obj);
+    //! 
     DataObjectPtr save_or_update(DataObjectPtr obj);
+    //! Tell session to release a DataObject
     void detach(DataObjectPtr obj);
+    /** Get pointer to a DataObject by key provided
+     * If there is an object with such key in the identity_map_
+     * it is returned, otherwise a new Ghost DataObject is created,
+     * placed in the identity_map_ and returned.
+     */
     DataObjectPtr get_lazy(const Key &key);
     void flush();
     void commit();
@@ -141,17 +160,21 @@ public:
 
 enum DeletionMode { DelNormal, DelDryRun, DelUnchecked };
 
+//! Represents an instance of a mapped class.
+/** Some facts about DataObject class <ul>
+  <li>Object is always allocated in heap, pointer to object = object's identity.
+      -> non-copyable.
+  <li>Store data values within object.
+  <li>Keep link to the table metadata.
+  <li>Fast access data values by attribute name.
+  <li>Maintain current state, change it when necessary.
+      one of: new | ghost | dirty | sync | deleted.
+  <li>Enumerate relations, filter relations by directions:
+      a) master  b) slave
+  <li>Each relation is a pointer to a RelationObject instance.
+</ul>
+*/
 class DataObject: NonCopyable {
-    // 0) Always allocate object in heap, pointer to object = object's identity.
-    //      -> non-copyable.
-    // 1) Store data values within object.
-    // 2) Keep table metadata link.
-    // 3) Fast access data values by attribute name.
-    // 4) Maintain current state, change it when necessary.
-    //       one of: new | ghost | dirty | sync | deleted.
-    // 5) Enumerate relations, filter relations by directions:
-    //             a) master  b) slave
-    //    Each relation is a pointer to a RelationObject instance.
 
     friend class Session;
 public:
