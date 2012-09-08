@@ -6,8 +6,8 @@
 #include <map>
 #include <memory>
 #include <util/DataTypes.h>
+#include <util/nlogger.h>
 #include "tcp_socket.h"
-#include "logger.h"
 
 typedef std::string (*HttpHandler)(const Yb::StringDict &request);
 typedef Yb::Dict<Yb::String, HttpHandler> HttpHandlerMap;

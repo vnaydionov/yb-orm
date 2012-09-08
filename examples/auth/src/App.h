@@ -1,70 +1,31 @@
 #ifndef _AUTH__APP_H_
 #define _AUTH__APP_H_
 
-#include "logger.h"
-#include <orm/MetaDataSingleton.h>
+#include <memory>
+#include <string>
+#include <fstream>
+#include <util/nlogger.h>
+#include <util/Singleton.h>
+#include <orm/DataObject.h>
 
 class App: public Yb::ILogger
 {
+    std::auto_ptr<std::ofstream> file_stream_;
+    std::auto_ptr<Yb::LogAppender> appender_;
     Yb::ILogger::Ptr log_;
     std::auto_ptr<Yb::Engine> engine_;
 
-    void init_log()
-    {
-        if (!log_.get())
-            log_.reset(new Log("log.txt"));
-    }
-
-    void init_engine(Yb::ILogger *root_logger)
-    {
-        if (!engine_.get()) {
-            Yb::ILogger::Ptr yb_logger(root_logger->new_logger("yb").release());
-            Yb::init_default_meta();
-            std::auto_ptr<Yb::SqlPool> pool(
-                    new Yb::SqlPool(YB_POOL_MAX_SIZE, YB_POOL_IDLE_TIME,
-                        YB_POOL_MONITOR_SLEEP, yb_logger.get()));
-            pool->add_source(Yb::Engine::sql_source_from_env(_T("auth_db")));
-            engine_.reset(new Yb::Engine(Yb::Engine::MANUAL, pool, _T("auth_db")));
-            engine_->set_echo(true);
-            engine_->set_logger(yb_logger);
-        }
-    }
-
+    void init_log(const std::string &log_name);
+    void init_engine(const std::string &db_name);
 public:
-    Yb::Engine *get_engine() { return engine_.get(); }
-
-    std::auto_ptr<Yb::Session> new_session()
-    {
-        return std::auto_ptr<Yb::Session>(
-                new Yb::Session(Yb::theMetaData::instance(), get_engine()));
-    }
-
-    App()
-    {
-        init_log();
-        init_engine(log_.get());
-    }
-
-    ~App()
-    {
-        engine_.reset(NULL);
-        log_.reset(NULL);
-    }
-
-    Yb::ILogger::Ptr new_logger(const std::string &name)
-    {
-        return log_->new_logger(name);
-    }
-
-    void log(int level, const std::string &msg)
-    {
-        return log_->log(level, msg);
-    }
-
-    const std::string get_name() const
-    {
-        return log_->get_name();
-    }
+    App(const std::string &log_name = "log.txt",
+            const std::string &db_name = "db");
+    virtual ~App();
+    Yb::Engine *get_engine();
+    std::auto_ptr<Yb::Session> new_session();
+    Yb::ILogger::Ptr new_logger(const std::string &name);
+    void log(int level, const std::string &msg);
+    const std::string get_name() const;
 };
 
 typedef Yb::SingletonHolder<App> theApp;
