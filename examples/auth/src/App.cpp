@@ -31,7 +31,7 @@ void App::init_engine(const string &db_name)
     }
 }
 
-App::App(const string &log_name, const string &db_name)
+void App::init(const string &log_name, const string &db_name)
 {
     init_log(log_name);
     init_engine(db_name);

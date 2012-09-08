@@ -12,8 +12,6 @@
 #include <iostream>
 #include <util/str_utils.hpp>
 #include <util/xmlnode.h>
-#include <orm/SqlPool.h>
-#include <orm/MetaDataSingleton.h>
 #include "md5.h"
 #include "App.h"
 #include "micro_http.h"
@@ -82,8 +80,8 @@ get_checked_session_by_token(Yb::Session &session,
 std::string 
 check(const Yb::StringDict &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), theApp::instance().get_engine());
-    return get_checked_session_by_token(session, params) == -1? BAD_RESP: OK_RESP;
+    return get_checked_session_by_token(*theApp::instance().new_session(),
+            params) == -1? BAD_RESP: OK_RESP;
 }
 
 Yb::String 
@@ -106,27 +104,27 @@ md5_hash(const Yb::String &str0)
 std::string 
 registration(const Yb::StringDict &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), theApp::instance().get_engine());
-    User::ResultSet all = Yb::query<User>(session).all();
+    auto_ptr<Yb::Session> session = theApp::instance().new_session();
+    User::ResultSet all = Yb::query<User>(*session).all();
     User::ResultSet::iterator p = all.begin(), pend = all.end();
     if (p != pend) {
         // when user table is empty it is allowed to create the first user
         // w/o password check, otherwise we should check permissions
-        if (-1 == get_checked_session_by_token(session, params, 1))
+        if (-1 == get_checked_session_by_token(*session, params, 1))
             return BAD_RESP;
     }
-    User::ResultSet rs = Yb::query<User>(session)
+    User::ResultSet rs = Yb::query<User>(*session)
         .filter_by(Yb::filter_eq(_T("LOGIN"), params[_T("login")])).all();
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q != qend)
         return BAD_RESP;
 
-    User user(session);
+    User user(*session);
     user.login = params[_T("login")];
     user.name = params[_T("name")];
     user.pass = md5_hash(params[_T("pass")]);
     user.status = params.get_as<int>(_T("status"));
-    session.commit();
+    session->commit();
     return OK_RESP;
 }
 
@@ -146,15 +144,15 @@ get_checked_user_by_creds(Yb::Session &session, const Yb::StringDict &params)
 std::string 
 login(const Yb::StringDict &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), theApp::instance().get_engine());
-    Yb::LongInt uid = get_checked_user_by_creds(session, params);
+    auto_ptr<Yb::Session> session = theApp::instance().new_session();
+    Yb::LongInt uid = get_checked_user_by_creds(*session, params);
     if (-1 == uid)
         return BAD_RESP;
 
-    UserHolder user(session, uid);
+    UserHolder user(*session, uid);
     while (user->login_sessions.begin() != user->login_sessions.end())
         user->login_sessions.begin()->delete_object();
-    LoginSession login_session(session);
+    LoginSession login_session(*session);
     login_session.user = user;
     Yb::LongInt token = get_random();
     login_session.token = Yb::to_string(token);
@@ -162,31 +160,31 @@ login(const Yb::StringDict &params)
     login_session.app_name = _T("auth");
     Yb::ElementTree::ElementPtr root = Yb::ElementTree::new_element(
             _T("token"), login_session.token);
-    session.commit();
+    session->commit();
     return root->serialize();
 }
 
 std::string
 session_info(const Yb::StringDict &params)
 { 
-    Yb::Session session(Yb::theMetaData::instance(), theApp::instance().get_engine());
-    Yb::LongInt sid = get_checked_session_by_token(session, params);
+    auto_ptr<Yb::Session> session = theApp::instance().new_session();
+    Yb::LongInt sid = get_checked_session_by_token(*session, params);
     if (-1 == sid)
         return BAD_RESP;
-    LoginSession ls(session, sid);
+    LoginSession ls(*session, sid);
     return ls.xmlize(1)->serialize();
 }
 
 std::string
 logout(const Yb::StringDict &params)
 {
-    Yb::Session session(Yb::theMetaData::instance(), theApp::instance().get_engine());
-    Yb::LongInt sid = get_checked_session_by_token(session, params);
+    auto_ptr<Yb::Session> session = theApp::instance().new_session();
+    Yb::LongInt sid = get_checked_session_by_token(*session, params);
     if (-1 == sid)
         return BAD_RESP;
-    LoginSession ls(session, sid);
+    LoginSession ls(*session, sid);
     ls.delete_object();
-    session.commit();
+    session->commit();
     return OK_RESP;
 }
 
@@ -204,6 +202,7 @@ public:
 #endif
     Yb::ILogger::Ptr log;
     try {
+        theApp::instance().init("auth.log", "auth_db");
         log.reset(theApp::instance().new_logger("main").release());
     }
     catch (const std::exception &ex) {

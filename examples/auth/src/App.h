@@ -18,7 +18,8 @@ class App: public Yb::ILogger
     void init_log(const std::string &log_name);
     void init_engine(const std::string &db_name);
 public:
-    App(const std::string &log_name = "log.txt",
+    App() {}
+    void init(const std::string &log_name = "log.txt",
             const std::string &db_name = "db");
     virtual ~App();
     Yb::Engine *get_engine();
