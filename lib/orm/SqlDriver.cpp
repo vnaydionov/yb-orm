@@ -393,18 +393,19 @@ SqlSource::SqlSource()
 }
 
 SqlSource::SqlSource(const String &url)
-    : Dict(parse_url(url))
+    : StringDict(parse_url(url))
 {
     set(_T("&dialect"), str_to_upper(pop(_T("&proto"))));
     set(_T("&driver"), str_to_upper(pop(_T("&proto_ext"), _T("DEFAULT"))));
-    if (!empty(_T("&host")) && empty(_T("&port")) && empty(_T("&path")))
-        set(_T("&db"), pop(_T("&host")));
+    if (!empty_key(_T("&host")) &&
+            empty_key(_T("&port")) && empty_key(_T("&path")))
+        set(_T("&db"), pop(_T("&host"), String()));
     else
-        set(_T("&db"), pop(_T("&path")));
-    set(_T("&user"), pop(_T("&user")));
-    set(_T("&passwd"), pop(_T("&passwd")));
-    set(_T("&host"), pop(_T("&host")));
-    set(_T("&port"), pop(_T("&port")));
+        set(_T("&db"), pop(_T("&path"), String()));
+    set(_T("&user"), pop(_T("&user"), String()));
+    set(_T("&passwd"), pop(_T("&passwd"), String()));
+    set(_T("&host"), pop(_T("&host"), String()));
+    set(_T("&port"), pop(_T("&port"), String()));
     set(_T("&id"), format(true));
 }
 
@@ -424,7 +425,7 @@ SqlSource::SqlSource(const String &id,
 
 const String SqlSource::format(bool hide_passwd) const
 {
-    Dict params = *(Dict *)this;
+    StringDict params = *(StringDict *)this;
     params[_T("&proto")] = str_to_lower(params[_T("&dialect")]);
     String driver = params[_T("&driver")];
     if (driver != _T("DEFAULT"))

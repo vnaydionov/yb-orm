@@ -184,7 +184,7 @@ public:
     virtual RowPtr fetch_row() = 0;
 };
 
-class SqlSource: public Dict
+class SqlSource: public StringDict
 {
 public:
     SqlSource();

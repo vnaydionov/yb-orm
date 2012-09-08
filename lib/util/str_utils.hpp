@@ -74,9 +74,9 @@ const std::string url_decode(const Yb::String &s);
 
 const Yb::String url_encode(const std::string &s, bool path_mode = false);
 
-const Dict parse_url(const String &url);
+const StringDict parse_url(const String &url);
 
-const String format_url(const Dict &params, bool hide_passwd = true);
+const String format_url(const StringDict &params, bool hide_passwd = true);
 
 // Code generation helpers
 

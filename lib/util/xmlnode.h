@@ -8,13 +8,13 @@
 #include <iostream>
 #include <util/Utility.h>
 #include <util/String.h>
+#include <util/DataTypes.h>
 #include <util/xml_writer.h>
 
 namespace Yb {
 
 namespace ElementTree {
 
-typedef std::map<Yb::String, Yb::String> AttribMap;
 typedef std::vector<Yb::String> Strings;
 struct Element;
 typedef SharedPtr<Element>::Type ElementPtr;
@@ -32,7 +32,7 @@ public: ParseError(const std::string &t): std::runtime_error(t) {}
 struct Element
 {
     Yb::String name_;
-    AttribMap attrib_;
+    StringDict attrib_;
     Strings text_;
     Elements children_;
 

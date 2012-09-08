@@ -52,7 +52,7 @@ get_random()
 
 Yb::LongInt
 get_checked_session_by_token(Yb::Session &session,
-        StringMap &params, int admin_flag=0)
+        const Yb::StringDict &params, int admin_flag=0)
 {
 #if !defined(YB_USE_TUPLE)
     typedef LoginSession Row;
@@ -60,12 +60,12 @@ get_checked_session_by_token(Yb::Session &session,
     typedef boost::tuple<LoginSession, User> Row;
 #endif
     Yb::DomainResultSet<Row> rs = Yb::query<Row>(session)
-        .filter_by(Yb::filter_eq(Yb::String(_T("TOKEN")), WIDEN(params["token"])))
+        .filter_by(Yb::filter_eq(_T("TOKEN"), params[_T("token")]))
 #if defined(YB_USE_TUPLE)
-        .filter_by(Yb::Filter(Yb::String(_T("USER_ID = T_USER.ID"))))
+        .filter_by(Yb::Filter(_T("USER_ID = T_USER.ID")))
 #endif
         .all();
-    Yb::DomainResultSet<Row>::iterator q = rs.begin(), qend=rs.end();
+    Yb::DomainResultSet<Row>::iterator q = rs.begin(), qend = rs.end();
     if (q == qend)
         return -1;
 #if !defined(YB_USE_TUPLE)
@@ -83,15 +83,17 @@ get_checked_session_by_token(Yb::Session &session,
 }
 
 std::string 
-check(StringMap &params)
+check(const Yb::StringDict &params)
 {
     Yb::Session session(Yb::theMetaData::instance(), engine);
-    return get_checked_session_by_token(session, params) == -1? BAD_RESP: OK_RESP;
+    return get_checked_session_by_token(session, params) == -1?
+        BAD_RESP: OK_RESP;
 }
 
-std::string 
-md5_hash(const std::string &str)
+Yb::String 
+md5_hash(const Yb::String &str0)
 {
+    std::string str = NARROW(str0);
     MD5_CTX mdContext;
     MD5Init(&mdContext);
     MD5Update(&mdContext, (unsigned char *)str.c_str(), str.size());
@@ -102,11 +104,11 @@ md5_hash(const std::string &str)
         sprintf(omg, "%02x", mdContext.digest[i]);
         rez.append(omg, 2);
     }
-    return rez;
+    return WIDEN(rez);
 }
 
 std::string 
-registration(StringMap &params)
+registration(const Yb::StringDict &params)
 {
     Yb::Session session(Yb::theMetaData::instance(), engine);
     User::ResultSet all = Yb::query<User>(session).all();
@@ -118,37 +120,35 @@ registration(StringMap &params)
             return BAD_RESP;
     }
     User::ResultSet rs = Yb::query<User>(session)
-        .filter_by(Yb::filter_eq(_T("LOGIN"), WIDEN(params["login"]))).all();
+        .filter_by(Yb::filter_eq(_T("LOGIN"), params[_T("login")])).all();
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q != qend)
         return BAD_RESP;
 
     User user(session);
-    user.login = WIDEN(params["login"]);
-    user.name = WIDEN(params["name"]);
-    user.pass = WIDEN(md5_hash(params["pass"]));
-    int status;
-    Yb::from_stdstring(params["status"], status);
-    user.status = status;
+    user.login = params[_T("login")];
+    user.name = params[_T("name")];
+    user.pass = md5_hash(params[_T("pass")]);
+    user.status = params.get_as<int>(_T("status"));
     session.commit();
     return OK_RESP;
 }
 
 Yb::LongInt
-get_checked_user_by_creds(Yb::Session &session, StringMap &params)
+get_checked_user_by_creds(Yb::Session &session, const Yb::StringDict &params)
 {
     User::ResultSet rs = Yb::query<User>(session,
-        Yb::filter_eq(_T("LOGIN"), WIDEN(params["login"]))).all();
+        Yb::filter_eq(_T("LOGIN"), params[_T("login")])).all();
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q == qend)
         return -1;
-    if (q->pass != WIDEN(md5_hash(params["pass"])))
+    if (q->pass != md5_hash(params[_T("pass")]))
         return -1;
     return q->id;
 }
 
 std::string 
-login(StringMap &params)
+login(const Yb::StringDict &params)
 {
     Yb::Session session(Yb::theMetaData::instance(), engine);
     Yb::LongInt uid = get_checked_user_by_creds(session, params);
@@ -171,7 +171,7 @@ login(StringMap &params)
 }
 
 std::string
-session_info(StringMap &params)
+session_info(const Yb::StringDict &params)
 { 
     Yb::Session session(Yb::theMetaData::instance(), engine);
     Yb::LongInt sid = get_checked_session_by_token(session, params);
@@ -182,7 +182,7 @@ session_info(StringMap &params)
 }
 
 std::string
-logout(StringMap &params)
+logout(const Yb::StringDict &params)
 {
     Yb::Session session(Yb::theMetaData::instance(), engine);
     Yb::LongInt sid = get_checked_session_by_token(session, params);
@@ -219,11 +219,11 @@ public:
     try {
         int port = 9090; // TODO: read from config
         HttpHandlerMap handlers;
-        handlers["/session_info"] = session_info;
-        handlers["/registration"] = registration;
-        handlers["/check"] = check;
-        handlers["/login"] = login;
-        handlers["/logout"] = logout;
+        handlers[_T("/session_info")] = session_info;
+        handlers[_T("/registration")] = registration;
+        handlers[_T("/check")] = check;
+        handlers[_T("/login")] = login;
+        handlers[_T("/logout")] = logout;
         HttpServer server(port, handlers, &theApp::instance());
         server.serve();
     }

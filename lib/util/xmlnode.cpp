@@ -67,10 +67,7 @@ Element::has_attr(const Yb::String &name) const
 const Yb::String
 Element::get_attr(const Yb::String &name) const
 {
-    AttribMap::const_iterator i = attrib_.find(name);
-    if (i != attrib_.end())
-        return i->second;
-    return Yb::String();
+    return attrib_.get(name, Yb::String());
 }
 
 ElementPtr
@@ -96,11 +93,10 @@ void
 Element::serialize(Yb::Writer::Document &doc) const
 {
     Yb::Writer::Element e(doc, name_);
-    AttribMap::const_iterator q = attrib_.begin(),
+    StringDict::const_iterator q = attrib_.begin(),
         qend = attrib_.end();
-    for (; q != qend; ++q) {
+    for (; q != qend; ++q)
         Yb::Writer::Attribute a(e, q->first, q->second);
-    }
     size_t i = 0;
     for (; i < children_.size(); ++i) {
         if (i < text_.size())

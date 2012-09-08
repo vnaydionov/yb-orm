@@ -152,7 +152,7 @@ public:
 
     void testParseUrl()
     {
-        Dict d = parse_url(
+        StringDict d = parse_url(
             _T("mysql+qtsql://usr:pwd@my.host:123/test_db?x1=a&y=bb#qw"));
         CPPUNIT_ASSERT_EQUAL(string("mysql"), NARROW(d[_T("&proto")]));
         CPPUNIT_ASSERT_EQUAL(string("qtsql"), NARROW(d[_T("&proto_ext")]));
@@ -168,12 +168,12 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("sqlite"), NARROW(d[_T("&proto")]));
         CPPUNIT_ASSERT_EQUAL(string("C:/docs etc/file.db"),
                 NARROW(d[_T("&path")]));
-        CPPUNIT_ASSERT_EQUAL(true, d.empty(_T("&host")));
+        CPPUNIT_ASSERT_EQUAL(true, d.empty_key(_T("&host")));
     }
 
     void testFormatUrl()
     {
-        Dict d; 
+        StringDict d; 
         d[_T("&proto")] = _T("mysql");
         d[_T("&proto_ext")] = _T("qtsql");
         d[_T("&user")] = _T("usr");
@@ -194,5 +194,98 @@ public:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestMisc);
+
+class TestDict: public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(TestDict);
+
+    CPPUNIT_TEST(testDictCons);
+    CPPUNIT_TEST(testDictGetAs);
+    CPPUNIT_TEST(testDictPop);
+    CPPUNIT_TEST(testDictUpdate);
+
+    CPPUNIT_TEST_EXCEPTION(testDictGetKeyError, KeyError);
+    CPPUNIT_TEST_EXCEPTION(testDictGetAsValueError, ValueError);
+    CPPUNIT_TEST_EXCEPTION(testDictPopKeyError, KeyError);
+
+    CPPUNIT_TEST_SUITE_END();   
+
+public:
+    void testDictCons()
+    {
+        StringDict d1;
+        d1[_T("A")] = _T("1");
+        StringDict d2 = d1;
+        CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(d2[_T("A")]));
+        d2[_T("B")] = _T("2");
+        d1 = d2;
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d2.size());
+        CPPUNIT_ASSERT_EQUAL(string("2"), NARROW(d2[_T("B")]));
+    }
+    void testDictGetAs()
+    {
+        StringDict d;
+        d[_T("A")] = _T("1");
+        d[_T("B")] = _T("");
+        d[_T("D")] = _T("%$#");
+        const StringDict &t = d;
+        CPPUNIT_ASSERT_EQUAL(true, t.has(_T("A")));
+        CPPUNIT_ASSERT_EQUAL(true, t.has(_T("B")));
+        CPPUNIT_ASSERT_EQUAL(false, t.has(_T("C")));
+        CPPUNIT_ASSERT_EQUAL(false, t.empty_key(_T("A")));
+        CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("B")));
+        CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("C")));
+        CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(t[_T("A")]));
+        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(_T("A")));
+        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(_T("A"), 10));
+        CPPUNIT_ASSERT_EQUAL(2, t.get_as<int>(_T("B"), 2));
+        CPPUNIT_ASSERT_EQUAL(3, t.get_as<int>(_T("C"), 3));
+        CPPUNIT_ASSERT_EQUAL(string("4"),
+                to_stdstring(t.get_as<Decimal>(_T("D"), 4)));
+    }
+    void testDictPop()
+    {
+        StringDict d1;
+        d1[_T("A")] = _T("1");
+        d1[_T("B")] = _T("");
+        d1[_T("D")] = _T("%$#");
+        CPPUNIT_ASSERT_EQUAL((size_t)3, d1.size());
+        CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(d1.pop(_T("A"))));
+        CPPUNIT_ASSERT_EQUAL(string("2"), NARROW(d1.pop(_T("C"), _T("2"))));
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d1.size());
+    }
+    void testDictUpdate()
+    {
+        StringDict d1, d2;
+        d1[_T("A")] = _T("1");
+        d1[_T("B")] = _T("");
+        d1[_T("D")] = _T("%$#");
+        CPPUNIT_ASSERT_EQUAL((size_t)3, d2.update(d1).size());
+        d2[_T("D")] = _T("4");
+        d1.pop(_T("B"));
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d1.size());
+        CPPUNIT_ASSERT_EQUAL(string("4"), NARROW(d1.update(d2)[_T("D")]));
+        CPPUNIT_ASSERT_EQUAL((size_t)3, d1.size());
+    }
+    void testDictGetKeyError()
+    {
+        StringDict d;
+        const StringDict &t = d;
+        t[_T("A")];
+    }
+    void testDictGetAsValueError()
+    {
+        StringDict d;
+        d[_T("A")] = _T("*");
+        d.get_as<int>(_T("A"));
+    }
+    void testDictPopKeyError()
+    {
+        StringDict d;
+        d.pop(_T("A"));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(TestDict);
 
 // vim:ts=4:sts=4:sw=4:et:

@@ -5,13 +5,12 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <util/DataTypes.h>
 #include "tcp_socket.h"
 #include "logger.h"
 
-typedef std::vector<std::string> Strings;
-typedef std::map<std::string, std::string> StringMap;
-typedef std::string (*HttpHandler)(StringMap &request);
-typedef std::map<std::string, HttpHandler> HttpHandlerMap;
+typedef std::string (*HttpHandler)(const Yb::StringDict &request);
+typedef Yb::Dict<Yb::String, HttpHandler> HttpHandlerMap;
 
 #define OK_RESP "<status>OK</status>"
 #define BAD_RESP "<status>NOT</status>"
@@ -29,7 +28,7 @@ class HttpServer
     Yb::ILogger::Ptr log_;
     static bool send_response(TcpSocket &cl_sock, Yb::ILogger &logger,
             int code, const std::string &desc, const std::string &body,
-            const std::string &cont_type = "text/xml");
+            const Yb::String &cont_type = _T("text/xml"));
     static void process(SOCKET cl_s, Yb::ILogger *log_ptr,
             const HttpHandlerMap *handlers);
     // non-copyable
@@ -41,8 +40,8 @@ public:
     void serve();
 };
 
-StringMap parse_params(const std::string &s);
-StringMap parse_http(const std::string &s);
+Yb::StringDict parse_params(const Yb::String &s);
+Yb::StringDict parse_http(const Yb::String &s);
 
 #endif
 // vim:ts=4:sts=4:sw=4:et:

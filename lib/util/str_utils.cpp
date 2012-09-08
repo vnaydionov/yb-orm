@@ -283,9 +283,9 @@ const String url_encode(const string &s, bool path_mode)
     return result;
 }
 
-const Dict parse_url(const String &url)
+const StringDict parse_url(const String &url)
 {
-    Dict params;
+    StringDict params;
     Strings url_parts, proto_parts;
     split_str(url, _T("://"), url_parts);
     if (url_parts.size() != 2)
@@ -380,24 +380,24 @@ const Dict parse_url(const String &url)
     return params;
 }
 
-const String format_url(const Dict &params, bool hide_passwd)
+const String format_url(const StringDict &params, bool hide_passwd)
 {
     String r = params[_T("&proto")];
-    if (!params.empty(_T("&proto_ext")))
+    if (!params.empty_key(_T("&proto_ext")))
         r += _T("+") + params[_T("&proto_ext")];
     r += _T("://");
-    if (!params.empty(_T("&user"))) {
+    if (!params.empty_key(_T("&user"))) {
         r += params[_T("&user")];
-        if (!hide_passwd && !params.empty(_T("&passwd")))
+        if (!hide_passwd && !params.empty_key(_T("&passwd")))
             r += _T(":") + params[_T("&passwd")];
         r += _T("@");
     }
-    if (!params.empty(_T("&host"))) {
+    if (!params.empty_key(_T("&host"))) {
         r += params[_T("&host")];
-        if (!params.empty(_T("&port")))
+        if (!params.empty_key(_T("&port")))
             r += _T(":") + params[_T("&port")];
     }
-    if (!params.empty(_T("&path")))
+    if (!params.empty_key(_T("&path")))
         r += url_encode(NARROW(params[_T("&path")]), true);
     String q;
     Strings keys = params.keys();
@@ -410,7 +410,7 @@ const String format_url(const Dict &params, bool hide_passwd)
         }
     if (!str_empty(q))
         r += _T("?") + q;
-    if (!params.empty(_T("&anchor")))
+    if (!params.empty_key(_T("&anchor")))
         r += _T("#") + url_encode(NARROW(params[_T("&anchor")]));
     return r;
 }

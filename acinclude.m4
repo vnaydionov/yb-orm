@@ -646,7 +646,7 @@ AC_DEFUN([YB_TEST_DB],
     YBORM_PASSWD=""
     YBORM_URL=""
     AC_ARG_WITH([test-dbtype],
-        AC_HELP_STRING([--with-test-dbtype=MYSQL|INTERBASE|ORACLE],
+        AC_HELP_STRING([--with-test-dbtype=SQLITE|MYSQL|POSTGRES|INTERBASE|ORACLE],
             [Specify SQL dialect of the test database]),
         [YBORM_DBTYPE="$withval"],[YBORM_DBTYPE=""])
     AC_ARG_WITH([test-db],

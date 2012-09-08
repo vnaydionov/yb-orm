@@ -43,6 +43,8 @@ inline const String &to_string(const String &x) { return x; }
 template <class T>
 inline T &from_stdstring(const std::string &s, T &x)
 {
+    if (!s.size())
+        throw ValueBadCast(WIDEN(s), _T("value error: can't cast an empty string"));
     std::istringstream inp(s);
     inp >> x;
     if (!inp.eof())
@@ -243,58 +245,108 @@ inline Decimal &from_stdstring(const std::string &s, Decimal &x)
 
 typedef std::vector<String> Strings;
 typedef std::set<String> StringSet;
-typedef std::map<String, String> StringMap;
 
-// a Python-like dict
-class Dict
+//! Dict class template resembles "dict" type found in Python language
+template <class K__, class V__>
+class Dict: public std::map<K__, V__>
 {
-    StringMap dict_;
 public:
-    bool has(const String &key) const;
-    const String &get(const String &key) const;
-    const String &operator[] (const String &key) const { return get(key); }
-    String &operator[] (const String &key) { return dict_[key]; }
-    const String get(const String &key, const String &def_val) const;
-    template <class T>
-    const T get_as(const String &key) const
-    {
-        const String &r = get(key);
+    typedef std::map<K__, V__> BaseMap;
+    typedef std::vector<K__> Keys;
+    bool has(const K__ &key) const {
+        return this->find(key) != this->end();
+    }
+    const V__ &get(const K__ &key) const {
+        typename BaseMap::const_iterator it = this->find(key);
+        if (this->end() == it)
+            throw KeyError(to_string(key));
+        return it->second;
+    }
+    const V__ &operator[] (const K__ &key) const { return get(key); }
+    const V__ get(const K__ &key, const V__ &def_val) const {
+        typename BaseMap::const_iterator it = this->find(key);
+        if (this->end() == it)
+            return def_val;
+        return it->second;
+    }
+    V__ &operator[] (const K__ &key) {
+        typename BaseMap::iterator it = this->find(key);
+        if (this->end() == it) {
+            V__ val = V__();
+            this->insert(std::make_pair(key, val));
+            it = this->find(key);
+        }
+        return it->second;
+    }
+    template <class U__>
+    const U__ get_as(const K__ &key) const {
+        const V__ &r = get(key);
+        String s = to_string(r);
         try {
-            T val;
-            from_string(r, val);
+            U__ val = U__();
+            from_string(s, val);
             return val;
         }
         catch (const std::exception &) {
-            throw ValueError(r);
+            throw ValueError(s);
         }
     }
-    template <class T>
-    const T get_as(const String &key, const T &def_val) const
-    {
-        const String r = get(key, _T(""));
+    template <class U__>
+    const U__ get_as(const K__ &key, const U__ &def_val) const {
         try {
-            T val;
-            from_string(r, val);
+            const V__ &r = get(key);
+            U__ val = U__();
+            from_string(to_string(r), val);
             return val;
         }
         catch (const std::exception &) {}
         return def_val;
     }
-    bool empty(const String &key) const
-    {
-        return !has(key) || str_empty(get(key));
+    bool empty_key(const K__ &key) const {
+        if (!has(key))
+            return true;
+        return str_empty(to_string(get(key)));
     }
-    const String pop(const String &key, const String &def_val = _T(""));
-    template <class T>
-    void set(const String &key, const T &value)
-    {
-        dict_[key] = to_string(value);
+    const V__ pop(const K__ &key) {
+        typename BaseMap::iterator it = this->find(key);
+        if (this->end() == it)
+            throw KeyError(key);
+        V__ r = it->second;
+        this->erase(it);
+        return r;
     }
-    size_t size() const { return dict_.size(); }
-    const Strings keys() const;
-    Dict() {}
-    explicit Dict(const StringMap &dict): dict_(dict) {}
+    const V__ pop(const K__ &key, const V__ &def_val) {
+        typename BaseMap::iterator it = this->find(key);
+        if (this->end() == it)
+            return def_val;
+        V__ r = it->second;
+        this->erase(it);
+        return r;
+    }
+    template <class U__>
+    void set(const K__ &key, const U__ &value) {
+        V__ value2 = V__();
+        from_string(to_string(value), value2);
+        (*this)[key] = value2;
+    }
+    const Keys keys() const {
+        Keys k(this->size());
+        typename BaseMap::const_iterator
+            i = this->begin(), e = this->end();
+        for (size_t c = 0; i != e; ++i, ++c)
+            k[c] = i->first;
+        return k;
+    }
+    Dict &update(const Dict &other) {
+        typename BaseMap::const_iterator
+            i = other.begin(), e = other.end();
+        for (; i != e; ++i)
+            (*this)[i->first] = i->second;
+        return *this;
+    }
 };
+
+typedef Dict<String, String> StringDict;
 
 } // namespace Yb
 
