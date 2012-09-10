@@ -50,7 +50,7 @@ public:
                 NARROW(expr.get_sql()));
         CPPUNIT_ASSERT_EQUAL((size_t)2, pvalues.size());
         CPPUNIT_ASSERT_EQUAL(1, pvalues[0].as_integer());
-        CPPUNIT_ASSERT_EQUAL(string("a"), pvalues[1].as_string());
+        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(pvalues[1].as_string()));
     }
 };
 
