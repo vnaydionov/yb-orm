@@ -159,11 +159,12 @@ BinaryOpExprBackend::do_get_sql() const
 const String
 BinaryOpExprBackend::do_collect_params_and_build_sql(Values &seq) const
 {
-    return sql_parentheses_as_needed(
-            expr1_.collect_params_and_build_sql(seq))
-        + _T(" ") + op_ + _T(" ")
-        + sql_parentheses_as_needed(
-                expr2_.collect_params_and_build_sql(seq));
+    String sql = sql_parentheses_as_needed(
+            expr1_.collect_params_and_build_sql(seq));
+    sql += _T(" ") + op_ + _T(" ");
+    sql += sql_parentheses_as_needed(
+            expr2_.collect_params_and_build_sql(seq));
+    return sql;
 }
 
 BinaryOpExpr::BinaryOpExpr(const Expression &expr1,

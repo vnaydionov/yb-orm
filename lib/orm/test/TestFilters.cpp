@@ -12,6 +12,7 @@ class TestFilters : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterEq);
     CPPUNIT_TEST(testOperatorOr);
     CPPUNIT_TEST(testOperatorAnd);
+    CPPUNIT_TEST(testCollectParams);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -37,6 +38,19 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A <> ('a'))"), 
                              NARROW((filter_eq(_T("ID"), Value(1)) &&
                                      filter_ne(_T("A"), Value(_T("a")))).get_sql()));
+    }
+
+    void testCollectParams()
+    {
+        Expression expr = filter_eq(_T("ID"), Value(1)) &&
+            filter_ne(_T("A"), Value(_T("a")));
+        Values pvalues;
+        String sql = expr.collect_params_and_build_sql(pvalues);
+        CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A <> ('a'))"),
+                NARROW(expr.get_sql()));
+        CPPUNIT_ASSERT_EQUAL((size_t)2, pvalues.size());
+        CPPUNIT_ASSERT_EQUAL(1, pvalues[0].as_integer());
+        CPPUNIT_ASSERT_EQUAL(string("a"), pvalues[1].as_string());
     }
 };
 
