@@ -106,6 +106,8 @@ Session::~Session()
     for (; i != iend; ++i)
         detach(*i);
 #endif
+    if (engine_.get())
+        engine_->rollback();
 }
 
 DataObjectPtr Session::add_to_identity_map(DataObjectPtr obj, bool return_found)
@@ -450,7 +452,7 @@ void Session::rollback()
 
 void DataObject::set_session(Session *session)
 {
-    YB_ASSERT(!session_);
+    YB_ASSERT(session && (!session_ || session_ == session));
     session_ = session;
 }
 

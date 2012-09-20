@@ -30,7 +30,6 @@ class TestEngine : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_insert_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_update_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_selforupdate_ro_mode, BadOperationInMode);
-    CPPUNIT_TEST_EXCEPTION(test_commit_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_delete_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_execpoc_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_SUITE_END();
@@ -271,12 +270,6 @@ public:
     {
         Engine engine(Engine::READ_ONLY);
         engine.select(_T(""), _T(""), Filter(), StrList(), Filter(), StrList(), -1, true);
-    }
-    
-    void test_commit_ro_mode()
-    {
-        Engine engine(Engine::READ_ONLY);
-        engine.commit();
     }
     
     void test_delete_ro_mode()

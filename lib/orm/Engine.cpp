@@ -292,18 +292,12 @@ Engine::exec_proc(const String &proc_code)
 void
 Engine::commit()
 {
-    if (mode_ == READ_ONLY)
-        throw BadOperationInMode(
-                _T("Using COMMIT operation in read-only mode"));
     on_commit();
 }
 
 void
 Engine::rollback()
 {
-    if (mode_ == READ_ONLY)
-        throw BadOperationInMode(
-                _T("Using ROLLBACK operation in read-only mode"));
     on_rollback();
 }
 
