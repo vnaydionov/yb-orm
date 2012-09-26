@@ -32,25 +32,63 @@ Expression::collect_params_and_build_sql(Values &seq) const
     return sql_;
 }
 
-const String sql_parentheses_as_needed(const String &s)
-{
-    bool needed = false;
+bool is_number_or_object_name(const String &s) {
     for (int i = 0; i < str_length(s); ++i) {
         int c = char_code(s[i]);
         if (!((c >= 'a' && c <= 'z') ||
                 (c >= 'A' && c <= 'Z') ||
                 (c >= '0' && c <= '9') ||
-                c == '_' || c == '#' || c == '$' ||
-                c == '.' || c == ':' || c == '?'))
-        {
-            needed = true;
-            break;
+                c == '_' || c == '#' || c == '$' || c == '.' ||
+                c == ':'))
+            return false;
+    }
+    return true;
+}
+
+bool is_string_constant(const String &s) {
+    if (str_length(s) < 2 || char_code(s[0]) != '\'' ||
+            char_code(s[(int)(str_length(s) - 1)]) != '\'')
+        return false;
+    bool seen_quot = false;
+    for (int i = 1; i < str_length(s) - 1; ++i) {
+        int c = char_code(s[i]);
+        if (c == '\'')
+            seen_quot = !seen_quot;
+        else if (seen_quot)
+            return false;
+    }
+    return !seen_quot;
+}
+
+bool is_in_parentheses(const String &s) {
+    if (str_length(s) < 2 || char_code(s[0]) != '(' ||
+            char_code(s[(int)(str_length(s) - 1)]) != ')')
+        return false;
+    int level = 0;
+    bool seen_quot = false;
+    for (int i = 1; i < str_length(s) - 1; ++i) {
+        int c = char_code(s[i]);
+        if (c == '\'')
+            seen_quot = !seen_quot;
+        else if (!seen_quot) {
+            if (c == '(')
+                ++level;
+            else if (c == ')') {
+                --level;
+                if (level < 0)
+                    return false;
+            }
         }
     }
-    if (needed && !(str_length(s) >= 2 && char_code(s[0]) == '('
-                && char_code(s[(int)(str_length(s) - 1)]) == ')'))
-        return _T("(") + s + _T(")");
-    return s;
+    return !seen_quot && level == 0;
+}
+
+const String sql_parentheses_as_needed(const String &s)
+{
+    if (is_number_or_object_name(s) || is_string_constant(s) || is_in_parentheses(s)
+            || s == _T("?"))
+        return s;
+    return _T("(") + s + _T(")");
 }
 
 const String sql_prefix(const String &s, const String &prefix)
@@ -185,6 +223,55 @@ BinaryOpExpr::expr1() const {
 const Expression &
 BinaryOpExpr::expr2() const {
     return dynamic_cast<BinaryOpExprBackend *>(shptr_get(backend_))->expr2();
+}
+
+const String
+ExpressionListBackend::do_get_sql() const
+{
+    String sql;
+    for (size_t i = 0; i < items_.size(); ++i) {
+        if (!sql.empty())
+            sql += _T(", ");
+        sql += sql_parentheses_as_needed(items_[i].get_sql());
+    }
+    return sql;
+}
+
+const String
+ExpressionListBackend::do_collect_params_and_build_sql(Values &seq) const
+{
+    String sql;
+    for (size_t i = 0; i < items_.size(); ++i) {
+        if (!sql.empty())
+            sql += _T(", ");
+        sql += sql_parentheses_as_needed(items_[i].collect_params_and_build_sql(seq));
+    }
+    return sql;
+}
+
+ExpressionList::ExpressionList()
+    : Expression(ExprBEPtr(new ExpressionListBackend))
+{}
+
+ExpressionList::ExpressionList(const Expression &expr)
+    : Expression(ExprBEPtr(new ExpressionListBackend))
+{
+    append(expr);
+}
+
+void
+ExpressionList::append(const Expression &expr) {
+    dynamic_cast<ExpressionListBackend *>(shptr_get(backend_))->append(expr);
+}
+
+int
+ExpressionList::size() const {
+    return dynamic_cast<ExpressionListBackend *>(shptr_get(backend_))->size();
+}
+
+const Expression &
+ExpressionList::item(int n) const {
+    return dynamic_cast<ExpressionListBackend *>(shptr_get(backend_))->item(n);
 }
 
 const Expression

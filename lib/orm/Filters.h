@@ -79,6 +79,9 @@ public:
     bool is_empty() const { return str_empty(sql_) && !shptr_get(backend_); }
 };
 
+bool is_number_or_object_name(const String &s);
+bool is_string_constant(const String &s);
+bool is_in_parentheses(const String &s);
 const String sql_parentheses_as_needed(const String &s);
 const String sql_prefix(const String &s, const String &prefix);
 const String sql_alias(const String &s, const String &alias);
@@ -145,6 +148,36 @@ public:
     const String &op() const;
     const Expression &expr1() const;
     const Expression &expr2() const;
+};
+
+class ExpressionListBackend: public ExpressionBackend
+{
+    std::vector<Expression> items_;
+public:
+    ExpressionListBackend() {}
+    void append(const Expression &expr) { items_.push_back(expr); }
+    const String do_get_sql() const;
+    const String do_collect_params_and_build_sql(Values &seq) const;
+    int size() const { return items_.size(); }
+    const Expression &item(int n) const {
+        YB_ASSERT(n >= 0 && n < items_.size());
+        return items_[n];
+    }
+};
+
+class ExpressionList: public Expression
+{
+public:
+    ExpressionList();
+    ExpressionList(const Expression &expr);
+    void append(const Expression &expr);
+    ExpressionList &operator << (const Expression &expr) {
+        append(expr);
+        return *this;
+    }
+    int size() const;
+    const Expression &item(int n) const;
+    const Expression &operator [] (int n) const { return item(n); }
 };
 
 const Expression filter_eq(const String &name, const Value &value);
