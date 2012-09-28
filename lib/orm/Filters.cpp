@@ -1,4 +1,5 @@
 #include <orm/Filters.h>
+#include <orm/SqlDriver.h>
 
 using namespace std;
 
@@ -17,18 +18,10 @@ Expression::Expression(SharedPtr<ExpressionBackend>::Type backend)
 {}
 
 const String
-Expression::get_sql() const
+Expression::generate_sql(Values *params) const
 {
     if (shptr_get(backend_))
-        return backend_->do_get_sql();
-    return sql_;
-}
-
-const String
-Expression::collect_params_and_build_sql(Values &seq) const
-{
-    if (shptr_get(backend_))
-        return backend_->do_collect_params_and_build_sql(seq);
+        return backend_->generate_sql(params);
     return sql_;
 }
 
@@ -118,25 +111,13 @@ ColumnExprBackend::ColumnExprBackend(const String &tbl_name, const String &col_n
 {}
 
 const String
-ColumnExprBackend::do_get_sql() const
+ColumnExprBackend::generate_sql(Values *params) const
 {
     String r;
     if (!str_empty(col_name_))
         r = sql_prefix(col_name_, tbl_name_);
     else
-        r += sql_parentheses_as_needed(expr_.get_sql());
-    return sql_alias(r, alias_);
-}
-
-const String
-ColumnExprBackend::do_collect_params_and_build_sql(Values &seq) const
-{
-    String r;
-    if (!str_empty(col_name_))
-        r = sql_prefix(col_name_, tbl_name_);
-    else
-        r += sql_parentheses_as_needed(
-                expr_.collect_params_and_build_sql(seq));
+        r += sql_parentheses_as_needed(expr_.generate_sql(params));
     return sql_alias(r, alias_);
 }
 
@@ -157,13 +138,13 @@ ColumnExpr::alias() const {
 ConstExprBackend::ConstExprBackend(const Value &x): value_(x) {}
 
 const String
-ConstExprBackend::do_get_sql() const { return value_.sql_str(); }
-
-const String
-ConstExprBackend::do_collect_params_and_build_sql(Values &seq) const
+ConstExprBackend::generate_sql(Values *params) const
 {
-    seq.push_back(value_);
-    return _T("?");
+    if (params) {
+        params->push_back(value_);
+        return _T("?");
+    }
+    return value_.sql_str();
 }
 
 ConstExpr::ConstExpr()
@@ -187,21 +168,11 @@ BinaryOpExprBackend::BinaryOpExprBackend(const Expression &expr1,
 {}
 
 const String
-BinaryOpExprBackend::do_get_sql() const
+BinaryOpExprBackend::generate_sql(Values *params) const
 {
-    return sql_parentheses_as_needed(expr1_.get_sql())
-        + _T(" ") + op_ + _T(" ")
-        + sql_parentheses_as_needed(expr2_.get_sql());
-}
-
-const String
-BinaryOpExprBackend::do_collect_params_and_build_sql(Values &seq) const
-{
-    String sql = sql_parentheses_as_needed(
-            expr1_.collect_params_and_build_sql(seq));
+    String sql = sql_parentheses_as_needed(expr1_.generate_sql(params));
     sql += _T(" ") + op_ + _T(" ");
-    sql += sql_parentheses_as_needed(
-            expr2_.collect_params_and_build_sql(seq));
+    sql += sql_parentheses_as_needed(expr2_.generate_sql(params));
     return sql;
 }
 
@@ -226,25 +197,44 @@ BinaryOpExpr::expr2() const {
 }
 
 const String
-ExpressionListBackend::do_get_sql() const
+JoinExprBackend::generate_sql(Values *params) const
 {
-    String sql;
-    for (size_t i = 0; i < items_.size(); ++i) {
-        if (!sql.empty())
-            sql += _T(", ");
-        sql += sql_parentheses_as_needed(items_[i].get_sql());
-    }
+    String sql = sql_parentheses_as_needed(expr1_.generate_sql(params));
+    sql += _T(" JOIN ");
+    sql += sql_parentheses_as_needed(expr2_.generate_sql(params));
+    sql += _T(" ON ");
+    sql += sql_parentheses_as_needed(cond_.generate_sql(params));
     return sql;
 }
 
+JoinExpr::JoinExpr(const Expression &expr1,
+        const Expression &expr2, const Expression &cond)
+    : Expression(ExprBEPtr(new JoinExprBackend(expr1, expr2, cond)))
+{}
+
+const Expression &
+JoinExpr::expr1() const {
+    return dynamic_cast<JoinExprBackend *>(shptr_get(backend_))->expr1();
+}
+
+const Expression &
+JoinExpr::expr2() const {
+    return dynamic_cast<JoinExprBackend *>(shptr_get(backend_))->expr2();
+}
+
+const Expression &
+JoinExpr::cond() const {
+    return dynamic_cast<JoinExprBackend *>(shptr_get(backend_))->cond();
+}
+
 const String
-ExpressionListBackend::do_collect_params_and_build_sql(Values &seq) const
+ExpressionListBackend::generate_sql(Values *params) const
 {
     String sql;
     for (size_t i = 0; i < items_.size(); ++i) {
         if (!sql.empty())
             sql += _T(", ");
-        sql += sql_parentheses_as_needed(items_[i].collect_params_and_build_sql(seq));
+        sql += sql_parentheses_as_needed(items_[i].generate_sql(params));
     }
     return sql;
 }
@@ -257,6 +247,22 @@ ExpressionList::ExpressionList(const Expression &expr)
     : Expression(ExprBEPtr(new ExpressionListBackend))
 {
     append(expr);
+}
+
+ExpressionList::ExpressionList(const Expression &expr1, const Expression &expr2)
+    : Expression(ExprBEPtr(new ExpressionListBackend))
+{
+    append(expr1);
+    append(expr2);
+}
+
+ExpressionList::ExpressionList(const Expression &expr1, const Expression &expr2,
+        const Expression &expr3)
+    : Expression(ExprBEPtr(new ExpressionListBackend))
+{
+    append(expr1);
+    append(expr2);
+    append(expr3);
 }
 
 void
@@ -272,6 +278,91 @@ ExpressionList::size() const {
 const Expression &
 ExpressionList::item(int n) const {
     return dynamic_cast<ExpressionListBackend *>(shptr_get(backend_))->item(n);
+}
+
+const String
+SelectExprBackend::generate_sql(Values *params) const
+{
+    String sql = _T("SELECT ") + select_expr_.generate_sql(params);
+    if (!from_expr_.is_empty())
+        sql += _T(" FROM ") + from_expr_.generate_sql(params);
+    if (!where_expr_.is_empty())
+        sql += _T(" WHERE ") + where_expr_.generate_sql(params);
+    if (!group_by_expr_.is_empty())
+        sql += _T(" GROUP BY ") + group_by_expr_.generate_sql(params);
+    if (!having_expr_.is_empty()) {
+        if (group_by_expr_.is_empty())
+            throw BadSQLOperation(
+                    _T("Trying to use HAVING without GROUP BY clause"));
+        sql += _T(" HAVING ") + having_expr_.generate_sql(params);
+    }
+    if (!order_by_expr_.is_empty())
+        sql += _T(" ORDER BY ") + order_by_expr_.generate_sql(params);
+    return sql;
+}
+
+SelectExpr::SelectExpr(const Expression &select_expr)
+    : Expression(ExprBEPtr(new SelectExprBackend(select_expr)))
+{}
+
+SelectExpr &
+SelectExpr::from_(const Expression &from_expr) {
+    dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->from_(from_expr);
+    return *this;
+}
+
+SelectExpr &
+SelectExpr::where_(const Expression &where_expr) {
+    dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->where_(where_expr);
+    return *this;
+}
+
+SelectExpr &
+SelectExpr::group_by_(const Expression &group_by_expr) {
+    dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->group_by_(group_by_expr);
+    return *this;
+}
+
+SelectExpr &
+SelectExpr::having_(const Expression &having_expr) {
+    dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->having_(having_expr);
+    return *this;
+}
+
+SelectExpr &
+SelectExpr::order_by_(const Expression &order_by_expr) {
+    dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->order_by_(order_by_expr);
+    return *this;
+}
+
+const Expression &
+SelectExpr::select_expr() const {
+    return dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->select_expr();
+}
+
+const Expression &
+SelectExpr::from_expr() const {
+    return dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->from_expr();
+}
+
+const Expression &
+SelectExpr::where_expr() const {
+    return dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->where_expr();
+}
+
+const Expression &
+SelectExpr::group_by_expr() const {
+    return dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->group_by_expr();
+}
+
+const Expression &
+SelectExpr::having_expr() const {
+    return dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->having_expr();
+}
+
+const Expression &
+SelectExpr::order_by_expr() const {
+    return dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->order_by_expr();
 }
 
 const Expression
@@ -337,6 +428,18 @@ operator || (const Expression &a, const Expression &b)
 }
 
 const Expression
+operator == (const Expression &a, const Expression &b)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("="), b)));
+}
+
+const Expression
+operator == (const Expression &a, const Value &b)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("="), ConstExpr(b))));
+}
+
+const Expression
 FilterBackendByPK::build_expr(const Key &key)
 {
     Expression expr;
@@ -355,12 +458,8 @@ FilterBackendByPK::FilterBackendByPK(const Key &key)
 {}
 
 const String
-FilterBackendByPK::do_get_sql() const { return expr_.get_sql(); }
-
-const String
-FilterBackendByPK::do_collect_params_and_build_sql(Values &seq) const
-{
-    return expr_.collect_params_and_build_sql(seq);
+FilterBackendByPK::generate_sql(Values *params) const {
+    return expr_.generate_sql(params);
 }
 
 KeyFilter::KeyFilter(const Key &key)
@@ -380,6 +479,32 @@ ORMError::ORMError(const String &msg)
 ObjectNotFoundByKey::ObjectNotFoundByKey(const String &msg)
     : ORMError(msg)
 {}
+
+void find_all_tables(const Expression &expr, Strings &tables)
+{
+    if (expr.backend()) {
+        ExpressionListBackend *list_expr =
+            dynamic_cast<ExpressionListBackend *> (expr.backend());
+        if (list_expr) {
+            int n = list_expr->size();
+            for (int i = 0; i < n; ++i)
+                find_all_tables(list_expr->item(i), tables);
+            return;
+        }
+        JoinExprBackend *join_expr =
+            dynamic_cast<JoinExprBackend *> (expr.backend());
+        if (join_expr) {
+            find_all_tables(join_expr->expr1(), tables);
+            find_all_tables(join_expr->expr2(), tables);
+            return;
+        }
+    }
+    String sql = expr.get_sql();
+    if (is_number_or_object_name(sql))
+        tables.push_back(sql);
+    else
+        throw ORMError(_T("Not a table expression"));
+}
 
 } // namespace Yb
 

@@ -408,13 +408,14 @@ template <class T0, class T1, class T2, class T3, class T4,
 struct QueryFunc<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> > {
     typedef boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> R;
     typedef DomainResultSet<R> RS;
-    static RS query(Session &session, const Filter &filter,
-         const StrList &order_by, int max)
+    static RS query(Session &session, const Expression &filter,
+         const Expression &order_by, int max)
     {
         Strings tables;
         typename R::inherited tuple;
         tuple_tables(tuple, tables);
-        return RS(session.load_collection(tables, filter, order_by, max));
+        return RS(session.load_collection(session.schema().join_expr(tables),
+                    filter, order_by, max));
     }
 };
 #endif // defined(YB_USE_TUPLE)
@@ -450,12 +451,11 @@ public:
 template <class R>
 struct QueryFunc {
     typedef DomainResultSet<R> RS;
-    static RS query(Session &session, const Filter &filter,
-         const StrList &order_by, int max)
+    static RS query(Session &session, const Expression &filter,
+         const Expression &order_by, int max)
     {
-        Strings tables(1);
-        tables[0] = R::get_table_name();
-        return RS(session.load_collection(tables, filter, order_by, max));
+        return RS(session.load_collection(ExpressionList(R::get_table_name()),
+                    filter, order_by, max));
     }
 };
 
@@ -463,18 +463,17 @@ template <class R>
 class QueryObj {
     typedef QueryFunc<R> QF;
     Session &session_;
-    Filter filter_;
-    StrList order_;
+    Expression filter_, order_;
     int max_;
 public:
-    QueryObj(Session &session, const Filter &filter = Filter(),
-            const StrList &order = StrList(), int max = -1)
+    QueryObj(Session &session, const Expression &filter = Expression(),
+            const Expression &order = Expression(), int max = -1)
         : session_(session)
         , filter_(filter)
         , order_(order)
         , max_(max)
     {}
-    QueryObj filter_by(const Filter &filter) {
+    QueryObj filter_by(const Expression &filter) {
         QueryObj q(*this);
         if (q.filter_.is_empty())
             q.filter_ = filter;
@@ -482,7 +481,7 @@ public:
             q.filter_ = q.filter_ && filter;
         return q;
     }
-    QueryObj order_by(const StrList &order) {
+    QueryObj order_by(const Expression &order) {
         QueryObj q(*this);
         q.order_ = order;
         return q;
@@ -498,8 +497,8 @@ public:
 };
 
 template <class R>
-QueryObj<R> query(Session &session, const Filter &filter = Filter(),
-    const StrList &order = StrList(), int max = -1)
+QueryObj<R> query(Session &session, const Expression &filter = Expression(),
+    const Expression &order = Expression(), int max = -1)
 {
     return QueryObj<R>(session, filter, order, max);
 }

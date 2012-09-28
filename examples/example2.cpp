@@ -99,9 +99,12 @@ int main()
 #if defined(YB_USE_TUPLE)
     DomainResultSet<boost::tuple<Order, Client> > rs0 =
         query<boost::tuple<Order, Client> >(session).filter_by(
-            filter_eq(_T("T_CLIENT.ID"), c2->id) &&
-            Filter(_T("T_ORDER.CLIENT_ID = T_CLIENT.ID"))
-        ).order_by(_T("T_CLIENT.ID, T_ORDER.ID")).all();
+                //Client::c.id == c2->id                
+                //Client::c(_T("ID")) == c2->id
+                ColumnExpr(_T("T_CLIENT"), _T("ID")) == c2->id
+        ).order_by(ExpressionList(
+                ColumnExpr(_T("T_CLIENT"), _T("ID")),
+                ColumnExpr(_T("T_ORDER"), _T("ID")))).all();
     DomainResultSet<boost::tuple<Order, Client> >
         ::iterator p = rs0.begin(), pend = rs0.end();
     cout << "Order/Client IDs: " << endl; 

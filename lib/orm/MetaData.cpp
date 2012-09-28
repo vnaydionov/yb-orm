@@ -232,6 +232,24 @@ Relation::attr(int n, const String &name) const {
     return it->second;
 }
 
+Expression
+Relation::join_condition() const
+{
+    YB_ASSERT(table1_ && table2_);
+    const Strings &key_parts1 = table1_->pk_fields();
+    Strings key_parts2;
+    table2_->get_fk_for(*this, key_parts2);
+    YB_ASSERT(key_parts1.size() == key_parts2.size());
+    Expression expr;
+    Strings::const_iterator i = key_parts1.begin(), j = key_parts2.begin(),
+        iend = key_parts1.end();
+    for (; i != iend; ++i, ++j)
+        expr = expr && BinaryOpExpr(
+                ColumnExpr(table1_->name(), *i), _T("="),
+                ColumnExpr(table2_->name(), *j));
+    return expr;
+}
+
 Schema::~Schema()
 {
     clear_backrefs();
@@ -404,6 +422,16 @@ Schema::find_relation(const String &class1,
     return r;
 }
 
+const Relation &
+Schema::find_single_relation_between_tables(
+        const String &tbl1, const String &tbl2) const
+{
+    const Relation *r = find_relation(
+            table(tbl1).class_name(), String(), table(tbl2).class_name());
+    YB_ASSERT(r != NULL);
+    return *r;
+}
+
 void
 Schema::set_absolute_depths(const map<String, int> &depths)
 {
@@ -496,6 +524,29 @@ Schema::traverse_children(const StrMap &parent_child, map<String, int> &depths)
         }
         children.erase(children.begin());
     }
+}
+
+Expression
+Schema::make_join_expr(const Expression &expr1, const String &tbl1,
+        Strings::const_iterator it, Strings::const_iterator end) const
+{
+    if (it == end)
+        return expr1;
+    const String &tbl2 = *it;
+    return make_join_expr(
+            JoinExpr(expr1, Expression(tbl2),
+                find_single_relation_between_tables(tbl1, tbl2).join_condition()),
+            tbl2, ++it, end);
+}
+
+Expression
+Schema::join_expr(const Strings &tables) const
+{
+    if (!tables.size())
+        return Expression();
+    Strings::const_iterator it = tables.begin();
+    const String &tbl1 = *it;
+    return make_join_expr(Expression(tbl1), tbl1, ++it, tables.end());
 }
 
 } // namespace Yb

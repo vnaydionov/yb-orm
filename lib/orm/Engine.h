@@ -23,21 +23,21 @@ class EngineBase
 public:
     virtual ~EngineBase();
     virtual SqlResultSet select_iter(
-        const StrList &what,
-        const StrList &from,
-        const Filter &where = Filter(),
-        const StrList &group_by = StrList(),
-        const Filter &having = Filter(),
-        const StrList &order_by = StrList(),
+        const Expression &what,
+        const Expression &from,
+        const Expression &where = Expression(),
+        const Expression &group_by = Expression(),
+        const Expression &having = Expression(),
+        const Expression &order_by = Expression(),
         int max_rows = -1,
         bool for_update = false) = 0;
     virtual RowsPtr select(
-        const StrList &what,
-        const StrList &from,
-        const Filter &where = Filter(),
-        const StrList &group_by = StrList(),
-        const Filter &having = Filter(),
-        const StrList &order_by = StrList(),
+        const Expression &what,
+        const Expression &from,
+        const Expression &where = Expression(),
+        const Expression &group_by = Expression(),
+        const Expression &having = Expression(),
+        const Expression &order_by = Expression(),
         int max_rows = -1,
         bool for_update = false) = 0;
     virtual const std::vector<LongInt> insert(
@@ -98,19 +98,21 @@ public:
 
     // SQL operator wrappers
     SqlResultSet select_iter(
-            const StrList &what,
-            const StrList &from,
-            const Filter &where = Filter(),
-            const StrList &group_by = StrList(),
-            const Filter &having = Filter(),
-            const StrList &order_by = StrList(),
+            const Expression &what,
+            const Expression &from,
+            const Expression &where = Expression(),
+            const Expression &group_by = Expression(),
+            const Expression &having = Expression(),
+            const Expression &order_by = Expression(),
             int max_rows = -1,
             bool for_update = false);
-    RowsPtr select(const StrList &what,
-            const StrList &from, const Filter &where = Filter(),
-            const StrList &group_by = StrList(),
-            const Filter &having = Filter(),
-            const StrList &order_by = StrList(),
+    RowsPtr select(
+            const Expression &what,
+            const Expression &from,
+            const Expression &where = Expression(),
+            const Expression &group_by = Expression(),
+            const Expression &having = Expression(),
+            const Expression &order_by = Expression(),
             int max_rows = -1,
             bool for_update = false);
     const std::vector<LongInt> insert(const String &table_name,
@@ -127,11 +129,10 @@ public:
     void rollback();
 
     // Convenience utility methods
-    RowPtr select_row(const StrList &what,
-            const StrList &from, const Filter &where);
-    RowPtr select_row(const StrList &from, const Filter &where);
-    const Value select1(const String &what,
-            const String &from, const Filter &where);
+    RowPtr select_row(const Expression &what,
+            const Expression &from, const Expression &where);
+    const Value select1(const Expression &what,
+            const Expression &from, const Expression &where);
     LongInt get_curr_value(const String &seq_name);
     LongInt get_next_value(const String &seq_name);
 
@@ -153,10 +154,10 @@ private:
     SqlPool *get_pool();
     SqlConnection *get_conn(bool strict = true);
 
-    virtual RowsPtr on_select(const StrList &what,
-            const StrList &from, const Filter &where,
-            const StrList &group_by, const Filter &having,
-            const StrList &order_by, int max_rows,
+    virtual RowsPtr on_select(const Expression &what,
+            const Expression &from, const Expression &where,
+            const Expression &group_by, const Expression &having,
+            const Expression &order_by, int max_rows,
             bool for_update);
     virtual const std::vector<LongInt> on_insert(
             const String &table_name,
@@ -181,9 +182,9 @@ private:
             const Row &row, const Strings &key_fields,
             const StringSet &exclude_fields, const Filter &where) const;
     virtual void do_gen_sql_select(String &sql, Values &params,
-            const StrList &what, const StrList &from, const Filter &where,
-            const StrList &group_by, const Filter &having,
-            const StrList &order_by, bool for_update) const;
+            const Expression &what, const Expression &from, const Expression &where,
+            const Expression &group_by, const Expression &having,
+            const Expression &order_by, bool for_update) const;
     virtual void do_gen_sql_delete(String &sql, Values &params,
             const String &table, const Filter &where) const;
 

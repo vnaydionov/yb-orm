@@ -14,6 +14,8 @@ class TestFilters : public CppUnit::TestFixture
     CPPUNIT_TEST(testOperatorAnd);
     CPPUNIT_TEST(testCollectParams);
     CPPUNIT_TEST(testExprList);
+    CPPUNIT_TEST(testSelectExpr);
+    CPPUNIT_TEST(testFindAllTables);
     CPPUNIT_TEST(testParenth);
     CPPUNIT_TEST_SUITE_END();
 
@@ -47,7 +49,7 @@ public:
         Expression expr = filter_eq(_T("ID"), Value(1)) &&
             filter_ne(_T("A"), Value(_T("a")));
         Values pvalues;
-        String sql = expr.collect_params_and_build_sql(pvalues);
+        String sql = expr.generate_sql(&pvalues);
         CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A <> 'a')"),
                 NARROW(expr.get_sql()));
         CPPUNIT_ASSERT_EQUAL((size_t)2, pvalues.size());
@@ -61,6 +63,34 @@ public:
         expr << ConstExpr(2) << ConstExpr(_T("three"));
         CPPUNIT_ASSERT_EQUAL(string("1, 2, 'three'"),
                 NARROW(expr.get_sql()));
+    }
+
+    void testSelectExpr()
+    {
+        SelectExpr q(Expression(_T("A")));
+        q.from_(ExpressionList(Expression(_T("DUAL"))));
+        CPPUNIT_ASSERT_EQUAL(string("SELECT A FROM DUAL"),
+                NARROW(q.get_sql()));
+        q.where_(filter_eq(_T("A"), Value(_T("a"))));
+        CPPUNIT_ASSERT_EQUAL(string("SELECT A FROM DUAL WHERE A = 'a'"),
+                NARROW(q.get_sql()));
+    }
+
+    void testFindAllTables()
+    {
+        ExpressionList expr(Expression(_T("A")),
+                JoinExpr(JoinExpr(Expression(_T("B")),
+                                  Expression(_T("C")),
+                                  Expression(_T("X"))),
+                         Expression(_T("D")),
+                         Expression(_T("Y"))));
+        Strings tables;
+        find_all_tables(expr, tables);
+        CPPUNIT_ASSERT_EQUAL((size_t)4, tables.size());
+        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(tables[0]));
+        CPPUNIT_ASSERT_EQUAL(string("B"), NARROW(tables[1]));
+        CPPUNIT_ASSERT_EQUAL(string("C"), NARROW(tables[2]));
+        CPPUNIT_ASSERT_EQUAL(string("D"), NARROW(tables[3]));
     }
 
     void testParenth()

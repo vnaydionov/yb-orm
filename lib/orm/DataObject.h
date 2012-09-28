@@ -95,14 +95,13 @@ public:
     void rollback();
     EngineBase *engine() { return engine_.get(); }
     void load_collection(ObjectList &out,
-                         const String &table_name,
-                         const Filter &filter, 
-                         const StrList &order_by = StrList(),
-                         int max = -1,
-                         const String &table_alias = _T(""));
+                         const Expression &tables,
+                         const Expression &filter, 
+                         const Expression &order_by = Expression(),
+                         int max = -1);
     DataObjectResultSet load_collection(
-            const Strings &tables, const Filter &filter,
-            const StrList &order_by = StrList(), int max = -1);
+            const Expression &tables, const Expression &filter,
+            const Expression &order_by = Expression(), int max = -1);
 };
 
 class NullPK: public BaseError {

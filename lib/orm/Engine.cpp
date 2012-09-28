@@ -196,10 +196,10 @@ Engine::set_logger(ILogger::Ptr logger)
 }
 
 SqlResultSet
-Engine::select_iter(const StrList &what,
-        const StrList &from, const Filter &where,
-        const StrList &group_by, const Filter &having,
-        const StrList &order_by, int max_rows, bool for_update)
+Engine::select_iter(const Expression &what,
+        const Expression &from, const Expression &where,
+        const Expression &group_by, const Expression &having,
+        const Expression &order_by, int max_rows, bool for_update)
 {
     bool select_mode = (mode_ == FORCE_SELECT_UPDATE) ? true : for_update;
     if ((mode_ == READ_ONLY) && select_mode)
@@ -219,10 +219,10 @@ Engine::select_iter(const StrList &what,
 }
 
 RowsPtr
-Engine::select(const StrList &what,
-        const StrList &from, const Filter &where,
-        const StrList &group_by, const Filter &having,
-        const StrList &order_by, int max_rows, bool for_update)
+Engine::select(const Expression &what,
+        const Expression &from, const Expression &where,
+        const Expression &group_by, const Expression &having,
+        const Expression &order_by, int max_rows, bool for_update)
 {
     bool select_mode = (mode_ == FORCE_SELECT_UPDATE) ? true : for_update;
     if ((mode_ == READ_ONLY) && select_mode)
@@ -302,8 +302,8 @@ Engine::rollback()
 }
 
 RowPtr
-Engine::select_row(const StrList &what,
-        const StrList &from, const Filter &where)
+Engine::select_row(const Expression &what,
+        const Expression &from, const Expression &where)
 {
     RowsPtr rows = select(what, from, where);
     if (rows->size() != 1)
@@ -312,14 +312,9 @@ Engine::select_row(const StrList &what,
     return row;
 }
 
-RowPtr
-Engine::select_row(const StrList &from, const Filter &where)
-{
-    return select_row(_T("*"), from, where);
-}
-
 const Value
-Engine::select1(const String &what, const String &from, const Filter &where)
+Engine::select1(const Expression &what,
+        const Expression &from, const Expression &where)
 {
     RowPtr row = select_row(what, from, where);
     if (row->size() != 1)
@@ -330,22 +325,22 @@ Engine::select1(const String &what, const String &from, const Filter &where)
 LongInt
 Engine::get_curr_value(const String &seq_name)
 {
-    return select1(dialect_->select_curr_value(seq_name),
-            dialect_->dual_name(), Filter()).as_longint();
+    return select1(Expression(dialect_->select_curr_value(seq_name)),
+            Expression(dialect_->dual_name()), Expression()).as_longint();
 }
 
 LongInt
 Engine::get_next_value(const String &seq_name)
 {
-    return select1(dialect_->select_next_value(seq_name),
-            dialect_->dual_name(), Filter()).as_longint();
+    return select1(Expression(dialect_->select_next_value(seq_name)),
+            Expression(dialect_->dual_name()), Expression()).as_longint();
 }
 
 RowsPtr
-Engine::on_select(const StrList &what,
-        const StrList &from, const Filter &where,
-        const StrList &group_by, const Filter &having,
-        const StrList &order_by, int max_rows,
+Engine::on_select(const Expression &what,
+        const Expression &from, const Expression &where,
+        const Expression &group_by, const Expression &having,
+        const Expression &order_by, int max_rows,
         bool for_update)
 {
     String sql;
@@ -487,33 +482,16 @@ Engine::on_rollback()
 
 void
 Engine::do_gen_sql_select(String &sql, Values &params,
-        const StrList &what, const StrList &from, const Filter &where,
-        const StrList &group_by, const Filter &having,
-        const StrList &order_by, bool for_update) const
+        const Expression &what, const Expression &from, const Expression &where,
+        const Expression &group_by, const Expression &having,
+        const Expression &order_by, bool for_update) const
 {
-    String s;
-    std::ostringstream sql_query;
-    sql_query << "SELECT " << NARROW(what.get_str());
-    if (!str_empty(from.get_str()))
-        sql_query << " FROM " << NARROW(from.get_str());
-
-    s = where.collect_params_and_build_sql(params);
-    if (s != Filter().get_sql())
-        sql_query << " WHERE " << NARROW(s);
-    if (!str_empty(group_by.get_str()))
-        sql_query << " GROUP BY " << NARROW(group_by.get_str());
-    s = having.collect_params_and_build_sql(params);
-    if (s != Filter().get_sql()) {
-        if (str_empty(group_by.get_str()))
-            throw BadSQLOperation(
-                    _T("Trying to use HAVING without GROUP BY clause"));
-        sql_query << " HAVING " << NARROW(s);
-    }
-    if (!str_empty(order_by.get_str()))
-        sql_query << " ORDER BY " << NARROW(order_by.get_str());
+    SelectExpr q(what);
+    q.from_(from).where_(where)
+        .group_by_(group_by).having_(having).order_by_(order_by);
+    sql = q.generate_sql(&params);
     if (for_update)
-        sql_query << " FOR UPDATE";
-    sql = WIDEN(sql_query.str());
+        sql += _T(" FOR UPDATE");
 }
 
 void
@@ -525,9 +503,7 @@ Engine::do_gen_sql_insert(String &sql, Values &params,
         throw BadSQLOperation(_T("Can't do INSERT with empty row"));
     std::ostringstream sql_query;
     sql_query << "INSERT INTO " << NARROW(table_name) << " (";
-    typedef vector<String> vector_string;
-    vector_string names;
-    vector_string pholders;
+    Strings names, pholders;
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it) {
         StringSet::const_iterator x = exclude_fields.find(it->first);
@@ -538,9 +514,9 @@ Engine::do_gen_sql_insert(String &sql, Values &params,
             pholders.push_back(_T("?"));
         }
     }
-    sql_query << NARROW(StrList(names).get_str())
+    sql_query << NARROW(ExpressionList(names).get_sql())
         << ") VALUES ("
-        << NARROW(StrList(pholders).get_str())
+        << NARROW(ExpressionList(pholders).get_sql())
         << ")";
     sql = WIDEN(sql_query.str());
 }
@@ -586,7 +562,7 @@ Engine::do_gen_sql_update(String &sql, Values &params,
 
     sql_query << " WHERE ";
     std::ostringstream where_sql;
-    String s = where.collect_params_and_build_sql(params);
+    String s = where.generate_sql(&params);
     if (s != Filter().get_sql())
     {
         where_sql << "(" << NARROW(s) << ")";
@@ -621,7 +597,7 @@ Engine::do_gen_sql_delete(String &sql, Values &params,
         throw BadSQLOperation(_T("Can't DELETE without where clause"));
     std::ostringstream sql_query;
     sql_query << "DELETE FROM " << NARROW(table);
-    String s = where.collect_params_and_build_sql(params);
+    String s = where.generate_sql(&params);
     if (s != Filter().get_sql())
         sql_query << " WHERE " << NARROW(s);
     sql = WIDEN(sql_query.str());

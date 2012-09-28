@@ -13,53 +13,10 @@ namespace Yb {
 
 typedef std::map<String, int> ParamNums;
 
-class StrList
-{
-    String str_list_;
-    template <typename T>
-    static const String container_to_str(const T &cont)
-    {
-        String r;
-        typename T::const_iterator it = cont.begin(), end = cont.end();
-        if (it != end)
-            r = *it;
-        for (++it; it != end; ++it) {
-            r += _T(", ");
-            r += *it;
-        }
-        return r;
-    }
-public:
-    StrList()
-    {}
-    StrList(const StringSet &fs)
-        : str_list_(container_to_str<StringSet>(fs))
-    {}
-    StrList(const Strings &fl)
-        : str_list_(container_to_str<Strings>(fl))
-    {}
-    template <typename T>
-    StrList(const T &fl)
-        : str_list_(container_to_str<T>(fl))
-    {}
-    StrList(const String &s)
-        : str_list_(s)
-    {}
-    StrList(const wchar_t *s)
-        : str_list_(WIDEN(fast_narrow(s).c_str()))
-    {}
-    StrList(const char *s)
-        : str_list_(WIDEN(s))
-    {}
-    const String &get_str() const { return str_list_; }
-};
-
-
 class ExpressionBackend
 {
 public:
-    virtual const String do_get_sql() const = 0;
-    virtual const String do_collect_params_and_build_sql(Values &seq) const = 0;
+    virtual const String generate_sql(Values *params) const = 0;
     virtual ~ExpressionBackend();
 };
 
@@ -74,9 +31,10 @@ public:
     Expression();
     Expression(const String &sql);
     Expression(SharedPtr<ExpressionBackend>::Type backend);
-    const String get_sql() const;
-    const String collect_params_and_build_sql(Values &seq) const;
+    const String generate_sql(Values *params) const;
+    const String get_sql() const { return generate_sql(NULL); }
     bool is_empty() const { return str_empty(sql_) && !shptr_get(backend_); }
+    ExpressionBackend *backend() const { return shptr_get(backend_); }
 };
 
 bool is_number_or_object_name(const String &s);
@@ -94,8 +52,7 @@ public:
     ColumnExprBackend(const Expression &expr, const String &alias);
     ColumnExprBackend(const String &tbl_name, const String &col_name,
             const String &alias);
-    const String do_get_sql() const;
-    const String do_collect_params_and_build_sql(Values &seq) const;
+    const String generate_sql(Values *params) const;
     const String &alias() const { return alias_; }
 };
 
@@ -113,8 +70,7 @@ class ConstExprBackend: public ExpressionBackend
     Value value_;
 public:
     ConstExprBackend(const Value &x);
-    const String do_get_sql() const;
-    const String do_collect_params_and_build_sql(Values &seq) const;
+    const String generate_sql(Values *params) const;
     const Value &const_value() const { return value_; }
 };
 
@@ -133,8 +89,7 @@ class BinaryOpExprBackend: public ExpressionBackend
 public:
     BinaryOpExprBackend(const Expression &expr1,
             const String &op, const Expression &expr2);
-    const String do_get_sql() const;
-    const String do_collect_params_and_build_sql(Values &seq) const;
+    const String generate_sql(Values *params) const;
     const String &op() const { return op_; }
     const Expression &expr1() const { return expr1_; }
     const Expression &expr2() const { return expr2_; }
@@ -150,14 +105,36 @@ public:
     const Expression &expr2() const;
 };
 
+class JoinExprBackend: public ExpressionBackend
+{
+    Expression expr1_, expr2_, cond_;
+public:
+    JoinExprBackend(const Expression &expr1,
+            const Expression &expr2, const Expression &cond)
+        : expr1_(expr1), expr2_(expr2), cond_(cond) {}
+    const String generate_sql(Values *params) const;
+    const Expression &expr1() const { return expr1_; }
+    const Expression &expr2() const { return expr2_; }
+    const Expression &cond() const { return cond_; }
+};
+
+class JoinExpr: public Expression
+{
+public:
+    JoinExpr(const Expression &expr1,
+            const Expression &expr2, const Expression &cond);
+    const Expression &expr1() const;
+    const Expression &expr2() const;
+    const Expression &cond() const;
+};
+
 class ExpressionListBackend: public ExpressionBackend
 {
     std::vector<Expression> items_;
 public:
     ExpressionListBackend() {}
     void append(const Expression &expr) { items_.push_back(expr); }
-    const String do_get_sql() const;
-    const String do_collect_params_and_build_sql(Values &seq) const;
+    const String generate_sql(Values *params) const;
     int size() const { return items_.size(); }
     const Expression &item(int n) const {
         YB_ASSERT(n >= 0 && n < items_.size());
@@ -167,9 +144,29 @@ public:
 
 class ExpressionList: public Expression
 {
+    template <typename T>
+    void fill_from_container(const T &cont)
+    {
+        typename T::const_iterator it = cont.begin(), end = cont.end();
+        for (; it != end; ++it)
+            append(Expression(*it));
+    }
 public:
     ExpressionList();
     ExpressionList(const Expression &expr);
+    ExpressionList(const Expression &expr1, const Expression &expr2);
+    ExpressionList(const Expression &expr1, const Expression &expr2,
+            const Expression &expr3);
+    ExpressionList(const Strings &cont)
+        : Expression(ExprBEPtr(new ExpressionListBackend))
+    {
+        fill_from_container<Strings>(cont);
+    }
+    ExpressionList(const StringSet &cont)
+        : Expression(ExprBEPtr(new ExpressionListBackend))
+    {
+        fill_from_container<StringSet>(cont);
+    }
     void append(const Expression &expr);
     ExpressionList &operator << (const Expression &expr) {
         append(expr);
@@ -178,6 +175,45 @@ public:
     int size() const;
     const Expression &item(int n) const;
     const Expression &operator [] (int n) const { return item(n); }
+};
+
+class SelectExprBackend: public ExpressionBackend
+{
+    Expression select_expr_, from_expr_, where_expr_,
+               group_by_expr_, having_expr_, order_by_expr_;
+public:
+    SelectExprBackend(const Expression &select_expr)
+        : select_expr_(select_expr)
+    {}
+    void from_(const Expression &from_expr) { from_expr_ = from_expr; }
+    void where_(const Expression &where_expr) { where_expr_ = where_expr; }
+    void group_by_(const Expression &group_by_expr) { group_by_expr_ = group_by_expr; }
+    void having_(const Expression &having_expr) { having_expr_ = having_expr; }
+    void order_by_(const Expression &order_by_expr) { order_by_expr_ = order_by_expr; }
+    const String generate_sql(Values *params) const;
+    const Expression &select_expr() const { return select_expr_; }
+    const Expression &from_expr() const { return from_expr_; }
+    const Expression &where_expr() const { return where_expr_; }
+    const Expression &group_by_expr() const { return group_by_expr_; }
+    const Expression &having_expr() const { return having_expr_; }
+    const Expression &order_by_expr() const { return order_by_expr_; }
+};
+
+class SelectExpr: public Expression
+{
+public:
+    SelectExpr(const Expression &select_expr);
+    SelectExpr &from_(const Expression &from_expr);
+    SelectExpr &where_(const Expression &where_expr);
+    SelectExpr &group_by_(const Expression &group_by_expr);
+    SelectExpr &having_(const Expression &having_expr);
+    SelectExpr &order_by_(const Expression &order_by_expr);
+    const Expression &select_expr() const;
+    const Expression &from_expr() const;
+    const Expression &where_expr() const;
+    const Expression &group_by_expr() const;
+    const Expression &having_expr() const;
+    const Expression &order_by_expr() const;
 };
 
 const Expression filter_eq(const String &name, const Value &value);
@@ -189,6 +225,9 @@ const Expression filter_ge(const String &name, const Value &value);
 const Expression operator && (const Expression &a, const Expression &b);
 const Expression operator || (const Expression &a, const Expression &b);
 
+const Expression operator == (const Expression &a, const Expression &b);
+const Expression operator == (const Expression &a, const Value &b);
+
 class FilterBackendByPK: public ExpressionBackend
 {
     Expression expr_;
@@ -196,8 +235,7 @@ class FilterBackendByPK: public ExpressionBackend
     static const Expression build_expr(const Key &key);
 public:
     FilterBackendByPK(const Key &key);
-    const String do_get_sql() const;
-    const String do_collect_params_and_build_sql(Values &seq) const;
+    const String generate_sql(Values *params) const;
     const Key &key() const { return key_; }
 };
 
@@ -221,6 +259,8 @@ class ObjectNotFoundByKey : public ORMError
 public:
     ObjectNotFoundByKey(const String &msg);
 };
+
+void find_all_tables(const Expression &expr, Strings &tables);
 
 } // namespace Yb
 

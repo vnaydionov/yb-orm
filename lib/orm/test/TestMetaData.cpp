@@ -15,6 +15,7 @@ class TestMetaData : public CppUnit::TestFixture
     CPPUNIT_TEST(test_table_columns);
     CPPUNIT_TEST(test_table_seq);
     CPPUNIT_TEST(test_table_synth_pk);
+    CPPUNIT_TEST(test_rel_join_cond);
     CPPUNIT_TEST(test_get_fk_for);
     CPPUNIT_TEST_EXCEPTION(test_table_bad_synth_pk__no_pk, NotSuitableForAutoCreating);
     CPPUNIT_TEST_EXCEPTION(test_table_bad_synth_pk__complex, NotSuitableForAutoCreating);
@@ -105,6 +106,33 @@ public:
         t.add_column(Column(_T("Z"), Value::LONGINT, 0, 0));
         t.set_seq_name(_T("S_A_ID"));
         CPPUNIT_ASSERT_EQUAL(string("Y"), NARROW(t.get_synth_pk()));
+    }
+
+    void test_rel_join_cond()
+    {
+        Schema r;
+        Table::Ptr ta(new Table(_T("A"), _T(""), _T("A")));
+        ta->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+        r.add_table(ta);
+        Table::Ptr tc(new Table(_T("C"), _T(""), _T("C")));
+        tc->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+        tc->add_column(Column(_T("AX"), Value::LONGINT, 0, 0,
+                    Value(), _T("A"), _T("")));
+        r.add_table(tc);
+        Relation::AttrMap a1, a2;
+        a1[_T("property")] = _T("cs");
+        a2[_T("property")] = _T("a");
+        Relation::Ptr re1(new Relation(Relation::ONE2MANY,
+            _T("A"), a1, _T("C"), a2));
+        r.add_relation(re1);
+        r.fill_fkeys();
+        CPPUNIT_ASSERT_EQUAL(string("A.X = C.AX"),
+                NARROW(re1->join_condition().get_sql()));
+        Strings tables;
+        tables.push_back(_T("C"));
+        tables.push_back(_T("A"));
+        CPPUNIT_ASSERT_EQUAL(string("C JOIN A ON (A.X = C.AX)"),
+                NARROW(r.join_expr(tables).get_sql()));
     }
 
     void test_get_fk_for()

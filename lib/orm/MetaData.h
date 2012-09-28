@@ -8,9 +8,10 @@
 #include <set>
 #include <stdexcept>
 #include <list>
-#include <orm/Value.h>
 #include <util/Utility.h>
 #include <util/Exception.h>
+#include <orm/Value.h>
+#include <orm/Filters.h>
 
 class TestMetaData;
 
@@ -263,6 +264,7 @@ public:
             && side1_ == o.side1_ && side2_ == o.side2_
             && attr1_ == o.attr1_ && attr2_ == o.attr2_;
     }
+    Expression join_condition() const;
 private:
     int type_, cascade_;
     String side1_, side2_;
@@ -306,6 +308,9 @@ public:
                             const String &relation_name = _T(""),
                             const String &class2 = _T(""),
                             int prop_side = 0) const;
+    const Relation &find_single_relation_between_tables(
+            const String &tbl1, const String &tbl2) const;
+    Expression join_expr(const Strings &tables) const;
 
     const Table &operator[] (const String &tbl_name) const
         { return table(tbl_name); }
@@ -321,6 +326,9 @@ private:
     void zero_depths(const std::set<String> &unique_tables, std::map<String, int> &depths);
     void fill_map_tree_by_meta(const std::set<String> &unique_tables, StrMap &tree_map);
     void traverse_children(const StrMap &parent_child, std::map<String, int> &depths);
+    Expression make_join_expr(const Expression &expr1, const String &tbl1,
+            Strings::const_iterator it, Strings::const_iterator end) const;
+
     TblMap tables_;
     RelMap rels_;
     RelVect relations_;

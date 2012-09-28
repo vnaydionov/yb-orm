@@ -168,34 +168,35 @@ void Session::detach(DataObjectPtr obj)
 }
 
 void Session::load_collection(ObjectList &out,
-                                const String &table_name,
-                                const Filter &filter, 
-                                const StrList &order_by,
-                                int max,
-                                const String &table_alias)
+                              const Expression &from,
+                              const Filter &filter, 
+                              const Expression &order_by,
+                              int max)
 {
-    Strings tables(1);
-    tables[0] = table_name;
-    DataObjectResultSet rs = load_collection(tables, filter, order_by, max);
+    DataObjectResultSet rs = load_collection(from, filter, order_by, max);
     DataObjectResultSet::iterator i = rs.begin(), iend = rs.end();
     for (; i != iend; ++i)
         out.push_back((*i)[0]);
 }
 
 DataObjectResultSet Session::load_collection(
-        const Strings &tables, const Filter &filter,
-        const StrList &order_by, int max)
+        const Expression &from,
+        const Filter &filter,
+        const Expression &order_by,
+        int max)
 {
-    Strings cols;
+    Strings tables;
+    find_all_tables(from, tables);
+    ExpressionList cols;
     Strings::const_iterator i = tables.begin(), iend = tables.end();
     for (; i != iend; ++i) {
         const Table &table = schema_[*i];
         for (size_t j = 0; j < table.size(); ++j)
-            cols.push_back(table.name() + _T(".") + table[j].name());
+            cols << ColumnExpr(table.name(), table[j].name());
     }
     SqlResultSet result = engine_->select_iter
-        (StrList(cols), StrList(tables), filter,
-         StrList(), Filter(), order_by, max);
+        (cols, from, filter,
+         Expression(), Expression(), order_by, max);
     return DataObjectResultSet(result, *this, tables);
 }
 
@@ -550,13 +551,13 @@ bool DataObject::assigned_key()
 void DataObject::load()
 {
     YB_ASSERT(session_ != NULL);
-    KeyFilter f(key());
-    Strings cols;
+    ExpressionList cols;
     Columns::const_iterator it = table_.begin(), end = table_.end();
     for (; it != end; ++it)
-        cols.push_back(it->name());
+        cols << ColumnExpr(table_.name(), it->name());
+    KeyFilter f(key());
     RowsPtr result = session_->engine()->select
-        (StrList(cols), table_.name(), f);
+        (cols, Expression(table_.name()), f);
     if (result->size() != 1)
         throw ObjectNotFoundByKey(table_.name() + _T("(")
                                   + f.get_sql() + _T(")"));
@@ -831,10 +832,9 @@ size_t RelationObject::count_slaves()
     const Table &master_tbl = relation_info_.table(0),
         &slave_tbl = relation_info_.table(1);
     KeyFilter f(gen_fkey());
-    Strings cols;
-    cols.push_back(_T("COUNT(*) RCNT"));
+    Expression cols(_T("COUNT(*) RCNT"));
     RowsPtr result = session.engine()->
-        select(StrList(cols), slave_tbl.name(), f);
+        select(cols, Expression(slave_tbl.name()), f);
     if (result->size() != 1)
         throw ObjectNotFoundByKey(_T("COUNT(*) FOR ") + slave_tbl.name() + _T("(")
                                   + f.get_sql() + _T(")"));
@@ -849,12 +849,12 @@ void RelationObject::lazy_load_slaves()
     Session &session = *master_object_->session();
     const Table &master_tbl = relation_info_.table(0),
         &slave_tbl = relation_info_.table(1);
-    Strings cols;
+    ExpressionList cols;
     Columns::const_iterator j = slave_tbl.begin(), jend = slave_tbl.end();
     for (; j != jend; ++j)
-        cols.push_back(j->name());
+        cols << ColumnExpr(slave_tbl.name(), j->name());
     RowsPtr result = session.engine()->
-        select(StrList(cols), slave_tbl.name(), KeyFilter(gen_fkey()));
+        select(cols, Expression(slave_tbl.name()), KeyFilter(gen_fkey()));
     Rows::const_iterator k = result->begin(), kend = result->end();
     for (; k != kend; ++k) {
         ValueMap pk_values;
