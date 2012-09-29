@@ -337,12 +337,6 @@ private:
 
 const String mk_xml_name(const String &name, const String &xml_name);
 
-const Expression operator == (const Column &a, const Expression &b);
-const Expression operator == (const Expression &a, const Column &b);
-const Expression operator == (const Column &a, const Value &b);
-const Expression operator == (const Value &a, const Column &b);
-const Expression operator == (const Column &a, const Column &b);
-
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

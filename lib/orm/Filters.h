@@ -85,6 +85,25 @@ public:
     const Value &const_value() const;
 };
 
+class UnaryOpExprBackend: public ExpressionBackend
+{
+    Expression expr_;
+    String op_;
+public:
+    UnaryOpExprBackend(const String &op, const Expression &expr);
+    const String generate_sql(Values *params) const;
+    const String &op() const { return op_; }
+    const Expression &expr() const { return expr_; }
+};
+
+class UnaryOpExpr: public Expression
+{
+public:
+    UnaryOpExpr(const String &op, const Expression &expr);
+    const String &op() const;
+    const Expression &expr() const;
+};
+
 class BinaryOpExprBackend: public ExpressionBackend
 {
     Expression expr1_, expr2_;
@@ -225,12 +244,59 @@ const Expression filter_lt(const String &name, const Value &value);
 const Expression filter_gt(const String &name, const Value &value);
 const Expression filter_le(const String &name, const Value &value);
 const Expression filter_ge(const String &name, const Value &value);
+
+const Expression operator ! (const Expression &a);
 const Expression operator && (const Expression &a, const Expression &b);
 const Expression operator || (const Expression &a, const Expression &b);
 
 const Expression operator == (const Expression &a, const Expression &b);
 const Expression operator == (const Expression &a, const Value &b);
 const Expression operator == (const Value &a, const Expression &b);
+const Expression operator == (const Expression &a, const Column &b);
+const Expression operator == (const Column &a, const Expression &b);
+const Expression operator == (const Column &a, const Column &b);
+const Expression operator == (const Column &a, const Value &b);
+const Expression operator == (const Value &a, const Column &b);
+const Expression operator != (const Expression &a, const Expression &b);
+const Expression operator != (const Expression &a, const Value &b);
+const Expression operator != (const Value &a, const Expression &b);
+const Expression operator != (const Expression &a, const Column &b);
+const Expression operator != (const Column &a, const Expression &b);
+const Expression operator != (const Column &a, const Column &b);
+const Expression operator != (const Column &a, const Value &b);
+const Expression operator != (const Value &a, const Column &b);
+const Expression operator > (const Expression &a, const Expression &b);
+const Expression operator > (const Expression &a, const Value &b);
+const Expression operator > (const Value &a, const Expression &b);
+const Expression operator > (const Expression &a, const Column &b);
+const Expression operator > (const Column &a, const Expression &b);
+const Expression operator > (const Column &a, const Column &b);
+const Expression operator > (const Column &a, const Value &b);
+const Expression operator > (const Value &a, const Column &b);
+const Expression operator < (const Expression &a, const Expression &b);
+const Expression operator < (const Expression &a, const Value &b);
+const Expression operator < (const Value &a, const Expression &b);
+const Expression operator < (const Expression &a, const Column &b);
+const Expression operator < (const Column &a, const Expression &b);
+const Expression operator < (const Column &a, const Column &b);
+const Expression operator < (const Column &a, const Value &b);
+const Expression operator < (const Value &a, const Column &b);
+const Expression operator >= (const Expression &a, const Expression &b);
+const Expression operator >= (const Expression &a, const Value &b);
+const Expression operator >= (const Value &a, const Expression &b);
+const Expression operator >= (const Expression &a, const Column &b);
+const Expression operator >= (const Column &a, const Expression &b);
+const Expression operator >= (const Column &a, const Column &b);
+const Expression operator >= (const Column &a, const Value &b);
+const Expression operator >= (const Value &a, const Column &b);
+const Expression operator <= (const Expression &a, const Expression &b);
+const Expression operator <= (const Expression &a, const Value &b);
+const Expression operator <= (const Value &a, const Expression &b);
+const Expression operator <= (const Expression &a, const Column &b);
+const Expression operator <= (const Column &a, const Expression &b);
+const Expression operator <= (const Column &a, const Column &b);
+const Expression operator <= (const Column &a, const Value &b);
+const Expression operator <= (const Value &a, const Column &b);
 
 class FilterBackendByPK: public ExpressionBackend
 {

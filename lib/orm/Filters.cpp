@@ -166,6 +166,32 @@ ConstExpr::const_value() const {
     return dynamic_cast<ConstExprBackend *>(shptr_get(backend_))->const_value();
 }
 
+UnaryOpExprBackend::UnaryOpExprBackend(const String &op, const Expression &expr)
+    : op_(op)
+    , expr_(expr)
+{}
+
+const String
+UnaryOpExprBackend::generate_sql(Values *params) const
+{
+    return op_ + _T(" ") + sql_parentheses_as_needed(
+            expr_.generate_sql(params));
+}
+
+UnaryOpExpr::UnaryOpExpr(const String &op, const Expression &expr)
+    : Expression(ExprBEPtr(new UnaryOpExprBackend(op, expr)))
+{}
+
+const String &
+UnaryOpExpr::op() const {
+    return dynamic_cast<UnaryOpExprBackend *>(shptr_get(backend_))->op();
+}
+
+const Expression &
+UnaryOpExpr::expr() const {
+    return dynamic_cast<UnaryOpExprBackend *>(shptr_get(backend_))->expr();
+}
+
 BinaryOpExprBackend::BinaryOpExprBackend(const Expression &expr1,
         const String &op, const Expression &expr2)
     : expr1_(expr1)
@@ -413,9 +439,11 @@ filter_ge(const String &name, const Value &value)
                 _T(">="), ConstExpr(value))));
 }
 
-const Expression
-operator && (const Expression &a, const Expression &b)
-{
+const Expression operator ! (const Expression &a) {
+    return Expression(ExprBEPtr(new UnaryOpExprBackend(_T("NOT"), a)));
+}
+
+const Expression operator && (const Expression &a, const Expression &b) {
     if (a.is_empty())
         return b;
     if (b.is_empty())
@@ -423,9 +451,7 @@ operator && (const Expression &a, const Expression &b)
     return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("AND"), b)));
 }
 
-const Expression
-operator || (const Expression &a, const Expression &b)
-{
+const Expression operator || (const Expression &a, const Expression &b) {
     if (a.is_empty())
         return b;
     if (b.is_empty())
@@ -433,22 +459,232 @@ operator || (const Expression &a, const Expression &b)
     return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("OR"), b)));
 }
 
-const Expression
-operator == (const Expression &a, const Expression &b)
-{
+const Expression operator == (const Expression &a, const Expression &b) {
     return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("="), b)));
 }
 
-const Expression
-operator == (const Expression &a, const Value &b)
-{
+const Expression operator == (const Expression &a, const Value &b) {
     return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("="), ConstExpr(b))));
 }
 
-const Expression
-operator == (const Value &a, const Expression &b)
-{
+const Expression operator == (const Value &a, const Expression &b) {
     return Expression(ExprBEPtr(new BinaryOpExprBackend(ConstExpr(a), _T("="), b)));
+}
+
+const Expression operator == (const Expression &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        a, _T("="), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator == (const Column &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T("="), b)));
+}
+
+const Expression operator == (const Column &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()),
+        _T("="), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator == (const Column &a, const Value &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T("="), ConstExpr(b))));
+}
+
+const Expression operator == (const Value &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ConstExpr(a), _T("="), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator != (const Expression &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("<>"), b)));
+}
+
+const Expression operator != (const Expression &a, const Value &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("<>"), ConstExpr(b))));
+}
+
+const Expression operator != (const Value &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ConstExpr(a), _T("<>"), b)));
+}
+
+const Expression operator != (const Expression &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        a, _T("<>"), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator != (const Column &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T("<>"), b)));
+}
+
+const Expression operator != (const Column &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()),
+        _T("<>"), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator != (const Column &a, const Value &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T("<>"), ConstExpr(b))));
+}
+
+const Expression operator != (const Value &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ConstExpr(a), _T("<>"), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator > (const Expression &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T(">"), b)));
+}
+
+const Expression operator > (const Expression &a, const Value &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T(">"), ConstExpr(b))));
+}
+
+const Expression operator > (const Value &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ConstExpr(a), _T(">"), b)));
+}
+
+const Expression operator > (const Expression &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        a, _T(">"), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator > (const Column &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T(">"), b)));
+}
+
+const Expression operator > (const Column &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()),
+        _T(">"), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator > (const Column &a, const Value &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T(">"), ConstExpr(b))));
+}
+
+const Expression operator > (const Value &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ConstExpr(a), _T(">"), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator < (const Expression &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("<"), b)));
+}
+
+const Expression operator < (const Expression &a, const Value &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("<"), ConstExpr(b))));
+}
+
+const Expression operator < (const Value &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ConstExpr(a), _T("<"), b)));
+}
+
+const Expression operator < (const Expression &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        a, _T("<"), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator < (const Column &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T("<"), b)));
+}
+
+const Expression operator < (const Column &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()),
+        _T("<"), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator < (const Column &a, const Value &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T("<"), ConstExpr(b))));
+}
+
+const Expression operator < (const Value &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ConstExpr(a), _T("<"), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator >= (const Expression &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T(">="), b)));
+}
+
+const Expression operator >= (const Expression &a, const Value &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T(">="), ConstExpr(b))));
+}
+
+const Expression operator >= (const Value &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ConstExpr(a), _T(">="), b)));
+}
+
+const Expression operator >= (const Expression &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        a, _T(">="), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator >= (const Column &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T(">="), b)));
+}
+
+const Expression operator >= (const Column &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()),
+        _T(">="), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator >= (const Column &a, const Value &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T(">="), ConstExpr(b))));
+}
+
+const Expression operator >= (const Value &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ConstExpr(a), _T(">="), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator <= (const Expression &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("<="), b)));
+}
+
+const Expression operator <= (const Expression &a, const Value &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("<="), ConstExpr(b))));
+}
+
+const Expression operator <= (const Value &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ConstExpr(a), _T("<="), b)));
+}
+
+const Expression operator <= (const Expression &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        a, _T("<="), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator <= (const Column &a, const Expression &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T("<="), b)));
+}
+
+const Expression operator <= (const Column &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()),
+        _T("<="), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator <= (const Column &a, const Value &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T("<="), ConstExpr(b))));
+}
+
+const Expression operator <= (const Value &a, const Column &b) {
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ConstExpr(a), _T("<="), ColumnExpr(b.table().name(), b.name()))));
 }
 
 const Expression

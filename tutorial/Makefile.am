@@ -7,7 +7,7 @@ AM_CXXFLAGS = \
 	$(SQLITE3_CFLAGS) \
 	$(BOOST_CPPFLAGS)
 
-noinst_PROGRAMS=tut1 tut2
+noinst_PROGRAMS=tut1 tut2 tut3
 
 tut1_SOURCES=tut1.cpp domain/Client.cpp domain/Order.cpp
 
@@ -25,6 +25,19 @@ tut1_LDFLAGS = \
 tut2_SOURCES=tut2.cpp domain/Client.cpp domain/Order.cpp
 
 tut2_LDFLAGS = \
+	$(top_builddir)/lib/orm/libyborm.la \
+	$(top_builddir)/lib/util/libybutil.la \
+	$(XML_LIBS) \
+	$(BOOST_LDFLAGS) \
+	$(BOOST_LIBS_R) \
+	$(ODBC_LIBS) \
+	$(SQLITE3_LIBS) \
+	$(DBPOOL3_LDFLAGS) \
+	$(DBPOOL3_LIBS)
+
+tut3_SOURCES=tut3.cpp domain/Client.cpp domain/Order.cpp
+
+tut3_LDFLAGS = \
 	$(top_builddir)/lib/orm/libyborm.la \
 	$(top_builddir)/lib/util/libybutil.la \
 	$(XML_LIBS) \

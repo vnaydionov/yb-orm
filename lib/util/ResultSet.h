@@ -111,6 +111,8 @@ public:
         }
     };
 
+    typedef iterator const_iterator;
+
     iterator begin() { return iterator(*this, false); }
     iterator end() { return iterator(*this, true); }
     void load() {

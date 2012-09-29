@@ -497,6 +497,20 @@ public:
                     session_.schema().join_expr(tables),
                     filter_, order_, max_));
     }
+    R one() {
+        Strings tables;
+        QF::list_tables(tables);
+        DomainResultSet<R> r = session_.load_collection(
+                    session_.schema().join_expr(tables),
+                    filter_, order_, max_);
+        typename DomainResultSet<R>::iterator it = r.begin();
+        if (it == r.end())
+            throw NoDataFound("No data");
+        R result = *it;
+        if (++it != r.end())
+            throw NoDataFound("More than one row");
+        return result;
+    }
     LongInt count() {
         SelectExpr select(Expression(_T("COUNT(*) CNT")));
         select.from_(ColumnExpr(get_select(), _T("X")));
