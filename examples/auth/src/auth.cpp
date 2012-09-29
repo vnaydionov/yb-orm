@@ -55,7 +55,7 @@ get_checked_session_by_token(Yb::Session &session,
     typedef boost::tuple<LoginSession, User> Row;
 #endif
     Yb::DomainResultSet<Row> rs = Yb::query<Row>(session)
-        .filter_by(LoginSession::c.token == Yb::Value(params[_T("token")])).all();
+        .filter_by(LoginSession::c.token == params[_T("token")]).all();
     Yb::DomainResultSet<Row>::iterator q = rs.begin(), qend = rs.end();
     if (q == qend)
         return -1;
@@ -101,18 +101,15 @@ std::string
 registration(const Yb::StringDict &params)
 {
     auto_ptr<Yb::Session> session = theApp::instance().new_session();
-    User::ResultSet all = Yb::query<User>(*session).all();
-    User::ResultSet::iterator p = all.begin(), pend = all.end();
-    if (p != pend) {
+    int total_count = Yb::query<User>(*session).count();
+    if (total_count) {
         // when user table is empty it is allowed to create the first user
         // w/o password check, otherwise we should check permissions
         if (-1 == get_checked_session_by_token(*session, params, 1))
             return BAD_RESP;
     }
-    User::ResultSet rs = Yb::query<User>(*session)
-        .filter_by(User::c.login == Yb::Value(params[_T("login")])).all();
-    User::ResultSet::iterator q = rs.begin(), qend = rs.end();
-    if (q != qend)
+    if (Yb::query<User>(*session)
+            .filter_by(User::c.login == params[_T("login")]).count())
         return BAD_RESP;
 
     User user(*session);
@@ -128,7 +125,7 @@ Yb::LongInt
 get_checked_user_by_creds(Yb::Session &session, const Yb::StringDict &params)
 {
     User::ResultSet rs = Yb::query<User>(session,
-        User::c.login == Yb::Value(params[_T("login")])).all();
+        User::c.login == params[_T("login")]).all();
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q == qend)
         return -1;

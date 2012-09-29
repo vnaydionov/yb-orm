@@ -397,48 +397,6 @@ SelectExpr::order_by_expr() const {
     return dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->order_by_expr();
 }
 
-const Expression
-filter_eq(const String &name, const Value &value)
-{
-    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
-                _T("="), ConstExpr(value))));
-}
-
-const Expression
-filter_ne(const String &name, const Value &value)
-{
-    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
-                _T("<>"), ConstExpr(value))));
-}
-
-const Expression
-filter_lt(const String &name, const Value &value)
-{
-    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
-                _T("<"), ConstExpr(value))));
-}
-
-const Expression
-filter_gt(const String &name, const Value &value)
-{
-    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
-                _T(">"), ConstExpr(value))));
-}
-
-const Expression
-filter_le(const String &name, const Value &value)
-{
-    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
-                _T("<="), ConstExpr(value))));
-}
-
-const Expression
-filter_ge(const String &name, const Value &value)
-{
-    return Expression(ExprBEPtr(new BinaryOpExprBackend(ColumnExpr(_T(""), name),
-                _T(">="), ConstExpr(value))));
-}
-
 const Expression operator ! (const Expression &a) {
     return Expression(ExprBEPtr(new UnaryOpExprBackend(_T("NOT"), a)));
 }

@@ -27,27 +27,27 @@ public:
 
     void testFilterEq()
     {
-        CPPUNIT_ASSERT_EQUAL(string("ID = 1"), NARROW(filter_eq(_T("ID"), Value(1)).get_sql()));
+        CPPUNIT_ASSERT_EQUAL(string("ID = 1"), NARROW((Expression(_T("ID")) == 1).get_sql()));
     }
 
     void testOperatorOr()
     {
-        CPPUNIT_ASSERT_EQUAL(string("(ID = 1) OR (A = 'a')"), 
-                             NARROW((filter_eq(_T("ID"), Value(1)) ||
-                                     filter_eq(_T("A"), Value(_T("a")))).get_sql()));
+        CPPUNIT_ASSERT_EQUAL(string("(ID = 1) OR (A <= 'a')"), 
+                             NARROW((Expression(_T("ID")) == 1 ||
+                                     Expression(_T("A")) <= String(_T("a"))).get_sql()));
     }
 
     void testOperatorAnd()
     {
         CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A <> 'a')"), 
-                             NARROW((filter_eq(_T("ID"), Value(1)) &&
-                                     filter_ne(_T("A"), Value(_T("a")))).get_sql()));
+                             NARROW((Expression(_T("ID")) == 1 &&
+                                     Expression(_T("A")) != String(_T("a"))).get_sql()));
     }
 
     void testCollectParams()
     {
-        Expression expr = filter_eq(_T("ID"), Value(1)) &&
-            filter_ne(_T("A"), Value(_T("a")));
+        Expression expr = Expression(_T("ID")) == 1 &&
+            Expression(_T("A")) != String(_T("a"));
         Values pvalues;
         String sql = expr.generate_sql(&pvalues);
         CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A <> 'a')"),
@@ -71,7 +71,7 @@ public:
         q.from_(ExpressionList(Expression(_T("DUAL"))));
         CPPUNIT_ASSERT_EQUAL(string("SELECT A FROM DUAL"),
                 NARROW(q.get_sql()));
-        q.where_(filter_eq(_T("A"), Value(_T("a"))));
+        q.where_(Expression(_T("A")) == String(_T("a")));
         CPPUNIT_ASSERT_EQUAL(string("SELECT A FROM DUAL WHERE A = 'a'"),
                 NARROW(q.get_sql()));
     }

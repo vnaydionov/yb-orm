@@ -80,7 +80,7 @@ public:
         String sql;
         Values params;
         engine.do_gen_sql_select(sql, params, Expression(_T("*")),
-                Expression(_T("T")), filter_eq(_T("ID"), Value(1)),
+                Expression(_T("T")), Expression(_T("ID")) == 1,
                 Expression(), Expression(), Expression(), false);
         CPPUNIT_ASSERT_EQUAL(string("SELECT * FROM T WHERE ID = ?"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL(1, (int)params.size());
@@ -119,7 +119,7 @@ public:
         Values params;
         engine.do_gen_sql_select(sql, params, Expression(_T("A, B")),
                 Expression(_T("T")), Expression(),
-                Expression(_T("")), filter_eq(_T("ID"), Value(1)),
+                Expression(_T("")), Expression(_T("ID")) == 1,
                 Expression(), false);
     }
 
@@ -184,7 +184,7 @@ public:
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
-                _T("T"), row, Strings(), StringSet(), filter_eq(_T("B"), Value(_T("b"))));
+                _T("T"), row, Strings(), StringSet(), Expression(_T("B")) == String(_T("b")));
         CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET A = ? WHERE (B = ?)"), NARROW(sql));
         CPPUNIT_ASSERT(2 == params.size()
                 && Value(_T("a")) == params[0] && Value(_T("b")) == params[1]);
@@ -211,7 +211,7 @@ public:
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
-                _T("T"), row, key, exclude, filter_eq(_T("Q"), Value(_T("q"))));
+                _T("T"), row, key, exclude, Expression(_T("Q")) == String(_T("q")));
         CPPUNIT_ASSERT_EQUAL(string(
                 "UPDATE T SET E = ?, F = ? WHERE (Q = ?) AND (B = ?) AND (D = ?)"), NARROW(sql));
         CPPUNIT_ASSERT(5 == params.size() && Value(_T("e")) == params[0] &&
@@ -249,7 +249,7 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Values params;
-        engine.do_gen_sql_delete(sql, params, _T("T"), filter_eq(_T("ID"), Value(1)));
+        engine.do_gen_sql_delete(sql, params, _T("T"), Expression(_T("ID")) == 1);
         CPPUNIT_ASSERT_EQUAL(string("DELETE FROM T WHERE ID = ?"), NARROW(sql));
         CPPUNIT_ASSERT(1 == params.size() && Value(1) == params[0]);
     }
@@ -383,7 +383,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")),
                 Expression(_T("T_ORM_TEST")),
-                filter_eq(_T("ID"), Value(record_id_)));
+                Expression(_T("ID")) == record_id_);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("item"),
@@ -399,7 +399,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")),
                 Expression(_T("T_ORM_TEST")),
-                filter_eq(_T("ID"), Value(record_id_)),
+                Expression(_T("ID")) == record_id_,
                 Expression(), Expression(), Expression(), 0);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         CPPUNIT_ASSERT_EQUAL(0, (int)ptr->size());
@@ -434,7 +434,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")),
                 Expression(_T("T_ORM_TEST")),
-                filter_eq(_T("ID"), Value(id)));
+                Expression(_T("ID")) == id);
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("inserted"),
                 NARROW(find_in_row(*ptr->begin(), _T("A"))->second.as_string()));
@@ -462,7 +462,7 @@ public:
         engine.update(_T("T_ORM_TEST"), rows, key, exclude);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")), Expression(_T("T_ORM_TEST")),
-                filter_eq(_T("ID"), Value(record_id_)));
+                Expression(_T("ID")) == record_id_);
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("updated"),
                 NARROW(find_in_row(*ptr->begin(), _T("A"))->second.as_string()));

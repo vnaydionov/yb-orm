@@ -123,7 +123,7 @@ class Column
 {
 public:
     enum { PK = 1, RO = 2, NULLABLE = 4 };
-    Column(const String &name = _T(""),
+    explicit Column(const String &name = _T(""),
             int type = 0, size_t size = 0, int flags = 0);
     Column(const String &name, int type, size_t size, int flags,
             const Value &default_value,

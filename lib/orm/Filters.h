@@ -31,7 +31,7 @@ protected:
     String sql_;
 public:
     Expression();
-    Expression(const String &sql);
+    explicit Expression(const String &sql);
     Expression(const Column &col);
     Expression(ExprBEPtr backend);
     const String generate_sql(Values *params) const;
@@ -238,13 +238,6 @@ public:
     const Expression &order_by_expr() const;
 };
 
-const Expression filter_eq(const String &name, const Value &value);
-const Expression filter_ne(const String &name, const Value &value);
-const Expression filter_lt(const String &name, const Value &value);
-const Expression filter_gt(const String &name, const Value &value);
-const Expression filter_le(const String &name, const Value &value);
-const Expression filter_ge(const String &name, const Value &value);
-
 const Expression operator ! (const Expression &a);
 const Expression operator && (const Expression &a, const Expression &b);
 const Expression operator || (const Expression &a, const Expression &b);
@@ -297,6 +290,25 @@ const Expression operator <= (const Column &a, const Expression &b);
 const Expression operator <= (const Column &a, const Column &b);
 const Expression operator <= (const Column &a, const Value &b);
 const Expression operator <= (const Value &a, const Column &b);
+
+inline const Expression filter_eq(const String &name, const Value &value) {
+    return Expression(name) == value;
+}
+inline const Expression filter_ne(const String &name, const Value &value) {
+    return Expression(name) != value;
+}
+inline const Expression filter_lt(const String &name, const Value &value) {
+    return Expression(name) < value;
+}
+inline const Expression filter_gt(const String &name, const Value &value) {
+    return Expression(name) > value;
+}
+inline const Expression filter_le(const String &name, const Value &value) {
+    return Expression(name) <= value;
+}
+inline const Expression filter_ge(const String &name, const Value &value) {
+    return Expression(name) >= value;
+}
 
 class FilterBackendByPK: public ExpressionBackend
 {
