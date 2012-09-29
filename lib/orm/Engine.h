@@ -22,6 +22,7 @@ class EngineBase
 {
 public:
     virtual ~EngineBase();
+    virtual SqlResultSet select_iter(const Expression &select_expr) = 0;
     virtual SqlResultSet select_iter(
         const Expression &what,
         const Expression &from,
@@ -97,6 +98,7 @@ public:
     ILogger *logger() { return logger_ptr_? logger_ptr_: logger_.get(); }
 
     // SQL operator wrappers
+    SqlResultSet select_iter(const Expression &select_expr);
     SqlResultSet select_iter(
             const Expression &what,
             const Expression &from,

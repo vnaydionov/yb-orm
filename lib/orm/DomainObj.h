@@ -407,15 +407,10 @@ template <class T0, class T1, class T2, class T3, class T4,
           class T5, class T6, class T7, class T8, class T9>
 struct QueryFunc<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> > {
     typedef boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> R;
-    typedef DomainResultSet<R> RS;
-    static RS query(Session &session, const Expression &filter,
-         const Expression &order_by, int max)
+    static void list_tables(Strings &tables)
     {
-        Strings tables;
         typename R::inherited tuple;
         tuple_tables(tuple, tables);
-        return RS(session.load_collection(session.schema().join_expr(tables),
-                    filter, order_by, max));
     }
 };
 #endif // defined(YB_USE_TUPLE)
@@ -450,12 +445,9 @@ public:
 
 template <class R>
 struct QueryFunc {
-    typedef DomainResultSet<R> RS;
-    static RS query(Session &session, const Expression &filter,
-         const Expression &order_by, int max)
+    static void list_tables(Strings &tables)
     {
-        return RS(session.load_collection(ExpressionList(R::get_table_name()),
-                    filter, order_by, max));
+        tables.push_back(R::get_table_name());
     }
 };
 
@@ -491,8 +483,26 @@ public:
         q.max_ = max;
         return q;
     }
+    SelectExpr get_select() {
+        Strings tables;
+        QF::list_tables(tables);
+        return make_select(session_.schema(),
+                session_.schema().join_expr(tables),
+                filter_, order_);
+    }
     DomainResultSet<R> all() {
-        return QF::query(session_, filter_, order_, max_);
+        Strings tables;
+        QF::list_tables(tables);
+        return DomainResultSet<R>(session_.load_collection(
+                    session_.schema().join_expr(tables),
+                    filter_, order_, max_));
+    }
+    LongInt count() {
+        SelectExpr select(Expression(_T("COUNT(*) CNT")));
+        select.from_(ColumnExpr(get_select(), _T("X")));
+        SqlResultSet rs = session_.engine()->select_iter(select);
+        Row r = *rs.begin(); 
+        return r[0].second.as_longint();
     }
 };
 

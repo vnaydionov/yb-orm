@@ -196,6 +196,24 @@ Engine::set_logger(ILogger::Ptr logger)
 }
 
 SqlResultSet
+Engine::select_iter(const Expression &select_expr)
+{
+    bool select_mode = mode_ == FORCE_SELECT_UPDATE;
+    if ((mode_ == READ_ONLY) && select_mode)
+        throw BadOperationInMode(
+                _T("Using SELECT FOR UPDATE in read-only mode"));
+    if (select_mode)
+        touch();
+    Values params;
+    String sql = select_expr.generate_sql(&params);
+    auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+    cursor->prepare(sql);
+    SqlResultSet rs = cursor->exec(params);
+    rs.own(cursor);
+    return rs;
+}
+
+SqlResultSet
 Engine::select_iter(const Expression &what,
         const Expression &from, const Expression &where,
         const Expression &group_by, const Expression &having,

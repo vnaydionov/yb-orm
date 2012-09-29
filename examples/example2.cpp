@@ -112,6 +112,8 @@ int main()
 
     Domain::Order::ListPtr olist = Domain::Order::find(session,
             Order::c.client_id == c2->id);
+    cout << "count(*): " << Yb::query<Domain::Order>(
+            session, Order::c.client_id == c2->id).count();
     Yb::DomainResultSet<Domain::Order> rs =
         Yb::query<Domain::Order>(session, Order::c.client_id == c2->id).all();
     Yb::DomainResultSet<Domain::Order>::iterator q = rs.begin(), qend = rs.end();

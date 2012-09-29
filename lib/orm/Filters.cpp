@@ -518,6 +518,23 @@ void find_all_tables(const Expression &expr, Strings &tables)
         throw ORMError(_T("Not a table expression"));
 }
 
+SelectExpr make_select(const Schema &schema, const Expression &from_where,
+        const Expression &filter, const Expression &order_by)
+{
+    Strings tables;
+    find_all_tables(from_where, tables);
+    ExpressionList cols;
+    Strings::const_iterator i = tables.begin(), iend = tables.end();
+    for (; i != iend; ++i) {
+        const Table &table = schema[*i];
+        for (size_t j = 0; j < table.size(); ++j)
+            cols << ColumnExpr(table.name(), table[j].name());
+    }
+    SelectExpr q(cols);
+    q.from_(from_where).where_(filter).order_by_(order_by);
+    return q;
+}
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

@@ -264,7 +264,11 @@ public:
     ObjectNotFoundByKey(const String &msg);
 };
 
+class Schema;
+
 void find_all_tables(const Expression &expr, Strings &tables);
+SelectExpr make_select(const Schema &schema, const Expression &from_where,
+        const Expression &filter, const Expression &order_by);
 
 } // namespace Yb
 
