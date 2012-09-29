@@ -61,6 +61,7 @@ public:
     void write_autogen(std::ostream &out, int code);
     void write_include_dependencies(std::ostream &out);
     void write_decl_relation_classes(std::ostream &out);
+    void write_domain_columns_decl(std::ostream &out);
     void write_properties(std::ostream &out);
     void write_h_file_header(std::ostream &out);
     void write_h_file_footer(std::ostream &out);

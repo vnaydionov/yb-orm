@@ -100,11 +100,7 @@ int main()
     DomainResultSet<boost::tuple<Order, Client> > rs0 =
         query<boost::tuple<Order, Client> >(session).filter_by(
                 c2->id == Client::c.id
-                //Client::c(_T("ID")) == c2->id
-                //ColumnExpr(_T("T_CLIENT"), _T("ID")) == c2->id
-        ).order_by(ExpressionList(Client::c.id,
-                //ColumnExpr(_T("T_CLIENT"), _T("ID")),
-                ColumnExpr(_T("T_ORDER"), _T("ID")))).all();
+        ).order_by(ExpressionList(Client::c.id, Order::c.id)).all();
     DomainResultSet<boost::tuple<Order, Client> >
         ::iterator p = rs0.begin(), pend = rs0.end();
     cout << "Order/Client IDs: " << endl; 
@@ -114,11 +110,10 @@ int main()
     cout << endl;
 #endif
 
-    Domain::Order::ListPtr olist = Domain::Order::find(
-        session, Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2->id));
+    Domain::Order::ListPtr olist = Domain::Order::find(session,
+            Order::c.client_id == c2->id);
     Yb::DomainResultSet<Domain::Order> rs =
-        Yb::query<Domain::Order>(session,
-            Yb::filter_eq(_T("T_ORDER.CLIENT_ID"), c2->id)).all();
+        Yb::query<Domain::Order>(session, Order::c.client_id == c2->id).all();
     Yb::DomainResultSet<Domain::Order>::iterator q = rs.begin(), qend = rs.end();
     cout << "Order/Client IDs: " << endl; 
     for (; q != qend; ++q)

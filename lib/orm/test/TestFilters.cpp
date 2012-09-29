@@ -60,7 +60,7 @@ public:
     void testExprList()
     {
         ExpressionList expr(ConstExpr(1));
-        expr << ConstExpr(2) << ConstExpr(_T("three"));
+        expr << ConstExpr(2) << ConstExpr(String(_T("three")));
         CPPUNIT_ASSERT_EQUAL(string("1, 2, 'three'"),
                 NARROW(expr.get_sql()));
     }

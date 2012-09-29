@@ -55,11 +55,7 @@ get_checked_session_by_token(Yb::Session &session,
     typedef boost::tuple<LoginSession, User> Row;
 #endif
     Yb::DomainResultSet<Row> rs = Yb::query<Row>(session)
-        .filter_by(Yb::filter_eq(_T("TOKEN"), params[_T("token")]))
-#if defined(YB_USE_TUPLE)
-        .filter_by(Yb::Filter(_T("USER_ID = T_USER.ID")))
-#endif
-        .all();
+        .filter_by(LoginSession::c.token == Yb::Value(params[_T("token")])).all();
     Yb::DomainResultSet<Row>::iterator q = rs.begin(), qend = rs.end();
     if (q == qend)
         return -1;
@@ -114,7 +110,7 @@ registration(const Yb::StringDict &params)
             return BAD_RESP;
     }
     User::ResultSet rs = Yb::query<User>(*session)
-        .filter_by(Yb::filter_eq(_T("LOGIN"), params[_T("login")])).all();
+        .filter_by(User::c.login == Yb::Value(params[_T("login")])).all();
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q != qend)
         return BAD_RESP;
@@ -132,7 +128,7 @@ Yb::LongInt
 get_checked_user_by_creds(Yb::Session &session, const Yb::StringDict &params)
 {
     User::ResultSet rs = Yb::query<User>(session,
-        Yb::filter_eq(_T("LOGIN"), params[_T("login")])).all();
+        User::c.login == Yb::Value(params[_T("login")])).all();
     User::ResultSet::iterator q = rs.begin(), qend = rs.end();
     if (q == qend)
         return -1;

@@ -364,14 +364,20 @@ CppCodeGenerator::CppCodeGenerator(const Schema &schema,
     autogen_handlers_[1] = &CppCodeGenerator::write_include_dependencies;
     autogen_handlers_[2] = &CppCodeGenerator::write_decl_relation_classes;
     autogen_handlers_[3] = &CppCodeGenerator::write_properties;
-    autogen_handlers_[4] = &CppCodeGenerator::write_meta;
+    // -- format has changed
+    //autogen_handlers_[4] = &CppCodeGenerator::write_meta;
+    autogen_handlers_[4] = NULL;
     autogen_handlers_[5] = &CppCodeGenerator::write_props_cons_calls;
     autogen_handlers_[6] = &CppCodeGenerator::do_write_cpp_ctor_body;
     autogen_handlers_[7] = &CppCodeGenerator::write_domain_columns_decl;
+    autogen_handlers_[8] = &CppCodeGenerator::write_meta;
 }
 
 void CppCodeGenerator::write_autogen_body(ostream &out, int code)
 {
+    if (!autogen_handlers_[code])
+        throw CodeGenError(_T("Unknown autogen section: ") +
+                to_string(code));
     (this->*(autogen_handlers_[code]))(out);
 }
 
@@ -409,6 +415,23 @@ void CppCodeGenerator::write_decl_relation_classes(ostream &out)
     set<String>::const_iterator j = classes.begin(), jend = classes.end();
     for (; j != jend; ++j)
         out << "class " << NARROW(*j) << ";\n";
+}
+
+void CppCodeGenerator::write_domain_columns_decl(ostream &out)
+{
+    out << "\tstruct Columns {\n"
+        << "\t\tYb::Column ";
+    Columns::const_iterator it = table_.begin(), end = table_.end();
+    for (int i = 0; it != end; ++it, ++i) {
+        if (i)
+            out << ", ";
+        out << fix_name(NARROW(it->prop_name()));
+    }
+    out << ";\n"
+        << "\t\tColumns();\n"
+        << "\t\tvoid fill_table(Yb::Table &tbl);\n"
+        << "\t};\n"
+        << "\tstatic Columns c;\n";
 }
 
 void CppCodeGenerator::write_properties(ostream &out)
@@ -505,10 +528,6 @@ void CppCodeGenerator::write_h_file_header(ostream &out)
 void CppCodeGenerator::write_h_file_footer(ostream &out)
 {
     out << "};\n\n"
-        << "struct "<< class_name_ << "Registrator\n{\n"
-        << "\tstatic void register_domain();\n"
-        << "\t" << class_name_ << "Registrator();\n"
-        << "};\n\n"
         << "} // namespace Domain\n\n"
         << "// vim:ts=4:sts=4:sw=4:et:\n"
         << "#endif\n";
@@ -565,7 +584,7 @@ void CppCodeGenerator::write_cpp_create_table_meta(ostream &out)
         const Column &c = *i;
         if (i != table_.begin())
             out << "\t, ";
-        out << NARROW(c.prop_name()) << "(_T(\"" << NARROW(c.name())
+        out << fix_name(NARROW(c.prop_name())) << "(_T(\"" << NARROW(c.name())
             << "\"), " << type_code_by_handle(c.type()) << ", " << c.size()
             << ", " << flags_code_by_handle(c.flags()) << ", Yb::Value(";
         if (!c.default_value().is_null())
@@ -577,36 +596,21 @@ void CppCodeGenerator::write_cpp_create_table_meta(ostream &out)
         out << "\n";
     }
     out << "{}\n\n"
-        << "void " << Client::Columns::fill_table(Yb::Table &tbl)"
-        
-        << 
-    out << "void " << class_name_ << "::create_tables_meta(Yb::Tables &tbls)\n"
+        << "void " << class_name_ << "::Columns::fill_table(Yb::Table &tbl)\n"
+        << "{\n"
+        << "\ttbl";
+    for (i = table_.begin(); i != iend; ++i)
+        out << " << " << fix_name(NARROW(i->prop_name()));
+    out << ";\n"
+        << "}\n\n"
+        << "void " << class_name_ << "::create_tables_meta(Yb::Tables &tbls)\n"
         << "{\n"
         << "\tYb::Table::Ptr t(new Yb::Table(_T(\"" << table_name_
         << "\"), _T(\"" << xml_name << "\"), _T(\"" << class_name_ << "\")));\n";
     if (!str_empty(table_.seq_name()))
         out << "\tt->set_seq_name(_T(\"" << NARROW(table_.seq_name()) << "\"));\n";
-    Columns::const_iterator i = table_.begin(), iend = table_.end();
-    for (; i != iend; ++i) {
-        const Column &c = *i;
-        if (i == table_.begin())
-            out << "\t*t  ";
-        else
-            out << "\t\t";
-        out << "<< Yb::Column(_T(\"" << NARROW(c.name())
-            << "\"), " << type_code_by_handle(c.type()) << ", " << c.size()
-            << ", " << flags_code_by_handle(c.flags()) << ", Yb::Value(";
-        if (!c.default_value().is_null())
-            out << "_T(\"" << NARROW(c.default_value().as_string()) << "\")";
-        out << "), _T(\"" << NARROW(c.fk_table_name())
-            << "\"), _T(\"" << NARROW(c.fk_name())
-            << "\"), _T(\"" << NARROW(c.xml_name())
-            << "\"), _T(\"" << NARROW(c.prop_name()) << "\"))";
-        if (i + 1 == iend)
-            out << ";";
-        out << "\n";
-    }
-    out << "\ttbls.push_back(t);\n"
+    out << "\tc.fill_table(*t);\n"
+        << "\ttbls.push_back(t);\n"
         << "}\n";
 }
 
@@ -709,23 +713,6 @@ void CppCodeGenerator::do_write_cpp_ctor_body(ostream &out)
         }
 }
 
-void CppCodeGenerator::write_domain_columns_decl(ostream &out)
-{
-    out << "\tstruct Columns {\n"
-        << "\t\tYb::Column ";
-    Columns::const_iterator it = table_.begin(), end = table_.end();
-    for (int i = 0; it != end; ++it, ++i) {
-        if (i)
-            out << ", ";
-        out << it->prop_name();
-    }
-    out << ";\n"
-        << "\t\tColumns();\n"
-        << "\t\tvoid fill_table(Yb::Table &tbl);\n"
-        << "\t};\n"
-        << "\tstatic Columns c;\n";
-}
-
 void CppCodeGenerator::write_cpp_ctor_body(ostream &out, bool save_to_session)
 {
     out << "{\n";
@@ -739,9 +726,11 @@ void CppCodeGenerator::write_cpp_file(ostream &out)
 {
     out << "#include \"" << inc_prefix_ << class_name_ << ".h\"\n"
         << "#include <orm/DomainFactorySingleton.h>\n"
-        << "namespace Domain {\n\n";
+        << "namespace Domain {\n\n"
+        << class_name_ << "::Columns " << class_name_ << "::c;\n\n";
+
     write_cpp_meta_globals(out);
-    write_autogen(out, 4); // meta
+    write_autogen(out, 8); // meta
     out << "\n"
         << class_name_ << "::"
         << class_name_ << "(Yb::DomainObject *owner, const Yb::String &prop_name)\n"
@@ -809,13 +798,13 @@ void CppCodeGenerator::write_cpp_file(ostream &out)
         << "\t}\n"
         << "\treturn lst;\n"
         << "}\n\n"
-        << "void " << class_name_ << "Registrator::register_domain()\n{\n"
-        << "\tYb::theDomainFactory::instance().register_creator(_T(\"" << table_name_ << "\"),\n"
-        << "\t\tYb::CreatorPtr(new Yb::DomainCreator<" << class_name_ << ">()));\n"
-        << "}\n\n"
-        << class_name_ << "Registrator::"
-        << class_name_ << "Registrator()\n{\n"
-        << "\tregister_domain();\n}\n\n"
+        << "struct "<< class_name_ << "Registrator\n{\n"
+        << "\tstatic void register_domain() {\n"
+        << "\t\tYb::theDomainFactory::instance().register_creator(_T(\"" << table_name_ << "\"),\n"
+        << "\t\t\tYb::CreatorPtr(new Yb::DomainCreator<" << class_name_ << ">()));\n"
+        << "\t}\n"
+        << "\t" << class_name_ << "Registrator() { register_domain(); }\n"
+        << "};\n\n"
         << "static " << class_name_ << "Registrator " << class_name_ << "_registrator;\n\n"
         << "} // end namespace Domain\n\n"
         << "// vim:ts=4:sts=4:sw=4:et:\n";
