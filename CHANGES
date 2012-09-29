@@ -1,3 +1,20 @@
+0.3.2
+    * New more intuitive syntax for filters in queries:
+      it's done via operator overloading.
+    * Domain classes now have static variable 'c' for convenient
+      metadata referencing, useful e.g. for filtering.
+    * When querying a tuple of Domain classes there will be issued
+      a query with join of corresponding tables.
+    * Query object now has got methods .one() and .count()
+      in addition to old method .all().
+    * Added Tutorial3: Querying objects.
+    * Fix subtle bug with compiler reordering function calls that leads to
+      wrong parameter orders.
+    * Fix assertion with re-adding object into session.
+    * Fix: Session must always do rollback on releasing Engine.
+    * Auth sample: Improve App class, use theApp::instance().new_session()
+      for creating sessions.
+
 0.3.1
     * Integrate native SQLITE driver for use in non-QT builds.
       Now this driver is used in Windows examples by default.
