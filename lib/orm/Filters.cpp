@@ -1,4 +1,5 @@
 #include <orm/Filters.h>
+#include <orm/MetaData.h>
 #include <orm/SqlDriver.h>
 
 using namespace std;
@@ -13,7 +14,12 @@ Expression::Expression(const String &sql)
     : sql_(sql)
 {}
 
-Expression::Expression(SharedPtr<ExpressionBackend>::Type backend)
+Expression::Expression(const Column &col)
+    : backend_(ExprBEPtr(new ColumnExprBackend(col.table().name(), col.name(),
+        String())))
+{}
+
+Expression::Expression(ExprBEPtr backend)
     : backend_(backend)
 {}
 
@@ -232,7 +238,7 @@ ExpressionListBackend::generate_sql(Values *params) const
 {
     String sql;
     for (size_t i = 0; i < items_.size(); ++i) {
-        if (!sql.empty())
+        if (!str_empty(sql))
             sql += _T(", ");
         sql += sql_parentheses_as_needed(items_[i].generate_sql(params));
     }
@@ -437,6 +443,12 @@ const Expression
 operator == (const Expression &a, const Value &b)
 {
     return Expression(ExprBEPtr(new BinaryOpExprBackend(a, _T("="), ConstExpr(b))));
+}
+
+const Expression
+operator == (const Value &a, const Expression &b)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(ConstExpr(a), _T("="), b)));
 }
 
 const Expression

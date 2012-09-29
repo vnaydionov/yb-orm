@@ -367,6 +367,7 @@ CppCodeGenerator::CppCodeGenerator(const Schema &schema,
     autogen_handlers_[4] = &CppCodeGenerator::write_meta;
     autogen_handlers_[5] = &CppCodeGenerator::write_props_cons_calls;
     autogen_handlers_[6] = &CppCodeGenerator::do_write_cpp_ctor_body;
+    autogen_handlers_[7] = &CppCodeGenerator::write_domain_columns_decl;
 }
 
 void CppCodeGenerator::write_autogen_body(ostream &out, int code)
@@ -472,8 +473,9 @@ void CppCodeGenerator::write_h_file_header(ostream &out)
         << "typedef Yb::DomainObjHolder<" << class_name_ << "> " << class_name_ << "Holder;\n\n"
         << "class " << class_name_ << ": public Yb::DomainObject\n"
         << "{\n"
-        << "public:\n"
-        << "\tstatic const Yb::String get_table_name() { return _T(\""
+        << "public:\n";
+    write_autogen(out, 7); // write_domain_columns_decl
+    out << "\tstatic const Yb::String get_table_name() { return _T(\""
         << table_name_ << "\"); }\n"
         << "\ttypedef Yb::DomainResultSet<"
         << class_name_ << "> ResultSet;\n"
@@ -556,6 +558,28 @@ void CppCodeGenerator::write_cpp_meta_globals(ostream &out)
 void CppCodeGenerator::write_cpp_create_table_meta(ostream &out)
 {
     string xml_name = NARROW(table_.xml_name());
+    out << class_name_ << "::Columns::Columns()\n"
+        << "\t: ";
+    Columns::const_iterator i = table_.begin(), iend = table_.end();
+    for (; i != iend; ++i) {
+        const Column &c = *i;
+        if (i != table_.begin())
+            out << "\t, ";
+        out << NARROW(c.prop_name()) << "(_T(\"" << NARROW(c.name())
+            << "\"), " << type_code_by_handle(c.type()) << ", " << c.size()
+            << ", " << flags_code_by_handle(c.flags()) << ", Yb::Value(";
+        if (!c.default_value().is_null())
+            out << "_T(\"" << NARROW(c.default_value().as_string()) << "\")";
+        out << "), _T(\"" << NARROW(c.fk_table_name())
+            << "\"), _T(\"" << NARROW(c.fk_name())
+            << "\"), _T(\"" << NARROW(c.xml_name())
+            << "\"), _T(\"" << NARROW(c.prop_name()) << "\"))";
+        out << "\n";
+    }
+    out << "{}\n\n"
+        << "void " << Client::Columns::fill_table(Yb::Table &tbl)"
+        
+        << 
     out << "void " << class_name_ << "::create_tables_meta(Yb::Tables &tbls)\n"
         << "{\n"
         << "\tYb::Table::Ptr t(new Yb::Table(_T(\"" << table_name_
@@ -683,6 +707,23 @@ void CppCodeGenerator::do_write_cpp_ctor_body(ostream &out)
             }
             out << "));\n";
         }
+}
+
+void CppCodeGenerator::write_domain_columns_decl(ostream &out)
+{
+    out << "\tstruct Columns {\n"
+        << "\t\tYb::Column ";
+    Columns::const_iterator it = table_.begin(), end = table_.end();
+    for (int i = 0; it != end; ++it, ++i) {
+        if (i)
+            out << ", ";
+        out << it->prop_name();
+    }
+    out << ";\n"
+        << "\t\tColumns();\n"
+        << "\t\tvoid fill_table(Yb::Table &tbl);\n"
+        << "\t};\n"
+        << "\tstatic Columns c;\n";
 }
 
 void CppCodeGenerator::write_cpp_ctor_body(ostream &out, bool save_to_session)

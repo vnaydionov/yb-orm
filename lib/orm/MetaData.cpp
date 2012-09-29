@@ -549,6 +549,37 @@ Schema::join_expr(const Strings &tables) const
     return make_join_expr(Expression(tbl1), tbl1, ++it, tables.end());
 }
 
+const Expression operator == (const Column &a, const Expression &b)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T("="), b)));
+}
+
+const Expression operator == (const Expression &a, const Column &b)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        a, _T("="), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator == (const Column &a, const Value &b)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()), _T("="), ConstExpr(b))));
+}
+
+const Expression operator == (const Value &a, const Column &b)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ConstExpr(a), _T("="), ColumnExpr(b.table().name(), b.name()))));
+}
+
+const Expression operator == (const Column &a, const Column &b)
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(
+        ColumnExpr(a.table().name(), a.name()),
+        _T("="), ColumnExpr(b.table().name(), b.name()))));
+}
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

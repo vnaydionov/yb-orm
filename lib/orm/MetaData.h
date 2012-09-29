@@ -200,6 +200,7 @@ public:
     int get_depth() const { return depth_; }
     void add_column(const Column &column);
     Table &operator << (const Column &c) { add_column(c); return *this; }
+    Table &operator << (Column &c) { add_column(c); c.set_table(*this); return *this; }
     void set_seq_name(const String &seq_name);
     void set_autoinc(bool autoinc) { autoinc_ = autoinc; }
     void set_name(const String &name) { name_ = name; }
@@ -335,6 +336,12 @@ private:
 };
 
 const String mk_xml_name(const String &name, const String &xml_name);
+
+const Expression operator == (const Column &a, const Expression &b);
+const Expression operator == (const Expression &a, const Column &b);
+const Expression operator == (const Column &a, const Value &b);
+const Expression operator == (const Value &a, const Column &b);
+const Expression operator == (const Column &a, const Column &b);
 
 } // namespace Yb
 

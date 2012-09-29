@@ -99,11 +99,11 @@ int main()
 #if defined(YB_USE_TUPLE)
     DomainResultSet<boost::tuple<Order, Client> > rs0 =
         query<boost::tuple<Order, Client> >(session).filter_by(
-                //Client::c.id == c2->id                
+                c2->id == Client::c.id
                 //Client::c(_T("ID")) == c2->id
-                ColumnExpr(_T("T_CLIENT"), _T("ID")) == c2->id
-        ).order_by(ExpressionList(
-                ColumnExpr(_T("T_CLIENT"), _T("ID")),
+                //ColumnExpr(_T("T_CLIENT"), _T("ID")) == c2->id
+        ).order_by(ExpressionList(Client::c.id,
+                //ColumnExpr(_T("T_CLIENT"), _T("ID")),
                 ColumnExpr(_T("T_ORDER"), _T("ID")))).all();
     DomainResultSet<boost::tuple<Order, Client> >
         ::iterator p = rs0.begin(), pend = rs0.end();

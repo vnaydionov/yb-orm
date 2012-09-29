@@ -22,6 +22,8 @@ public:
 
 typedef SharedPtr<ExpressionBackend>::Type ExprBEPtr;
 
+class Column;
+
 class Expression
 {
 protected:
@@ -30,7 +32,8 @@ protected:
 public:
     Expression();
     Expression(const String &sql);
-    Expression(SharedPtr<ExpressionBackend>::Type backend);
+    Expression(const Column &col);
+    Expression(ExprBEPtr backend);
     const String generate_sql(Values *params) const;
     const String get_sql() const { return generate_sql(NULL); }
     bool is_empty() const { return str_empty(sql_) && !shptr_get(backend_); }
@@ -227,6 +230,7 @@ const Expression operator || (const Expression &a, const Expression &b);
 
 const Expression operator == (const Expression &a, const Expression &b);
 const Expression operator == (const Expression &a, const Value &b);
+const Expression operator == (const Value &a, const Expression &b);
 
 class FilterBackendByPK: public ExpressionBackend
 {
