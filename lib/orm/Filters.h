@@ -87,11 +87,13 @@ public:
 
 class UnaryOpExprBackend: public ExpressionBackend
 {
-    Expression expr_;
+    bool prefix_;
     String op_;
+    Expression expr_;
 public:
-    UnaryOpExprBackend(const String &op, const Expression &expr);
+    UnaryOpExprBackend(bool prefix, const String &op, const Expression &expr);
     const String generate_sql(Values *params) const;
+    bool prefix() const { return prefix_; }
     const String &op() const { return op_; }
     const Expression &expr() const { return expr_; }
 };
@@ -99,7 +101,8 @@ public:
 class UnaryOpExpr: public Expression
 {
 public:
-    UnaryOpExpr(const String &op, const Expression &expr);
+    UnaryOpExpr(bool prefix, const String &op, const Expression &expr);
+    bool prefix() const;
     const String &op() const;
     const Expression &expr() const;
 };
