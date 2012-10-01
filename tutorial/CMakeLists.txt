@@ -154,6 +154,10 @@ add_executable (tut2 tut2.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp)
 
+add_executable (tut3 tut3.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp)
+
 set_source_files_properties (
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp
@@ -173,6 +177,8 @@ add_dependencies (tut1 gen_cpp_tut1)
 add_dependencies (tut1 gen_sql_tut1)
 add_dependencies (tut2 gen_cpp_tut1)
 add_dependencies (tut2 gen_sql_tut1)
+add_dependencies (tut3 gen_cpp_tut1)
+add_dependencies (tut3 gen_sql_tut1)
 
 target_link_libraries (tut1 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
     ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
@@ -182,6 +188,10 @@ target_link_libraries (tut2 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
     ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
     ${SQLITE3_LIBS})
 
-install (TARGETS tut1 tut2 DESTINATION examples)
+target_link_libraries (tut3 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
+    ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
+    ${SQLITE3_LIBS})
+
+install (TARGETS tut1 tut2 tut3 DESTINATION examples)
 install (FILES tut1.xml ${CMAKE_CURRENT_BINARY_DIR}/tut1.sql DESTINATION examples)
 
