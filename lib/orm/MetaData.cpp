@@ -470,8 +470,8 @@ Schema::fill_map_tree_by_meta(const set<String> &unique_tables, StrMap &tree_map
             tree_map.insert(StrMap::value_type(_T(""), t.name()));
     }
     // little hack, if no a root found(parent '' in map), the tree contains cycle
-    if (tree_map.find(_T("")) == tree_map.end())
-        throw IntegrityCheckFailed(_T("Cyclic references in DB schema found"));
+    //if (tree_map.find(_T("")) == tree_map.end())
+    //    throw IntegrityCheckFailed(_T("Cyclic references in DB schema found"));
 }
 
 void

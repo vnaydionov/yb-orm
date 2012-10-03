@@ -67,7 +67,6 @@ class Session: NonCopyable {
     const Schema &schema_;
     std::auto_ptr<EngineBase> engine_;
 
-    void debug(const String &s) { if (logger_.get()) logger_->debug(NARROW(s)); }
     DataObjectPtr add_to_identity_map(DataObjectPtr obj, bool return_found);
     void flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs);
     void flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs);
@@ -75,6 +74,7 @@ class Session: NonCopyable {
     void flush_update(IdentityMap &idmap_copy);
     void flush_delete(IdentityMap &idmap_copy);
 public:
+    void debug(const String &s) { if (logger_.get()) logger_->debug(NARROW(s)); }
     Session(const Schema &schema, EngineBase *engine = NULL);
     ~Session();
     const Schema &schema() const { return schema_; }
@@ -209,6 +209,7 @@ private:
     }
     void set_status(Status st) { status_ = st; }
     void depth(int d) { depth_ = d; }
+    void populate_all_master_relations();
 public:
     static void link(DataObject *master, Ptr slave,
                      const String &relation_name, int mode);
@@ -275,6 +276,7 @@ public:
     }
     static Ptr get_master(Ptr obj, const String &relation_name = _T(""));
     static bool has_master(Ptr obj, const String &relation_name = _T(""));
+    RelationObject *get_slaves(const Relation &r);
     RelationObject *get_slaves(const String &relation_name = _T(""));
     void calc_depth(int d, DataObject *parent = NULL);
 };

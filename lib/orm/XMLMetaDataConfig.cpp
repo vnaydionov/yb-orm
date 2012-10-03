@@ -153,7 +153,7 @@ Relation::Ptr XMLMetaDataConfig::parse_relation(ElementTree::ElementPtr node)
             throw ParseError(String(_T("Unknown element '")) + (*child)->name_ +
                     _T("' found during parse of element 'relation'"));
     }
-    Relation::Ptr rel(new Relation(rtype, one, a1, many, a2));
+    Relation::Ptr rel(new Relation(rtype, one, a1, many, a2, cascade_code));
     return rel;
 }
 

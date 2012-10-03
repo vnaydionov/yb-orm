@@ -302,34 +302,43 @@ public:
 
 template <class DObj>
 class DomainObjHolder {
-    std::auto_ptr<DObj> p_;
+    mutable std::auto_ptr<DObj> p_;
+    Yb::DomainObject *owner_;
+    const Yb::String prop_name_;
 public:
     DomainObjHolder(Yb::DomainObject *owner, const Yb::String &prop_name)
-        : p_(new DObj(owner, prop_name)) {}
+        : owner_(owner)
+        , prop_name_(prop_name)
+    {}
     DomainObjHolder()
-        : p_(new DObj) {}
+        : p_(new DObj), owner_(NULL) {}
     explicit DomainObjHolder(Yb::Session &session)
-        : p_(new DObj(session)) {}
+        : p_(new DObj(session)), owner_(NULL) {}
     explicit DomainObjHolder(Yb::DataObject::Ptr d)
-        : p_(new DObj(d)) {}
+        : p_(new DObj(d)), owner_(NULL) {}
     DomainObjHolder(Yb::Session &session, const Yb::Key &key)
-        : p_(new DObj(session, key)) {}
+        : p_(new DObj(session, key)), owner_(NULL) {}
     DomainObjHolder(Yb::Session &session, Yb::LongInt id)
-        : p_(new DObj(session, id)) {}
+        : p_(new DObj(session, id)), owner_(NULL) {}
     DomainObjHolder(const DomainObjHolder &other)
-        : p_(new DObj(other.p_->get_data_object())) {}
+        : p_(new DObj(other._get_p()->get_data_object())), owner_(NULL) {}
     DomainObjHolder &operator=(const DomainObjHolder &other)
     {
         if (this != &other) {
-            *p_ = *other.p_;
+            *_get_p() = *other._get_p();
         }
         return *this;
     }
     bool operator==(const DomainObjHolder &other) const
     {
-        return *p_ == *other.p_;
+        return *_get_p() == *other._get_p();
     }
-    DObj *operator->() const { return p_.get(); }
+    DObj *_get_p() const {
+        if (!p_.get() && owner_)
+            p_.reset(new DObj(owner_, prop_name_));
+        return p_.get();
+    }
+    DObj *operator->() const { return _get_p(); }
 };
 
 template <class R>

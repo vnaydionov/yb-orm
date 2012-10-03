@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<schema>
+    <table name="tbl_product_group" sequence="seq_prod_group"
+            class="ProductGroup" xml-name="product-group">
+        <column name="id" type="longint">
+            <primary-key />
+        </column>
+        <column name="parent_id" type="longint">
+            <foreign-key table="tbl_product_group"/>
+        </column>
+        <column name="name" type="string" size="100" null="false" />
+    </table>
+    <table name="tbl_product" sequence="seq_prod_group"
+            class="Product" xml-name="product">
+        <column name="id" type="longint">
+            <primary-key />
+        </column>
+        <column name="parent_id" type="longint">
+            <foreign-key table="tbl_product_group"/>
+        </column>
+        <column name="name" type="string" size="100" null="false" />
+        <column name="price" type="decimal" null="false" />
+    </table>
+    <relation type="one-to-many" cascade="delete">
+        <one class="ProductGroup" property="children" />
+        <many class="ProductGroup" property="parent" />
+    </relation>
+    <relation type="one-to-many" cascade="delete">
+        <one class="ProductGroup" property="products" />
+        <many class="Product" property="parent" />
+    </relation>
+</schema>

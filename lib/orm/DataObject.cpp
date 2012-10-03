@@ -670,6 +670,26 @@ bool DataObject::has_master(
     return false;
 }
 
+RelationObject *DataObject::get_slaves(const Relation &r)
+{
+    // Try to find relation object in master's relations
+    RelationObject *ro = NULL;
+    MasterRelations::iterator j = master_relations_.begin(),
+        jend = master_relations_.end();
+    for (; j != jend; ++j)
+        if (&(*j)->relation_info() == &r) {
+            ro = shptr_get(*j);
+            break;
+        }
+    // Create one if it doesn't exist, master will own it
+    if (!ro) {
+        RelationObject::Ptr new_ro = RelationObject::create_new(r, this);
+        master_relations_.insert(new_ro);
+        ro = shptr_get(new_ro);
+    }
+    return ro;
+}
+
 RelationObject *DataObject::get_slaves(
     const String &relation_name)
 {
@@ -678,22 +698,20 @@ RelationObject *DataObject::get_slaves(
     const Relation *r = schema.find_relation
         (table_.class_name(), relation_name, _T(""), 0);
     YB_ASSERT(r != NULL);
-    // Try to find relation object in master's relations
-    RelationObject *ro = NULL;
-    MasterRelations::iterator j = master_relations_.begin(),
-        jend = master_relations_.end();
-    for (; j != jend; ++j)
-        if (&(*j)->relation_info() == r) {
-            ro = shptr_get(*j);
-            break;
+    return get_slaves(*r);
+}
+
+void
+DataObject::populate_all_master_relations()
+{
+    Schema::RelMap::const_iterator
+        it = table_.schema().rels_lower_bound(table_.class_name()),
+        end = table_.schema().rels_upper_bound(table_.class_name());
+    for (; it != end; ++it) {
+        if (it->second->get_table(0) == &table_) {
+            get_slaves(*it->second);
         }
-    // Create one if it doesn't exist, master will own it
-    if (!ro) {
-        RelationObject::Ptr new_ro = RelationObject::create_new(*r, this);
-        master_relations_.insert(new_ro);
-        ro = shptr_get(new_ro);
     }
-    return ro;
 }
 
 DataObject::~DataObject()
@@ -727,8 +745,10 @@ void DataObject::refresh_master_fkeys()
 
 void DataObject::delete_object(DeletionMode mode, int depth)
 {
-    if (mode != DelUnchecked)
+    if (mode != DelUnchecked) {
+        populate_all_master_relations();
         delete_master_relations(DelDryRun, depth + 1);
+    }
     if (mode != DelDryRun) {
         delete_master_relations(DelUnchecked, depth + 1);
         exclude_from_slave_relations();
@@ -784,6 +804,8 @@ void RelationObject::calc_depth(int d, DataObject *parent)
 
 void RelationObject::delete_master(DeletionMode mode, int depth)
 {
+    if (mode == DelDryRun && master_object_->session())
+        lazy_load_slaves();
     if (relation_info_.cascade() == Relation::Nullify) {
         if (mode != DelDryRun) {
             SlaveObjects::iterator i = slave_objects_.begin(),
@@ -860,8 +882,12 @@ void RelationObject::lazy_load_slaves()
         ValueMap pk_values;
         j = slave_tbl.begin(), jend = slave_tbl.end();
         for (; j != jend; ++j)
-            if (j->is_pk())
-                pk_values[j->name()] = find_in_row(*k, j->name())->second;
+            if (j->is_pk()) {
+                //session.debug(_T("looking for ") + j->name());
+                Row::const_iterator it = find_in_row(*k, j->name());
+                YB_ASSERT(it != k->end());
+                pk_values[j->name()] = it->second;
+            }
         Key pkey(slave_tbl.name(), pk_values);
         DataObject::Ptr o = session.get_lazy(pkey);
         o->fill_from_row(*k);
