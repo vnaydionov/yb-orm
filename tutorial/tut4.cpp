@@ -14,7 +14,7 @@ int main()
     LogAppender appender(cerr);
     try {
         auto_ptr<SqlConnection> conn(new SqlConnection(
-                    "sqlite+sqlite:///home/vaclav/work/test1_db.db"));
+                    "sqlite+sqlite:///Users/User/work/test1.db"));
         Engine engine(Engine::MANUAL, conn);
         engine.set_logger(ILogger::Ptr(new Logger(&appender)));
         engine.set_echo(true);

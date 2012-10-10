@@ -22,7 +22,7 @@ block_sigpipe()
 #if !(defined(__WIN32__) || defined(_WIN32))
     struct sigaction sa;
     sa.sa_handler = SIG_IGN;
-    sa.sa_flags = SA_INTERRUPT | SA_NODEFER;
+    sa.sa_flags = SA_NODEFER;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGPIPE, &sa, 0);
 #endif

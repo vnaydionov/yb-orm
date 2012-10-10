@@ -22,11 +22,11 @@ add_dependencies (auth generate_domain)
 
 if (UNIX)
 target_link_libraries (auth ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
-    ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
+    ${YB_BOOST_LIBS} ${ODBC_LIBS}
     ${SQLITE3_LIBS} ${QT_LIBRARIES})
 else ()
 target_link_libraries (auth ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
-    ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
+    ${YB_BOOST_LIBS} ${ODBC_LIBS}
     ${SQLITE3_LIBS} ${QT_LIBRARIES} ${SOCKET_LIB} ${UUID_LIB})
 endif ()
 

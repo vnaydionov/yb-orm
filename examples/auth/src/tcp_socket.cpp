@@ -56,7 +56,11 @@ TcpSocket::get_last_error()
     CharToOemBuff(msg_buf, buf, buf_sz);
     LocalFree(msg_buf);
 #else
+#if ! _GNU_SOURCE
+    strerror_r(errno, buf, buf_sz);
+#else
     strncpy(buf, strerror_r(errno, buf, buf_sz), buf_sz);
+#endif
 #endif
     buf[buf_sz - 1] = 0;
     return string(buf);

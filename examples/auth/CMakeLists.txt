@@ -30,10 +30,15 @@ else ()
     set (BOOST_LIBRARYDIR "c:/yborm/lib")
 endif ()
 
-find_package (Boost 1.33.1 COMPONENTS thread date_time)
+find_package (Boost 1.33.1 COMPONENTS system thread date_time)
 if ((NOT Boost_DATE_TIME_LIBRARY) OR (NOT Boost_THREAD_LIBRARY))
     message (FATAL_ERROR "Boost not found")
 endif ()
+if (Boost_SYSTEM_LIBRARY)
+    set (YB_BOOST_LIBS ${Boost_SYSTEM_LIBRARY})
+endif ()
+set (YB_BOOST_LIBS ${YB_BOOST_LIBS} ${Boost_THREAD_LIBRARY}
+                   ${Boost_DATE_TIME_LIBRARY})
 
 # find includes
 

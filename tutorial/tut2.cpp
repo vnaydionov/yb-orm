@@ -9,7 +9,7 @@ int main()
 {
     try {
         auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(
-                    "mysql://test1:test1_pwd@test1_db"));
+                    "sqlite+sqlite:///Users/User/work/test1.db"));
         Yb::Engine engine(Yb::Engine::MANUAL, conn);
         Yb::Session session(Yb::init_default_meta(), &engine);
 

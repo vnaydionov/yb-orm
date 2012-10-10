@@ -32,8 +32,7 @@ endif ()
 add_library (yborm ${SOURCES_CPP})
 
 target_link_libraries (yborm ybutil ${LIBXML2_LIBS}
-    ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
-    ${SQLITE3_LIBS} ${QT_LIBRARIES})
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${QT_LIBRARIES})
 
 install (TARGETS yborm DESTINATION lib)
 install (FILES ${SOURCES_H} DESTINATION include/yb/orm)

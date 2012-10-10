@@ -26,10 +26,15 @@ else ()
     set (BOOST_LIBRARYDIR "c:/yborm/lib")
 endif ()
 
-find_package (Boost 1.33.1 COMPONENTS thread date_time)
+find_package (Boost 1.33.1 COMPONENTS system thread date_time)
 if ((NOT Boost_DATE_TIME_LIBRARY) OR (NOT Boost_THREAD_LIBRARY))
     message (FATAL_ERROR "Boost not found")
 endif ()
+if (Boost_SYSTEM_LIBRARY)
+    set (YB_BOOST_LIBS ${Boost_SYSTEM_LIBRARY})
+endif ()
+set (YB_BOOST_LIBS ${YB_BOOST_LIBS} ${Boost_THREAD_LIBRARY}
+                   ${Boost_DATE_TIME_LIBRARY})
 
 # find includes
 
@@ -158,20 +163,33 @@ add_executable (tut3 tut3.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp)
 
+add_executable (tut4 tut4.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/ProductGroup.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Product.cpp)
+
 set_source_files_properties (
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/ProductGroup.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Product.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/tut1.sql
-    ${CMAKE_CURRENT_BINARY_DIR}/tut2.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/tut4.sql
     PROPERTIES GENERATED 1)
 
 add_custom_command (
     OUTPUT tut1.sql
-    COMMAND ${YBORM_ROOT}/bin/yborm_gen --ddl ${PROJECT_SOURCE_DIR}/tut1.xml MYSQL ${CMAKE_CURRENT_BINARY_DIR}/tut1.sql
+    COMMAND ${YBORM_ROOT}/bin/yborm_gen --ddl ${PROJECT_SOURCE_DIR}/tut1.xml SQLITE ${CMAKE_CURRENT_BINARY_DIR}/tut1.sql
     DEPENDS ${PROJECT_SOURCE_DIR}/tut1.xml
 )
 
+add_custom_command (
+    OUTPUT tut4.sql
+    COMMAND ${YBORM_ROOT}/bin/yborm_gen --ddl ${PROJECT_SOURCE_DIR}/tut4.xml SQLITE ${CMAKE_CURRENT_BINARY_DIR}/tut4.sql
+    DEPENDS ${PROJECT_SOURCE_DIR}/tut4.xml
+)
+
 add_custom_target (gen_sql_tut1 DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/tut1.sql)
+add_custom_target (gen_sql_tut4 DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/tut4.sql)
 
 add_dependencies (tut1 gen_cpp_tut1)
 add_dependencies (tut1 gen_sql_tut1)
@@ -179,19 +197,22 @@ add_dependencies (tut2 gen_cpp_tut1)
 add_dependencies (tut2 gen_sql_tut1)
 add_dependencies (tut3 gen_cpp_tut1)
 add_dependencies (tut3 gen_sql_tut1)
+add_dependencies (tut4 gen_cpp_tut4)
+add_dependencies (tut4 gen_sql_tut4)
 
 target_link_libraries (tut1 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
-    ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
-    ${SQLITE3_LIBS})
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS})
 
 target_link_libraries (tut2 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
-    ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
-    ${SQLITE3_LIBS})
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS})
 
 target_link_libraries (tut3 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
-    ${Boost_DATE_TIME_LIBRARY} ${Boost_THREAD_LIBRARY} ${ODBC_LIBS}
-    ${SQLITE3_LIBS})
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS})
 
-install (TARGETS tut1 tut2 tut3 DESTINATION examples)
-install (FILES tut1.xml ${CMAKE_CURRENT_BINARY_DIR}/tut1.sql DESTINATION examples)
+target_link_libraries (tut4 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS})
+
+install (TARGETS tut1 tut2 tut3 tut4 DESTINATION examples)
+install (FILES tut1.xml tut4.xml ${CMAKE_CURRENT_BINARY_DIR}/tut1.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/tut4.sql  DESTINATION examples)
 

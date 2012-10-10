@@ -7,8 +7,8 @@ include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES}
 add_library (ybutil String.cpp Exception.cpp Thread.cpp decimal.cpp
     DataTypes.cpp str_utils.cpp xml_writer.cpp xmlnode.cpp nlogger.cpp)
 
-target_link_libraries (ybutil ${LIBXML2_LIBS} ${Boost_DATE_TIME_LIBRARY}
-    ${Boost_THREAD_LIBRARY} ${QT_LIBRARIES})
+target_link_libraries (ybutil ${LIBXML2_LIBS}
+    ${YB_BOOST_LIBS} ${QT_LIBRARIES})
 
 install (TARGETS ybutil DESTINATION lib)
 install (FILES Utility.h String.h Exception.h Thread.h decimal.h
