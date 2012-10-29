@@ -83,7 +83,7 @@ public:
     {
         string xml = 
             "<table name='A' sequence='S'>"
-            "<column type='string' name='ASTR' size='10' />"
+            "<column type='string' name='ASTR' size='10' default='zzz'/>"
             "<column type='longint' name='B_ID'>"
             "<foreign-key table='T_B' key='ID'/></column>"
             "</table>";
@@ -96,6 +96,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("ASTR"), NARROW(it->name()));
         CPPUNIT_ASSERT_EQUAL(10, (int)it->size());
         CPPUNIT_ASSERT_EQUAL((int)Value::STRING, it->type());
+        CPPUNIT_ASSERT_EQUAL(string("zzz"), NARROW(it->default_value().as_string()));
         ++it;
         CPPUNIT_ASSERT_EQUAL(string("B_ID"), NARROW(it->name()));
         CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(it->fk_name()));

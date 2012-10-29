@@ -708,6 +708,9 @@ void CppCodeGenerator::do_write_cpp_ctor_body(ostream &out)
                 case Value::DATETIME:
                     out << "Yb::now()";
                     break;
+                case Value::STRING:
+                    out << "_T(\"" << default_value << "\")";
+                    break;
             }
             out << "));\n";
         }
