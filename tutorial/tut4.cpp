@@ -14,7 +14,7 @@ int main()
     LogAppender appender(cerr);
     try {
         auto_ptr<SqlConnection> conn(new SqlConnection(
-                    "sqlite+sqlite:///Users/User/work/test1.db"));
+                    "sqlite+sqlite:///home/vaclav/work/test1.db"));
         Engine engine(Engine::MANUAL, conn);
         engine.set_logger(ILogger::Ptr(new Logger(&appender)));
         engine.set_echo(true);
@@ -44,6 +44,7 @@ int main()
         {
         Session session(init_default_meta(), &engine);
         ProductGroupHolder pg1(session, root);
+        cout << pg1->parent->id.is_null() << endl;
         pg1->delete_object();
 
         session.commit();

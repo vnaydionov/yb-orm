@@ -396,29 +396,31 @@ Schema::find_relation(const String &class1,
                       int prop_side) const
 {
     const Relation *r = NULL;
-    RelMap::const_iterator
-        it = rels_lower_bound(class1),
-        end = rels_upper_bound(class1);
-    for (; it != end; ++it)
+    //YB_ASSERT(!str_empty(relation_name) || !str_empty(class2));
+    RelMap::const_iterator it = rels_lower_bound(class1),
+                           end = rels_upper_bound(class1);
+    for (; it != end; ++it) {
+        const Relation *t = shptr_get(it->second);
         if (str_empty(class2) ||
-            (it->second->side(0) == class1 &&
-             it->second->side(1) == class2) ||
-            (it->second->side(0) == class2 &&
-             it->second->side(1) == class1))
+            t->side(1) == class2 && t->side(0) == class1 ||
+            t->side(0) == class2 && t->side(1) == class1)
         {
             if (!r) {
                 if (str_empty(relation_name) ||
-                    (it->second->has_attr(prop_side, _T("property")) &&
-                     it->second->attr(prop_side, _T("property")) == relation_name))
+                    (t->has_attr(prop_side, _T("property")) &&
+                     t->attr(prop_side, _T("property")) == relation_name))
                 {
-                    r = shptr_get(it->second);
+                    r = t;
                 }
             }
             else {
-                YB_ASSERT(it->second->has_attr(prop_side, _T("property")) &&
-                          it->second->attr(prop_side, _T("property")) != relation_name);
+                YB_ASSERT(t != r ||
+                          t->has_attr(prop_side, _T("property")) &&
+                          t->attr(prop_side, _T("property")) != relation_name);
             }
         }
+    }
+    //YB_ASSERT(r);
     return r;
 }
 

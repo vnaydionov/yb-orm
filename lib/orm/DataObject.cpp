@@ -211,8 +211,8 @@ DataObject::Ptr Session::get_lazy(const Key &key)
     for (; it != end; ++it)
         if (!it->second.is_null())
             empty_key = false;
-    if (empty_key)
-        throw NullPK(key.first);
+    //if (empty_key)
+    //    throw NullPK(key.first);
     DataObjectPtr new_obj =
         DataObject::create_new(schema_[key.first], DataObject::Ghost);
     for (it = key.second.begin(); it != end; ++it)
