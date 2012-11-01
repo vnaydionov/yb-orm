@@ -279,6 +279,7 @@ public:
     RelationObject *get_slaves(const Relation &r);
     RelationObject *get_slaves(const String &relation_name = _T(""));
     void calc_depth(int d, DataObject *parent = NULL);
+    void dump_tree(std::ostream &out, int level = 0);
 };
 
 class RelationObject: NonCopyable {
@@ -321,6 +322,7 @@ public:
 
     void delete_master(DeletionMode mode, int depth);
     void exclude_slave(DataObject *obj);
+    void dump_tree(std::ostream &out, int level);
 };
 
 } // namespace Yb

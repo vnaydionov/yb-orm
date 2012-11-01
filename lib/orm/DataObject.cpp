@@ -745,8 +745,19 @@ void DataObject::refresh_master_fkeys()
 
 void DataObject::delete_object(DeletionMode mode, int depth)
 {
+    if (status_ == ToBeDeleted || status_ == Deleted)
+        return;
     if (mode != DelUnchecked) {
         populate_all_master_relations();
+    }
+    if (session_) {
+        std::ostringstream out;
+        out << "delete_object mode=" << mode << " depth=" << depth
+            << " status=" << status_ << "\n";
+        dump_tree(out);
+        session_->debug(WIDEN(out.str()));
+    }
+    if (mode != DelUnchecked) {
         delete_master_relations(DelDryRun, depth + 1);
     }
     if (mode != DelDryRun) {
@@ -789,6 +800,27 @@ void DataObject::set_free_from(RelationObject *rel)
     Strings::const_iterator i = parts.begin(), end = parts.end();
     for (; i != end; ++i)
         set(*i, Value());
+}
+
+void DataObject::dump_tree(std::ostream &out, int level)
+{
+    for (int i = 0; i < level*4; ++i)
+        out << " ";
+    out << NARROW(table_.name()) << "(";
+    for (int i = 0; i < values_.size(); ++i) {
+        if (i)
+            out << ", ";
+        String s = _T("NULL");
+        if (!values_[i].is_null())
+            s = values_[i].as_string();
+        out << NARROW(table_[i].name()) << ":"
+            << NARROW(s);
+    }
+    out << ")\n";
+    MasterRelations::iterator i = master_relations_.begin(),
+        iend = master_relations_.end();
+    for (; i != iend; ++i)
+        (*i)->dump_tree(out, level + 1);
 }
 
 void RelationObject::calc_depth(int d, DataObject *parent)
@@ -890,8 +922,11 @@ void RelationObject::lazy_load_slaves()
             }
         Key pkey(slave_tbl.name(), pk_values);
         DataObject::Ptr o = session.get_lazy(pkey);
-        o->fill_from_row(*k);
-        DataObject::link(master_object_, o, relation_info_);
+        if (o->status() == DataObject::Ghost)
+            o->fill_from_row(*k);
+        if (o->status() != DataObject::ToBeDeleted
+                && o->status() != DataObject::Deleted)
+            DataObject::link(master_object_, o, relation_info_);
     }
     status_ = Sync;
 }
@@ -920,8 +955,23 @@ void RelationObject::exclude_slave(DataObject *obj)
         if (shptr_get(*i) == obj)
             break;
     }
-    YB_ASSERT(i != slave_objects_.end());
-    slave_objects_.erase(i);
+    if (i != iend)
+        slave_objects_.erase(i);
+}
+
+void RelationObject::dump_tree(std::ostream &out, int level)
+{
+    for (int i = 0; i < level*4; ++i)
+        out << " ";
+    out << "[\n";
+    SlaveObjects::iterator i = slave_objects_.begin(),
+        iend = slave_objects_.end();
+    for (; i != iend; ++i) {
+        (*i)->dump_tree(out, level + 1);
+    }
+    for (int i = 0; i < level*4; ++i)
+        out << " ";
+    out << "]\n";
 }
 
 } // namespace Yb
