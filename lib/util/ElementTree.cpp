@@ -1,5 +1,5 @@
 
-#include <util/xmlnode.h>
+#include <util/ElementTree.h>
 #if defined(YB_USE_WX)
 #include <wx/mstream.h>
 #include <wx/xml/xml.h>
@@ -90,13 +90,13 @@ Element::find_all(const Yb::String &path)
 }
 
 void
-Element::serialize(Yb::Writer::Document &doc) const
+Element::serialize(Yb::XmlWriter::Document &doc) const
 {
-    Yb::Writer::Element e(doc, name_);
+    Yb::XmlWriter::Element e(doc, name_);
     StringDict::const_iterator q = attrib_.begin(),
         qend = attrib_.end();
     for (; q != qend; ++q)
-        Yb::Writer::Attribute a(e, q->first, q->second);
+        Yb::XmlWriter::Attribute a(e, q->first, q->second);
     size_t i = 0;
     for (; i < children_.size(); ++i) {
         if (i < text_.size())
@@ -110,7 +110,7 @@ Element::serialize(Yb::Writer::Document &doc) const
 const std::string
 Element::serialize() const
 {
-    Yb::Writer::Document doc;
+    Yb::XmlWriter::Document doc;
     serialize(doc);
     return doc.end_document();
 }

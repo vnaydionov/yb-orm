@@ -1,5 +1,5 @@
-#ifndef YB__XMLNODE__INCLUDED
-#define YB__XMLNODE__INCLUDED
+#ifndef YB__UTIL__ELEMENT_TREE__INCLUDED
+#define YB__UTIL__ELEMENT_TREE__INCLUDED
 
 #include <stdexcept>
 #include <memory>
@@ -9,7 +9,7 @@
 #include <util/Utility.h>
 #include <util/String.h>
 #include <util/DataTypes.h>
-#include <util/xml_writer.h>
+#include <util/XmlWriter.h>
 
 namespace Yb {
 
@@ -45,7 +45,7 @@ struct Element
     const Yb::String get_attr(const Yb::String &name) const;
     ElementPtr find_first(const Yb::String &path);
     ElementsPtr find_all(const Yb::String &path);
-    void serialize(Yb::Writer::Document &doc) const;
+    void serialize(Yb::XmlWriter::Document &doc) const;
     const std::string serialize() const;
 };
 
@@ -57,5 +57,5 @@ ElementPtr parse(std::istream &inp);
 
 } // end of namespace Yb
 
-#endif // YB__XMLNODE__INCLUDED
+#endif // YB__UTIL__ELEMENT_TREE__INCLUDED
 // vim:ts=4:sts=4:sw=4:et:

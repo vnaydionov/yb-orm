@@ -3,7 +3,7 @@
 #define YB__ORM__DOMAIN_OBJ__INCLUDED
 
 #include <stdexcept>
-#include <orm/XMLNode.h>
+#include <orm/XMLizer.h>
 #include <orm/DataObject.h>
 #if defined(YB_USE_TUPLE)
 #include <boost/tuple/tuple.hpp>

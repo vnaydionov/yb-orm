@@ -1,5 +1,5 @@
 #include <fstream>
-#include <util/xmlnode.h>
+#include <util/ElementTree.h>
 #include <util/str_utils.hpp>
 #include <orm/Value.h>
 #include <orm/XMLMetaDataConfig.h>

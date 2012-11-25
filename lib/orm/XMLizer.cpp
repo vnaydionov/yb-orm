@@ -1,4 +1,4 @@
-#include <orm/XMLNode.h>
+#include <orm/XMLizer.h>
 #include <orm/DomainFactorySingleton.h>
 
 using namespace std;

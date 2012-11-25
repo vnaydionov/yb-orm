@@ -1,9 +1,9 @@
 // -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
-#ifndef YB__ORM__XML_NODE__INCLUDED
-#define YB__ORM__XML_NODE__INCLUDED
+#ifndef YB__ORM__XMLIZER__INCLUDED
+#define YB__ORM__XMLIZER__INCLUDED
 
 #include <vector>
-#include <util/xmlnode.h>
+#include <util/ElementTree.h>
 #include <orm/DataObject.h>
 #include <orm/SqlDriver.h>
 
@@ -44,4 +44,4 @@ public:
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__XMLNODE__INCLUDED
+#endif // YB__ORM__XMLIZER__INCLUDED

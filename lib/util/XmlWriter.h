@@ -7,7 +7,7 @@
 
 namespace Yb {
 
-namespace Writer {
+namespace XmlWriter {
 
 class Document: NonCopyable
 {
@@ -93,7 +93,7 @@ public:
     }
 };
 
-} // end of namespace Writer
+} // end of namespace XmlWriter
 
 } // end of namespace Yb
 

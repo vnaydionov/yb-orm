@@ -1,8 +1,8 @@
-#include <util/xml_writer.h>
+#include <util/XmlWriter.h>
 
 namespace Yb {
 
-namespace Writer {
+namespace XmlWriter {
 
 using namespace std;
 
@@ -146,7 +146,7 @@ void Element::set_content (Yb::String const & content)
     doc_.write_string (content);
 }
 
-} // end of namespace Writer
+} // end of namespace XmlWriter
 
 } // end of namespace Yb
 

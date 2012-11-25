@@ -1,7 +1,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
 #include <util/str_utils.hpp>
-#include <orm/XMLNode.h>
+#include <orm/XMLizer.h>
 #include <orm/MetaDataSingleton.h>
 #include <orm/DomainFactorySingleton.h>
 #include <orm/DomainObj.h>

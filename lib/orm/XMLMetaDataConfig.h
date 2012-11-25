@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 #include <algorithm>
-#include <util/xmlnode.h>
+#include <util/ElementTree.h>
 #include <util/str_utils.hpp>
 #include <orm/MetaData.h>
 

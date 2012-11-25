@@ -25,8 +25,8 @@ ybutilinclude_HEADERS = \
 	decimal.h \
 	DataTypes.h \
 	str_utils.hpp \
-	xml_writer.h \
-	xmlnode.h \
+	XmlWriter.h \
+	ElementTree.h \
 	nlogger.h \
 	param.hpp \
 	stacktrace.h \
@@ -41,8 +41,8 @@ libybutil_la_SOURCES = \
 	decimal.cpp \
 	DataTypes.cpp \
 	str_utils.cpp \
-	xml_writer.cpp \
-	xmlnode.cpp \
+	XmlWriter.cpp \
+	ElementTree.cpp \
 	nlogger.cpp
 
 libybutil_la_LDFLAGS = -version-info 0:0:0
