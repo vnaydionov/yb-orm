@@ -67,7 +67,7 @@ void DomainObject::save_registered(Schema &schema)
 void DomainObject::check_ptr() const
 {
     if (!shptr_get(d_))
-        throw NoRawData();
+        throw NoDataObject();
 }
 
 DomainObject::DomainObject(const Table &table,
@@ -78,10 +78,8 @@ DomainObject::DomainObject(const Table &table,
 
 DataObject::Ptr DomainObject::get_data_object(bool check) const
 {
-    if (owner_) {
-        owner_->check_ptr();
-        return DataObject::get_master(owner_->d_, prop_name_);
-    }
+    if (owner_)
+        return DataObject::get_master(owner_->get_data_object(check), prop_name_);
     if (check)
         check_ptr();
     return d_;

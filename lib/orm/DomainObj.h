@@ -11,9 +11,9 @@
 
 namespace Yb {
 
-class NoRawData: public ORMError {
+class NoDataObject: public ORMError {
 public:
-    NoRawData()
+    NoDataObject()
         : ORMError(_T("No ROW data is associated with DomainObject"))
     {}
 };
@@ -197,7 +197,7 @@ public:
         if (owner_)
             ro = owner_->get_slaves_ro(prop_name_);
         if (check && !ro)
-            throw NoRawData();
+            throw NoDataObject();
         return ro;
     }
     DataObject::Ptr master() const {
