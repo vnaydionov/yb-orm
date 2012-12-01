@@ -217,7 +217,7 @@ public:
     iterator find(const T &x) {
         RelationObject::SlaveObjects::iterator 
             it = load_if_needed(relation_object())
-                ->slave_objects().find(x.data_object());
+                ->slave_objects().find(x.get_data_object());
         return iterator(it);
     }
     const_iterator begin() const {
@@ -244,7 +244,7 @@ public:
         iterator it = find(x);
         if (it != end())
             return it;
-        DataObject::link_master_to_slave(master(), x.data_object(),
+        DataObject::link_master_to_slave(master(), x.get_data_object(),
                                          ro->relation_info().attr(0, _T("property")));
         return find(x);
     }
