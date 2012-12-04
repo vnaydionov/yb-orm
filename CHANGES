@@ -1,3 +1,14 @@
+
+0.3.3
+    * Replace method data_object() with get_data_object() in methods find() and insert().
+    * Rename some files to follow common style and to better reflect contents.
+    * Fixed a bug per request from nbuyvich: chained property references.
+    * fix delete_object() to behave properly when deleting a row from a link-table (n-to-n relation).
+    * fix yborm_gen: default value setter
+    * Fixed a bug per request from nbuyvich: Make it work: pg1->parent->id.is_null()
+    * Fixes to build under MacOSX.
+    * Add tut4.cpp: tree structure stored in a table. Fixes to make it work.
+
 0.3.2
     * New more intuitive syntax for filters in queries:
       it's done via operator overloading.
