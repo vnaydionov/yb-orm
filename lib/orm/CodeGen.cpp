@@ -295,7 +295,20 @@ SqlSchemaGenerator::SqlSchemaGenerator(
         const Schema &schema, SqlDialect *dialect)
     : schema_(schema)
     , dialect_(dialect)
-{}
+    , need_commit_(false)
+    , new_table_(true)
+    , tbl_it_(schema_.tbl_begin())
+    , tbl_constr_it_(schema_.tbl_begin())
+{
+    if (dialect_->has_sequences()) {
+        Schema::TblMap::const_iterator it = schema_.tbl_begin(),
+            end = schema_.tbl_end();
+        for (; it != end; ++it)
+            if (!str_empty(it->second->seq_name()))
+                sequences_.insert(it->second->seq_name());
+    }
+    seq_it_ = sequences_.begin();
+}
 
 void SqlSchemaGenerator::gen_commit(ostream &out)
 {
@@ -346,10 +359,67 @@ void SqlSchemaGenerator::gen_create_fk_constraints(ostream &out)
 void SqlSchemaGenerator::generate(ostream &out)
 {
     out << "-- DBTYPE=" << NARROW(dialect_->get_name()) << "\n\n";
+#if 0
+    String sql;
+    while (generate_next_statement(sql))
+        out << NARROW(sql) << ";\n\n";
+#else
     gen_create_tables(out);
     gen_create_fk_constraints(out);
     gen_create_sequences(out);
+#endif
 }
+
+bool SqlSchemaGenerator::generate_next_statement(String &out_str)
+{
+    if (need_commit_) {
+        need_commit_ = false;
+        if (dialect_->commit_ddl()) {
+            out_str = _T("COMMIT");
+            return true;
+        }
+    }
+    if (tbl_it_ != schema_.tbl_end()) {
+        SqlTableGenerator tgen(*(tbl_it_->second), dialect_);
+        ostringstream out;
+        tgen.gen_create_table(out);
+        out_str = WIDEN(out.str());
+        ++tbl_it_;
+        need_commit_ = true;
+        return true;
+    }
+    if (!dialect_->fk_internal()) {
+        while (tbl_constr_it_ != schema_.tbl_end()) {
+            if (new_table_) {
+                new_table_ = false;
+                col_it_ = tbl_constr_it_->second->begin();
+                col_end_ = tbl_constr_it_->second->end();
+            }
+            if (col_it_ != col_end_) {
+                if (col_it_->has_fk()) {
+                    out_str = _T("ALTER TABLE ") + tbl_constr_it_->first + 
+                        _T(" ADD ") + WIDEN(fk_rule(*col_it_));
+                    ++col_it_;
+                    need_commit_ = true;
+                    return true;
+                }
+                ++col_it_;
+            }
+            else {
+                ++tbl_constr_it_;
+                new_table_ = true;
+            }
+        }
+    }
+    if (seq_it_ != sequences_.end()) {
+        out_str = dialect_->gen_sequence(*seq_it_);
+        ++seq_it_;
+        need_commit_ = true;
+        return true;
+    }
+    return false;
+}
+
 
 CppCodeGenerator::CppCodeGenerator(const Schema &schema,
         const String &table_name,

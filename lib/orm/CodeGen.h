@@ -3,6 +3,7 @@
 #define YB__ORM__CODE_GEN__INCLUDED
 
 #include <vector>
+#include <set>
 #include <map>
 #include <string>
 #include <iostream>
@@ -37,6 +38,11 @@ class SqlSchemaGenerator
 {
     const Schema &schema_;
     SqlDialect *dialect_;
+    std::set<String> sequences_;
+    bool need_commit_, new_table_;
+    Schema::TblMap::const_iterator tbl_it_, tbl_constr_it_;
+    Columns::const_iterator col_it_, col_end_;
+    std::set<String>::const_iterator seq_it_;
 public:
     SqlSchemaGenerator(const Schema &schema, SqlDialect *dialect);
     void gen_commit(std::ostream &out);
@@ -44,6 +50,7 @@ public:
     void gen_create_sequences(std::ostream &out);
     void gen_create_fk_constraints(std::ostream &out);
     void generate(std::ostream &out);
+    bool generate_next_statement(String &out);
 };
 
 class CppCodeGenerator
