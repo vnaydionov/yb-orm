@@ -709,7 +709,18 @@ DataObject::populate_all_master_relations()
         end = table_.schema().rels_upper_bound(table_.class_name());
     for (; it != end; ++it) {
         if (it->second->get_table(0) == &table_) {
-            get_slaves(*it->second);
+            session_->debug(_T("populate: ") +
+                    it->second->get_table(0)->name() + _T(" > ") +
+                    it->second->get_table(1)->name());
+            RelationObject *ro = get_slaves(*it->second);
+            // TODO: fix code duplication: DomainObj.h:123
+            /*
+            if (ro->master_object()->status() != DataObject::New &&
+                ro->status() != RelationObject::Sync)
+            {
+                ro->lazy_load_slaves();
+            }
+            */
         }
     }
 }
@@ -963,7 +974,10 @@ void RelationObject::dump_tree(std::ostream &out, int level)
 {
     for (int i = 0; i < level*4; ++i)
         out << " ";
-    out << "[\n";
+    out << "(cascade:" << relation_info_.cascade()
+        << ", status:" << status_ 
+        << ", in_session:" << (master_object_->session() != NULL)
+        << ")[\n";
     SlaveObjects::iterator i = slave_objects_.begin(),
         iend = slave_objects_.end();
     for (; i != iend; ++i) {
