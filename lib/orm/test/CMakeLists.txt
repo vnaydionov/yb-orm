@@ -3,7 +3,7 @@ include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES}
     ${BOOST_INCLUDEDIR} ${CPPUNIT_INCLUDES} ${PROJECT_SOURCE_DIR}/lib)
 
 add_executable (yborm_unit_tests
-    TestEngine.cpp TestFilters.cpp
+    TestEngine.cpp TestExpression.cpp
     TestMetaData.cpp TestValue.cpp
     TestXMLConfig.cpp TestXMLNode.cpp TestDataObject.cpp)
 

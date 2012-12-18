@@ -1,5 +1,5 @@
-#ifndef YB__ORM__FILTERS__INCLUDED
-#define YB__ORM__FILTERS__INCLUDED
+#ifndef YB__ORM__EXPRESSION__INCLUDED
+#define YB__ORM__EXPRESSION__INCLUDED
 
 #include <vector>
 #include <string>
@@ -206,22 +206,29 @@ class SelectExprBackend: public ExpressionBackend
 {
     Expression select_expr_, from_expr_, where_expr_,
                group_by_expr_, having_expr_, order_by_expr_;
+    bool distinct_flag_, for_update_flag_;
 public:
     SelectExprBackend(const Expression &select_expr)
         : select_expr_(select_expr)
+        , distinct_flag_(false)
+        , for_update_flag_(false)
     {}
     void from_(const Expression &from_expr) { from_expr_ = from_expr; }
     void where_(const Expression &where_expr) { where_expr_ = where_expr; }
     void group_by_(const Expression &group_by_expr) { group_by_expr_ = group_by_expr; }
     void having_(const Expression &having_expr) { having_expr_ = having_expr; }
     void order_by_(const Expression &order_by_expr) { order_by_expr_ = order_by_expr; }
-    const String generate_sql(Values *params) const;
+    void distinct(bool flag) { distinct_flag_ = flag; }
+    void for_update(bool flag) { for_update_flag_ = flag; }
     const Expression &select_expr() const { return select_expr_; }
     const Expression &from_expr() const { return from_expr_; }
     const Expression &where_expr() const { return where_expr_; }
     const Expression &group_by_expr() const { return group_by_expr_; }
     const Expression &having_expr() const { return having_expr_; }
     const Expression &order_by_expr() const { return order_by_expr_; }
+    bool distinct_flag() const { return distinct_flag_; }
+    bool for_update_flag() const { return for_update_flag_; }
+    const String generate_sql(Values *params) const;
 };
 
 class SelectExpr: public Expression
@@ -233,12 +240,16 @@ public:
     SelectExpr &group_by_(const Expression &group_by_expr);
     SelectExpr &having_(const Expression &having_expr);
     SelectExpr &order_by_(const Expression &order_by_expr);
+    SelectExpr &distinct(bool flag = true);
+    SelectExpr &for_update(bool flag = true);
     const Expression &select_expr() const;
     const Expression &from_expr() const;
     const Expression &where_expr() const;
     const Expression &group_by_expr() const;
     const Expression &having_expr() const;
     const Expression &order_by_expr() const;
+    bool distinct_flag() const;
+    bool for_update_flag() const;
 };
 
 const Expression operator ! (const Expression &a);
@@ -354,4 +365,4 @@ SelectExpr make_select(const Schema &schema, const Expression &from_where,
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__ORM__FILTERS__INCLUDED
+#endif // YB__ORM__EXPRESSION__INCLUDED

@@ -45,7 +45,7 @@ AM_CXXFLAGS = \
 	$(QT_CFLAGS)
 
 H_FILES = \
-	Filters.h \
+	Expression.h \
 	MetaData.h \
 	Value.h \
 	Engine.h \
@@ -62,7 +62,7 @@ H_FILES = \
 
 CPP_FILES = \
 	$(H_FILES) \
-	Filters.cpp \
+	Expression.cpp \
 	MetaData.cpp \
 	Value.cpp \
 	Engine.cpp \

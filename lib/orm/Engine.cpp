@@ -504,12 +504,9 @@ Engine::do_gen_sql_select(String &sql, Values &params,
         const Expression &group_by, const Expression &having,
         const Expression &order_by, bool for_update) const
 {
-    SelectExpr q(what);
-    q.from_(from).where_(where)
-        .group_by_(group_by).having_(having).order_by_(order_by);
-    sql = q.generate_sql(&params);
-    if (for_update)
-        sql += _T(" FOR UPDATE");
+    sql = SelectExpr(what).from_(from).where_(where)
+        .group_by_(group_by).having_(having).order_by_(order_by)
+        .for_update(for_update).generate_sql(&params);
 }
 
 void

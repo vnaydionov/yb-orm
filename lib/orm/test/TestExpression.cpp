@@ -1,13 +1,13 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-#include <orm/Filters.h>
+#include <orm/Expression.h>
 
 using namespace std;
 using namespace Yb;
 
-class TestFilters : public CppUnit::TestFixture
+class TestExpression : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(TestFilters);
+    CPPUNIT_TEST_SUITE(TestExpression);
     CPPUNIT_TEST(testFilterAll);
     CPPUNIT_TEST(testFilterEq);
     CPPUNIT_TEST(testOperatorOr);
@@ -114,6 +114,6 @@ public:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(TestFilters);
+CPPUNIT_TEST_SUITE_REGISTRATION(TestExpression);
 
 // vim:ts=4:sts=4:sw=4:et:

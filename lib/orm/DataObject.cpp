@@ -709,9 +709,9 @@ DataObject::populate_all_master_relations()
         end = table_.schema().rels_upper_bound(table_.class_name());
     for (; it != end; ++it) {
         if (it->second->get_table(0) == &table_) {
-            session_->debug(_T("populate: ") +
-                    it->second->get_table(0)->name() + _T(" > ") +
-                    it->second->get_table(1)->name());
+            //session_->debug(_T("populate: ") +
+            //        it->second->get_table(0)->name() + _T(" > ") +
+            //        it->second->get_table(1)->name());
             RelationObject *ro = get_slaves(*it->second);
             // TODO: fix code duplication: DomainObj.h:123
             /*

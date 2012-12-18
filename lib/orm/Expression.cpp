@@ -1,4 +1,4 @@
-#include <orm/Filters.h>
+#include <orm/Expression.h>
 #include <orm/MetaData.h>
 #include <orm/SqlDriver.h>
 
@@ -331,7 +331,10 @@ ExpressionList::item(int n) const {
 const String
 SelectExprBackend::generate_sql(Values *params) const
 {
-    String sql = _T("SELECT ") + select_expr_.generate_sql(params);
+    String sql = _T("SELECT ");
+    if (distinct_flag_)
+        sql += _T("DISTINCT ");
+    sql += select_expr_.generate_sql(params);
     if (!from_expr_.is_empty())
         sql += _T(" FROM ") + from_expr_.generate_sql(params);
     if (!where_expr_.is_empty())
@@ -346,6 +349,8 @@ SelectExprBackend::generate_sql(Values *params) const
     }
     if (!order_by_expr_.is_empty())
         sql += _T(" ORDER BY ") + order_by_expr_.generate_sql(params);
+    if (for_update_flag_)
+        sql += _T(" FOR UPDATE");
     return sql;
 }
 
@@ -383,6 +388,18 @@ SelectExpr::order_by_(const Expression &order_by_expr) {
     return *this;
 }
 
+SelectExpr &
+SelectExpr::distinct(bool flag) {
+    dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->distinct(flag);
+    return *this;
+}
+
+SelectExpr &
+SelectExpr::for_update(bool flag) {
+    dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->for_update(flag);
+    return *this;
+}
+
 const Expression &
 SelectExpr::select_expr() const {
     return dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->select_expr();
@@ -411,6 +428,16 @@ SelectExpr::having_expr() const {
 const Expression &
 SelectExpr::order_by_expr() const {
     return dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->order_by_expr();
+}
+
+bool
+SelectExpr::distinct_flag() const {
+    return dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->distinct_flag();
+}
+
+bool
+SelectExpr::for_update_flag() const {
+    return dynamic_cast<SelectExprBackend *>(shptr_get(backend_))->for_update_flag();
 }
 
 const Expression operator ! (const Expression &a) {

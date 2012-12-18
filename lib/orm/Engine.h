@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <util/nlogger.h>
 #include <orm/Value.h>
-#include <orm/Filters.h>
+#include <orm/Expression.h>
 #include <orm/SqlDriver.h>
 #include <orm/SqlPool.h>
 

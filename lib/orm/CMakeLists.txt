@@ -7,12 +7,12 @@ include_directories (${ICONV_INCLUDES}
     ${BOOST_INCLUDEDIR}
     ${PROJECT_SOURCE_DIR}/lib)
 
-set (SOURCES_CPP Engine.cpp Filters.cpp MetaData.cpp
+set (SOURCES_CPP Engine.cpp Expression.cpp MetaData.cpp
     Value.cpp XMLMetaDataConfig.cpp XMLizer.cpp SqlDriver.cpp
     SqlPool.cpp DataObject.cpp DomainObj.cpp DomainFactory.cpp
     CodeGen.cpp)
 
-set (SOURCES_H DomainFactorySingleton.h Filters.h
+set (SOURCES_H DomainFactorySingleton.h Expression.h
     MetaDataSingleton.h SqlDriver.h SqlPool.h Value.h XMLizer.h
     DomainObj.h DomainFactory.h Engine.h MetaData.h
     XMLMetaDataConfig.h DataObject.h CodeGen.h)

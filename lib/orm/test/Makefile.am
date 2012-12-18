@@ -15,7 +15,7 @@ check_SCRIPTS = mk_tables.sql
 check_PROGRAMS = unit_tests
 
 unit_tests_SOURCES = \
-	TestFilters.cpp \
+	TestExpression.cpp \
 	TestMetaData.cpp \
 	TestValue.cpp \
 	TestEngine.cpp \
