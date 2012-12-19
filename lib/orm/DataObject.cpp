@@ -609,7 +609,15 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     ro->slave_objects().insert(slave);
     slave->slave_relations().insert(ro);
     slave->calc_depth(master->depth() + 1, master);
-    if (slave->status() == DataObject::Sync &&
+    if (master->assigned_key()) {
+        Key pkey = master->key();
+        Strings fkey_parts;
+        slave->table().get_fk_for(r, fkey_parts);
+        YB_ASSERT(pkey.second.size() == fkey_parts.size());
+        for (int i = 0; i < fkey_parts.size(); ++i)
+            slave->set(fkey_parts[i], pkey.second[fkey_parts[i]]);
+    }
+    else if (slave->status() == DataObject::Sync &&
         (master->status() == DataObject::New ||
          slave->fk_value_for(ro->relation_info()) != master->key()))
     {
