@@ -14,7 +14,7 @@ int main()
     LogAppender appender(cerr);
     try {
         auto_ptr<SqlConnection> conn(new SqlConnection(
-                    "sqlite+sqlite:///Users/User/work/test1.db"));
+                    "sqlite+sqlite:///home/vaclav/work/test1.db"));
         Engine engine(Engine::MANUAL, conn);
         engine.set_logger(ILogger::Ptr(new Logger(&appender)));
         engine.set_echo(true);
@@ -36,6 +36,13 @@ int main()
         Client client_2 = query<Client>(session)
             .filter_by(Client::c.name == name).one();
         cout << client_2.name.value() << endl;
+
+        cout << "Client orders - property: \n";
+        BOOST_FOREACH(Order order, client_2.orders) {
+            cout << "(" << order.id
+                << "," << order.total_sum
+                << "," << order.owner->id << ")" << endl;
+        }
 
         string min_sum;
         cout << "Enter minimal sum: \n";

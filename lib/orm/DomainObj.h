@@ -2,6 +2,7 @@
 #ifndef YB__ORM__DOMAIN_OBJ__INCLUDED
 #define YB__ORM__DOMAIN_OBJ__INCLUDED
 
+#include <iterator>
 #include <stdexcept>
 #include <orm/XMLizer.h>
 #include <orm/DataObject.h>
@@ -129,7 +130,9 @@ class ManagedList {
     }
 public:
     template <class U, class V>
-    class Iter {
+    class Iter: public std::iterator<std::forward_iterator_tag,
+            V, ptrdiff_t, V *, V & >
+    {
         friend class ManagedList;
         U it_;
         mutable std::auto_ptr<V> d_;
