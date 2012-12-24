@@ -447,22 +447,6 @@ const Strings SqlSource::options() const
     return options;
 }
 
-Row::iterator find_in_row(Row &row, const String &name)
-{
-    String column_uname = str_to_upper(name);
-    Row::iterator i = row.begin(), iend = row.end();
-    for (; i != iend && i->first != column_uname; ++i);
-    return i;
-}
-
-Row::const_iterator find_in_row(const Row &row, const String &name)
-{
-    String column_uname = str_to_upper(name);
-    Row::const_iterator i = row.begin(), iend = row.end();
-    for (; i != iend && i->first != column_uname; ++i);
-    return i;
-}
-
 bool
 SqlResultSet::fetch(Row &row)
 {

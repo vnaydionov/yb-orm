@@ -528,7 +528,7 @@ public:
         select.from_(ColumnExpr(get_select(), _T("X")));
         SqlResultSet rs = session_.engine()->select_iter(select);
         Row r = *rs.begin(); 
-        return r[0].second.as_longint();
+        return r[0].as_longint();
     }
 };
 

@@ -37,11 +37,13 @@ int main()
             .filter_by(Client::c.name == name).one();
         cout << client_2.name.value() << endl;
 
-        cout << "Client orders - property: \n";
+        cout << "Walking through client's orders property: ";
         BOOST_FOREACH(Order order, client_2.orders) {
-            cout << "(" << order.id
-                << "," << order.total_sum
-                << "," << order.owner->id << ")" << endl;
+            cout << "(" << order.id 
+                << "," << order.owner->id 
+                << "," << order.dt
+                << "," << order.total_sum 
+                << ")" << endl;
         }
 
         string min_sum;

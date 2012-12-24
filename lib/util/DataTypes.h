@@ -2,6 +2,7 @@
 #ifndef YB__UTIL__DATA_TYPES__INCLUDED
 #define YB__UTIL__DATA_TYPES__INCLUDED
 
+#include <iterator>
 #include <vector>
 #include <set>
 #include <map>
@@ -246,36 +247,50 @@ inline Decimal &from_stdstring(const std::string &s, Decimal &x)
 typedef std::vector<String> Strings;
 typedef std::set<String> StringSet;
 
-//! Dict class template resembles "dict" type found in Python language
+//! Dict class template resembles "dict" type found in Python
 template <class K__, class V__>
-class Dict: public std::map<K__, V__>
+class Dict
 {
 public:
     typedef std::map<K__, V__> BaseMap;
+    typedef typename BaseMap::iterator iterator;
+    typedef typename BaseMap::const_iterator const_iterator;
     typedef std::vector<K__> Keys;
+    Dict() {}
+    Dict(const Dict &other): d_(other.d_) {}
+    explicit Dict(const BaseMap &other): d_(other) {}
+    Dict &operator =(const Dict &other) {
+        if (this != &other)
+            d_ = other.d_;
+        return *this;
+    }
+    Dict &operator =(const BaseMap &other) {
+        d_ = other;
+        return *this;
+    }
+    bool eq(const Dict &other) const { return d_ == other.d_; }
+    bool lt(const Dict &other) const { return d_ < other.d_; }
+    iterator begin() { return d_.begin(); }
+    const_iterator begin() const { return d_.begin(); }
+    iterator end() { return d_.end(); }
+    const_iterator end() const { return d_.end(); }
+    iterator find(const K__ &key) { return d_.find(key); }
+    const_iterator find(const K__ &key) const { return d_.find(key); }
+    size_t size() const { return d_.size(); }
+    bool empty() const { return d_.size() == 0; }
     bool has(const K__ &key) const {
-        return this->find(key) != this->end();
+        return d_.find(key) != d_.end();
     }
     const V__ &get(const K__ &key) const {
-        typename BaseMap::const_iterator it = this->find(key);
-        if (this->end() == it)
+        typename BaseMap::const_iterator it = d_.find(key);
+        if (d_.end() == it)
             throw KeyError(to_string(key));
         return it->second;
     }
-    const V__ &operator[] (const K__ &key) const { return get(key); }
     const V__ get(const K__ &key, const V__ &def_val) const {
-        typename BaseMap::const_iterator it = this->find(key);
-        if (this->end() == it)
+        typename BaseMap::const_iterator it = d_.find(key);
+        if (d_.end() == it)
             return def_val;
-        return it->second;
-    }
-    V__ &operator[] (const K__ &key) {
-        typename BaseMap::iterator it = this->find(key);
-        if (this->end() == it) {
-            V__ val = V__();
-            this->insert(std::make_pair(key, val));
-            it = this->find(key);
-        }
         return it->second;
     }
     template <class U__>
@@ -307,21 +322,10 @@ public:
             return true;
         return str_empty(to_string(get(key)));
     }
-    const V__ pop(const K__ &key) {
-        typename BaseMap::iterator it = this->find(key);
-        if (this->end() == it)
-            throw KeyError(key);
-        V__ r = it->second;
-        this->erase(it);
-        return r;
-    }
-    const V__ pop(const K__ &key, const V__ &def_val) {
-        typename BaseMap::iterator it = this->find(key);
-        if (this->end() == it)
-            return def_val;
-        V__ r = it->second;
-        this->erase(it);
-        return r;
+    const V__ &operator[] (const K__ &key) const { return get(key); }
+    V__ &operator[] (const K__ &key) { return d_[key]; }
+    void set(const K__ &key, const V__ &value) {
+        (*this)[key] = value;
     }
     template <class U__>
     void set(const K__ &key, const U__ &value) {
@@ -329,26 +333,234 @@ public:
         from_string(to_string(value), value2);
         (*this)[key] = value2;
     }
+    const V__ pop(const K__ &key) {
+        typename BaseMap::iterator it = d_.find(key);
+        if (d_.end() == it)
+            throw KeyError(to_string(key));
+        V__ r = it->second;
+        d_.erase(it);
+        return r;
+    }
+    const V__ pop(const K__ &key, const V__ &def_val) {
+        typename BaseMap::iterator it = d_.find(key);
+        if (d_.end() == it)
+            return def_val;
+        V__ r = it->second;
+        d_.erase(it);
+        return r;
+    }
     const Keys keys() const {
-        Keys k(this->size());
-        typename BaseMap::const_iterator
-            i = this->begin(), e = this->end();
+        Keys k(d_.size());
+        const_iterator i = d_.begin(), e = d_.end();
         for (size_t c = 0; i != e; ++i, ++c)
             k[c] = i->first;
         return k;
     }
     Dict &update(const Dict &other) {
-        typename BaseMap::const_iterator
-            i = other.begin(), e = other.end();
+        const_iterator i = other.begin(), e = other.end();
         for (; i != e; ++i)
             (*this)[i->first] = i->second;
         return *this;
     }
+    void swap(Dict &other) {
+        d_.swap(other.d_);
+    }
+protected:
+    BaseMap d_;
 };
 
+template <class K__, class V__>
+bool operator ==(const Dict<K__, V__> &a, const Dict<K__, V__> &b) {
+    return a.eq(b);
+}
+template <class K__, class V__>
+bool operator !=(const Dict<K__, V__> &a, const Dict<K__, V__> &b) {
+    return !a.eq(b);
+}
+template <class K__, class V__>
+bool operator <(const Dict<K__, V__> &a, const Dict<K__, V__> &b) {
+    return a.lt(b);
+}
+template <class K__, class V__>
+bool operator >=(const Dict<K__, V__> &a, const Dict<K__, V__> &b) {
+    return !a.lt(b);
+}
+template <class K__, class V__>
+bool operator >(const Dict<K__, V__> &a, const Dict<K__, V__> &b) {
+    return b.lt(a);
+}
+template <class K__, class V__>
+bool operator <=(const Dict<K__, V__> &a, const Dict<K__, V__> &b) {
+    return !b.lt(a);
+}
+
+//! OrderedDict class template resembles "OrderedDict" type found in Python
+template <class K__, class V__>
+class OrderedDict: public Dict<K__, V__>
+{
+public:
+    typedef Dict<K__, V__> BaseDict;
+    typedef std::map<K__, V__> BaseMap;
+    typedef typename BaseMap::iterator iterator;
+    typedef typename BaseMap::const_iterator const_iterator;
+    typedef std::vector<K__> Keys;
+    OrderedDict() {}
+    OrderedDict(const OrderedDict &other)
+        : BaseDict(other.d_), k_(other.k_) {}
+    explicit OrderedDict(const BaseMap &other)
+        : BaseDict(other)
+    {
+        update_keys();
+    }
+    OrderedDict &operator =(const OrderedDict &other) {
+        if (this != &other) {
+            this->d_ = other.d_;
+            k_ = other.k_;
+        }
+        return *this;
+    }
+    OrderedDict &operator =(const BaseMap &other) {
+        this->d_ = other;
+        update_keys();
+        return *this;
+    }
+    bool eq(const OrderedDict &other) const {
+        return this->d_ == other.d_ && k_ == other.k_;
+    }
+    bool lt(const OrderedDict &other) const {
+        if (k_ == other.k_) {
+            typename Keys::const_iterator i = k_.begin(), e = k_.end();
+            for (; i != e; ++i) {
+                if (BaseDict::get(*i) < 
+                        reinterpret_cast<const BaseDict & >(other)
+                        .get(*i))
+                    return true;
+                if (BaseDict::get(*i) >
+                        reinterpret_cast<const BaseDict & >(other)
+                        .get(*i))
+                    break;
+            }
+            return false;
+        }
+        return k_ < other.k_;
+    }
+    const V__ &operator[] (const K__ &key) const { return BaseDict::get(key); }
+    const V__ &get(size_t i) const {
+        if (i >= this->d_.size())
+            throw KeyError(_T("index out of bounds"));
+        return BaseDict::get(k_[i]);
+    }
+    const V__ &operator[] (size_t i) const { return get(i); }
+    V__ &operator[] (const K__ &key) {
+        V__ val = V__();
+        std::pair<typename BaseMap::iterator, bool> r
+            = this->d_.insert(std::make_pair(key, val));
+        if (r.second)
+            k_.push_back(key);
+        return r.first->second;
+    }
+    void set(const K__ &key, const V__ &value) {
+        (*this)[key] = value;
+    }
+    template <class U__>
+    void set(const K__ &key, const U__ &value) {
+        V__ value2 = V__();
+        from_string(to_string(value), value2);
+        (*this)[key] = value2;
+    }
+    V__ &operator[] (size_t i) {
+        if (i >= this->size())
+            throw KeyError(_T("index out of bounds"));
+        return (*this)[k_[i]];
+    }
+    const V__ pop(const K__ &key) {
+        typename BaseMap::iterator it = this->d_.find(key);
+        if (this->d_.end() == it)
+            throw KeyError(key);
+        V__ r = it->second;
+        this->d_.erase(it);
+        k_.erase(std::find(k_.begin(), k_.end(), key));
+        return r;
+    }
+    const V__ pop(const K__ &key, const V__ &def_val) {
+        typename BaseMap::iterator it = this->d_.find(key);
+        if (this->d_.end() == it)
+            return def_val;
+        V__ r = it->second;
+        this->d_.erase(it);
+        k_.erase(std::find(k_.begin(), k_.end(), key));
+        return r;
+    }
+    const V__ pop(size_t i) {
+        if (i >= this->size())
+            throw KeyError(_T("index out of bounds"));
+        typename BaseMap::iterator it = this->d_.find(k_[i]);
+        if (this->d_.end() == it)
+            throw KeyError(k_[i]);
+        V__ r = it->second;
+        this->d_.erase(it);
+        k_.erase(k_.begin() + i);
+        return r;
+    }
+    const Keys &keys() const { return k_; }
+    void swap(OrderedDict &other) {
+        this->d_.swap(other.d_);
+        k_.swap(other.k_);
+    }
+protected:
+    void update_keys() {
+        Keys k(this->d_.size());
+        typename BaseMap::const_iterator i = this->d_.begin(), e = this->d_.end();
+        for (size_t c = 0; i != e; ++i, ++c)
+            k[c] = i->first;
+        k_.swap(k);
+    }
+    Keys k_;
+};
+
+template <class K__, class V__>
+bool operator ==(const OrderedDict<K__, V__> &a, const OrderedDict<K__, V__> &b) {
+    return a.eq(b);
+}
+template <class K__, class V__>
+bool operator !=(const OrderedDict<K__, V__> &a, const OrderedDict<K__, V__> &b) {
+    return !a.eq(b);
+}
+template <class K__, class V__>
+bool operator <(const OrderedDict<K__, V__> &a, const OrderedDict<K__, V__> &b) {
+    return a.lt(b);
+}
+template <class K__, class V__>
+bool operator >=(const OrderedDict<K__, V__> &a, const OrderedDict<K__, V__> &b) {
+    return !a.lt(b);
+}
+template <class K__, class V__>
+bool operator >(const OrderedDict<K__, V__> &a, const OrderedDict<K__, V__> &b) {
+    return b.lt(a);
+}
+template <class K__, class V__>
+bool operator <=(const OrderedDict<K__, V__> &a, const OrderedDict<K__, V__> &b) {
+    return !b.lt(a);
+}
+
 typedef Dict<String, String> StringDict;
+typedef OrderedDict<String, String> OrderedStringDict;
 
 } // namespace Yb
+
+namespace std {
+
+template <class K__, class V__>
+void swap(::Yb::Dict<K__, V__> &a, ::Yb::Dict<K__, V__> &b) {
+    a.swap(b);
+}
+
+template <class K__, class V__>
+void swap(::Yb::OrderedDict<K__, V__> &a, ::Yb::OrderedDict<K__, V__> &b) {
+    a.swap(b);
+}
+
+} // end of namespace std
 
 // vim:ts=4:sts=4:sw=4:et:
 #endif // YB__UTIL__DATA_TYPES__INCLUDED

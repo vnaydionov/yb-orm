@@ -208,7 +208,9 @@ public:
     void set_class_name(const String &class_name) { class_name_ = class_name; }
     void set_depth(int depth) { depth_ = depth; }
     const Strings &pk_fields() const { return pk_fields_; }
-    const Key mk_key(const ValueMap &key_fields) const;
+    bool mk_key(const Values &row_values, Key &key) const;
+    bool mk_key(const ValueMap &row_values, Key &key) const;
+    const Key mk_key(const ValueMap &row_values) const;
     const Key mk_key(LongInt id) const;
     void refresh();
 private:

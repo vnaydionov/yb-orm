@@ -139,15 +139,15 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Row row;
-        row.push_back(make_pair(String(_T("ID")), Value(1)));
-        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
+        row[_T("ID")] = Value(1);
+        row[_T("A")] = Value(_T("a"));
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_insert(sql, params, param_nums, _T("T"), row, StringSet());
-        CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (ID, A) VALUES (?, ?)"), NARROW(sql));
+        CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (A, ID) VALUES (?, ?)"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL(2, (int)params.size());
-        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(params[1].as_string()));
-        CPPUNIT_ASSERT_EQUAL(1, (int)params[0].as_longint());
+        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(params[0].as_string()));
+        CPPUNIT_ASSERT_EQUAL(1, (int)params[1].as_longint());
     }
 
     void test_insert_exclude()
@@ -155,8 +155,8 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Row row;
-        row.push_back(make_pair(String(_T("ID")), Value(1)));
-        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
+        row[_T("ID")] = Value(1);
+        row[_T("A")] = Value(_T("a"));
         StringSet exclude;
         exclude.insert(_T("ID"));
         Values params;
@@ -180,7 +180,7 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Row row;
-        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
+        row[_T("A")] = Value(_T("a"));
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
@@ -196,12 +196,12 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Row row;
-        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
-        row.push_back(make_pair(String(_T("B")), Value(1)));
-        row.push_back(make_pair(String(_T("C")), Value(_T("c"))));
-        row.push_back(make_pair(String(_T("D")), Value(_T("d"))));
-        row.push_back(make_pair(String(_T("E")), Value(_T("e"))));
-        row.push_back(make_pair(String(_T("F")), Value(2)));
+        row[_T("A")] = Value(_T("a"));
+        row[_T("B")] = Value(1);
+        row[_T("C")] = Value(_T("c"));
+        row[_T("D")] = Value(_T("d"));
+        row[_T("E")] = Value(_T("e"));
+        row[_T("F")] = Value(2);
         Strings key;
         key.push_back(_T("B"));
         key.push_back(_T("D"));
@@ -237,7 +237,7 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Row row;
-        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
+        row[_T("A")] = Value(_T("a"));
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
@@ -425,10 +425,10 @@ public:
         Rows rows;
         LongInt id = get_next_test_id(engine.get_connection());
         Row row;
-        row.push_back(make_pair(String(_T("ID")), Value(id)));
-        row.push_back(make_pair(String(_T("A")), Value(_T("inserted"))));
-        row.push_back(make_pair(String(_T("B")), Value(now())));
-        row.push_back(make_pair(String(_T("C")), Value(Decimal(_T("1.1")))));
+        row[_T("ID")] = Value(id);
+        row[_T("A")] = Value(_T("inserted"));
+        row[_T("B")] = Value(now());
+        row[_T("C")] = Value(Decimal(_T("1.1")));
         rows.push_back(row);
         engine.insert(_T("T_ORM_TEST"), rows);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
@@ -451,9 +451,9 @@ public:
         Rows rows;
         LongInt id = get_next_test_id(engine.get_connection());
         Row row;
-        row.push_back(make_pair(String(_T("A")), Value(_T("updated"))));
-        row.push_back(make_pair(String(_T("C")), Value(Decimal(_T("1.3")))));
-        row.push_back(make_pair(String(_T("ID")), Value(record_id_)));
+        row[_T("A")] = Value(_T("updated"));
+        row[_T("C")] = Value(Decimal(_T("1.3")));
+        row[_T("ID")] = Value(record_id_);
         rows.push_back(row);
         Strings key;
         key.push_back(_T("ID"));
