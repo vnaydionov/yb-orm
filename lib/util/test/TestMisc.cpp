@@ -288,4 +288,146 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestDict);
 
+class TestOrderedDict: public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(TestOrderedDict);
+
+    CPPUNIT_TEST(testOrderedDictCons);
+    CPPUNIT_TEST(testOrderedDictGetAs);
+    CPPUNIT_TEST(testOrderedDictPop);
+    CPPUNIT_TEST(testOrderedDictUpdate);
+
+    CPPUNIT_TEST_EXCEPTION(testOrderedDictGetKeyError, KeyError);
+    CPPUNIT_TEST_EXCEPTION(testOrderedDictGetAsValueError, ValueError);
+    CPPUNIT_TEST_EXCEPTION(testOrderedDictPopKeyError, KeyError);
+    CPPUNIT_TEST(testOrderedDictOrder);
+    CPPUNIT_TEST(testOrderedDictCmp);
+
+    CPPUNIT_TEST_SUITE_END();   
+
+public:
+    void testOrderedDictCons()
+    {
+        OrderedStringDict d1;
+        d1[_T("A")] = _T("1");
+        OrderedStringDict d2 = d1;
+        CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(d2[_T("A")]));
+        d2[_T("B")] = _T("2");
+        d1 = d2;
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d2.size());
+        CPPUNIT_ASSERT_EQUAL(string("2"), NARROW(d2[_T("B")]));
+    }
+    void testOrderedDictGetAs()
+    {
+        OrderedStringDict d;
+        d[_T("A")] = _T("1");
+        d[_T("B")] = _T("");
+        d[_T("D")] = _T("%$#");
+        const OrderedStringDict &t = d;
+        CPPUNIT_ASSERT_EQUAL(true, t.has(_T("A")));
+        CPPUNIT_ASSERT_EQUAL(true, t.has(_T("B")));
+        CPPUNIT_ASSERT_EQUAL(false, t.has(_T("C")));
+        CPPUNIT_ASSERT_EQUAL(false, t.empty_key(_T("A")));
+        CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("B")));
+        CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("C")));
+        CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(t[_T("A")]));
+        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(_T("A")));
+        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(_T("A"), 10));
+        CPPUNIT_ASSERT_EQUAL(2, t.get_as<int>(_T("B"), 2));
+        CPPUNIT_ASSERT_EQUAL(3, t.get_as<int>(_T("C"), 3));
+        CPPUNIT_ASSERT_EQUAL(string("4"),
+                to_stdstring(t.get_as<Decimal>(_T("D"), 4)));
+    }
+    void testOrderedDictPop()
+    {
+        OrderedStringDict d1;
+        d1[_T("A")] = _T("1");
+        d1[_T("B")] = _T("");
+        d1[_T("D")] = _T("%$#");
+        CPPUNIT_ASSERT_EQUAL((size_t)3, d1.size());
+        CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(d1.pop(_T("A"))));
+        CPPUNIT_ASSERT_EQUAL(string("2"), NARROW(d1.pop(_T("C"), _T("2"))));
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d1.size());
+    }
+    void testOrderedDictUpdate()
+    {
+        OrderedStringDict d1, d2;
+        d1[_T("A")] = _T("1");
+        d1[_T("B")] = _T("");
+        d1[_T("D")] = _T("%$#");
+        CPPUNIT_ASSERT_EQUAL((size_t)3, d2.update(d1).size());
+        d2[_T("D")] = _T("4");
+        d1.pop(_T("B"));
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d1.size());
+        CPPUNIT_ASSERT_EQUAL(string("4"), NARROW(d1.update(d2)[_T("D")]));
+        CPPUNIT_ASSERT_EQUAL((size_t)3, d1.size());
+    }
+    void testOrderedDictGetKeyError()
+    {
+        OrderedStringDict d;
+        const OrderedStringDict &t = d;
+        t[_T("A")];
+    }
+    void testOrderedDictGetAsValueError()
+    {
+        OrderedStringDict d;
+        d[_T("A")] = _T("*");
+        d.get_as<int>(_T("A"));
+    }
+    void testOrderedDictPopKeyError()
+    {
+        OrderedStringDict d;
+        d.pop(_T("A"));
+    }
+    void testOrderedDictOrder()
+    {
+        OrderedStringDict d;
+        const OrderedStringDict &t = d;
+        d[_T("D")] = _T("%$#");
+        d[_T("A")] = _T("1");
+        d[_T("B")] = _T("");
+        d[_T("D")] = _T("xx");
+        CPPUNIT_ASSERT_EQUAL(string("xx"), NARROW(d[0]));
+        CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(d[1]));
+        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t[2]));
+        CPPUNIT_ASSERT_EQUAL(string("D"), NARROW(d.keys()[0]));
+        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(d.keys()[1]));
+        CPPUNIT_ASSERT_EQUAL(string("B"), NARROW(t.keys()[2]));
+        d.pop(0);
+        d.pop(1);
+        CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(t[0]));
+        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(d.keys()[0]));
+    }
+    void testOrderedDictCmp()
+    {
+        map<String, String> s1;
+        s1[_T("A")] = _T("1");
+        s1[_T("B")] = _T("2");
+        OrderedStringDict d1(s1);
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d1.size());
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d1.keys().size());
+        OrderedStringDict d2;
+        CPPUNIT_ASSERT_EQUAL((size_t)0, d2.size());
+        CPPUNIT_ASSERT_EQUAL((size_t)0, d2.keys().size());
+        d2[_T("B")] = _T("2");
+        CPPUNIT_ASSERT_EQUAL((size_t)1, d2.size());
+        CPPUNIT_ASSERT_EQUAL((size_t)1, d2.keys().size());
+        d2[_T("A")] = _T("1");
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d2.keys().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d2.size());
+        CPPUNIT_ASSERT(d1 != d2);
+        CPPUNIT_ASSERT(d1 < d2);
+        d2[_T("B")] = d2.pop(_T("B"));
+        CPPUNIT_ASSERT(d1 == d2);
+        d2[_T("B")] = _T("3");
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d2.keys().size());
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d2.size());
+        CPPUNIT_ASSERT(d1 < d2);
+        d2 = d1;
+        CPPUNIT_ASSERT(d1 == d2);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(TestOrderedDict);
+
 // vim:ts=4:sts=4:sw=4:et:

@@ -4,8 +4,6 @@
 
 #include <string>
 #include <vector>
-#include <set>
-#include <map>
 #include <stdexcept>
 #include <utility>
 #include <util/DataTypes.h>
@@ -72,7 +70,7 @@ inline bool operator<=(const Value &x, const Value &y) { return x.cmp(y) <= 0; }
 //! @}
 
 typedef std::vector<Value> Values;
-typedef std::map<String, Value> ValueMap;
+typedef OrderedDict<String, Value> ValueMap;
 typedef std::pair<String, ValueMap> Key;
 typedef std::vector<Key> Keys;
 

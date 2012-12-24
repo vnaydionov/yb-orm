@@ -99,7 +99,7 @@ RowPtr SQLiteCursorBackend::fetch_row()
         Value v;
         if (SQLITE_NULL != type)
             v = Value(WIDEN((const char *)sqlite3_column_text(stmt_, i)));
-        row->push_back(RowItem(name, v));
+        (*row)[name] = v;
     }
     last_code_ = sqlite3_step(stmt_);
     return row;

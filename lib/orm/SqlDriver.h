@@ -165,13 +165,16 @@ SqlDialect *sql_dialect(const String &name);
 bool register_sql_dialect(std::auto_ptr<SqlDialect> dialect);
 const Strings list_sql_dialects();
 
-typedef std::pair<String, Value> RowItem;
-typedef std::vector<RowItem > Row;
+typedef ValueMap Row;
 typedef std::auto_ptr<Row> RowPtr;
 typedef std::vector<Row> Rows;
 typedef std::auto_ptr<Rows> RowsPtr;
-Row::iterator find_in_row(Row &row, const String &name);
-Row::const_iterator find_in_row(const Row &row, const String &name);
+inline Row::iterator find_in_row(Row &row, const String &name) {
+    return row.find(name);
+}
+inline Row::const_iterator find_in_row(const Row &row, const String &name) {
+    return row.find(name);
+}
 
 class SqlCursorBackend: NonCopyable
 {

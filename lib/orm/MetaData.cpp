@@ -202,18 +202,60 @@ Table::get_fk_for(const Relation &rel, Strings &fkey_parts) const
     return fkey_parts;
 }
 
-const Key
-Table::mk_key(const ValueMap &key_fields) const
+bool
+Table::mk_key(const Values &row_values, Key &key) const
 {
-    return Key(name_, key_fields);
+    key.first = name();
+    bool assigned_key = true;
+    ValueMap key_values;
+    for (size_t i = 0; i < cols_.size(); ++i) {
+        const Column &col = cols_[i];
+        if (col.is_pk()) {
+            const String &col_name = col.name();
+            key_values[col_name] = row_values[i];
+            if (key_values[col_name].is_null())
+                assigned_key = false;
+        }
+    }
+    key.second.swap(key_values);
+    return assigned_key;
+}
+
+bool
+Table::mk_key(const ValueMap &row_values, Key &key) const
+{
+    key.first = name();
+    bool assigned_key = true;
+    ValueMap key_values;
+    for (size_t i = 0; i < cols_.size(); ++i) {
+        const Column &col = cols_[i];
+        if (col.is_pk()) {
+            const String &col_name = col.name();
+            key_values[col_name] = row_values[col_name];
+            if (key_values[col_name].is_null())
+                assigned_key = false;
+        }
+    }
+    key.second.swap(key_values);
+    return assigned_key;
+}
+
+const Key
+Table::mk_key(const ValueMap &row_values) const
+{
+    Key key;
+    mk_key(row_values, key);
+    return key;
 }
 
 const Key
 Table::mk_key(LongInt id) const
 {
-    ValueMap key_fields;
-    key_fields[get_synth_pk()] = Value(id);
-    return Key(name_, key_fields);
+    Key key;
+    key.first = name();
+    String pk_name = get_synth_pk();
+    key.second[pk_name] = Value(id);
+    return key;
 }
 
 bool

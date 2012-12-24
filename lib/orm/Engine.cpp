@@ -416,7 +416,7 @@ Engine::on_insert(const String &table_name,
             cursor->prepare(dialect_->select_last_inserted_id(table_name));
             cursor->exec(Values());
             RowsPtr id_rows = cursor->fetch_rows();
-            ids.push_back((*id_rows)[0][0].second.as_longint());
+            ids.push_back((*id_rows)[0][0].as_longint());
         }
     }
     return ids;
@@ -558,7 +558,7 @@ Engine::do_gen_sql_update(String &sql, Values &params,
             std::find(key_fields.begin(), key_fields.end(), it->first) 
                 == key_fields.end())
         {
-            excluded_row.push_back(make_pair(it->first, it->second));
+            excluded_row[it->first] = it->second;
         }
     }
 

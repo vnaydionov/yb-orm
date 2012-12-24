@@ -2,6 +2,7 @@
 #ifndef YB__ORM__DOMAIN_OBJ__INCLUDED
 #define YB__ORM__DOMAIN_OBJ__INCLUDED
 
+#include <iterator>
 #include <stdexcept>
 #include <orm/XMLizer.h>
 #include <orm/DataObject.h>
@@ -129,7 +130,9 @@ class ManagedList {
     }
 public:
     template <class U, class V>
-    class Iter {
+    class Iter: public std::iterator<std::forward_iterator_tag,
+            V, ptrdiff_t, V *, V & >
+    {
         friend class ManagedList;
         U it_;
         mutable std::auto_ptr<V> d_;
@@ -525,7 +528,7 @@ public:
         select.from_(ColumnExpr(get_select(), _T("X")));
         SqlResultSet rs = session_.engine()->select_iter(select);
         Row r = *rs.begin(); 
-        return r[0].second.as_longint();
+        return r[0].as_longint();
     }
 };
 

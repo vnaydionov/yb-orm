@@ -72,7 +72,8 @@ const String key2str(const Key &key)
 {
     std::ostringstream out;
     out << "Key('" << NARROW(key.first) << "', {";
-    ValueMap::const_iterator i = key.second.begin(), iend = key.second.end();
+    ValueMap::const_iterator i = key.second.begin(),
+        iend = key.second.end();
     for (; i != iend; ++i)
         out << "'" << NARROW(i->first) << "': "
             << NARROW(i->second.sql_str()) << ", ";
@@ -512,16 +513,7 @@ void DataObject::set(int i, const Value &v)
 
 void DataObject::update_key()
 {
-    key_.first = table_.name();
-    assigned_key_ = true;
-    ValueMap new_values;
-    for (size_t i = 0; i < table_.size(); ++i)
-        if (table_[i].is_pk()) {
-            new_values[table_[i].name()] = values_[i];
-            if (values_[i].is_null())
-                assigned_key_ = false;
-        }
-    key_.second.swap(new_values);
+    assigned_key_ = table_.mk_key(values_, key_);
 }
 
 const Key &DataObject::key()
@@ -536,8 +528,8 @@ const Row DataObject::values(bool include_key)
     Row values;
     for (size_t i = 0; i < table_.size(); ++i)
         if (!table_[i].is_pk() || include_key)
-            values.push_back(RowItem(table_[i].name(),
-                        values_[i].get_typed_value(table_[i].type())));
+            values[table_[i].name()]
+                = values_[i].get_typed_value(table_[i].type());
     return values;
 }
 
@@ -613,9 +605,8 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
         Key pkey = master->key();
         Strings fkey_parts;
         slave->table().get_fk_for(r, fkey_parts);
-        YB_ASSERT(pkey.second.size() == fkey_parts.size());
         for (int i = 0; i < fkey_parts.size(); ++i)
-            slave->set(fkey_parts[i], pkey.second[fkey_parts[i]]);
+            slave->set(fkey_parts[i], pkey.second[i]);
     }
     else if (slave->status() == DataObject::Sync &&
         (master->status() == DataObject::New ||
@@ -642,12 +633,14 @@ Key DataObject::fk_value_for(const Relation &r)
         &slave_tbl = table_;
     Strings parts;
     slave_tbl.get_fk_for(r, parts);
+    Key fkey;
+    fkey.first = master_tbl.name();
     Strings::const_iterator i = parts.begin(), iend = parts.end(),
-        j = master_tbl.pk_fields().begin(), jend = master_tbl.pk_fields().end();
-    ValueMap fk_values;
+        j = master_tbl.pk_fields().begin(),
+        jend = master_tbl.pk_fields().end();
     for (; i != iend && j != jend; ++i, ++j)
-        fk_values[*j] = get(*i);
-    return Key(master_tbl.name(), fk_values);
+        fkey.second[*j] = get(*i);
+    return fkey;
 }
 
 DataObject::Ptr DataObject::get_master(
@@ -740,7 +733,7 @@ size_t DataObject::fill_from_row(const Row &r, size_t pos)
 {
     size_t i = 0;
     for (; i < table_.size(); ++i)
-        values_[i] = get_typed_value(table_[i], r[pos + i].second);
+        values_[i] = get_typed_value(table_[i], r[pos + i]);
     update_key();
     status_ = Sync;
     return pos + i;
@@ -888,12 +881,14 @@ const Key RelationObject::gen_fkey() const
         &slave_tbl = relation_info_.table(1);
     Strings parts;
     slave_tbl.get_fk_for(relation_info_, parts);
+    Key fkey;
+    fkey.first = slave_tbl.name();
     Strings::const_iterator i = parts.begin(), iend = parts.end(),
-        j = master_tbl.pk_fields().begin(), jend = master_tbl.pk_fields().end();
-    ValueMap fk_values;
+        j = master_tbl.pk_fields().begin(),
+        jend = master_tbl.pk_fields().end();
     for (; i != iend && j != jend; ++i, ++j)
-        fk_values[*i] = master_object_->get(*j);
-    return Key(slave_tbl.name(), fk_values);
+        fkey.second[*i] = master_object_->get(*j);
+    return fkey;
 }
 
 size_t RelationObject::count_slaves()
@@ -930,16 +925,8 @@ void RelationObject::lazy_load_slaves()
         select(cols, Expression(slave_tbl.name()), KeyFilter(gen_fkey()));
     Rows::const_iterator k = result->begin(), kend = result->end();
     for (; k != kend; ++k) {
-        ValueMap pk_values;
-        j = slave_tbl.begin(), jend = slave_tbl.end();
-        for (; j != jend; ++j)
-            if (j->is_pk()) {
-                //session.debug(_T("looking for ") + j->name());
-                Row::const_iterator it = find_in_row(*k, j->name());
-                YB_ASSERT(it != k->end());
-                pk_values[j->name()] = it->second;
-            }
-        Key pkey(slave_tbl.name(), pk_values);
+        Key pkey;
+        bool assigned_key = slave_tbl.mk_key(*k, pkey);
         DataObject::Ptr o = session.get_lazy(pkey);
         if (o->status() == DataObject::Ghost)
             o->fill_from_row(*k);
