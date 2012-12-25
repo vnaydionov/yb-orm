@@ -231,7 +231,8 @@ Table::mk_key(const ValueMap &row_values, Key &key) const
         const Column &col = cols_[i];
         if (col.is_pk()) {
             const String &col_name = col.name();
-            key_values[col_name] = row_values[col_name];
+            const String col_name_ext = str_to_upper(col_name);
+            key_values[col_name] = row_values[col_name_ext];
             if (key_values[col_name].is_null())
                 assigned_key = false;
         }

@@ -535,7 +535,7 @@ SqlCursor::fetch_row()
                 Row::const_iterator j = row->begin(),
                                     jend = row->end();
                 for (; j != jend; ++j)
-                    out << NARROW(j->first) << "="
+                    out << NARROW(*j->first) << "="
                         << NARROW(j->second.sql_str()) << " ";
                 debug(WIDEN(out.str()));
             }

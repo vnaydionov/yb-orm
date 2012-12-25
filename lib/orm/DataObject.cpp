@@ -217,7 +217,7 @@ DataObject::Ptr Session::get_lazy(const Key &key)
     DataObjectPtr new_obj =
         DataObject::create_new(schema_[key.first], DataObject::Ghost);
     for (it = key.second.begin(); it != end; ++it)
-        new_obj->set(it->first, it->second);
+        new_obj->set(*it->first, it->second);
     new_obj->set_session(this);
     identity_map_[key] = new_obj;
     return new_obj;
@@ -578,19 +578,23 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     for (; i != iend; ++i)
         if (&(*i)->relation_info() == &r) {
             ro = *i;
-            slave->slave_relations().erase(i);
-            ro->slave_objects().erase(slave);
             break;
         }
+    if (ro && ro->master_object() != master) {
+        slave->slave_relations().erase(i);
+        ro->slave_objects().erase(slave);
+        ro = NULL;
+    }
     // Try to find relation object in master's relations
-    ro = NULL;
-    MasterRelations::iterator j = master->master_relations().begin(),
-        jend = master->master_relations().end();
-    for (; j != jend; ++j)
-        if (&(*j)->relation_info() == &r) {
-            ro = shptr_get(*j);
-            break;
-        }
+    if (!ro) {
+        MasterRelations::iterator j = master->master_relations().begin(),
+            jend = master->master_relations().end();
+        for (; j != jend; ++j)
+            if (&(*j)->relation_info() == &r) {
+                ro = shptr_get(*j);
+                break;
+            }
+    }
     // Create one if it doesn't exist, master will own it
     if (!ro) {
         RelationObject::Ptr new_ro = RelationObject::create_new(r, master);

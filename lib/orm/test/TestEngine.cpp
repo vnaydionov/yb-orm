@@ -144,10 +144,10 @@ public:
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_insert(sql, params, param_nums, _T("T"), row, StringSet());
-        CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (A, ID) VALUES (?, ?)"), NARROW(sql));
+        CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (ID, A) VALUES (?, ?)"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL(2, (int)params.size());
-        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(params[0].as_string()));
-        CPPUNIT_ASSERT_EQUAL(1, (int)params[1].as_longint());
+        CPPUNIT_ASSERT_EQUAL(1, (int)params[0].as_longint());
+        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(params[1].as_string()));
     }
 
     void test_insert_exclude()

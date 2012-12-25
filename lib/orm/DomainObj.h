@@ -138,6 +138,7 @@ public:
         mutable std::auto_ptr<V> d_;
         Iter(U it): it_(it) {}
     public:
+        Iter() {}
         Iter(const Iter &obj): it_(obj.it_) {}
         Iter &operator=(const Iter &obj) {
             if (this != &obj) {
