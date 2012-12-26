@@ -29,7 +29,6 @@ class TestEngine : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_delete_wo_clause, BadSQLOperation);
     CPPUNIT_TEST_EXCEPTION(test_insert_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_update_ro_mode, BadOperationInMode);
-    CPPUNIT_TEST_EXCEPTION(test_selforupdate_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_delete_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_execpoc_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_SUITE_END();
@@ -54,34 +53,29 @@ public:
 
     void test_select_simple()
     {
-        Engine engine(Engine::READ_ONLY);
         String sql;
         Values params;
-        engine.do_gen_sql_select(sql, params, Expression(_T("A, B")),
-                Expression(_T("T")), Expression(),
-                Expression(), Expression(), Expression(), false);
+        sql = SelectExpr(Expression(_T("A, B")))
+            .from_(Expression(_T("T"))).generate_sql(&params);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T"), NARROW(sql));
     }
 
     void test_select_for_update()
     {
-        Engine engine(Engine::READ_ONLY);
         String sql;
         Values params;
-        engine.do_gen_sql_select(sql, params, Expression(_T("1")),
-                Expression(_T("T")), Expression(),
-                Expression(), Expression(), Expression(), true);
+        sql = SelectExpr(Expression(_T("1")))
+            .from_(Expression(_T("T"))).for_update(true).generate_sql(&params);
         CPPUNIT_ASSERT_EQUAL(string("SELECT 1 FROM T FOR UPDATE"), NARROW(sql));
     }
 
     void test_select_where()
     {
-        Engine engine(Engine::READ_ONLY);
         String sql;
         Values params;
-        engine.do_gen_sql_select(sql, params, Expression(_T("*")),
-                Expression(_T("T")), Expression(_T("ID")) == 1,
-                Expression(), Expression(), Expression(), false);
+        sql = SelectExpr(Expression(_T("*")))
+            .from_(Expression(_T("T")))
+            .where_(Expression(_T("ID")) == 1).generate_sql(&params);
         CPPUNIT_ASSERT_EQUAL(string("SELECT * FROM T WHERE ID = ?"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL(1, (int)params.size());
         CPPUNIT_ASSERT_EQUAL(1, (int)params[0].as_longint());
@@ -89,24 +83,23 @@ public:
 
     void test_select_groupby()
     {
-        Engine engine(Engine::READ_ONLY);
         String sql;
         Values params;
-        engine.do_gen_sql_select(sql, params, Expression(_T("A, B")),
-                Expression(_T("T")), Expression(),
-                Expression(_T("A, B")), Expression(), Expression(), false);
+        sql = SelectExpr(Expression(_T("A, B")))
+            .from_(Expression(_T("T")))
+            .group_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
+            .generate_sql(&params);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T GROUP BY A, B"), NARROW(sql));
     }
 
     void test_select_having()
     {
-        Engine engine(Engine::READ_ONLY);
         String sql;
         Values params;
-        engine.do_gen_sql_select(sql, params, Expression(_T("A, COUNT(*)")),
-                Expression(_T("T")), Filter(),
-                Expression(_T("A")), Filter(_T("COUNT(*) > 2")),
-                Expression(), false);
+        sql = SelectExpr(Expression(_T("A, COUNT(*)")))
+            .from_(Expression(_T("T")))
+            .group_by_(Expression(_T("A")))
+            .having_(Expression(_T("COUNT(*) > 2"))).generate_sql(&params);
         CPPUNIT_ASSERT_EQUAL(
                 string("SELECT A, COUNT(*) FROM T GROUP BY A HAVING COUNT(*) > 2"),
                 NARROW(sql));
@@ -117,10 +110,9 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Values params;
-        engine.do_gen_sql_select(sql, params, Expression(_T("A, B")),
-                Expression(_T("T")), Expression(),
-                Expression(_T("")), Expression(_T("ID")) == 1,
-                Expression(), false);
+        sql = SelectExpr(Expression(_T("A, B")))
+            .from_(Expression(_T("T")))
+            .having_(Expression(_T("ID")) == 1).generate_sql(&params);
     }
 
     void test_select_orderby()
@@ -128,9 +120,9 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Values params;
-        engine.do_gen_sql_select(sql, params, Expression(_T("A, B")),
-                Expression(_T("T")), Expression(),
-                Expression(_T("")), Expression(), Expression(_T("A")), false);
+        sql = SelectExpr(Expression(_T("A, B")))
+            .from_(Expression(_T("T")))
+            .order_by_(Expression(_T("A"))).generate_sql(&params);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T ORDER BY A"), NARROW(sql));
     }
 
@@ -139,8 +131,8 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Row row;
-        row[_T("ID")] = Value(1);
-        row[_T("A")] = Value(_T("a"));
+        row.push_back(make_pair(String(_T("ID")), Value(1)));
+        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_insert(sql, params, param_nums, _T("T"), row, StringSet());
@@ -155,8 +147,8 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Row row;
-        row[_T("ID")] = Value(1);
-        row[_T("A")] = Value(_T("a"));
+        row.push_back(make_pair(String(_T("ID")), Value(1)));
+        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
         StringSet exclude;
         exclude.insert(_T("ID"));
         Values params;
@@ -180,7 +172,7 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Row row;
-        row[_T("A")] = Value(_T("a"));
+        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
@@ -196,12 +188,12 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Row row;
-        row[_T("A")] = Value(_T("a"));
-        row[_T("B")] = Value(1);
-        row[_T("C")] = Value(_T("c"));
-        row[_T("D")] = Value(_T("d"));
-        row[_T("E")] = Value(_T("e"));
-        row[_T("F")] = Value(2);
+        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
+        row.push_back(make_pair(String(_T("B")), Value(1)));
+        row.push_back(make_pair(String(_T("C")), Value(_T("c"))));
+        row.push_back(make_pair(String(_T("D")), Value(_T("d"))));
+        row.push_back(make_pair(String(_T("E")), Value(_T("e"))));
+        row.push_back(make_pair(String(_T("F")), Value(2)));
         Strings key;
         key.push_back(_T("B"));
         key.push_back(_T("D"));
@@ -237,7 +229,7 @@ public:
         Engine engine(Engine::READ_ONLY);
         String sql;
         Row row;
-        row[_T("A")] = Value(_T("a"));
+        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
         Values params;
         ParamNums param_nums;
         engine.do_gen_sql_update(sql, params, param_nums,
@@ -272,13 +264,6 @@ public:
     {
         Engine engine(Engine::READ_ONLY);
         engine.update(_T(""), Rows(), Strings(), StringSet());
-    }
-    
-    void test_selforupdate_ro_mode()
-    {
-        Engine engine(Engine::READ_ONLY);
-        engine.select(Expression(_T("")), Expression(_T("")), Expression(),
-                Expression(), Expression(), Expression(), -1, true);
     }
     
     void test_delete_ro_mode()
@@ -340,7 +325,6 @@ class TestEngineSql : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(TestEngineSql);
     CPPUNIT_TEST(test_select_sql);
     CPPUNIT_TEST(test_select_sql_max_rows);
-    CPPUNIT_TEST(test_force_select_for_update);
     CPPUNIT_TEST(test_insert_sql);
     CPPUNIT_TEST(test_update_sql);
     CPPUNIT_TEST_SUITE_END();
@@ -405,30 +389,18 @@ public:
         CPPUNIT_ASSERT_EQUAL(0, (int)ptr->size());
     }
 
-    void test_force_select_for_update()
-    {
-        Engine engine(Engine::FORCE_SELECT_UPDATE);
-        if (engine.get_dialect()->get_name() != _T("SQLITE")) {
-            setup_log(engine);
-            CPPUNIT_ASSERT_EQUAL(false, engine.activity());
-            RowsPtr ptr = engine.select(Expression(_T("*")),
-                    Expression(_T("T_ORM_TEST")), Expression());
-            CPPUNIT_ASSERT_EQUAL(true, engine.activity());
-        }
-    }
-
     void test_insert_sql()
     {
-        Engine engine(Engine::MANUAL);
+        Engine engine(Engine::READ_WRITE);
         setup_log(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         Rows rows;
         LongInt id = get_next_test_id(engine.get_connection());
         Row row;
-        row[_T("ID")] = Value(id);
-        row[_T("A")] = Value(_T("inserted"));
-        row[_T("B")] = Value(now());
-        row[_T("C")] = Value(Decimal(_T("1.1")));
+        row.push_back(make_pair(String(_T("ID")), Value(id)));
+        row.push_back(make_pair(String(_T("A")), Value(_T("inserted"))));
+        row.push_back(make_pair(String(_T("B")), Value(now())));
+        row.push_back(make_pair(String(_T("C")), Value(Decimal(_T("1.1")))));
         rows.push_back(row);
         engine.insert(_T("T_ORM_TEST"), rows);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
@@ -445,15 +417,15 @@ public:
 
     void test_update_sql()
     {
-        Engine engine(Engine::MANUAL);
+        Engine engine(Engine::READ_WRITE);
         setup_log(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         Rows rows;
         LongInt id = get_next_test_id(engine.get_connection());
         Row row;
-        row[_T("A")] = Value(_T("updated"));
-        row[_T("C")] = Value(Decimal(_T("1.3")));
-        row[_T("ID")] = Value(record_id_);
+        row.push_back(make_pair(String(_T("A")), Value(_T("updated"))));
+        row.push_back(make_pair(String(_T("C")), Value(Decimal(_T("1.3")))));
+        row.push_back(make_pair(String(_T("ID")), Value(record_id_)));
         rows.push_back(row);
         Strings key;
         key.push_back(_T("ID"));

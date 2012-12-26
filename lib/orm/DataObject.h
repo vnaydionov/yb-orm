@@ -97,11 +97,10 @@ public:
     void load_collection(ObjectList &out,
                          const Expression &tables,
                          const Expression &filter, 
-                         const Expression &order_by = Expression(),
-                         int max = -1);
+                         const Expression &order_by = Expression());
     DataObjectResultSet load_collection(
             const Expression &tables, const Expression &filter,
-            const Expression &order_by = Expression(), int max = -1);
+            const Expression &order_by = Expression());
 };
 
 class NullPK: public BaseError {

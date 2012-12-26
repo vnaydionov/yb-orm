@@ -15,7 +15,7 @@ int main()
     try {
         auto_ptr<SqlConnection> conn(new SqlConnection(
                     "sqlite+sqlite:///home/vaclav/work/test1.db"));
-        Engine engine(Engine::MANUAL, conn);
+        Engine engine(Engine::READ_WRITE, conn);
         engine.set_logger(ILogger::Ptr(new Logger(&appender)));
         engine.set_echo(true);
         Session session(init_default_meta(), &engine);
@@ -38,13 +38,7 @@ int main()
         cout << client_2.name.value() << endl;
 
         cout << "Walking through client's orders property: \n";
-        int i = 0;
         BOOST_FOREACH(Order order, client_2.orders) {
-            char buf[30];
-            sprintf(buf, "%016x", client_2.orders.relation_object()->master_object());
-            cout << i << " of " << client_2.orders.relation_object()
-                ->slave_objects().size() << " (" << buf << ")" << endl;
-            ++i;
             cout << "(" << order.id 
                 << "," << order.owner->id 
                 << "," << order.dt

@@ -25,7 +25,7 @@ void App::init_engine(const string &db_name)
                 new Yb::SqlPool(YB_POOL_MAX_SIZE, YB_POOL_IDLE_TIME,
                     YB_POOL_MONITOR_SLEEP, yb_logger.get()));
         pool->add_source(Yb::Engine::sql_source_from_env(WIDEN(db_name)));
-        engine_.reset(new Yb::Engine(Yb::Engine::MANUAL, pool, WIDEN(db_name)));
+        engine_.reset(new Yb::Engine(Yb::Engine::READ_WRITE, pool, WIDEN(db_name)));
         engine_->set_echo(true);
         engine_->set_logger(yb_logger);
     }

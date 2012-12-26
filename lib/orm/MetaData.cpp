@@ -128,13 +128,15 @@ Table::add_column(const Column &column)
 {
     if (!is_id(column.name()))
         throw BadColumnName(name(), column.name());
-    String column_uname = str_to_upper(column.name());
-    IndexMap::const_iterator it = indicies_.find(column_uname);
+    String col_uname = str_to_upper(column.name());
+    IndexMap::const_iterator it = indicies_.find(col_uname);
     int idx = -1;
     if (it == indicies_.end()) {
         idx = cols_.size();
         cols_.push_back(column);
-        indicies_[column_uname] = idx;
+        indicies_[column.name()] = idx;
+        indicies_[col_uname] = idx;
+        indicies_[str_to_lower(column.name())] = idx;
     }
     else {
         idx = it->second;
@@ -142,14 +144,13 @@ Table::add_column(const Column &column)
     }
     cols_[idx].set_table(*this);
     if (column.is_pk())
-        pk_fields_.push_back(column_uname);
+        pk_fields_.push_back(column.name());
 }
 
 size_t
 Table::idx_by_name(const String &col_name) const
 {
-    String column_uname = str_to_upper(col_name);
-    IndexMap::const_iterator it = indicies_.find(column_uname);
+    IndexMap::const_iterator it = indicies_.find(col_name);
     if (it == indicies_.end())
         throw ColumnNotFoundInMetaData(name(), col_name);
     return it->second;
@@ -208,41 +209,30 @@ Table::mk_key(const Values &row_values, Key &key) const
     key.first = name();
     bool assigned_key = true;
     ValueMap key_values;
-    for (size_t i = 0; i < cols_.size(); ++i) {
-        const Column &col = cols_[i];
-        if (col.is_pk()) {
-            const String &col_name = col.name();
-            key_values[col_name] = row_values[i];
-            if (key_values[col_name].is_null())
-                assigned_key = false;
-        }
-    }
+    Strings::const_iterator i = pk_fields().begin(), iend = pk_fields().end();
+    for (; i != iend; ++i)
+        if ((key_values[*i] = row_values[idx_by_name(*i)]).is_null())
+            assigned_key = false;
     key.second.swap(key_values);
     return assigned_key;
 }
 
 bool
-Table::mk_key(const ValueMap &row_values, Key &key) const
+Table::mk_key(const Row &row_values, Key &key) const
 {
     key.first = name();
     bool assigned_key = true;
     ValueMap key_values;
-    for (size_t i = 0; i < cols_.size(); ++i) {
-        const Column &col = cols_[i];
-        if (col.is_pk()) {
-            const String &col_name = col.name();
-            const String col_name_ext = str_to_upper(col_name);
-            key_values[col_name] = row_values[col_name_ext];
-            if (key_values[col_name].is_null())
-                assigned_key = false;
-        }
-    }
+    Strings::const_iterator i = pk_fields().begin(), iend = pk_fields().end();
+    for (; i != iend; ++i)
+        if ((key_values[*i] = row_values[idx_by_name(*i)].second).is_null())
+            assigned_key = false;
     key.second.swap(key_values);
     return assigned_key;
 }
 
 const Key
-Table::mk_key(const ValueMap &row_values) const
+Table::mk_key(const Row &row_values) const
 {
     Key key;
     mk_key(row_values, key);
@@ -327,6 +317,7 @@ Schema::operator=(Schema &x)
 {
     if (&x != this) {
         clear_backrefs();
+        tables_lookup_.swap(x.tables_lookup_);
         tables_.swap(x.tables_);
         rels_.swap(x.rels_);
         relations_.swap(x.relations_);
@@ -342,17 +333,18 @@ Schema::add_table(Table::Ptr table)
         throw BadTableName(table->name());
     if (table->size() == 0)
         throw TableWithoutColumns(table->name());
-    String table_uname = str_to_upper(table->name());
-    tables_[table_uname] = table;
-    tables_[table_uname]->set_schema(this);
+    tables_[table->name()] = table;
+    tables_lookup_[table->name()] = table;
+    tables_lookup_[str_to_upper(table->name())] = table;
+    tables_lookup_[str_to_lower(table->name())] = table;
+    table->set_schema(this);
 }
 
 const Table &
 Schema::table(const String &name) const
 {
-    String table_uname = str_to_upper(name);
-    TblMap::const_iterator it = tables_.find(table_uname);
-    if (it == tables_.end())
+    TblMap::const_iterator it = tables_lookup_.find(name);
+    if (it == tables_lookup_.end())
         throw TableNotFoundInMetaData(name);
     return *shptr_get(it->second);
 }
@@ -522,12 +514,12 @@ Schema::fill_map_tree_by_meta(const set<String> &unique_tables, StrMap &tree_map
 void
 Schema::check_foreign_key(const String &table, const String &fk_table, const String &fk_field)
 {
-    String fk_table_uname = str_to_upper(fk_table);
-    if (tables_.find(fk_table_uname) == tables_.end())
+    TblMap::const_iterator i = tables_lookup_.find(fk_table);
+    if (tables_lookup_.end() == i)
         throw IntegrityCheckFailed(String(_T("Table '")) + fk_table +
                 _T("' not found as foreign key for '") + table + _T("'"));
     try {
-        tables_[fk_table_uname]->column(fk_field);
+        i->second->column(fk_field);
     }
     catch (ColumnNotFoundInMetaData &) {
         throw IntegrityCheckFailed(String(_T("Field '")) + fk_field +

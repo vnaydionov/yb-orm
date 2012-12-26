@@ -75,7 +75,7 @@ const String key2str(const Key &key)
     ValueMap::const_iterator i = key.second.begin(),
         iend = key.second.end();
     for (; i != iend; ++i)
-        out << "'" << NARROW(i->first) << "': "
+        out << "'" << NARROW(*i->first) << "': "
             << NARROW(i->second.sql_str()) << ", ";
     out << "}";
     return WIDEN(out.str());
@@ -171,10 +171,9 @@ void Session::detach(DataObjectPtr obj)
 void Session::load_collection(ObjectList &out,
                               const Expression &from,
                               const Filter &filter, 
-                              const Expression &order_by,
-                              int max)
+                              const Expression &order_by)
 {
-    DataObjectResultSet rs = load_collection(from, filter, order_by, max);
+    DataObjectResultSet rs = load_collection(from, filter, order_by);
     DataObjectResultSet::iterator i = rs.begin(), iend = rs.end();
     for (; i != iend; ++i)
         out.push_back((*i)[0]);
@@ -183,22 +182,22 @@ void Session::load_collection(ObjectList &out,
 DataObjectResultSet Session::load_collection(
         const Expression &from,
         const Filter &filter,
-        const Expression &order_by,
-        int max)
+        const Expression &order_by)
 {
     Strings tables;
     find_all_tables(from, tables);
     ExpressionList cols;
     Strings::const_iterator i = tables.begin(), iend = tables.end();
     for (; i != iend; ++i) {
-        const Table &table = schema_[*i];
-        for (size_t j = 0; j < table.size(); ++j)
-            cols << ColumnExpr(table.name(), table[j].name());
+        const Table &table = schema_.table(*i);
+        Columns::const_iterator j = table.begin(), jend = table.end();
+        for (; j != jend; ++j)
+            cols << ColumnExpr(*i, j->name());
     }
-    SqlResultSet result = engine_->select_iter
-        (cols, from, filter,
-         Expression(), Expression(), order_by, max);
-    return DataObjectResultSet(result, *this, tables);
+    SqlResultSet rs = engine_->select_iter(
+            SelectExpr(cols).from_(from).where_(filter)
+                .order_by_(order_by));
+    return DataObjectResultSet(rs, *this, tables);
 }
 
 DataObject::Ptr Session::get_lazy(const Key &key)
@@ -206,18 +205,14 @@ DataObject::Ptr Session::get_lazy(const Key &key)
     IdentityMap::iterator i = identity_map_.find(key);
     if (i != identity_map_.end())
         return i->second;
-    bool empty_key = true;
-    ValueMap::const_iterator it = key.second.begin(),
-        end = key.second.end();
-    for (; it != end; ++it)
-        if (!it->second.is_null())
-            empty_key = false;
-    //if (empty_key)
+    bool empty = empty_key(key);
+    //if (empty)
     //    throw NullPK(key.first);
     DataObjectPtr new_obj =
         DataObject::create_new(schema_[key.first], DataObject::Ghost);
-    for (it = key.second.begin(); it != end; ++it)
-        new_obj->set(*it->first, it->second);
+    ValueMap::const_iterator j = key.second.begin(), jend = key.second.end();
+    for (; j != jend; ++j)
+        new_obj->set(*j->first, j->second);
     new_obj->set_session(this);
     identity_map_[key] = new_obj;
     return new_obj;
@@ -528,8 +523,8 @@ const Row DataObject::values(bool include_key)
     Row values;
     for (size_t i = 0; i < table_.size(); ++i)
         if (!table_[i].is_pk() || include_key)
-            values[table_[i].name()]
-                = values_[i].get_typed_value(table_[i].type());
+            values.push_back(make_pair(table_[i].name(),
+                        values_[i].get_typed_value(table_[i].type())));
     return values;
 }
 
@@ -737,7 +732,7 @@ size_t DataObject::fill_from_row(const Row &r, size_t pos)
 {
     size_t i = 0;
     for (; i < table_.size(); ++i)
-        values_[i] = get_typed_value(table_[i], r[pos + i]);
+        values_[i] = get_typed_value(table_[i], r[pos + i].second);
     update_key();
     status_ = Sync;
     return pos + i;

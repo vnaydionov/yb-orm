@@ -74,6 +74,8 @@ typedef OrderedDict<String, Value> ValueMap;
 typedef std::pair<String, ValueMap> Key;
 typedef std::vector<Key> Keys;
 
+bool empty_key(const Key &key);
+
 //! @name Casting from variant typed to certain type
 //! @{
 template <class T>

@@ -12,6 +12,7 @@
 #include <util/Exception.h>
 #include <orm/Value.h>
 #include <orm/Expression.h>
+#include <orm/SqlDriver.h>
 
 class TestMetaData;
 
@@ -209,8 +210,8 @@ public:
     void set_depth(int depth) { depth_ = depth; }
     const Strings &pk_fields() const { return pk_fields_; }
     bool mk_key(const Values &row_values, Key &key) const;
-    bool mk_key(const ValueMap &row_values, Key &key) const;
-    const Key mk_key(const ValueMap &row_values) const;
+    bool mk_key(const Row &row_values, Key &key) const;
+    const Key mk_key(const Row &row_values) const;
     const Key mk_key(LongInt id) const;
     void refresh();
 private:
@@ -332,6 +333,7 @@ private:
     Expression make_join_expr(const Expression &expr1, const String &tbl1,
             Strings::const_iterator it, Strings::const_iterator end) const;
 
+    TblMap tables_lookup_;
     TblMap tables_;
     RelMap rels_;
     RelVect relations_;

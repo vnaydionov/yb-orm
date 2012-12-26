@@ -322,6 +322,26 @@ const Strings list_sql_dialects()
     return theDialectRegistry::instance().list_items();
 }
 
+Row::iterator find_in_row(Row &row, const String &name)
+{
+    Row::iterator i = row.begin(), iend = row.end();
+    String uname = str_to_upper(name);
+    for (; i != iend; ++i)
+        if (i->first == uname)
+            break;
+    return i;
+}
+
+Row::const_iterator find_in_row(const Row &row, const String &name)
+{
+    Row::const_iterator i = row.begin(), iend = row.end();
+    String uname = str_to_upper(name);
+    for (; i != iend; ++i)
+        if (i->first == uname)
+            break;
+    return i;
+}
+
 SqlCursorBackend::~SqlCursorBackend() {}
 SqlConnectionBackend::~SqlConnectionBackend() {}
 SqlDriver::~SqlDriver() {}
@@ -528,6 +548,13 @@ SqlCursor::fetch_row()
 {
     try {
         RowPtr row = backend_->fetch_row();
+        if (row.get()) {
+            Row::iterator j = row->begin(), jend = row->end();
+            for (; j != jend; ++j) {
+                String uname = str_to_upper(j->first);
+                std::swap(j->first, uname);
+            }
+        }
         if (echo_) {
             if (row.get()) {
                 std::ostringstream out;
@@ -535,7 +562,7 @@ SqlCursor::fetch_row()
                 Row::const_iterator j = row->begin(),
                                     jend = row->end();
                 for (; j != jend; ++j)
-                    out << NARROW(*j->first) << "="
+                    out << NARROW(j->first) << "="
                         << NARROW(j->second.sql_str()) << " ";
                 debug(WIDEN(out.str()));
             }

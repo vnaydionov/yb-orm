@@ -10,7 +10,7 @@ int main()
     try {
         auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(
                     "sqlite+sqlite:///home/vaclav/work/test1.db"));
-        Yb::Engine engine(Yb::Engine::MANUAL, conn);
+        Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
         Yb::Session session(Yb::init_default_meta(), &engine);
 
         Domain::OrderHolder order;

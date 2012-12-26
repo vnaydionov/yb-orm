@@ -96,7 +96,7 @@ OdbcCursorBackend::fetch_row()
             if (f.is_null() != 1)
                 v = Value(val);
         }
-        (*row)[name] = v;
+        row->push_back(make_pair(name, v));
     }
     return row;
 }

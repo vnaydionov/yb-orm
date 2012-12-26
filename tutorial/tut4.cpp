@@ -15,7 +15,7 @@ int main()
     try {
         auto_ptr<SqlConnection> conn(new SqlConnection(
                     "sqlite+sqlite:///home/vaclav/work/test1.db"));
-        Engine engine(Engine::MANUAL, conn);
+        Engine engine(Engine::READ_WRITE, conn);
         engine.set_logger(ILogger::Ptr(new Logger(&appender)));
         engine.set_echo(true);
 

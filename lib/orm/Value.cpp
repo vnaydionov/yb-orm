@@ -251,6 +251,16 @@ Value::get_type_name(int type)
     return WIDEN(type_names[type]);
 }
 
+bool
+empty_key(const Key &key)
+{
+    ValueMap::const_iterator i = key.second.begin(), iend = key.second.end();
+    for (; i != iend; ++i)
+        if (i->second.is_null())
+            return false;
+    return true;
+}
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

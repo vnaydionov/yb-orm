@@ -12,7 +12,7 @@ int main()
 {
     Yb::LogAppender appender(cerr);
     Yb::Logger root_logger(&appender);
-    Yb::Engine engine(Yb::Engine::MANUAL);
+    Yb::Engine engine;
     engine.set_echo(true);
     engine.set_logger(root_logger.new_logger("yb"));
     Yb::Session session(Yb::init_default_meta(), &engine);

@@ -34,9 +34,9 @@ int main()
     auto_ptr<Yb::SqlConnection> conn(
             new Yb::SqlConnection(_T("MY_DBPOOL"),
                 Yb::env_cfg(_T("DBTYPE")), _T("default")));
-    Yb::Engine engine(Yb::Engine::MANUAL, conn);
+    Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
 #else
-    Yb::Engine engine(Yb::Engine::MANUAL);
+    Yb::Engine engine;
 #endif
     engine.set_echo(true);
     engine.set_logger(root_logger.new_logger("yb"));

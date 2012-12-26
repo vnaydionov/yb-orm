@@ -469,14 +469,12 @@ class QueryObj {
     typedef QueryFunc<R> QF;
     Session &session_;
     Expression filter_, order_;
-    int max_;
 public:
     QueryObj(Session &session, const Expression &filter = Expression(),
             const Expression &order = Expression(), int max = -1)
         : session_(session)
         , filter_(filter)
         , order_(order)
-        , max_(max)
     {}
     QueryObj filter_by(const Expression &filter) {
         QueryObj q(*this);
@@ -491,11 +489,6 @@ public:
         q.order_ = order;
         return q;
     }
-    QueryObj max_rows(int max) {
-        QueryObj q(*this);
-        q.max_ = max;
-        return q;
-    }
     SelectExpr get_select() {
         Strings tables;
         QF::list_tables(tables);
@@ -508,14 +501,14 @@ public:
         QF::list_tables(tables);
         return DomainResultSet<R>(session_.load_collection(
                     session_.schema().join_expr(tables),
-                    filter_, order_, max_));
+                    filter_, order_));
     }
     R one() {
         Strings tables;
         QF::list_tables(tables);
         DomainResultSet<R> r = session_.load_collection(
                     session_.schema().join_expr(tables),
-                    filter_, order_, max_);
+                    filter_, order_);
         typename DomainResultSet<R>::iterator it = r.begin();
         if (it == r.end())
             throw NoDataFound("No data");
@@ -529,7 +522,7 @@ public:
         select.from_(ColumnExpr(get_select(), _T("X")));
         SqlResultSet rs = session_.engine()->select_iter(select);
         Row r = *rs.begin(); 
-        return r[0].as_longint();
+        return r[0].second.as_longint();
     }
 };
 

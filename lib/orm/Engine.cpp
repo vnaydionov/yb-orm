@@ -198,37 +198,8 @@ Engine::set_logger(ILogger::Ptr logger)
 SqlResultSet
 Engine::select_iter(const Expression &select_expr)
 {
-    bool select_mode = mode_ == FORCE_SELECT_UPDATE;
-    if ((mode_ == READ_ONLY) && select_mode)
-        throw BadOperationInMode(
-                _T("Using SELECT FOR UPDATE in read-only mode"));
-    if (select_mode)
-        touch();
     Values params;
     String sql = select_expr.generate_sql(&params);
-    auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
-    cursor->prepare(sql);
-    SqlResultSet rs = cursor->exec(params);
-    rs.own(cursor);
-    return rs;
-}
-
-SqlResultSet
-Engine::select_iter(const Expression &what,
-        const Expression &from, const Expression &where,
-        const Expression &group_by, const Expression &having,
-        const Expression &order_by, int max_rows, bool for_update)
-{
-    bool select_mode = (mode_ == FORCE_SELECT_UPDATE) ? true : for_update;
-    if ((mode_ == READ_ONLY) && select_mode)
-        throw BadOperationInMode(
-                _T("Using SELECT FOR UPDATE in read-only mode"));
-    String sql;
-    Values params;
-    do_gen_sql_select(sql, params,
-            what, from, where, group_by, having, order_by, for_update);
-    if (select_mode)
-        touch();
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
     SqlResultSet rs = cursor->exec(params);
@@ -242,14 +213,12 @@ Engine::select(const Expression &what,
         const Expression &group_by, const Expression &having,
         const Expression &order_by, int max_rows, bool for_update)
 {
-    bool select_mode = (mode_ == FORCE_SELECT_UPDATE) ? true : for_update;
-    if ((mode_ == READ_ONLY) && select_mode)
-        throw BadOperationInMode(
-                _T("Using SELECT FOR UPDATE in read-only mode"));
-    if (select_mode)
-        touch();
-    RowsPtr rows = on_select(what, from, where,
-                group_by, having, order_by, max_rows, select_mode);
+    SqlResultSet rs = select_iter(SelectExpr(what).from_(from).
+            where_(where).group_by_(group_by).having_(having).
+            order_by_(order_by).for_update(for_update));
+    RowsPtr rows(new Rows);
+    copy_no_more_than_n(rs.begin(), rs.end(), max_rows,
+            back_inserter(*rows));
     return rows;
 }
 
@@ -354,23 +323,6 @@ Engine::get_next_value(const String &seq_name)
             Expression(dialect_->dual_name()), Expression()).as_longint();
 }
 
-RowsPtr
-Engine::on_select(const Expression &what,
-        const Expression &from, const Expression &where,
-        const Expression &group_by, const Expression &having,
-        const Expression &order_by, int max_rows,
-        bool for_update)
-{
-    String sql;
-    Values params;
-    do_gen_sql_select(sql, params,
-            what, from, where, group_by, having, order_by, for_update);
-    auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
-    cursor->prepare(sql);
-    cursor->exec(params);
-    return cursor->fetch_rows(max_rows);
-}
-
 const vector<LongInt>
 Engine::on_insert(const String &table_name,
         const Rows &rows, const StringSet &exclude_fields,
@@ -391,9 +343,9 @@ Engine::on_insert(const String &table_name,
         for (; it != end; ++it) {
             Row::const_iterator f = it->begin(), fend = it->end();
             for (; f != fend; ++f) {
-                StringSet::const_iterator x = exclude_fields.find(*f->first);
+                StringSet::const_iterator x = exclude_fields.find(f->first);
                 if (x == exclude_fields.end())
-                    params[param_nums[*f->first]] = f->second;
+                    params[param_nums[f->first]] = f->second;
             }
             cursor->exec(params);
         }
@@ -406,9 +358,9 @@ Engine::on_insert(const String &table_name,
                 cursor->prepare(sql);
                 Row::const_iterator f = it->begin(), fend = it->end();
                 for (; f != fend; ++f) {
-                    StringSet::const_iterator x = exclude_fields.find(*f->first);
+                    StringSet::const_iterator x = exclude_fields.find(f->first);
                     if (x == exclude_fields.end())
-                        params[param_nums[*f->first]] = f->second;
+                        params[param_nums[f->first]] = f->second;
                 }
                 cursor->exec(params);
             }
@@ -416,7 +368,7 @@ Engine::on_insert(const String &table_name,
             cursor->prepare(dialect_->select_last_inserted_id(table_name));
             cursor->exec(Values());
             RowsPtr id_rows = cursor->fetch_rows();
-            ids.push_back((*id_rows)[0][0].as_longint());
+            ids.push_back((*id_rows)[0][0].second.as_longint());
         }
     }
     return ids;
@@ -440,9 +392,9 @@ Engine::on_update(const String &table_name,
     for (; it != end; ++it) {
         Row::const_iterator f = it->begin(), fend = it->end();
         for (; f != fend; ++f) {
-            StringSet::const_iterator x = exclude_fields.find(*f->first);
+            StringSet::const_iterator x = exclude_fields.find(f->first);
             if (x == exclude_fields.end())
-                params[param_nums[*f->first]] = f->second;
+                params[param_nums[f->first]] = f->second;
         }
         cursor->exec(params);
     }
@@ -499,17 +451,6 @@ Engine::on_rollback()
 }
 
 void
-Engine::do_gen_sql_select(String &sql, Values &params,
-        const Expression &what, const Expression &from, const Expression &where,
-        const Expression &group_by, const Expression &having,
-        const Expression &order_by, bool for_update) const
-{
-    sql = SelectExpr(what).from_(from).where_(where)
-        .group_by_(group_by).having_(having).order_by_(order_by)
-        .for_update(for_update).generate_sql(&params);
-}
-
-void
 Engine::do_gen_sql_insert(String &sql, Values &params,
         ParamNums &param_nums, const String &table_name,
         const Row &row, const StringSet &exclude_fields) const
@@ -521,11 +462,11 @@ Engine::do_gen_sql_insert(String &sql, Values &params,
     Strings names, pholders;
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it) {
-        StringSet::const_iterator x = exclude_fields.find(*it->first);
+        StringSet::const_iterator x = exclude_fields.find(it->first);
         if (x == exclude_fields.end()) {
-            param_nums[*it->first] = params.size();
+            param_nums[it->first] = params.size();
             params.push_back(it->second);
-            names.push_back(*it->first);
+            names.push_back(it->first);
             pholders.push_back(_T("?"));
         }
     }
@@ -553,12 +494,12 @@ Engine::do_gen_sql_update(String &sql, Values &params,
     sql_query << "UPDATE " << NARROW(table_name) << " SET ";
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it) {
-        if (exclude_fields.find(*it->first)
+        if (exclude_fields.find(it->first)
                 == const_cast<StringSet &>(exclude_fields).end() &&
-            std::find(key_fields.begin(), key_fields.end(), *it->first) 
+            std::find(key_fields.begin(), key_fields.end(), it->first) 
                 == key_fields.end())
         {
-            excluded_row[*it->first] = it->second;
+            excluded_row.push_back(*it);
         }
     }
 
@@ -568,9 +509,9 @@ Engine::do_gen_sql_update(String &sql, Values &params,
     end = excluded_row.end();
     for (it = excluded_row.begin(); it != excluded_row.end(); ++it)
     {
-        param_nums[*it->first] = params.size();
+        param_nums[it->first] = params.size();
         params.push_back(it->second);
-        sql_query << NARROW(*it->first) << " = ?";
+        sql_query << NARROW(it->first) << " = ?";
         if (it != last)
             sql_query << ", ";
     }
@@ -591,9 +532,9 @@ Engine::do_gen_sql_update(String &sql, Values &params,
     for (; it_where != end_where; ++it_where) {
         Row::const_iterator it_find = find_in_row(row, *it_where);
         if (it_find != row.end()) {
-            param_nums[*it_find->first] = params.size();
+            param_nums[it_find->first] = params.size();
             params.push_back(it_find->second);
-            where_sql << "(" << NARROW(*it_find->first) << " = ?)";
+            where_sql << "(" << NARROW(it_find->first) << " = ?)";
             if (it_where != it_last)
                 where_sql << " AND ";
         }

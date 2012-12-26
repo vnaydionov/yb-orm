@@ -23,15 +23,6 @@ class EngineBase
 public:
     virtual ~EngineBase();
     virtual SqlResultSet select_iter(const Expression &select_expr) = 0;
-    virtual SqlResultSet select_iter(
-        const Expression &what,
-        const Expression &from,
-        const Expression &where = Expression(),
-        const Expression &group_by = Expression(),
-        const Expression &having = Expression(),
-        const Expression &order_by = Expression(),
-        int max_rows = -1,
-        bool for_update = false) = 0;
     virtual RowsPtr select(
         const Expression &what,
         const Expression &from,
@@ -77,10 +68,10 @@ class Engine
 {
     friend class ::TestEngine;
 public:
-    enum Mode { READ_ONLY, MANUAL, FORCE_SELECT_UPDATE }; 
+    enum Mode { READ_ONLY, READ_WRITE }; 
 
     static SqlSource sql_source_from_env(const String &id = _T(""));
-    Engine(Mode work_mode = MANUAL);
+    Engine(Mode work_mode = READ_WRITE);
     Engine(Mode work_mode, std::auto_ptr<SqlConnection> conn);
     Engine(Mode work_mode, std::auto_ptr<SqlPool> pool,
            const String &source_id, int timeout = YB_POOL_WAIT_TIME);
@@ -99,15 +90,6 @@ public:
 
     // SQL operator wrappers
     SqlResultSet select_iter(const Expression &select_expr);
-    SqlResultSet select_iter(
-            const Expression &what,
-            const Expression &from,
-            const Expression &where = Expression(),
-            const Expression &group_by = Expression(),
-            const Expression &having = Expression(),
-            const Expression &order_by = Expression(),
-            int max_rows = -1,
-            bool for_update = false);
     RowsPtr select(
             const Expression &what,
             const Expression &from,
@@ -156,11 +138,6 @@ private:
     SqlPool *get_pool();
     SqlConnection *get_conn(bool strict = true);
 
-    virtual RowsPtr on_select(const Expression &what,
-            const Expression &from, const Expression &where,
-            const Expression &group_by, const Expression &having,
-            const Expression &order_by, int max_rows,
-            bool for_update);
     virtual const std::vector<LongInt> on_insert(
             const String &table_name,
             const Rows &rows, const StringSet &exclude_fields,
@@ -183,10 +160,6 @@ private:
             ParamNums &param_nums, const String &table_name,
             const Row &row, const Strings &key_fields,
             const StringSet &exclude_fields, const Filter &where) const;
-    virtual void do_gen_sql_select(String &sql, Values &params,
-            const Expression &what, const Expression &from, const Expression &where,
-            const Expression &group_by, const Expression &having,
-            const Expression &order_by, bool for_update) const;
     virtual void do_gen_sql_delete(String &sql, Values &params,
             const String &table, const Filter &where) const;
 
