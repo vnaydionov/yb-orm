@@ -219,18 +219,20 @@ DataObject::Ptr Session::get_lazy(const Key &key)
 }
 
 typedef map<String, Rows> RowsByTable;
+typedef map<String, RowsData> RowsDataByTable;
 
-void add_row_to_rows_by_table(RowsByTable &rows_by_table,
-                              const String &tbl_name, const Row &row)
+template <class Row__, class Rows__>
+void add_row_to_rows_by_table(map<String, Rows__> &rows_by_table,
+                              const String &tbl_name, const Row__ &row)
 {
-    RowsByTable::iterator k = rows_by_table.find(tbl_name);
+    typename map<String, Rows__>::iterator k = rows_by_table.find(tbl_name);
     if (k == rows_by_table.end()) {
-        Rows rows(1);
+        Rows__ rows(1);
         rows[0] = row;
-        rows_by_table.insert(pair<String, Rows> (tbl_name, rows));
+        rows_by_table.insert(make_pair(tbl_name, rows));
     }
     else {
-        Rows &rows = k->second;
+        Rows__ &rows = k->second;
         rows.push_back(row);
     }
 }
@@ -344,23 +346,19 @@ void Session::flush_new()
 
 void Session::flush_update(IdentityMap &idmap_copy)
 {
-    typedef map<String, Rows> RowsByTable;
-    RowsByTable rows_by_table;
+    RowsDataByTable rows_by_table;
     IdentityMap::iterator i = idmap_copy.begin(), iend = idmap_copy.end();
     for (; i != iend; ++i)
         if (i->second->status() == DataObject::Dirty) {
             const String &tbl_name = i->first.first;
             i->second->refresh_master_fkeys();
             add_row_to_rows_by_table(rows_by_table, tbl_name,
-                                     i->second->values());
+                                     i->second->raw_values());
             i->second->set_status(DataObject::Ghost);
         }
-    RowsByTable::iterator j = rows_by_table.begin(),
-        jend = rows_by_table.end();
-    for (; j != jend; ++j) {
-        engine_->update(j->first, j->second,
-                        schema_[j->first].pk_fields());
-    }
+    RowsDataByTable::iterator j = rows_by_table.begin(), jend = rows_by_table.end();
+    for (; j != jend; ++j)
+        engine_->update(schema_[j->first], j->second);
 }
 
 void Session::flush_delete(IdentityMap &idmap_copy)

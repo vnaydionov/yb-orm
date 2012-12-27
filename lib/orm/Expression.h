@@ -162,7 +162,7 @@ public:
     const String generate_sql(Values *params) const;
     int size() const { return items_.size(); }
     const Expression &item(int n) const {
-        YB_ASSERT(n >= 0 && n < items_.size());
+        YB_ASSERT(n >= 0 && (size_t)n < items_.size());
         return items_[n];
     }
 };

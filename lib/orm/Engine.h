@@ -13,6 +13,7 @@
 #include <orm/Expression.h>
 #include <orm/SqlDriver.h>
 #include <orm/SqlPool.h>
+#include <orm/MetaData.h>
 
 class TestEngine;
 
@@ -37,12 +38,7 @@ public:
         const Rows &rows,
         const StringSet &exclude_fields = StringSet(),
         bool collect_new_ids = false) = 0;
-    virtual void update(
-        const String &table_name,
-        const Rows &rows,
-        const Strings &key_fields,
-        const StringSet &exclude_fields = StringSet(),
-        const Filter &where = Filter()) = 0;
+    virtual void update(const Table &table, const RowsData &rows) = 0;
     virtual void delete_from(
         const String &table_name,
         const Filter &where) = 0;
@@ -68,7 +64,7 @@ class Engine
 {
     friend class ::TestEngine;
 public:
-    enum Mode { READ_ONLY, READ_WRITE }; 
+    enum Mode { READ_ONLY = 0, READ_WRITE = 1, MANUAL = 1 }; 
 
     static SqlSource sql_source_from_env(const String &id = _T(""));
     Engine(Mode work_mode = READ_WRITE);
@@ -102,10 +98,7 @@ public:
     const std::vector<LongInt> insert(const String &table_name,
             const Rows &rows, const StringSet &exclude_fields = StringSet(),
             bool collect_new_ids = false);
-    void update(const String &table_name,
-            const Rows &rows, const Strings &key_fields,
-            const StringSet &exclude_fields = StringSet(),
-            const Filter &where = Filter());
+    void update(const Table &table, const RowsData &rows);
     void delete_from(const String &table_name, const Filter &where);
     void delete_from(const String &table_name, const Keys &keys);
     void exec_proc(const String &proc_code);
@@ -142,9 +135,7 @@ private:
             const String &table_name,
             const Rows &rows, const StringSet &exclude_fields,
             bool collect_new_ids);
-    virtual void on_update(const String &table_name,
-            const Rows &rows, const Strings &key_fields,
-            const StringSet &exclude_fields, const Filter &where);
+    virtual void on_update(const Table &table, const RowsData &rows);
     virtual void on_delete(const String &table_name,
             const Filter &where);
     virtual void on_delete(const String &table_name,
@@ -157,9 +148,7 @@ private:
             ParamNums &param_nums, const String &table_name,
             const Row &row, const StringSet &exclude_fields) const;
     virtual void do_gen_sql_update(String &sql, Values &params,
-            ParamNums &param_nums, const String &table_name,
-            const Row &row, const Strings &key_fields,
-            const StringSet &exclude_fields, const Filter &where) const;
+            ParamNums &param_nums, const Table &table) const;
     virtual void do_gen_sql_delete(String &sql, Values &params,
             const String &table, const Filter &where) const;
 

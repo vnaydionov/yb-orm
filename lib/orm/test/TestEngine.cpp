@@ -6,6 +6,16 @@
 using namespace std;
 using namespace Yb;
 
+Row::iterator find_in_row(Row &row, const String &name)
+{
+    Row::iterator i = row.begin(), iend = row.end();
+    String uname = Yb::StrUtils::str_to_upper(name);
+    for (; i != iend; ++i)
+        if (i->first == uname)
+            break;
+    return i;
+}
+
 class TestEngine : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestEngine);
@@ -23,7 +33,6 @@ class TestEngine : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_insert_empty_row, BadSQLOperation);
     CPPUNIT_TEST(test_update_where);
     CPPUNIT_TEST(test_update_combo);
-    CPPUNIT_TEST_EXCEPTION(test_update_empty_row, BadSQLOperation);
     CPPUNIT_TEST_EXCEPTION(test_update_wo_clause, BadSQLOperation);
     CPPUNIT_TEST(test_delete);
     CPPUNIT_TEST_EXCEPTION(test_delete_wo_clause, BadSQLOperation);
@@ -170,70 +179,54 @@ public:
     void test_update_where()
     {
         Engine engine(Engine::READ_ONLY);
+        Table t(_T("T"));
+        t.add_column(Column(_T("A"), Value::LONGINT, 0, 0));
+        t.add_column(Column(_T("B"), Value::LONGINT, 0, Column::PK));
         String sql;
-        Row row;
-        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_update(sql, params, param_nums,
-                _T("T"), row, Strings(), StringSet(), Expression(_T("B")) == String(_T("b")));
-        CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET A = ? WHERE (B = ?)"), NARROW(sql));
-        CPPUNIT_ASSERT(2 == params.size()
-                && Value(_T("a")) == params[0] && Value(_T("b")) == params[1]);
-        CPPUNIT_ASSERT(1 == param_nums.size() && 0 == param_nums[_T("A")]);
+        engine.do_gen_sql_update(sql, params, param_nums, t);
+        CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET A = ? WHERE T.B = ?"), NARROW(sql));
+        CPPUNIT_ASSERT_EQUAL((size_t)2, params.size());
+        CPPUNIT_ASSERT_EQUAL((size_t)2, param_nums.size());
+        CPPUNIT_ASSERT_EQUAL(0, param_nums[_T("A")]);
+        CPPUNIT_ASSERT_EQUAL(1, param_nums[_T("B")]);
     }
 
     void test_update_combo()
     {
         Engine engine(Engine::READ_ONLY);
-        String sql;
-        Row row;
-        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
-        row.push_back(make_pair(String(_T("B")), Value(1)));
-        row.push_back(make_pair(String(_T("C")), Value(_T("c"))));
-        row.push_back(make_pair(String(_T("D")), Value(_T("d"))));
-        row.push_back(make_pair(String(_T("E")), Value(_T("e"))));
-        row.push_back(make_pair(String(_T("F")), Value(2)));
-        Strings key;
-        key.push_back(_T("B"));
-        key.push_back(_T("D"));
-        StringSet exclude;
-        exclude.insert(_T("A"));
-        exclude.insert(_T("C"));
-        Values params;
-        ParamNums param_nums;
-        engine.do_gen_sql_update(sql, params, param_nums,
-                _T("T"), row, key, exclude, Expression(_T("Q")) == String(_T("q")));
-        CPPUNIT_ASSERT_EQUAL(string(
-                "UPDATE T SET E = ?, F = ? WHERE (Q = ?) AND (B = ?) AND (D = ?)"), NARROW(sql));
-        CPPUNIT_ASSERT(5 == params.size() && Value(_T("e")) == params[0] &&
-                Value(2) == params[1] && Value(_T("q")) == params[2] &&
-                Value(1) == params[3] && Value(_T("d")) == params[4]);
-        CPPUNIT_ASSERT(4 == param_nums.size());
-        CPPUNIT_ASSERT(0 == param_nums[_T("E")] && 1 == param_nums[_T("F")] &&
-                3 == param_nums[_T("B")] && 4 == param_nums[_T("D")]);
-    }
-
-    void test_update_empty_row()
-    {
-        Engine engine(Engine::READ_ONLY);
+        Table t(_T("T"));
+        t.add_column(Column(_T("Q"), Value::LONGINT, 0, Column::PK));
+        t.add_column(Column(_T("E"), Value::LONGINT, 0, 0));
+        t.add_column(Column(_T("B"), Value::LONGINT, 0, Column::PK));
+        t.add_column(Column(_T("F"), Value::LONGINT, 0, 0));
+        t.add_column(Column(_T("D"), Value::LONGINT, 0, Column::PK));
         String sql;
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_update(sql, params, param_nums,
-                _T("A"), Row(), Strings(), StringSet(), Filter());
+        engine.do_gen_sql_update(sql, params, param_nums, t);
+        CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET E = ?, F = ? "
+                    "WHERE ((T.Q = ?) AND (T.B = ?)) AND (T.D = ?)"), NARROW(sql));
+        CPPUNIT_ASSERT_EQUAL((size_t)5, params.size());
+        CPPUNIT_ASSERT_EQUAL((size_t)5, param_nums.size());
+        CPPUNIT_ASSERT_EQUAL(0, param_nums[_T("E")]);
+        CPPUNIT_ASSERT_EQUAL(1, param_nums[_T("F")]);
+        CPPUNIT_ASSERT_EQUAL(2, param_nums[_T("Q")]);
+        CPPUNIT_ASSERT_EQUAL(3, param_nums[_T("B")]);
+        CPPUNIT_ASSERT_EQUAL(4, param_nums[_T("D")]);
     }
 
     void test_update_wo_clause()
     {
         Engine engine(Engine::READ_ONLY);
+        Table t(_T("T"));
+        t.add_column(Column(_T("Q"), Value::LONGINT, 0, 0));
+        t.add_column(Column(_T("E"), Value::LONGINT, 0, 0));
         String sql;
-        Row row;
-        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_update(sql, params, param_nums,
-                _T("T"), row, Strings(), StringSet(), Filter());
+        engine.do_gen_sql_update(sql, params, param_nums, t);
     }
 
     void test_delete()
@@ -263,7 +256,9 @@ public:
     void test_update_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
-        engine.update(_T(""), Rows(), Strings(), StringSet());
+        Table t(_T("T"));
+        t.add_column(Column(_T("Q"), Value::LONGINT, 0, Column::PK));
+        engine.update(t, RowsData());
     }
     
     void test_delete_ro_mode()
@@ -343,7 +338,7 @@ public:
         Values params;
         params.push_back(Value(record_id_));
         params.push_back(Value(_T("item")));
-        params.push_back(Value(now()));
+        params.push_back(Value(dt_make(2001, 1, 1)));
         params.push_back(Value(Decimal(_T("1.2"))));
         conn.prepare(_T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)"));
         conn.exec(params);
@@ -418,20 +413,21 @@ public:
     void test_update_sql()
     {
         Engine engine(Engine::READ_WRITE);
+        Table t(_T("T_ORM_TEST"));
+        t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
+        t.add_column(Column(_T("A"), Value::STRING, 100, 0));
+        t.add_column(Column(_T("B"), Value::DATETIME, 0, Column::RO));
+        t.add_column(Column(_T("C"), Value::DECIMAL, 0, 0));
         setup_log(engine);
-        CPPUNIT_ASSERT_EQUAL(false, engine.activity());
-        Rows rows;
-        LongInt id = get_next_test_id(engine.get_connection());
-        Row row;
-        row.push_back(make_pair(String(_T("A")), Value(_T("updated"))));
-        row.push_back(make_pair(String(_T("C")), Value(Decimal(_T("1.3")))));
-        row.push_back(make_pair(String(_T("ID")), Value(record_id_)));
+        RowsData rows;
+        RowData row;
+        DateTime timestamp = now();
+        row.push_back(record_id_);
+        row.push_back(Value(_T("updated")));
+        row.push_back(timestamp);
+        row.push_back(Decimal(_T("1.3")));
         rows.push_back(row);
-        Strings key;
-        key.push_back(_T("ID"));
-        StringSet exclude;
-        exclude.insert(_T("B"));
-        engine.update(_T("T_ORM_TEST"), rows, key, exclude);
+        engine.update(t, rows);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")), Expression(_T("T_ORM_TEST")),
                 Expression(_T("ID")) == record_id_);
@@ -440,6 +436,8 @@ public:
                 NARROW(find_in_row(*ptr->begin(), _T("A"))->second.as_string()));
         CPPUNIT_ASSERT(Decimal(_T("1.3")) ==
                 find_in_row(*ptr->begin(), _T("C"))->second.as_decimal());
+        CPPUNIT_ASSERT(timestamp !=
+                find_in_row(*ptr->begin(), _T("B"))->second.as_date_time());
         engine.commit();
     }
 };

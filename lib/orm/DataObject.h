@@ -247,6 +247,7 @@ public:
     }
     const Key &key();
     Key fk_value_for(const Relation &r);
+    const Values &raw_values() const { return values_; }
     const Row values(bool include_key=true);
     bool assigned_key();
     SlaveRelations &slave_relations() {

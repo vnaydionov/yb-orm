@@ -45,10 +45,6 @@ class SqlSchemaGenerator
     std::set<String>::const_iterator seq_it_;
 public:
     SqlSchemaGenerator(const Schema &schema, SqlDialect *dialect);
-    void gen_commit(std::ostream &out);
-    void gen_create_tables(std::ostream &out);
-    void gen_create_sequences(std::ostream &out);
-    void gen_create_fk_constraints(std::ostream &out);
     void generate(std::ostream &out);
     bool generate_next_statement(String &out);
 };

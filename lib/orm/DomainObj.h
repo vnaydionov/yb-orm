@@ -471,7 +471,7 @@ class QueryObj {
     Expression filter_, order_;
 public:
     QueryObj(Session &session, const Expression &filter = Expression(),
-            const Expression &order = Expression(), int max = -1)
+            const Expression &order = Expression())
         : session_(session)
         , filter_(filter)
         , order_(order)
@@ -528,9 +528,9 @@ public:
 
 template <class R>
 QueryObj<R> query(Session &session, const Expression &filter = Expression(),
-    const Expression &order = Expression(), int max = -1)
+    const Expression &order = Expression())
 {
-    return QueryObj<R>(session, filter, order, max);
+    return QueryObj<R>(session, filter, order);
 }
 
 template <class Obj>

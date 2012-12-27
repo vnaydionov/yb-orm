@@ -170,9 +170,6 @@ typedef std::vector<RowItem> Row;
 typedef std::auto_ptr<Row> RowPtr;
 typedef std::vector<Row> Rows;
 typedef std::auto_ptr<Rows> RowsPtr;
-// Warning: these functions find just first occurrence
-Row::iterator find_in_row(Row &row, const String &name);
-Row::const_iterator find_in_row(const Row &row, const String &name);
 
 class SqlCursorBackend: NonCopyable
 {

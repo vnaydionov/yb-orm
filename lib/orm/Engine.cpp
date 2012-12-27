@@ -235,15 +235,13 @@ Engine::insert(const String &table_name,
 }
 
 void
-Engine::update(const String &table_name,
-        const Rows &rows, const Strings &key_fields,
-        const StringSet &exclude_fields, const Filter &where)
+Engine::update(const Table &table, const RowsData &rows)
 {
     if (mode_ == READ_ONLY)
         throw BadOperationInMode(
                 _T("Using UPDATE operation in read-only mode"));
     touch();
-    on_update(table_name, rows, key_fields, exclude_fields, where);
+    on_update(table, rows);
 }
 
 void
@@ -374,27 +372,22 @@ Engine::on_insert(const String &table_name,
     return ids;
 }
 
-void
-Engine::on_update(const String &table_name,
-        const Rows &rows, const Strings &key_fields,
-        const StringSet &exclude_fields, const Filter &where)
+void Engine::on_update(const Table &table, const RowsData &rows)
 {
     if (!rows.size())
         return;
     String sql;
     Values params;
     ParamNums param_nums;
-    do_gen_sql_update(sql, params, param_nums, table_name,
-            rows[0], key_fields, exclude_fields, where);
+    do_gen_sql_update(sql, params, param_nums, table);
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
-    Rows::const_iterator it = rows.begin(), end = rows.end();
-    for (; it != end; ++it) {
-        Row::const_iterator f = it->begin(), fend = it->end();
-        for (; f != fend; ++f) {
-            StringSet::const_iterator x = exclude_fields.find(f->first);
-            if (x == exclude_fields.end())
-                params[param_nums[f->first]] = f->second;
+    RowsData::const_iterator r = rows.begin(), rend = rows.end();
+    for (; r != rend; ++r) {
+        for (size_t i = 0; i < table.size(); ++i) {
+            const Column &col = table[i];
+            if (!col.is_ro() || col.is_pk())
+                params[param_nums[col.name()]] = (*r)[i];
         }
         cursor->exec(params);
     }
@@ -478,71 +471,38 @@ Engine::do_gen_sql_insert(String &sql, Values &params,
 }
 
 void
-Engine::do_gen_sql_update(String &sql, Values &params,
-        ParamNums &param_nums, const String &table_name,
-        const Row &row, const Strings &key_fields,
-        const StringSet &exclude_fields, const Filter &where) const
+Engine::do_gen_sql_update(String &sql, Values &params_out,
+        ParamNums &param_nums_out, const Table &table) const
 {
-    if (key_fields.empty() && (where.get_sql() == Filter().get_sql()))
-        throw BadSQLOperation(
-                _T("Can't do UPDATE without where clause and empty key_fields"));
-    if (row.empty())
-        throw BadSQLOperation(_T("Can't UPDATE with empty row set"));
-
-    Row excluded_row;
-    std::ostringstream sql_query;
-    sql_query << "UPDATE " << NARROW(table_name) << " SET ";
-    Row::const_iterator it = row.begin(), end = row.end();
-    for (; it != end; ++it) {
-        if (exclude_fields.find(it->first)
-                == const_cast<StringSet &>(exclude_fields).end() &&
-            std::find(key_fields.begin(), key_fields.end(), it->first) 
-                == key_fields.end())
-        {
-            excluded_row.push_back(*it);
+    if (!table.pk_fields().size())
+        throw BadSQLOperation(_T("cannot build update statement: no key in table"));
+    String sql_query = _T("UPDATE ") + table.name() + _T(" SET ");
+    Values params;
+    params.reserve(table.size());
+    ParamNums param_nums;
+    size_t i;
+    for (i = 0; i < table.size(); ++i) {
+        const Column &col = table[i];
+        if (!col.is_pk() && !col.is_ro()) {
+            if (!params.empty())
+                sql_query += _T(", ");
+            sql_query += col.name() + _T(" = ?");
+            param_nums[col.name()] = params.size();
+            params.push_back(Value());
         }
     }
-
-    Row::const_iterator last = excluded_row.end();
-    if (!excluded_row.empty())
-        --last;
-    end = excluded_row.end();
-    for (it = excluded_row.begin(); it != excluded_row.end(); ++it)
-    {
-        param_nums[it->first] = params.size();
-        params.push_back(it->second);
-        sql_query << NARROW(it->first) << " = ?";
-        if (it != last)
-            sql_query << ", ";
+    for (i = 0; i < table.pk_fields().size(); ++i) {
+        const String &col_name = table.pk_fields()[i];
+        param_nums[col_name] = params.size();
+        params.push_back(Value());
     }
-
-    sql_query << " WHERE ";
-    std::ostringstream where_sql;
-    String s = where.generate_sql(&params);
-    if (s != Filter().get_sql())
-    {
-        where_sql << "(" << NARROW(s) << ")";
-        if (!key_fields.empty())
-            where_sql << " AND ";
-    }
-    Strings::const_iterator it_where = key_fields.begin(), end_where = key_fields.end();
-    Strings::const_iterator it_last = key_fields.end();
-    if (!key_fields.empty())
-        --it_last;
-    for (; it_where != end_where; ++it_where) {
-        Row::const_iterator it_find = find_in_row(row, *it_where);
-        if (it_find != row.end()) {
-            param_nums[it_find->first] = params.size();
-            params.push_back(it_find->second);
-            where_sql << "(" << NARROW(it_find->first) << " = ?)";
-            if (it_where != it_last)
-                where_sql << " AND ";
-        }
-    }
-    if (str_empty(WIDEN(where_sql.str())))
-        throw BadSQLOperation(_T("Can't do UPDATE with empty where clause"));
-    sql_query << where_sql.str();
-    sql = WIDEN(sql_query.str());
+    Key key;
+    Values fake_params(table.size(), Value(-1));
+    table.mk_key(fake_params, key);
+    sql_query += _T(" WHERE ") + KeyFilter(key).generate_sql(&fake_params);
+    sql = sql_query;
+    params_out.swap(params);
+    param_nums_out.swap(param_nums);
 }
 
 void

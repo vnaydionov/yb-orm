@@ -70,6 +70,8 @@ inline bool operator<=(const Value &x, const Value &y) { return x.cmp(y) <= 0; }
 //! @}
 
 typedef std::vector<Value> Values;
+typedef Values RowData;
+typedef std::vector<RowData> RowsData;
 typedef OrderedDict<String, Value> ValueMap;
 typedef std::pair<String, ValueMap> Key;
 typedef std::vector<Key> Keys;

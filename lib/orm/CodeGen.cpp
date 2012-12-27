@@ -310,64 +310,12 @@ SqlSchemaGenerator::SqlSchemaGenerator(
     seq_it_ = sequences_.begin();
 }
 
-void SqlSchemaGenerator::gen_commit(ostream &out)
-{
-    if (dialect_->commit_ddl())
-        out << "COMMIT;\n\n";
-}
-
-void SqlSchemaGenerator::gen_create_tables(ostream &out)
-{
-    Schema::TblMap::const_iterator it = schema_.tbl_begin(),
-        end = schema_.tbl_end();
-    for (; it != end; ++it) {
-        SqlTableGenerator tgen(*(it->second), dialect_);
-        tgen.gen_create_table(out);
-        out << ";\n\n";
-        gen_commit(out);
-    }
-}
-
-void SqlSchemaGenerator::gen_create_sequences(ostream &out)
-{
-    if (dialect_->has_sequences()) {
-        set<String> sequences;
-        Schema::TblMap::const_iterator it = schema_.tbl_begin(),
-            end = schema_.tbl_end();
-        for (; it != end; ++it)
-            if (!str_empty(it->second->seq_name()))
-                sequences.insert(it->second->seq_name());
-        set<String>::iterator j = sequences.begin(),
-            jend = sequences.end();
-        for (; j != jend; ++j)
-            out << NARROW(dialect_->gen_sequence(*j)) << ";\n";
-        gen_commit(out);
-    }
-}
-
-void SqlSchemaGenerator::gen_create_fk_constraints(ostream &out)
-{
-    Schema::TblMap::const_iterator it = schema_.tbl_begin(),
-        end = schema_.tbl_end();
-    for (; it != end; ++it) {
-        SqlTableGenerator tgen(*(it->second), dialect_);
-        tgen.gen_fk_constraints(out);
-    }
-    gen_commit(out);
-}
-
 void SqlSchemaGenerator::generate(ostream &out)
 {
     out << "-- DBTYPE=" << NARROW(dialect_->get_name()) << "\n\n";
-#if 0
     String sql;
     while (generate_next_statement(sql))
         out << NARROW(sql) << ";\n\n";
-#else
-    gen_create_tables(out);
-    gen_create_fk_constraints(out);
-    gen_create_sequences(out);
-#endif
 }
 
 bool SqlSchemaGenerator::generate_next_statement(String &out_str)
