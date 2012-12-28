@@ -409,6 +409,10 @@ public:
         if (p_.end() == i)
             return false;
         size_t pos = i->second;
+        typename PositionMap::iterator j = p_.begin(), jend = p_.end();
+        for (; j != jend; ++j)
+            if (j->second > pos)
+                --(j->second);
         p_.erase(i);
         if (v)
             std::swap(*v, a_[pos].second);

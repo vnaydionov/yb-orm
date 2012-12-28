@@ -387,6 +387,7 @@ public:
         d[_T("A")] = _T("1");
         d[_T("B")] = _T("");
         d[_T("D")] = _T("xx");
+        CPPUNIT_ASSERT_EQUAL((size_t)3, d.size());
         CPPUNIT_ASSERT_EQUAL(string("xx"), NARROW(d[0]));
         CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(d[1]));
         CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t[2]));
@@ -394,9 +395,11 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(d.keys()[1]));
         CPPUNIT_ASSERT_EQUAL(string("B"), NARROW(t.keys()[2]));
         d.pop(0);
-        d.pop(1);
+        CPPUNIT_ASSERT_EQUAL((size_t)2, d.size());
         CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(t[0]));
         CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(d.keys()[0]));
+        d.pop(1);
+        CPPUNIT_ASSERT_EQUAL((size_t)1, d.size());
     }
     void testOrderedDictCmp()
     {
