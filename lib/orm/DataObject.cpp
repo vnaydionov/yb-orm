@@ -239,13 +239,16 @@ void add_row_to_rows_by_table(map<String, Rows__> &rows_by_table,
 
 void Session::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
 {
-    Rows rows;
+    bool sql_seq = engine_->get_dialect()->has_sequences();
+    bool use_autoinc = !sql_seq &&
+        (tbl.autoinc() || !str_empty(tbl.seq_name()));
+    RowsData rows;
     Objects::iterator i, iend = keyed_objs.end();
     for (i = keyed_objs.begin(); i != iend; ++i) {
         (*i)->refresh_master_fkeys();
-        rows.push_back((*i)->values());
+        rows.push_back((*i)->raw_values());
     }
-    engine_->insert(tbl.name(), rows, StringSet());
+    engine_->insert(tbl, rows, false);
 }
 
 void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
@@ -260,13 +263,12 @@ void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
         for (i = unkeyed_objs.begin(); i != iend; ++i)
             (*i)->set(pk, engine_->get_next_value(tbl.seq_name()));
     }
-    Rows rows;
+    RowsData rows;
     for (i = unkeyed_objs.begin(); i != iend; ++i) {
         (*i)->refresh_master_fkeys();
-        rows.push_back((*i)->values(!use_autoinc));
+        rows.push_back((*i)->raw_values());
     }
-    vector<LongInt> ids = engine_->insert
-        (tbl.name(), rows, StringSet(), use_autoinc);
+    vector<LongInt> ids = engine_->insert(tbl, rows, use_autoinc);
     if (use_autoinc) {
         String pk = tbl.get_synth_pk();
         i = unkeyed_objs.begin();
@@ -402,7 +404,7 @@ void Session::flush_delete(IdentityMap &idmap_copy)
             jend = keys_by_table.end();
         for (; j != jend; ++j) {
             debug(_T("flush_delete: table: ") + j->first);
-            engine_->delete_from(j->first, j->second);
+            engine_->delete_from(schema_[j->first], j->second);
         }
     }
 }

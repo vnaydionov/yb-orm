@@ -223,15 +223,14 @@ Engine::select(const Expression &what,
 }
 
 const vector<LongInt>
-Engine::insert(const String &table_name,
-        const Rows &rows, const StringSet &exclude_fields,
+Engine::insert(const Table &table, const RowsData &rows,
         bool collect_new_ids)
 {
     if (mode_ == READ_ONLY)
         throw BadOperationInMode(
                 _T("Using INSERT operation in read-only mode"));
     touch();
-    return on_insert(table_name, rows, exclude_fields, collect_new_ids);
+    return on_insert(table, rows, collect_new_ids);
 }
 
 void
@@ -245,23 +244,13 @@ Engine::update(const Table &table, const RowsData &rows)
 }
 
 void
-Engine::delete_from(const String &table_name, const Filter &where)
+Engine::delete_from(const Table &table, const Keys &keys)
 {
     if (mode_ == READ_ONLY)
         throw BadOperationInMode(
                 _T("Using DELETE operation in read-only mode"));
     touch();
-    on_delete(table_name, where);
-}
-
-void
-Engine::delete_from(const String &table_name, const Keys &keys)
-{
-    if (mode_ == READ_ONLY)
-        throw BadOperationInMode(
-                _T("Using DELETE operation in read-only mode"));
-    touch();
-    on_delete(table_name, keys);
+    on_delete(table, keys);
 }
 
 void
@@ -322,8 +311,7 @@ Engine::get_next_value(const String &seq_name)
 }
 
 const vector<LongInt>
-Engine::on_insert(const String &table_name,
-        const Rows &rows, const StringSet &exclude_fields,
+Engine::on_insert(const Table &table, const RowsData &rows,
         bool collect_new_ids)
 {
     vector<LongInt> ids;
@@ -332,40 +320,36 @@ Engine::on_insert(const String &table_name,
     String sql;
     Values params;
     ParamNums param_nums;
-    do_gen_sql_insert(sql, params, param_nums, table_name,
-            rows[0], exclude_fields);
+    do_gen_sql_insert(sql, params, param_nums, table,
+            !collect_new_ids);
     if (!collect_new_ids) {
         auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
         cursor->prepare(sql);
-        Rows::const_iterator it = rows.begin(), end = rows.end();
-        for (; it != end; ++it) {
-            Row::const_iterator f = it->begin(), fend = it->end();
-            for (; f != fend; ++f) {
-                StringSet::const_iterator x = exclude_fields.find(f->first);
-                if (x == exclude_fields.end())
-                    params[param_nums[f->first]] = f->second;
-            }
+        RowsData::const_iterator r = rows.begin(), rend = rows.end();
+        for (; r != rend; ++r) {
+            ParamNums::const_iterator f = param_nums.begin(),
+                fend = param_nums.end();
+            for (; f != fend; ++f)
+                params[f->second] = (*r)[table.idx_by_name(f->first)];
             cursor->exec(params);
         }
     }
     else {
-        Rows::const_iterator it = rows.begin(), end = rows.end();
-        for (; it != end; ++it) {
-            {
-                auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
-                cursor->prepare(sql);
-                Row::const_iterator f = it->begin(), fend = it->end();
-                for (; f != fend; ++f) {
-                    StringSet::const_iterator x = exclude_fields.find(f->first);
-                    if (x == exclude_fields.end())
-                        params[param_nums[f->first]] = f->second;
-                }
-                cursor->exec(params);
-            }
+        RowsData::const_iterator r = rows.begin(), rend = rows.end();
+        for (; r != rend; ++r) {
             auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
-            cursor->prepare(dialect_->select_last_inserted_id(table_name));
-            cursor->exec(Values());
-            RowsPtr id_rows = cursor->fetch_rows();
+            cursor->prepare(sql);
+            ParamNums::const_iterator f = param_nums.begin(),
+                fend = param_nums.end();
+            for (; f != fend; ++f)
+                params[f->second] = (*r)[table.idx_by_name(f->first)];
+            cursor->exec(params);
+            cursor.reset(NULL);
+            auto_ptr<SqlCursor> cursor2 = get_conn()->new_cursor();
+            cursor2->prepare(
+                    dialect_->select_last_inserted_id(table.name()));
+            cursor2->exec(Values());
+            RowsPtr id_rows = cursor2->fetch_rows();
             ids.push_back((*id_rows)[0][0].second.as_longint());
         }
     }
@@ -384,43 +368,29 @@ void Engine::on_update(const Table &table, const RowsData &rows)
     cursor->prepare(sql);
     RowsData::const_iterator r = rows.begin(), rend = rows.end();
     for (; r != rend; ++r) {
-        for (size_t i = 0; i < table.size(); ++i) {
-            const Column &col = table[i];
-            if (!col.is_ro() || col.is_pk())
-                params[param_nums[col.name()]] = (*r)[i];
-        }
+        ParamNums::const_iterator f = param_nums.begin(),
+            fend = param_nums.end();
+        for (; f != fend; ++f)
+            params[f->second] = (*r)[table.idx_by_name(f->first)];
         cursor->exec(params);
     }
 }
 
 void
-Engine::on_delete(const String &table_name, const Filter &where)
+Engine::on_delete(const Table &table, const Keys &keys)
 {
+    if (!keys.size())
+        return;
     String sql;
     Values params;
-    do_gen_sql_delete(sql, params, table_name, where);
+    do_gen_sql_delete(sql, params, table);
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
-    cursor->exec(params);
-}
-
-void
-Engine::on_delete(const String &table_name, const Keys &keys)
-{
-    if (keys.size()) {
-        String sql;
-        Values params;
-        do_gen_sql_delete(sql, params, table_name, KeyFilter(*keys.begin()));
-        auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
-        cursor->prepare(sql);
-        Keys::const_iterator i = keys.begin(), iend = keys.end();
-        for (; i != iend; ++i) {
-            ValueMap::const_iterator j = i->second.begin(),
-                jend = i->second.end();
-            for (int pos = 0; j != jend; ++j, ++pos)
-                params[pos] = j->second;
-            cursor->exec(params);
-        }
+    Keys::const_iterator k = keys.begin(), kend = keys.end();
+    for (; k != kend; ++k) {
+        for (size_t i = 0; i < k->second.size(); ++i)
+            params[i] = k->second[i];
+        cursor->exec(params);
     }
 }
 
@@ -444,30 +414,32 @@ Engine::on_rollback()
 }
 
 void
-Engine::do_gen_sql_insert(String &sql, Values &params,
-        ParamNums &param_nums, const String &table_name,
-        const Row &row, const StringSet &exclude_fields) const
+Engine::do_gen_sql_insert(String &sql, Values &params_out,
+        ParamNums &param_nums_out, const Table &table,
+        bool include_pk) const
 {
-    if (row.empty())
-        throw BadSQLOperation(_T("Can't do INSERT with empty row"));
-    std::ostringstream sql_query;
-    sql_query << "INSERT INTO " << NARROW(table_name) << " (";
+    String sql_query;
+    sql_query = _T("INSERT INTO ") + table.name() + _T(" (");
+    Values params;
+    ParamNums param_nums;
     Strings names, pholders;
-    Row::const_iterator it = row.begin(), end = row.end();
-    for (; it != end; ++it) {
-        StringSet::const_iterator x = exclude_fields.find(it->first);
-        if (x == exclude_fields.end()) {
-            param_nums[it->first] = params.size();
-            params.push_back(it->second);
-            names.push_back(it->first);
+    size_t i;
+    for (i = 0; i < table.size(); ++i) {
+        const Column &col = table[i];
+        if ((!col.is_ro() || col.is_pk()) &&
+                (!col.is_pk() || include_pk))
+        {
+            param_nums[col.name()] = params.size();
+            params.push_back(Value(-1));
+            names.push_back(col.name());
             pholders.push_back(_T("?"));
         }
     }
-    sql_query << NARROW(ExpressionList(names).get_sql())
-        << ") VALUES ("
-        << NARROW(ExpressionList(pholders).get_sql())
-        << ")";
-    sql = WIDEN(sql_query.str());
+    sql_query += ExpressionList(names).get_sql() + _T(") VALUES (") + 
+        ExpressionList(pholders).get_sql() + _T(")");
+    sql = sql_query;
+    params_out.swap(params);
+    param_nums_out.swap(param_nums);
 }
 
 void
@@ -506,17 +478,16 @@ Engine::do_gen_sql_update(String &sql, Values &params_out,
 }
 
 void
-Engine::do_gen_sql_delete(String &sql, Values &params,
-        const String &table, const Filter &where) const
+Engine::do_gen_sql_delete(String &sql, Values &params, const Table &table) const
 {
-    if (where.get_sql() == Filter().get_sql())
-        throw BadSQLOperation(_T("Can't DELETE without where clause"));
-    std::ostringstream sql_query;
-    sql_query << "DELETE FROM " << NARROW(table);
-    String s = where.generate_sql(&params);
-    if (s != Filter().get_sql())
-        sql_query << " WHERE " << NARROW(s);
-    sql = WIDEN(sql_query.str());
+    if (!table.pk_fields().size())
+        throw BadSQLOperation(_T("cannot build update statement: no key in table"));
+    String sql_query = _T("DELETE FROM ") + table.name();
+    Key key;
+    Values fake_params(table.size(), Value(-1));
+    table.mk_key(fake_params, key);
+    sql_query += _T(" WHERE ") + KeyFilter(key).generate_sql(&params);
+    sql = sql_query;
 }
 
 } // namespace Yb

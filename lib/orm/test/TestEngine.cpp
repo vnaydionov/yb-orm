@@ -30,12 +30,11 @@ class TestEngine : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_select_having_wo_groupby, BadSQLOperation);
     CPPUNIT_TEST(test_insert_simple);
     CPPUNIT_TEST(test_insert_exclude);
-    CPPUNIT_TEST_EXCEPTION(test_insert_empty_row, BadSQLOperation);
     CPPUNIT_TEST(test_update_where);
     CPPUNIT_TEST(test_update_combo);
     CPPUNIT_TEST_EXCEPTION(test_update_wo_clause, BadSQLOperation);
     CPPUNIT_TEST(test_delete);
-    CPPUNIT_TEST_EXCEPTION(test_delete_wo_clause, BadSQLOperation);
+    CPPUNIT_TEST_EXCEPTION(test_delete_wo_pk, BadSQLOperation);
     CPPUNIT_TEST_EXCEPTION(test_insert_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_update_ro_mode, BadOperationInMode);
     CPPUNIT_TEST_EXCEPTION(test_delete_ro_mode, BadOperationInMode);
@@ -138,42 +137,35 @@ public:
     void test_insert_simple()
     {
         Engine engine(Engine::READ_ONLY);
+        Table t(_T("T"));
+        t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
+        t.add_column(Column(_T("A"), Value::STRING, 0, 0));
         String sql;
-        Row row;
-        row.push_back(make_pair(String(_T("ID")), Value(1)));
-        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_insert(sql, params, param_nums, _T("T"), row, StringSet());
+        engine.do_gen_sql_insert(sql, params, param_nums, t, true);
         CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (ID, A) VALUES (?, ?)"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL(2, (int)params.size());
-        CPPUNIT_ASSERT_EQUAL(1, (int)params[0].as_longint());
-        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(params[1].as_string()));
+        CPPUNIT_ASSERT_EQUAL(2, (int)param_nums.size());
+        CPPUNIT_ASSERT_EQUAL(0, (int)param_nums[_T("ID")]);
+        CPPUNIT_ASSERT_EQUAL(1, (int)param_nums[_T("A")]);
     }
 
     void test_insert_exclude()
     {
         Engine engine(Engine::READ_ONLY);
-        String sql;
-        Row row;
-        row.push_back(make_pair(String(_T("ID")), Value(1)));
-        row.push_back(make_pair(String(_T("A")), Value(_T("a"))));
-        StringSet exclude;
-        exclude.insert(_T("ID"));
-        Values params;
-        ParamNums param_nums;
-        engine.do_gen_sql_insert(sql, params, param_nums, _T("T"), row, exclude);
-        CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (A) VALUES (?)"), NARROW(sql));
-        CPPUNIT_ASSERT(1 == params.size() && Value(_T("a")) == params[0]);
-    }
-
-    void test_insert_empty_row()
-    {
-        Engine engine(Engine::READ_ONLY);
+        Table t(_T("T"));
+        t.add_column(Column(_T("ID"), Value::LONGINT, 0,
+                    Column::PK | Column::RO));
+        t.add_column(Column(_T("A"), Value::STRING, 0, Column::RO));
         String sql;
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_insert(sql, params, param_nums, _T("A"), Row(), StringSet());
+        engine.do_gen_sql_insert(sql, params, param_nums, t, true);
+        CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (ID) VALUES (?)"), NARROW(sql));
+        CPPUNIT_ASSERT_EQUAL(1, (int)params.size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)param_nums.size());
+        CPPUNIT_ASSERT_EQUAL(0, (int)param_nums[_T("ID")]);
     }
 
     void test_update_where()
@@ -232,25 +224,30 @@ public:
     void test_delete()
     {
         Engine engine(Engine::READ_ONLY);
+        Table t(_T("T"));
+        t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
         String sql;
         Values params;
-        engine.do_gen_sql_delete(sql, params, _T("T"), Expression(_T("ID")) == 1);
-        CPPUNIT_ASSERT_EQUAL(string("DELETE FROM T WHERE ID = ?"), NARROW(sql));
-        CPPUNIT_ASSERT(1 == params.size() && Value(1) == params[0]);
+        engine.do_gen_sql_delete(sql, params, t);
+        CPPUNIT_ASSERT_EQUAL(string("DELETE FROM T WHERE T.ID = ?"), NARROW(sql));
+        CPPUNIT_ASSERT_EQUAL((size_t)1, params.size());
     }
 
-    void test_delete_wo_clause()
+    void test_delete_wo_pk()
     {
         Engine engine(Engine::READ_ONLY);
+        Table t(_T("T"));
         String sql;
         Values params;
-        engine.do_gen_sql_delete(sql, params, _T("T"), Filter());
+        engine.do_gen_sql_delete(sql, params, t);
     }
 
     void test_insert_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
-        engine.insert(_T(""), Rows());
+        Table t(_T("T"));
+        t.add_column(Column(_T("Q"), Value::LONGINT, 0, Column::PK));
+        engine.insert(t, RowsData(), false);
     }
     
     void test_update_ro_mode()
@@ -264,7 +261,9 @@ public:
     void test_delete_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
-        engine.delete_from(_T(""), Filter());
+        Table t(_T("T"));
+        t.add_column(Column(_T("Q"), Value::LONGINT, 0, Column::PK));
+        engine.delete_from(t, Keys());
     }
     
     void test_execpoc_ro_mode()
@@ -387,21 +386,26 @@ public:
     void test_insert_sql()
     {
         Engine engine(Engine::READ_WRITE);
+        Table t(_T("T_ORM_TEST"));
+        t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
+        t.add_column(Column(_T("A"), Value::STRING, 100, 0));
+        t.add_column(Column(_T("B"), Value::DATETIME, 0, Column::RO));
+        t.add_column(Column(_T("C"), Value::DECIMAL, 0, 0));
         setup_log(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
-        Rows rows;
+        RowsData rows;
         LongInt id = get_next_test_id(engine.get_connection());
-        Row row;
-        row.push_back(make_pair(String(_T("ID")), Value(id)));
-        row.push_back(make_pair(String(_T("A")), Value(_T("inserted"))));
-        row.push_back(make_pair(String(_T("B")), Value(now())));
-        row.push_back(make_pair(String(_T("C")), Value(Decimal(_T("1.1")))));
+        RowData row;
+        row.push_back(id);
+        row.push_back(Value(_T("inserted")));
+        row.push_back(now());
+        row.push_back(Decimal(_T("1.1")));
         rows.push_back(row);
-        engine.insert(_T("T_ORM_TEST"), rows);
+        engine.insert(t, rows, false);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")),
-                Expression(_T("T_ORM_TEST")),
-                Expression(_T("ID")) == id);
+                Expression(t.name()),
+                t.column(_T("ID")) == id);
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("inserted"),
                 NARROW(find_in_row(*ptr->begin(), _T("A"))->second.as_string()));

@@ -33,20 +33,11 @@ public:
         const Expression &order_by = Expression(),
         int max_rows = -1,
         bool for_update = false) = 0;
-    virtual const std::vector<LongInt> insert(
-        const String &table_name,
-        const Rows &rows,
-        const StringSet &exclude_fields = StringSet(),
-        bool collect_new_ids = false) = 0;
+    virtual const std::vector<LongInt> insert(const Table &table,
+            const RowsData &rows, bool collect_new_ids) = 0;
     virtual void update(const Table &table, const RowsData &rows) = 0;
-    virtual void delete_from(
-        const String &table_name,
-        const Filter &where) = 0;
-    virtual void delete_from(
-        const String &table_name,
-        const Keys &keys) = 0;
-    virtual void exec_proc(
-        const String &proc_code) = 0;
+    virtual void delete_from(const Table &table, const Keys &keys) = 0;
+    virtual void exec_proc(const String &proc_code) = 0;
     virtual void commit() = 0;
     virtual void rollback() = 0;
     virtual LongInt get_curr_value(const String &seq_name) = 0;
@@ -95,12 +86,10 @@ public:
             const Expression &order_by = Expression(),
             int max_rows = -1,
             bool for_update = false);
-    const std::vector<LongInt> insert(const String &table_name,
-            const Rows &rows, const StringSet &exclude_fields = StringSet(),
-            bool collect_new_ids = false);
+    const std::vector<LongInt> insert(const Table &table,
+            const RowsData &rows, bool collect_new_ids);
     void update(const Table &table, const RowsData &rows);
-    void delete_from(const String &table_name, const Filter &where);
-    void delete_from(const String &table_name, const Keys &keys);
+    void delete_from(const Table &table, const Keys &keys);
     void exec_proc(const String &proc_code);
     void commit();
     void rollback();
@@ -131,26 +120,21 @@ private:
     SqlPool *get_pool();
     SqlConnection *get_conn(bool strict = true);
 
-    virtual const std::vector<LongInt> on_insert(
-            const String &table_name,
-            const Rows &rows, const StringSet &exclude_fields,
-            bool collect_new_ids);
+    virtual const std::vector<LongInt> on_insert(const Table &table,
+            const RowsData &rows, bool collect_new_ids);
     virtual void on_update(const Table &table, const RowsData &rows);
-    virtual void on_delete(const String &table_name,
-            const Filter &where);
-    virtual void on_delete(const String &table_name,
-            const Keys &keys);
+    virtual void on_delete(const Table &table, const Keys &keys);
     virtual void on_exec_proc(const String &proc_code);
     virtual void on_commit();
     virtual void on_rollback();
 
     virtual void do_gen_sql_insert(String &sql, Values &params,
-            ParamNums &param_nums, const String &table_name,
-            const Row &row, const StringSet &exclude_fields) const;
+            ParamNums &param_nums, const Table &table,
+            bool include_pk) const;
     virtual void do_gen_sql_update(String &sql, Values &params,
             ParamNums &param_nums, const Table &table) const;
     virtual void do_gen_sql_delete(String &sql, Values &params,
-            const String &table, const Filter &where) const;
+            const Table &table) const;
 
 private:
     Engine *master_ptr_;
