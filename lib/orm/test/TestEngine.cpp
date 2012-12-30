@@ -143,7 +143,7 @@ public:
         String sql;
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_insert(sql, params, param_nums, t, true);
+        engine.gen_sql_insert(sql, params, param_nums, t, true);
         CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (ID, A) VALUES (?, ?)"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL(2, (int)params.size());
         CPPUNIT_ASSERT_EQUAL(2, (int)param_nums.size());
@@ -161,7 +161,7 @@ public:
         String sql;
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_insert(sql, params, param_nums, t, true);
+        engine.gen_sql_insert(sql, params, param_nums, t, true);
         CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (ID) VALUES (?)"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL(1, (int)params.size());
         CPPUNIT_ASSERT_EQUAL(1, (int)param_nums.size());
@@ -177,7 +177,7 @@ public:
         String sql;
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_update(sql, params, param_nums, t);
+        engine.gen_sql_update(sql, params, param_nums, t);
         CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET A = ? WHERE T.B = ?"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL((size_t)2, params.size());
         CPPUNIT_ASSERT_EQUAL((size_t)2, param_nums.size());
@@ -197,7 +197,7 @@ public:
         String sql;
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_update(sql, params, param_nums, t);
+        engine.gen_sql_update(sql, params, param_nums, t);
         CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET E = ?, F = ? "
                     "WHERE ((T.Q = ?) AND (T.B = ?)) AND (T.D = ?)"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL((size_t)5, params.size());
@@ -218,7 +218,7 @@ public:
         String sql;
         Values params;
         ParamNums param_nums;
-        engine.do_gen_sql_update(sql, params, param_nums, t);
+        engine.gen_sql_update(sql, params, param_nums, t);
     }
 
     void test_delete()
@@ -228,7 +228,7 @@ public:
         t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
         String sql;
         Values params;
-        engine.do_gen_sql_delete(sql, params, t);
+        engine.gen_sql_delete(sql, params, t);
         CPPUNIT_ASSERT_EQUAL(string("DELETE FROM T WHERE T.ID = ?"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL((size_t)1, params.size());
     }
@@ -239,7 +239,7 @@ public:
         Table t(_T("T"));
         String sql;
         Values params;
-        engine.do_gen_sql_delete(sql, params, t);
+        engine.gen_sql_delete(sql, params, t);
     }
 
     void test_insert_ro_mode()
@@ -394,7 +394,7 @@ public:
         setup_log(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         RowsData rows;
-        LongInt id = get_next_test_id(engine.get_connection());
+        LongInt id = get_next_test_id(engine.get_conn());
         RowData row;
         row.push_back(id);
         row.push_back(Value(_T("inserted")));

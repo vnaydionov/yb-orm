@@ -75,7 +75,7 @@ class Session: NonCopyable {
     void flush_delete(IdentityMap &idmap_copy);
 public:
     void debug(const String &s) { if (logger_.get()) logger_->debug(NARROW(s)); }
-    Session(const Schema &schema, EngineBase *engine = NULL);
+    Session(const Schema &schema, EngineSource *engine = NULL);
     ~Session();
     const Schema &schema() const { return schema_; }
     //! Save a detached or new DataObject into Session

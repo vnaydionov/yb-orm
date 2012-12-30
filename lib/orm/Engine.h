@@ -22,9 +22,16 @@ namespace Yb {
 class EngineBase
 {
 public:
+    enum Mode { READ_ONLY = 0, READ_WRITE = 1, MANUAL = 1 }; 
+
     virtual ~EngineBase();
-    virtual SqlResultSet select_iter(const Expression &select_expr) = 0;
-    virtual RowsPtr select(
+    virtual SqlConnection *get_conn() = 0;
+    virtual SqlDialect *get_dialect() = 0;
+    virtual ILogger *logger() = 0;
+    virtual int get_mode() = 0;
+
+    SqlResultSet select_iter(const Expression &select_expr);
+    RowsPtr select(
         const Expression &what,
         const Expression &from,
         const Expression &where = Expression(),
@@ -32,123 +39,98 @@ public:
         const Expression &having = Expression(),
         const Expression &order_by = Expression(),
         int max_rows = -1,
-        bool for_update = false) = 0;
-    virtual const std::vector<LongInt> insert(const Table &table,
-            const RowsData &rows, bool collect_new_ids) = 0;
-    virtual void update(const Table &table, const RowsData &rows) = 0;
-    virtual void delete_from(const Table &table, const Keys &keys) = 0;
-    virtual void exec_proc(const String &proc_code) = 0;
-    virtual void commit() = 0;
-    virtual void rollback() = 0;
-    virtual LongInt get_curr_value(const String &seq_name) = 0;
-    virtual LongInt get_next_value(const String &seq_name) = 0;
-    virtual SqlDialect *get_dialect() = 0;
-    virtual ILogger *logger() = 0;
-    virtual std::auto_ptr<EngineBase> clone() = 0;
-};
-
-const String env_cfg(const String &entry,
-        const String &def_val = _T(""));
-
-class Engine
-    : public EngineBase, private NonCopyable
-{
-    friend class ::TestEngine;
-public:
-    enum Mode { READ_ONLY = 0, READ_WRITE = 1, MANUAL = 1 }; 
-
-    static SqlSource sql_source_from_env(const String &id = _T(""));
-    Engine(Mode work_mode = READ_WRITE);
-    Engine(Mode work_mode, std::auto_ptr<SqlConnection> conn);
-    Engine(Mode work_mode, std::auto_ptr<SqlPool> pool,
-           const String &source_id, int timeout = YB_POOL_WAIT_TIME);
-    Engine(Mode work_mode, SqlDialect *dialect); // for subclassing
-
-    virtual ~Engine();
-
-    SqlConnection *get_connection() { return conn_.get(); }
-    SqlDialect *get_dialect() { return dialect_; }
-    std::auto_ptr<EngineBase> clone();
-    void touch();
-    bool activity() { return get_conn()->activity(); }
-    void set_echo(bool echo);
-    void set_logger(ILogger::Ptr logger);
-    ILogger *logger() { return logger_ptr_? logger_ptr_: logger_.get(); }
-
-    // SQL operator wrappers
-    SqlResultSet select_iter(const Expression &select_expr);
-    RowsPtr select(
-            const Expression &what,
-            const Expression &from,
-            const Expression &where = Expression(),
-            const Expression &group_by = Expression(),
-            const Expression &having = Expression(),
-            const Expression &order_by = Expression(),
-            int max_rows = -1,
-            bool for_update = false);
+        bool for_update = false);
     const std::vector<LongInt> insert(const Table &table,
             const RowsData &rows, bool collect_new_ids);
     void update(const Table &table, const RowsData &rows);
     void delete_from(const Table &table, const Keys &keys);
     void exec_proc(const String &proc_code);
-    void commit();
-    void rollback();
-
-    // Convenience utility methods
     RowPtr select_row(const Expression &what,
             const Expression &from, const Expression &where);
     const Value select1(const Expression &what,
             const Expression &from, const Expression &where);
     LongInt get_curr_value(const String &seq_name);
     LongInt get_next_value(const String &seq_name);
+    void commit();
+    void rollback();
+    void touch();
+    bool activity() { return get_conn()->activity(); }
 
-    /* Use cases:
-    Yb::EngineBase db;
-    int count = db.select1(_T("count(1)"), _T("t_manager"),
-        Yb::FilterEq(_T("hidden"), Yb::Value(1))).as_longint();
-    Yb::RowPtr row = db.select_row(_T("v_ui_contract"),
-        Yb::FilterEq(_T("contract_id"), Yb::Value(contract_id)));
-    */
-
-private:
-    // clone support
-    Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
-           SqlConnection *conn);
-    Engine(Mode work_mode, Engine *master, bool echo, ILogger *logger,
-           SqlPool *pool, const String &source_id, int timeout);
-
-    SqlPool *get_pool();
-    SqlConnection *get_conn(bool strict = true);
-
-    virtual const std::vector<LongInt> on_insert(const Table &table,
-            const RowsData &rows, bool collect_new_ids);
-    virtual void on_update(const Table &table, const RowsData &rows);
-    virtual void on_delete(const Table &table, const Keys &keys);
-    virtual void on_exec_proc(const String &proc_code);
-    virtual void on_commit();
-    virtual void on_rollback();
-
-    virtual void do_gen_sql_insert(String &sql, Values &params,
+    static void gen_sql_insert(String &sql, Values &params,
             ParamNums &param_nums, const Table &table,
-            bool include_pk) const;
-    virtual void do_gen_sql_update(String &sql, Values &params,
-            ParamNums &param_nums, const Table &table) const;
-    virtual void do_gen_sql_delete(String &sql, Values &params,
-            const Table &table) const;
+            bool include_pk);
+    static void gen_sql_update(String &sql, Values &params,
+            ParamNums &param_nums, const Table &table);
+    static void gen_sql_delete(String &sql, Values &params,
+            const Table &table);
+};
 
+class EngineSource
+{
+public:
+    virtual ~EngineSource();
+    virtual std::auto_ptr<EngineBase> clone() = 0;
+};
+
+class EngineCloned: public EngineBase
+{
+    int mode_;
+    SqlConnection *conn_;
+    SqlDialect *dialect_;
+    ILogger *logger_;
+    SqlPool *pool_;
+public:
+    EngineCloned(int mode, SqlConnection *conn,
+            SqlDialect *dialect, ILogger *logger,
+            SqlPool *pool = NULL)
+        : mode_(mode)
+        , conn_(conn)
+        , dialect_(dialect)
+        , logger_(logger)
+        , pool_(pool)
+    {}
+    ~EngineCloned();
+    int get_mode();
+    SqlConnection *get_conn();
+    SqlDialect *get_dialect();
+    ILogger *logger();
+};
+
+const String env_cfg(const String &entry,
+        const String &def_val = _T(""));
+
+class Engine
+    : public EngineBase, public EngineSource, private NonCopyable
+{
+public:
+    friend class ::TestEngine;
+
+    static SqlSource sql_source_from_env(const String &id = _T(""));
+    Engine(int mode = READ_WRITE);
+    Engine(int mode, std::auto_ptr<SqlConnection> conn);
+    Engine(int mode, std::auto_ptr<SqlPool> pool,
+           const String &source_id, int timeout = YB_POOL_WAIT_TIME);
+    ~Engine();
+
+    int get_mode();
+    SqlConnection *get_conn();
+    SqlDialect *get_dialect();
+    ILogger *logger();
+    std::auto_ptr<EngineBase> clone();
+    void set_echo(bool echo) { echo_ = echo; }
+    void set_logger(ILogger::Ptr logger) { logger_ = logger; }
 private:
-    Engine *master_ptr_;
+    SqlConnection *get_from_pool();
+
     bool echo_;
-    Mode mode_;
+    int mode_;
     ILogger::Ptr logger_;
     std::auto_ptr<SqlPool> pool_;
     String source_id_;
     int timeout_;
     std::auto_ptr<SqlConnection> conn_;
-    ILogger *logger_ptr_;
-    SqlPool *pool_ptr_;
-    SqlConnection *conn_ptr_;
     SqlDialect *dialect_;
+    SqlConnection *conn_ptr_;
 };
 
 } // namespace Yb

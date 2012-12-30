@@ -85,13 +85,13 @@ DataObjectAlreadyInSession::DataObjectAlreadyInSession(const Key &key)
     : ORMError(_T("DataObject is already registered in the identity map: ") + key2str(key))
 {}
 
-Session::Session(const Schema &schema, EngineBase *engine)
+Session::Session(const Schema &schema, EngineSource *engine)
     : schema_(schema)
 {
     if (engine) {
         engine_.reset(engine->clone().release());
-        if (engine->logger())
-            logger_.reset(engine->logger()->new_logger("orm").release());
+        if (engine_->logger())
+            logger_.reset(engine_->logger()->new_logger("orm").release());
     }
 }
 
