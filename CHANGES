@@ -1,5 +1,15 @@
 
 0.3.3
+    * refactor Engine classes hierarchy
+    * refactor methods Engine::insert(), Engine::update(), Engine::delete()
+    * OrderedDict implemented
+    * fix finding tables and columns by name, improve speed
+    * reproduce bug: Assertion failed in file
+      ../../yb-orm/lib/orm/DomainObj.h:288 (!v.is_null())
+    * Set fk value on linking if posible
+    * Rename Filters -> Expression. Add distinct and for update flags
+    * Extended logging for delete_object()
+    * Schema generated DDL statements are now iterable
     * Replace method data_object() with get_data_object() in methods find() and insert().
     * Rename some files to follow common style and to better reflect contents.
     * Fixed a bug per request from nbuyvich: chained property references.
