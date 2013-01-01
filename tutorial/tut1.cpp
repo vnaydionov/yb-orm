@@ -8,7 +8,7 @@ int main()
 {
     try {
         auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(
-                    "sqlite+sqlite:///Users/User/work/test1.db"));
+                    "sqlite+sqlite://c:/yborm/examples/test1_db"));
         Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
         Yb::Session session(Yb::init_default_meta(), &engine);
 

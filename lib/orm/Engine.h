@@ -117,8 +117,20 @@ public:
     SqlDialect *get_dialect();
     ILogger *logger();
     std::auto_ptr<EngineBase> clone();
-    void set_echo(bool echo) { echo_ = echo; }
-    void set_logger(ILogger::Ptr logger) { logger_ = logger; }
+    void set_echo(bool echo) {
+        echo_ = echo;
+        if (conn_.get())
+            conn_->set_echo(echo_);
+        if (conn_ptr_)
+            conn_ptr_->set_echo(echo_);
+    }
+    void set_logger(ILogger::Ptr logger) {
+        logger_ = logger;
+        if (conn_.get())
+            conn_->init_logger(logger_.get());
+        if (conn_ptr_)
+            conn_ptr_->init_logger(logger_.get());
+    }
 private:
     SqlConnection *get_from_pool();
 
