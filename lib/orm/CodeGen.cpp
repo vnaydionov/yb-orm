@@ -785,6 +785,7 @@ void CppCodeGenerator::write_cpp_file(ostream &out)
         << "\t: Yb::DomainObject(session, key)\n";
     write_autogen(out, 5); // props_cons_calls
     out << "{}\n\n";
+    bool auto_xmlize = true;
     try {
         String mega_key = table_.get_unique_pk();
         out << class_name_ << "::"
@@ -794,8 +795,9 @@ void CppCodeGenerator::write_cpp_file(ostream &out)
         write_autogen(out, 5); // props_cons_calls
         out << "{}\n\n";
     }
-    catch (const AmbiguousPK &)
-    {}
+    catch (const AmbiguousPK &) {
+        auto_xmlize = false;
+    }
     out << class_name_ << " &" << class_name_ << "::operator=(const "
         << class_name_ << " &other)\n"
         << "{\n"
@@ -818,16 +820,18 @@ void CppCodeGenerator::write_cpp_file(ostream &out)
         << "\t\t\tlst->push_back(" << class_name_ << "(*it));\n"
         << "\t}\n"
         << "\treturn lst;\n"
-        << "}\n\n"
-        << "struct "<< class_name_ << "Registrator\n{\n"
-        << "\tstatic void register_domain() {\n"
-        << "\t\tYb::theDomainFactory::instance().register_creator(_T(\"" << table_name_ << "\"),\n"
-        << "\t\t\tYb::CreatorPtr(new Yb::DomainCreator<" << class_name_ << ">()));\n"
-        << "\t}\n"
-        << "\t" << class_name_ << "Registrator() { register_domain(); }\n"
-        << "};\n\n"
-        << "static " << class_name_ << "Registrator " << class_name_ << "_registrator;\n\n"
-        << "} // end namespace Domain\n\n"
+        << "}\n\n";
+    if (auto_xmlize) {
+        out << "struct "<< class_name_ << "Registrator\n{\n"
+            << "\tstatic void register_domain() {\n"
+            << "\t\tYb::theDomainFactory::instance().register_creator(_T(\"" << table_name_ << "\"),\n"
+            << "\t\t\tYb::CreatorPtr(new Yb::DomainCreator<" << class_name_ << ">()));\n"
+            << "\t}\n"
+            << "\t" << class_name_ << "Registrator() { register_domain(); }\n"
+            << "};\n\n"
+            << "static " << class_name_ << "Registrator " << class_name_ << "_registrator;\n\n";
+    }
+    out << "} // end namespace Domain\n\n"
         << "// vim:ts=4:sts=4:sw=4:et:\n";
 }
 
