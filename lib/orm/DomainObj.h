@@ -112,6 +112,19 @@ public:
     static void save_registered(Schema &schema);
 };
 
+inline bool operator==(const DomainObject &a, const DomainObject &b)
+{ return !a.cmp(b); }
+inline bool operator!=(const DomainObject &a, const DomainObject &b)
+{ return a.cmp(b); }
+inline bool operator<(const DomainObject &a, const DomainObject &b)
+{ return a.cmp(b)<0; }
+inline bool operator>(const DomainObject &a, const DomainObject &b)
+{ return a.cmp(b)>0; }
+inline bool operator<=(const DomainObject &a, const DomainObject &b)
+{ return !(a.cmp(b)>0); }
+inline bool operator>=(const DomainObject &a, const DomainObject &b)
+{ return !(a.cmp(b)<0); }
+
 template <class T>
 class ManagedList {
     RelationObject *ro_;
@@ -342,6 +355,7 @@ public:
             p_.reset(new DObj(owner_, prop_name_));
         return p_.get();
     }
+    DObj &operator * () const { return *_get_p(); }
     DObj *operator->() const { return _get_p(); }
 };
 
