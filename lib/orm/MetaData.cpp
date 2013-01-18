@@ -163,29 +163,28 @@ Table::set_seq_name(const String &seq_name)
 }
 
 const String
-Table::find_synth_pk() const
+Table::find_surrogate_pk() const
 {
     // This call assumes that we have a table with
-    // a synth. numeric primary key.
-    if (str_empty(seq_name()) && !autoinc())
-        return String();
-    if (pk_fields_.size() != 1)
-        return String();
-    const Column &c = column(*pk_fields_.begin());
-    if (c.type() != Value::LONGINT)
-        return String();
-    return c.name();
+    // a surrogate i.e. single column numeric primary key.
+    try {
+        return get_surrogate_pk();
+    }
+    catch (const NotSuitableForAutoCreating &) { }
+    return String();
 }
 
-const String
-Table::get_synth_pk() const
+const String &
+Table::get_surrogate_pk() const
 {
     // This call assumes that we have a table with
-    // a synth. numeric primary key.
-    String pk_name = find_synth_pk();
-    if (str_empty(pk_name))
+    // a surrogate i.e. a single column numeric primary key.
+    if (pk_fields_.size() != 1)
         throw NotSuitableForAutoCreating(name());
-    return pk_name;
+    const Column &c = column(*pk_fields_.begin());
+    if (c.type() != Value::LONGINT && c.type() != Value::INTEGER)
+        throw NotSuitableForAutoCreating(name());
+    return c.name();
 }
 
 Strings &
@@ -244,7 +243,7 @@ Table::mk_key(LongInt id) const
 {
     Key key;
     key.first = name();
-    String pk_name = get_synth_pk();
+    String pk_name = get_surrogate_pk();
     key.second[pk_name] = Value(id);
     return key;
 }

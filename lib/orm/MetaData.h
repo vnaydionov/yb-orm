@@ -195,8 +195,8 @@ public:
     size_t size() const { return cols_.size(); }
     size_t idx_by_name(const String &col_name) const;
     const String &get_unique_pk() const;
-    const String find_synth_pk() const;
-    const String get_synth_pk() const;
+    const String find_surrogate_pk() const;
+    const String &get_surrogate_pk() const;
     Strings &get_fk_for(const Relation &rel, Strings &fkey_parts) const;
     int get_depth() const { return depth_; }
     void add_column(const Column &column);

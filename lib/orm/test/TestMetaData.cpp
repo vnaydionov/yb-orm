@@ -14,12 +14,12 @@ class TestMetaData : public CppUnit::TestFixture
     CPPUNIT_TEST(test_table_cons);
     CPPUNIT_TEST(test_table_columns);
     CPPUNIT_TEST(test_table_seq);
-    CPPUNIT_TEST(test_table_synth_pk);
+    CPPUNIT_TEST(test_table_surrogate_pk);
     CPPUNIT_TEST(test_rel_join_cond);
     CPPUNIT_TEST(test_get_fk_for);
-    CPPUNIT_TEST_EXCEPTION(test_table_bad_synth_pk__no_pk, NotSuitableForAutoCreating);
-    CPPUNIT_TEST_EXCEPTION(test_table_bad_synth_pk__complex, NotSuitableForAutoCreating);
-    CPPUNIT_TEST_EXCEPTION(test_table_bad_synth_pk__no_seq, NotSuitableForAutoCreating);
+    CPPUNIT_TEST_EXCEPTION(test_table_bad_surrogate_pk__no_pk, NotSuitableForAutoCreating);
+    CPPUNIT_TEST_EXCEPTION(test_table_bad_surrogate_pk__complex, NotSuitableForAutoCreating);
+    CPPUNIT_TEST_EXCEPTION(test_table_bad_surrogate_pk__not_int, NotSuitableForAutoCreating);
     CPPUNIT_TEST_EXCEPTION(test_meta_data_bad_column_name, BadColumnName);
     CPPUNIT_TEST_EXCEPTION(test_meta_data_bad_column_name2, BadColumnName);
     CPPUNIT_TEST_EXCEPTION(test_meta_data_column_not_found, ColumnNotFoundInMetaData);
@@ -98,14 +98,14 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("s_a_id"), NARROW(t.seq_name()));
     }
 
-    void test_table_synth_pk()
+    void test_table_surrogate_pk()
     {
         Table t(_T("A"));
         t.add_column(Column(_T("X"), Value::LONGINT, 0, 0));
         t.add_column(Column(_T("Y"), Value::LONGINT, 0, Column::PK));
         t.add_column(Column(_T("Z"), Value::LONGINT, 0, 0));
         t.set_seq_name(_T("S_A_ID"));
-        CPPUNIT_ASSERT_EQUAL(string("Y"), NARROW(t.get_synth_pk()));
+        CPPUNIT_ASSERT_EQUAL(string("Y"), NARROW(t.get_surrogate_pk()));
     }
 
     void test_rel_join_cond()
@@ -180,28 +180,28 @@ public:
         CPPUNIT_ASSERT_EQUAL((size_t)3, parts.size());
     }
 
-    void test_table_bad_synth_pk__no_pk()
+    void test_table_bad_surrogate_pk__no_pk()
     {
         Table t(_T("A"));
         t.add_column(Column(_T("X"), Value::LONGINT, 0, 0));
         t.set_seq_name(_T("S_A_ID"));
-        t.get_synth_pk();
+        t.get_surrogate_pk();
     }
 
-    void test_table_bad_synth_pk__complex()
+    void test_table_bad_surrogate_pk__complex()
     {
         Table t(_T("A"));
         t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK));
         t.add_column(Column(_T("Y"), Value::LONGINT, 0, Column::PK));
         t.set_seq_name(_T("S_A_ID"));
-        t.get_synth_pk();
+        t.get_surrogate_pk();
     }
 
-    void test_table_bad_synth_pk__no_seq()
+    void test_table_bad_surrogate_pk__not_int()
     {
         Table t(_T("A"));
-        t.add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK));
-        t.get_synth_pk();
+        t.add_column(Column(_T("X"), Value::STRING, 10, Column::PK));
+        t.get_surrogate_pk();
     }
 
     void test_meta_data_bad_column_name()

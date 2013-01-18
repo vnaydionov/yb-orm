@@ -259,7 +259,7 @@ void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
         (tbl.autoinc() || !str_empty(tbl.seq_name()));
     Objects::iterator i, iend = unkeyed_objs.end();
     if (use_seq) {
-        String pk = tbl.get_synth_pk();
+        String pk = tbl.get_surrogate_pk();
         for (i = unkeyed_objs.begin(); i != iend; ++i)
             (*i)->set(pk, engine_->get_next_value(tbl.seq_name()));
     }
@@ -270,7 +270,7 @@ void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
     }
     vector<LongInt> ids = engine_->insert(tbl, rows, use_autoinc);
     if (use_autoinc) {
-        String pk = tbl.get_synth_pk();
+        String pk = tbl.get_surrogate_pk();
         i = unkeyed_objs.begin();
         for (int p = 0; i != iend; ++i, ++p)
             (*i)->set(pk, ids[p]);
