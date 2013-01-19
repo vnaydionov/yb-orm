@@ -195,7 +195,7 @@ public:
         CPPUNIT_ASSERT_EQUAL((size_t)0, d->slave_relations().size());
         CPPUNIT_ASSERT_EQUAL((size_t)0, e->master_relations().size());
         CPPUNIT_ASSERT_EQUAL((size_t)1, e->slave_relations().size());
-        RelationObject *ro = *e->slave_relations().begin();
+        RelationObject *ro = e->slave_relations().begin()->second;
         CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
         CPPUNIT_ASSERT_EQUAL(shptr_get(d), ro->master_object());
     }
@@ -213,7 +213,7 @@ public:
         CPPUNIT_ASSERT_EQUAL((size_t)0, d->slave_relations().size());
         CPPUNIT_ASSERT_EQUAL((size_t)0, e->master_relations().size());
         CPPUNIT_ASSERT_EQUAL((size_t)1, e->slave_relations().size());
-        RelationObject *ro = *e->slave_relations().begin();
+        RelationObject *ro = e->slave_relations().begin()->second;
         CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
         CPPUNIT_ASSERT_EQUAL(shptr_get(d), ro->master_object());
         DataObject::Ptr f = DataObject::create_new(r_.table(_T("A")));
@@ -223,7 +223,7 @@ public:
         CPPUNIT_ASSERT_EQUAL((size_t)0, e->master_relations().size());
         CPPUNIT_ASSERT_EQUAL((size_t)1, e->slave_relations().size());
         CPPUNIT_ASSERT_EQUAL((size_t)0, ro->slave_objects().size());
-        ro = *e->slave_relations().begin();
+        ro = e->slave_relations().begin()->second;
         CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
         CPPUNIT_ASSERT_EQUAL(shptr_get(f), ro->master_object());
     }
@@ -235,7 +235,7 @@ public:
         DataObject::link_master_to_slave(d, e);
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)d->status());
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)e->status());
-        RelationObject *ro = *e->slave_relations().begin();
+        RelationObject *ro = e->slave_relations().begin()->second;
         CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
         e->delete_object();
         CPPUNIT_ASSERT_EQUAL((size_t)0, ro->slave_objects().size());
@@ -250,7 +250,7 @@ public:
         DataObject::link_master_to_slave(d, e, _T("SlaveBs"));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)d->status());
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)e->status());
-        RelationObject *ro = *e->slave_relations().begin();
+        RelationObject *ro = e->slave_relations().begin()->second;
         CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
         ((Relation &)ro->relation_info()).set_cascade(Relation::Delete);
         d->delete_object();
@@ -266,7 +266,7 @@ public:
         DataObject::link_slave_to_master(e, d);
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)d->status());
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)e->status());
-        RelationObject *ro = *e->slave_relations().begin();
+        RelationObject *ro = e->slave_relations().begin()->second;
         CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
         ((Relation &)ro->relation_info()).set_cascade(Relation::Nullify);
         d->delete_object();
@@ -695,7 +695,7 @@ public:
             CPPUNIT_ASSERT_EQUAL((size_t)0, d->slave_relations().size());
             CPPUNIT_ASSERT_EQUAL((size_t)0, e->master_relations().size());
             CPPUNIT_ASSERT_EQUAL((size_t)1, e->slave_relations().size());
-            RelationObject *ro = *e->slave_relations().begin();
+            RelationObject *ro = e->slave_relations().begin()->second;
             CPPUNIT_ASSERT_EQUAL((size_t)1, ro->slave_objects().size());
             session.save(e);
             session.flush();

@@ -558,7 +558,7 @@ void DataObject::calc_depth(int d, DataObject *parent)
         MasterRelations::iterator i = master_relations_.begin(),
             iend = master_relations_.end();
         for (; i != iend; ++i)
-            (*i)->calc_depth(d + 1, parent);
+            i->second->calc_depth(d + 1, parent);
     }
 }
 
@@ -568,37 +568,27 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     slave->lazy_load();
     // Find existing relation in slave's relations
     RelationObject *ro = NULL;
-    SlaveRelations::iterator i = slave->slave_relations().begin(),
-        iend = slave->slave_relations().end();
-    for (; i != iend; ++i)
-        if (&(*i)->relation_info() == &r) {
-            ro = *i;
-            break;
-        }
+    SlaveRelations::iterator i = slave->slave_relations().find(&r);
+    if (i != slave->slave_relations().end())
+        ro = i->second;
     if (ro && ro->master_object() != master) {
-        slave->slave_relations().erase(i);
-        ro->slave_objects().erase(slave);
+        ro->remove_slave(slave);
         ro = NULL;
     }
     // Try to find relation object in master's relations
     if (!ro) {
-        MasterRelations::iterator j = master->master_relations().begin(),
-            jend = master->master_relations().end();
-        for (; j != jend; ++j)
-            if (&(*j)->relation_info() == &r) {
-                ro = shptr_get(*j);
-                break;
-            }
+        MasterRelations::iterator j = master->master_relations().find(&r);
+        if (j != master->master_relations().end())
+            ro = shptr_get(j->second);
     }
     // Create one if it doesn't exist, master will own it
     if (!ro) {
         RelationObject::Ptr new_ro = RelationObject::create_new(r, master);
-        master->master_relations().insert(new_ro);
+        master->master_relations().insert(make_pair(&r, new_ro));
         ro = shptr_get(new_ro);
     }
     // Register slave in the relation
-    ro->slave_objects().insert(slave);
-    slave->slave_relations().insert(ro);
+    ro->add_slave(slave);
     slave->calc_depth(master->depth() + 1, master);
     if (master->assigned_key()) {
         Key pkey = master->key();
@@ -672,17 +662,13 @@ RelationObject *DataObject::get_slaves(const Relation &r)
 {
     // Try to find relation object in master's relations
     RelationObject *ro = NULL;
-    MasterRelations::iterator j = master_relations_.begin(),
-        jend = master_relations_.end();
-    for (; j != jend; ++j)
-        if (&(*j)->relation_info() == &r) {
-            ro = shptr_get(*j);
-            break;
-        }
+    MasterRelations::iterator j = master_relations_.find(&r);
+    if (j != master_relations_.end())
+        ro = shptr_get(j->second);
     // Create one if it doesn't exist, master will own it
     if (!ro) {
         RelationObject::Ptr new_ro = RelationObject::create_new(r, this);
-        master_relations_.insert(new_ro);
+        master_relations_.insert(make_pair(&r, new_ro));
         ro = shptr_get(new_ro);
     }
     return ro;
@@ -741,7 +727,7 @@ void DataObject::refresh_slaves_fkeys()
     MasterRelations::iterator i = master_relations_.begin(),
         iend = master_relations_.end();
     for (; i != iend; ++i)
-        (*i)->refresh_slaves_fkeys();
+        i->second->refresh_slaves_fkeys();
 }
 
 void DataObject::refresh_master_fkeys()
@@ -749,7 +735,7 @@ void DataObject::refresh_master_fkeys()
     SlaveRelations::iterator i = slave_relations_.begin(),
         iend = slave_relations_.end();
     for (; i != iend; ++i)
-        (*i)->refresh_slaves_fkeys();
+        i->second->refresh_slaves_fkeys();
 }
 
 void DataObject::delete_object(DeletionMode mode, int depth)
@@ -787,7 +773,7 @@ void DataObject::delete_master_relations(DeletionMode mode, int depth)
     MasterRelations::iterator i = master_relations_.begin(),
         iend = master_relations_.end();
     for (; i != iend; ++i)
-        (*i)->delete_master(mode, depth);
+        i->second->delete_master(mode, depth);
     if (mode != DelDryRun) {
         MasterRelations empty;
         master_relations_.swap(empty);
@@ -799,7 +785,7 @@ void DataObject::exclude_from_slave_relations()
     SlaveRelations::iterator i = slave_relations_.begin(),
         iend = slave_relations_.end();
     for (; i != iend; ++i)
-        (*i)->exclude_slave(this);
+        i->second->exclude_slave(this);
 }
 
 void DataObject::set_free_from(RelationObject *rel)
@@ -828,7 +814,27 @@ void DataObject::dump_tree(std::ostream &out, int level)
     MasterRelations::iterator i = master_relations_.begin(),
         iend = master_relations_.end();
     for (; i != iend; ++i)
-        (*i)->dump_tree(out, level + 1);
+        i->second->dump_tree(out, level + 1);
+}
+
+void RelationObject::add_slave(DataObject::Ptr slave)
+{
+    pair<SlaveObjectsOrder::iterator, bool> r
+        = slave_order_.insert(make_pair(shptr_get(slave), slave_objects_.size()));
+    if (r.second) {
+        slave_objects_.push_back(slave);
+        slave->slave_relations().insert(make_pair(&relation_info(), this));
+    }
+}
+
+void RelationObject::remove_slave(DataObject::Ptr slave)
+{
+    SlaveObjectsOrder::iterator it = slave_order_.find(shptr_get(slave));
+    if (it != slave_order_.end()) {
+        slave->slave_relations().erase(&relation_info());
+        slave_objects_.erase(slave_objects_.begin() + it->second);
+        slave_order_.erase(it);
+    }
 }
 
 void RelationObject::calc_depth(int d, DataObject *parent)

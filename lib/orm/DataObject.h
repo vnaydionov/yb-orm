@@ -179,8 +179,8 @@ public:
     typedef DataObjectPtr Ptr;
     typedef Values::iterator iterator;
     enum Status { New, Ghost, Dirty, Sync, ToBeDeleted, Deleted };
-    typedef std::set<RelationObject * > SlaveRelations;
-    typedef std::set<RelationObjectPtr> MasterRelations;
+    typedef std::map<const Relation *, RelationObject * > SlaveRelations;
+    typedef std::map<const Relation *, RelationObjectPtr> MasterRelations;
 private:
     const Table &table_;
     Values values_;
@@ -282,21 +282,27 @@ public:
     void dump_tree(std::ostream &out, int level = 0);
 };
 
+//! Represents an instance of 1-to-many relation.
+/** Some facts about RelationObject class <ul>
+  <li>Object is always allocated in heap, pointer to object = object's identity.
+      -> non-copyable.
+  <li>Store and enumerate pointers to related DataObject instances:
+  <li>one pointer to master,
+  <li>and vector of pointers to slaves.
+</ul>
+*/
 class RelationObject: NonCopyable {
-    // 0) Always allocate object in heap,
-    //      pointer to object = object's identity.
-    //      -> non-copyable.
-    // 1) Store and enumerate pointers to related DataObject instances.
-    //      one pointer to master, and vector of pointers to slaves.
     friend class DataObject;
 public:
     typedef RelationObjectPtr Ptr;
-    typedef std::set<DataObject::Ptr> SlaveObjects;
+    typedef std::vector<DataObject::Ptr> SlaveObjects;
+    typedef std::map<DataObject *, int> SlaveObjectsOrder;
     enum Status { Incomplete, Sync };
 private:
     const Relation &relation_info_;
     DataObject *master_object_;
     SlaveObjects slave_objects_;
+    SlaveObjectsOrder slave_order_;
     Status status_;
 
     RelationObject(const Relation &rel_info, DataObject *master)
@@ -304,6 +310,8 @@ private:
         , master_object_(master)
         , status_(Incomplete)
     {}
+    void add_slave(DataObject::Ptr slave);
+    void remove_slave(DataObject::Ptr slave);
 public:
     static Ptr create_new(const Relation &rel_info, DataObject *master) {
         return Ptr(new RelationObject(rel_info, master));
