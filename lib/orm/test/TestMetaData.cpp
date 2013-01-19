@@ -173,11 +173,10 @@ public:
             _T("A"), aaa1, _T("B"), aaa2));
         r.add_relation(re3);
         r.fill_fkeys();
-        Strings parts;
-        CPPUNIT_ASSERT_EQUAL(string("AX"), NARROW(tc->get_fk_for(*re1, parts)[0]));
-        CPPUNIT_ASSERT_EQUAL(string("AX"), NARROW(tb->get_fk_for(*re2, parts)[1]));
-        CPPUNIT_ASSERT_EQUAL(string("A2X"), NARROW(tb->get_fk_for(*re3, parts)[2]));
-        CPPUNIT_ASSERT_EQUAL((size_t)3, parts.size());
+        CPPUNIT_ASSERT_EQUAL(string("AX"), NARROW(re1->fk_fields()[0]));
+        CPPUNIT_ASSERT_EQUAL(string("AX"), NARROW(re2->fk_fields()[0]));
+        CPPUNIT_ASSERT_EQUAL(string("A2X"), NARROW(re3->fk_fields()[0]));
+        CPPUNIT_ASSERT_EQUAL((size_t)1, re3->fk_fields().size());
     }
 
     void test_table_bad_surrogate_pk__no_pk()

@@ -154,23 +154,9 @@ Table::set_seq_name(const String &seq_name)
     seq_name_ = seq_name;
 }
 
-const String
-Table::find_surrogate_pk() const
-{
-    // This call assumes that we have a table with
-    // a surrogate i.e. single column numeric primary key.
-    try {
-        return get_surrogate_pk();
-    }
-    catch (const TableHasNoSurrogatePK &) { }
-    return String();
-}
-
 const String &
 Table::get_surrogate_pk() const
 {
-    // This call assumes that we have a table with
-    // a surrogate i.e. a single column numeric primary key.
     if (pk_fields_.size() != 1)
         throw TableHasNoSurrogatePK(name());
     const Column &c = column(*pk_fields_.begin());
@@ -180,17 +166,28 @@ Table::get_surrogate_pk() const
 }
 
 Strings &
-Table::get_fk_for(const Relation &rel, Strings &fkey_parts) const
+Table::find_fk_for(const Relation &rel, Strings &fkey_parts) const
 {
     const String &master_tbl = rel.table(0).name();
-    if (rel.has_attr(1, _T("key")))
-        StrUtils::split_str(rel.attr(1, _T("key")), _T(","), fkey_parts);
+    Strings new_fkey_parts;
+    if (rel.has_attr(1, _T("key"))) {
+        Strings parts0;
+        StrUtils::split_str(rel.attr(1, _T("key")), _T(","), parts0);
+        Strings::const_iterator i = parts0.begin(), iend = parts0.end();
+        for (; i != iend; ++i) {
+            const Column &c = column(*i);
+            if (!c.has_fk() || c.fk_table_name() != master_tbl)
+                throw BadColumnName(name(), c.name());
+            new_fkey_parts.push_back(c.name());
+        }
+    }
     else {
         Columns::const_iterator i = begin(), iend = end();
         for (; i != iend; ++i)
             if (i->has_fk() && i->fk_table_name() == master_tbl)
-                fkey_parts.push_back(i->name());
+                new_fkey_parts.push_back(i->name());
     }
+    fkey_parts.swap(new_fkey_parts);
     return fkey_parts;
 }
 
@@ -261,8 +258,7 @@ Relation::join_condition() const
 {
     YB_ASSERT(table1_ && table2_);
     const Strings &key_parts1 = table1_->pk_fields();
-    Strings key_parts2;
-    table2_->get_fk_for(*this, key_parts2);
+    const Strings &key_parts2 = fk_fields();
     YB_ASSERT(key_parts1.size() == key_parts2.size());
     Expression expr;
     Strings::const_iterator i = key_parts1.begin(), j = key_parts2.begin(),
@@ -393,8 +389,7 @@ Schema::fill_fkeys()
               *t1 = const_cast<Table *> (&find_table_by_class(r.side(1)));
         r.set_tables(t0, t1);
         if (r.type() == Relation::ONE2MANY) {
-            Strings fkey_parts;
-            t1->get_fk_for(r, fkey_parts);
+            const Strings &fkey_parts = r.fk_fields();
             if (!fkey_parts.size() || fkey_parts.size() != t0->pk_fields().size())
                 throw FkNotFoundInMetaData(t0->name(), t1->name());
         }

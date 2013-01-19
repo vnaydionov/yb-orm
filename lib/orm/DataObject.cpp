@@ -602,8 +602,7 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     slave->calc_depth(master->depth() + 1, master);
     if (master->assigned_key()) {
         Key pkey = master->key();
-        Strings fkey_parts;
-        slave->table().get_fk_for(r, fkey_parts);
+        const Strings &fkey_parts = r.fk_fields();
         for (int i = 0; i < fkey_parts.size(); ++i)
             slave->set(fkey_parts[i], pkey.second[i]);
     }
@@ -630,8 +629,7 @@ Key DataObject::fk_value_for(const Relation &r)
 {
     const Table &master_tbl = r.table(0),
         &slave_tbl = table_;
-    Strings parts;
-    slave_tbl.get_fk_for(r, parts);
+    const Strings &parts = r.fk_fields();
     Key fkey;
     fkey.first = master_tbl.name();
     Strings::const_iterator i = parts.begin(), iend = parts.end(),
@@ -806,8 +804,7 @@ void DataObject::exclude_from_slave_relations()
 
 void DataObject::set_free_from(RelationObject *rel)
 {
-    Strings parts;
-    table_.get_fk_for(rel->relation_info(), parts);
+    const Strings &parts = rel->relation_info().fk_fields();
     Strings::const_iterator i = parts.begin(), end = parts.end();
     for (; i != end; ++i)
         set(*i, Value());
@@ -878,8 +875,7 @@ const Key RelationObject::gen_fkey() const
 {
     const Table &master_tbl = relation_info_.table(0),
         &slave_tbl = relation_info_.table(1);
-    Strings parts;
-    slave_tbl.get_fk_for(relation_info_, parts);
+    const Strings &parts = relation_info_.fk_fields();
     Key fkey;
     fkey.first = slave_tbl.name();
     Strings::const_iterator i = parts.begin(), iend = parts.end(),
@@ -940,8 +936,7 @@ void RelationObject::refresh_slaves_fkeys()
 {
     const Table &master_tbl = relation_info_.table(0),
         &slave_tbl = relation_info_.table(1);
-    Strings parts;
-    slave_tbl.get_fk_for(relation_info_, parts);
+    const Strings &parts = relation_info_.fk_fields();
     SlaveObjects::iterator k = slave_objects_.begin(),
         kend = slave_objects_.end();
     for (; k != kend; ++k) {

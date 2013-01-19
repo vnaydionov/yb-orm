@@ -185,9 +185,15 @@ public:
     Columns::const_iterator end() const { return cols_.end(); }
     size_t size() const { return cols_.size(); }
     size_t idx_by_name(const String &col_name) const;
-    const String find_surrogate_pk() const;
+
+    /** This call assumes that we have a table with
+        a surrogate i.e. a single column numeric primary key.
+    @return The column name of surrogate PK
+    @throws TableHasNoSurrogatePK is thrown if no surrogate PK
+    */
     const String &get_surrogate_pk() const;
-    Strings &get_fk_for(const Relation &rel, Strings &fkey_parts) const;
+
+    Strings &find_fk_for(const Relation &rel, Strings &fkey_parts) const;
     int get_depth() const { return depth_; }
     void add_column(const Column &column);
     Table &operator << (const Column &c) { add_column(c); return *this; }
@@ -203,7 +209,6 @@ public:
     bool mk_key(const Row &row_values, Key &key) const;
     const Key mk_key(const Row &row_values) const;
     const Key mk_key(LongInt id) const;
-    void refresh();
 private:
     String name_, xml_name_, class_name_, seq_name_;
     bool autoinc_;
@@ -247,12 +252,15 @@ public:
     void set_tables(Table *table1, Table *table2) {
         table1_ = table1;
         table2_ = table2;
+        if (table2_)
+            table2->find_fk_for(*this, fk_fields_);
     }
     Table *get_table(int n) const { return n == 0? table1_: table2_; }
     const Table &table(int n) const {
         return *check_not_null(n == 0? table1_: table2_,
                 _T("get relation's table"));
     }
+    const Strings &fk_fields() const { return fk_fields_; }
     bool eq(const Relation &o) {
         return type_ == o.type_ && cascade_ == o.cascade_ 
             && side1_ == o.side1_ && side2_ == o.side2_
@@ -264,6 +272,7 @@ private:
     String side1_, side2_;
     AttrMap attr1_, attr2_;
     Table *table1_, *table2_;
+    Strings fk_fields_;
 };
 
 typedef std::vector<Relation::Ptr> Relations;
@@ -284,11 +293,11 @@ public:
     TblMap::const_iterator tbl_begin() const { return tables_.begin(); }
     TblMap::const_iterator tbl_end() const { return tables_.end(); }
     size_t tbl_count() const { return tables_.size(); }
-    RelMap::const_iterator rels_lower_bound(const String &key) const {
-        return rels_.lower_bound(key);
+    RelMap::const_iterator rels_lower_bound(const String &class_name) const {
+        return rels_.lower_bound(class_name);
     };
-    RelMap::const_iterator rels_upper_bound(const String &key) const {
-        return rels_.upper_bound(key);
+    RelMap::const_iterator rels_upper_bound(const String &class_name) const {
+        return rels_.upper_bound(class_name);
     };
     RelVect::const_iterator rel_begin() const { return relations_.begin(); }
     RelVect::const_iterator rel_end() const { return relations_.end(); }
