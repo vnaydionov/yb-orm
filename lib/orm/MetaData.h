@@ -83,10 +83,9 @@ public:
     ReadOnlyColumn(const String &table, const String &column);
 };
 
-class NotSuitableForAutoCreating : public MetaDataError
-{
+class TableHasNoSurrogatePK : public MetaDataError {
 public:
-    NotSuitableForAutoCreating(const String &table);
+    TableHasNoSurrogatePK(const String &table);
 };
 
 class IntegrityCheckFailed: public MetaDataError
@@ -94,14 +93,6 @@ class IntegrityCheckFailed: public MetaDataError
 public:
     IntegrityCheckFailed(const String &what)
         : MetaDataError(what)
-    {}
-};
-
-class AmbiguousPK : public MetaDataError
-{
-public:
-    AmbiguousPK(const String &table)
-        : MetaDataError(String(_T("Ambiguous primary key for table '")  + table + _T("'")))
     {}
 };
 
@@ -194,7 +185,6 @@ public:
     Columns::const_iterator end() const { return cols_.end(); }
     size_t size() const { return cols_.size(); }
     size_t idx_by_name(const String &col_name) const;
-    const String &get_unique_pk() const;
     const String find_surrogate_pk() const;
     const String &get_surrogate_pk() const;
     Strings &get_fk_for(const Relation &rel, Strings &fkey_parts) const;

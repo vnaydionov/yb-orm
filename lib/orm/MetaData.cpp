@@ -60,8 +60,8 @@ ReadOnlyColumn::ReadOnlyColumn(const String &table, const String &column)
     : MetaDataError(_T("Column '") + column + _T("' in table '") + table + _T("' is READ-ONLY"))
 {}
 
-NotSuitableForAutoCreating::NotSuitableForAutoCreating(const String &table)
-    : MetaDataError(_T("Table '") + table + _T("' is not suitable for auto creating its rows"))
+TableHasNoSurrogatePK::TableHasNoSurrogatePK(const String &table)
+    : MetaDataError(_T("Table '") + table + _T("' has no surrogate primary key"))
 {}
 
 
@@ -115,14 +115,6 @@ Table::Table(const String &name, const String &xml_name,
     , schema_(NULL)
 {}
 
-const String &
-Table::get_unique_pk() const
-{
-    if (pk_fields_.size() != 1)
-        throw AmbiguousPK(name());
-    return *pk_fields_.begin();
-}
-
 void
 Table::add_column(const Column &column)
 {
@@ -170,7 +162,7 @@ Table::find_surrogate_pk() const
     try {
         return get_surrogate_pk();
     }
-    catch (const NotSuitableForAutoCreating &) { }
+    catch (const TableHasNoSurrogatePK &) { }
     return String();
 }
 
@@ -180,10 +172,10 @@ Table::get_surrogate_pk() const
     // This call assumes that we have a table with
     // a surrogate i.e. a single column numeric primary key.
     if (pk_fields_.size() != 1)
-        throw NotSuitableForAutoCreating(name());
+        throw TableHasNoSurrogatePK(name());
     const Column &c = column(*pk_fields_.begin());
     if (c.type() != Value::LONGINT && c.type() != Value::INTEGER)
-        throw NotSuitableForAutoCreating(name());
+        throw TableHasNoSurrogatePK(name());
     return c.name();
 }
 
@@ -387,9 +379,9 @@ Schema::fill_fkeys()
             {
                 Column &c = const_cast<Column &> (*j);
                 try {
-                    c.set_fk_name(table(j->fk_table_name()).get_unique_pk());
+                    c.set_fk_name(table(j->fk_table_name()).get_surrogate_pk());
                 }
-                catch (const TableNotFoundInMetaData &)
+                catch (const TableHasNoSurrogatePK &)
                 {}
             }
         }

@@ -17,9 +17,9 @@ class TestMetaData : public CppUnit::TestFixture
     CPPUNIT_TEST(test_table_surrogate_pk);
     CPPUNIT_TEST(test_rel_join_cond);
     CPPUNIT_TEST(test_get_fk_for);
-    CPPUNIT_TEST_EXCEPTION(test_table_bad_surrogate_pk__no_pk, NotSuitableForAutoCreating);
-    CPPUNIT_TEST_EXCEPTION(test_table_bad_surrogate_pk__complex, NotSuitableForAutoCreating);
-    CPPUNIT_TEST_EXCEPTION(test_table_bad_surrogate_pk__not_int, NotSuitableForAutoCreating);
+    CPPUNIT_TEST_EXCEPTION(test_table_bad_surrogate_pk__no_pk, TableHasNoSurrogatePK);
+    CPPUNIT_TEST_EXCEPTION(test_table_bad_surrogate_pk__complex, TableHasNoSurrogatePK);
+    CPPUNIT_TEST_EXCEPTION(test_table_bad_surrogate_pk__not_int, TableHasNoSurrogatePK);
     CPPUNIT_TEST_EXCEPTION(test_meta_data_bad_column_name, BadColumnName);
     CPPUNIT_TEST_EXCEPTION(test_meta_data_bad_column_name2, BadColumnName);
     CPPUNIT_TEST_EXCEPTION(test_meta_data_column_not_found, ColumnNotFoundInMetaData);

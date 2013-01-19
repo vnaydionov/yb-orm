@@ -533,10 +533,10 @@ void CppCodeGenerator::write_h_file_header(ostream &out)
         << "\texplicit " << class_name_ << "(Yb::DataObject::Ptr d);\n"
         << "\t" << class_name_ << "(Yb::Session &session, const Yb::Key &key);\n";
     try {
-        String mega_key = table_.get_unique_pk();
+        table_.get_surrogate_pk();
         out << "\t" << class_name_ << "(Yb::Session &session, Yb::LongInt id);\n";
     }
-    catch (const AmbiguousPK &)
+    catch (const TableHasNoSurrogatePK &)
     {}
     out << "\t" << class_name_ << " &operator=(const " << class_name_ << " &other);\n"
         << "\tstatic void create_tables_meta(Yb::Tables &tbls);\n"
@@ -787,7 +787,7 @@ void CppCodeGenerator::write_cpp_file(ostream &out)
     out << "{}\n\n";
     bool auto_xmlize = true;
     try {
-        String mega_key = table_.get_unique_pk();
+        table_.get_surrogate_pk();
         out << class_name_ << "::"
             << class_name_ << "(Yb::Session &session, Yb::LongInt id)\n"
             << "\t: Yb::DomainObject(session, _T(\""
@@ -795,7 +795,7 @@ void CppCodeGenerator::write_cpp_file(ostream &out)
         write_autogen(out, 5); // props_cons_calls
         out << "{}\n\n";
     }
-    catch (const AmbiguousPK &) {
+    catch (const TableHasNoSurrogatePK &) {
         auto_xmlize = false;
     }
     out << class_name_ << " &" << class_name_ << "::operator=(const "
