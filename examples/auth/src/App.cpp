@@ -1,6 +1,6 @@
 #include "App.h"
 #include <stdexcept>
-#include <orm/MetaDataSingleton.h>
+#include <orm/SchemaSingleton.h>
 
 using namespace std;
 
@@ -20,7 +20,7 @@ void App::init_engine(const string &db_name)
 {
     if (!engine_.get()) {
         Yb::ILogger::Ptr yb_logger(new_logger("yb").release());
-        Yb::init_default_meta();
+        Yb::init_schema();
         auto_ptr<Yb::SqlPool> pool(
                 new Yb::SqlPool(YB_POOL_MAX_SIZE, YB_POOL_IDLE_TIME,
                     YB_POOL_MONITOR_SLEEP, yb_logger.get()));
@@ -60,7 +60,7 @@ Yb::Engine *App::get_engine()
 auto_ptr<Yb::Session> App::new_session()
 {
     return auto_ptr<Yb::Session>(
-            new Yb::Session(Yb::theMetaData::instance(), get_engine()));
+            new Yb::Session(Yb::theSchema::instance(), get_engine()));
 }
 
 Yb::ILogger::Ptr App::new_logger(const string &name)

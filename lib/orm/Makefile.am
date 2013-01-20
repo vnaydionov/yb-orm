@@ -54,7 +54,7 @@ H_FILES = \
 	DomainObj.h \
 	DomainFactory.h \
 	DomainFactorySingleton.h \
-	MetaDataSingleton.h \
+	SchemaSingleton.h MetaDataSingleton.h \
 	XMLMetaDataConfig.h \
 	XMLizer.h \
 	DataObject.h \

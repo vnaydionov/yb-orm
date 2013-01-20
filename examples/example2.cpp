@@ -2,7 +2,7 @@
 #include <iostream>
 #include <util/str_utils.hpp>
 #include <orm/DataObject.h>
-#include <orm/MetaDataSingleton.h>
+#include <orm/SchemaSingleton.h>
 #include <orm/XMLMetaDataConfig.h>
 #include "domain/Client.h"
 #include "domain/Order.h"
@@ -21,9 +21,9 @@ int main()
     if (Yb::str_empty(conf_dir))
         conf_dir = _T(".");
 #if 0
-    Yb::load_meta(conf_dir + _T("/ex1_schema.xml"), Yb::theMetaData::instance());
+    Yb::load_schema(conf_dir + _T("/ex1_schema.xml"), Yb::theSchema::instance());
 #else
-    Yb::init_default_meta();
+    Yb::init_schema();
 #endif
 #ifdef HAVE_DBPOOL3
     auto_ptr<Yb::DBPoolConfig> conf(
@@ -40,7 +40,7 @@ int main()
 #endif
     engine.set_echo(true);
     engine.set_logger(root_logger.new_logger("yb"));
-    Yb::Session session(Yb::theMetaData::instance(), &engine);
+    Yb::Session session(Yb::theSchema::instance(), &engine);
     Domain::ClientHolder client(session);
     string name, email;
     cout << "Enter name, email: \n";

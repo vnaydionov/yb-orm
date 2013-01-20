@@ -55,6 +55,7 @@ public:
     void rollback();
     void touch();
     bool activity() { return get_conn()->activity(); }
+    void create_schema(const Schema &schema, bool ignore_errors = false);
 
     static void gen_sql_insert(String &sql, Values &params,
             ParamNums &param_nums, const Table &table,

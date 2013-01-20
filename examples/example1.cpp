@@ -2,7 +2,7 @@
 #include <iostream>
 #include <util/str_utils.hpp>
 #include <orm/DataObject.h>
-#include <orm/MetaDataSingleton.h>
+#include <orm/SchemaSingleton.h>
 #include "domain/Client.h"
 #include "domain/Order.h"
 
@@ -15,7 +15,7 @@ int main()
     Yb::Engine engine;
     engine.set_echo(true);
     engine.set_logger(root_logger.new_logger("yb"));
-    Yb::Session session(Yb::init_default_meta(), &engine);
+    Yb::Session session(Yb::init_schema(), &engine);
     Domain::ClientHolder client(session);
     string name, email;
     cout << "Enter name, email: \n";

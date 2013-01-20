@@ -23,7 +23,7 @@ bool load_xml_file(const String &name, string &where)
     return true;
 }
 
-void load_meta(const String &name, Schema &reg)
+void load_schema(const String &name, Schema &reg)
 {
     string xml;
     if (!load_xml_file(name, xml))

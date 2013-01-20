@@ -1,6 +1,6 @@
 #include <memory>
 #include <iostream>
-#include <orm/MetaDataSingleton.h>
+#include <orm/SchemaSingleton.h>
 #include "domain/Client.h"
 #include "domain/Order.h"
 using namespace std;
@@ -11,7 +11,7 @@ int main()
         auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(
                     "sqlite+sqlite://c:/yborm/examples/test1_db"));
         Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-        Yb::Session session(Yb::init_default_meta(), &engine);
+        Yb::Session session(Yb::init_schema(), &engine);
 
         Domain::OrderHolder order;
         string amount;

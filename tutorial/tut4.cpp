@@ -1,7 +1,7 @@
 #include <memory>
 #include <iostream>
 #include <boost/foreach.hpp>
-#include <orm/MetaDataSingleton.h>
+#include <orm/SchemaSingleton.h>
 #include "domain/ProductGroup.h"
 #include "domain/Product.h"
 using namespace std;
@@ -13,6 +13,7 @@ int main()
 {
     LogAppender appender(cerr);
     try {
+        Yb::init_schema();
         auto_ptr<SqlConnection> conn(new SqlConnection(
                     "sqlite+sqlite://c:/yborm/examples/test1_db"));
         Engine engine(Engine::READ_WRITE, conn);
@@ -21,7 +22,7 @@ int main()
 
         LongInt root = -1;
         {
-        Session session(init_default_meta(), &engine);
+        Session session(Yb::theSchema::instance(), &engine);
 
         ProductGroupHolder pg1(session);
         pg1->name = "Group1";
@@ -42,7 +43,7 @@ int main()
         root = pg1->id;
         }
         {
-        Session session(init_default_meta(), &engine);
+        Session session(Yb::theSchema::instance(), &engine);
         ProductGroupHolder pg1(session, root);
         cout << pg1->parent->id.is_null() << endl;
         pg1->delete_object();

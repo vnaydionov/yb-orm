@@ -2,7 +2,7 @@
 #include <cppunit/TestAssert.h>
 #include <util/str_utils.hpp>
 #include <orm/XMLizer.h>
-#include <orm/MetaDataSingleton.h>
+#include <orm/SchemaSingleton.h>
 #include <orm/DomainFactorySingleton.h>
 #include <orm/DomainObj.h>
 #include <orm/Engine.h>
@@ -63,7 +63,7 @@ class TestXMLNode : public CppUnit::TestFixture
                 CreatorPtr(new DomainCreator<OrmTestDomainSimple>()));
         }
 
-        Schema &r = theMetaData::instance();
+        Schema &r = theSchema::instance();
 //      if(r.size() == 0) {
         Table::Ptr t(new Table(_T("T_ORM_TEST"), _T("orm-test"), _T("OrmTest")));
             t->set_seq_name(_T("S_ORM_TEST_ID"));
@@ -202,7 +202,7 @@ public:
     {
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
-        Session session(theMetaData::instance(), &engine);
+        Session session(theSchema::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize();
         CPPUNIT_ASSERT_EQUAL(string(
@@ -214,7 +214,7 @@ public:
     {
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
-        Session session(theMetaData::instance(), &engine);
+        Session session(theSchema::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize(1);
         CPPUNIT_ASSERT_EQUAL(string(
@@ -227,7 +227,7 @@ public:
     {
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
-        Session session(theMetaData::instance(), &engine);
+        Session session(theSchema::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize(-1);
         CPPUNIT_ASSERT_EQUAL(string(

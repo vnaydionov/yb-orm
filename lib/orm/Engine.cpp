@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <util/str_utils.hpp>
 #include <orm/Engine.h>
+#include <orm/CodeGen.h>
 
 using namespace std;
 using namespace Yb::StrUtils;
@@ -202,6 +203,26 @@ EngineBase::touch()
     if (get_dialect()->explicit_begin_trans()
             && !get_conn()->explicit_trans())
         get_conn()->begin_trans();
+}
+
+void
+EngineBase::create_schema(const Schema &schema, bool ignore_errors)
+{
+    SqlSchemaGenerator sql_gen(schema, get_dialect());
+    String sql;
+    while (sql_gen.generate_next_statement(sql)) {
+        auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+        if (ignore_errors) {
+            try {
+                cursor->exec_direct(sql);
+            }
+            catch (const DBError &) {
+                // ignore
+            }
+        }
+        else
+            cursor->exec_direct(sql);
+    }
 }
 
 void

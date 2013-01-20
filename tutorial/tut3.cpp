@@ -1,7 +1,7 @@
 #include <memory>
 #include <iostream>
 #include <boost/foreach.hpp>
-#include <orm/MetaDataSingleton.h>
+#include <orm/SchemaSingleton.h>
 #include "domain/Client.h"
 #include "domain/Order.h"
 using namespace std;
@@ -18,7 +18,7 @@ int main()
         Engine engine(Engine::READ_WRITE, conn);
         engine.set_logger(ILogger::Ptr(new Logger(&appender)));
         engine.set_echo(true);
-        Session session(init_default_meta(), &engine);
+        Session session(init_schema(), &engine);
 
         int id;
         cout << "Enter client ID: \n";
