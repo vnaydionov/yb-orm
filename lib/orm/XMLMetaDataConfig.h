@@ -99,7 +99,7 @@ bool XMLMetaDataConfig::get_value_of(ElementTree::ElementPtr node, const String 
 
 bool load_xml_file(const String &name, std::string &where);
 
-void load_schema(const String &name, Schema &reg);
+void load_schema(const String &name, Schema &reg, bool check = true);
 
 } // namespace Yb
 

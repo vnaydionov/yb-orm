@@ -397,9 +397,8 @@ Schema::fill_fkeys()
 }
 
 void
-Schema::check()
+Schema::check_cycles()
 {
-    fill_fkeys();
     set<String> unique_tables;
     fill_unique_tables(unique_tables);
     StrMap tree;

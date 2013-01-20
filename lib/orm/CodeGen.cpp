@@ -360,7 +360,7 @@ bool SqlSchemaGenerator::generate_next_statement(String &out_str)
         }
     }
     if (seq_it_ != sequences_.end()) {
-        out_str = dialect_->gen_sequence(*seq_it_);
+        out_str = dialect_->create_sequence(*seq_it_);
         ++seq_it_;
         need_commit_ = true;
         return true;

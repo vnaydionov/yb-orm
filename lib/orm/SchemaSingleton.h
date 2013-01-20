@@ -14,6 +14,7 @@ inline Schema &init_schema() {
     Schema &schema = theSchema::instance();
     DomainObject::save_registered(schema);
     schema.fill_fkeys();
+    schema.check_cycles();
     return schema;
 }
 inline Schema &init_default_meta() { return init_schema(); } // deprecated

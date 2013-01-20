@@ -39,12 +39,8 @@ int main(int argc, char *argv[])
             else
                 include_prefix = "domain/";
         }
-        string config_contents;
-        load_xml_file(WIDEN(config), config_contents);
-        XMLMetaDataConfig cfg(config_contents);
         Schema r;
-        cfg.parse(r);
-        r.check();
+        load_schema(WIDEN(config), r);
         ORM_LOG("table count: " << r.tbl_count());
         ORM_LOG("generation started...");
         if (gen_domain)

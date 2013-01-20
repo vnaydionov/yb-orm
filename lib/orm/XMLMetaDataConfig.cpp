@@ -23,7 +23,7 @@ bool load_xml_file(const String &name, string &where)
     return true;
 }
 
-void load_schema(const String &name, Schema &reg)
+void load_schema(const String &name, Schema &reg, bool check)
 {
     string xml;
     if (!load_xml_file(name, xml))
@@ -31,6 +31,8 @@ void load_schema(const String &name, Schema &reg)
     XMLMetaDataConfig xml_config(xml);
     xml_config.parse(reg);
     reg.fill_fkeys();
+    if (check)
+        reg.check_cycles();
 }
 
 XMLMetaDataConfig::XMLMetaDataConfig(const string &xml_string)

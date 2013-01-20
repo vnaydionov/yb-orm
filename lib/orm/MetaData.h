@@ -319,7 +319,7 @@ public:
         { return table(tbl_name); }
 
     void fill_fkeys();
-    void check();
+    void check_cycles();
 private:
     void clear_backrefs();
     void fix_backrefs();

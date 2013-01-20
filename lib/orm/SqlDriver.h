@@ -151,7 +151,8 @@ public:
     virtual bool fk_internal();
     virtual bool commit_ddl();
     virtual const String type2sql(int t) = 0;
-    virtual const String gen_sequence(const String &seq_name) = 0;
+    virtual const String create_sequence(const String &seq_name) = 0;
+    virtual const String drop_sequence(const String &seq_name) = 0;
     virtual const String suffix_create_table();
     virtual const String primary_key_flag();
     virtual const String autoinc_flag();

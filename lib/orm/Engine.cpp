@@ -226,6 +226,53 @@ EngineBase::create_schema(const Schema &schema, bool ignore_errors)
 }
 
 void
+EngineBase::drop_schema(const Schema &schema, bool ignore_errors)
+{
+    int max_depth = 0;
+    Schema::TblMap::const_iterator i, iend;
+    i = schema.tbl_begin(), iend = schema.tbl_end();
+    for (; i != iend; ++i)
+        if (i->second->get_depth() > max_depth)
+            max_depth = i->second->get_depth();
+    for (int curr_depth = max_depth; curr_depth >= 0; --curr_depth) {
+        i = schema.tbl_begin(), iend = schema.tbl_end();
+        for (; i != iend; ++i)
+            if (i->second->get_depth() == curr_depth) {
+                String sql = _T("DROP TABLE ") + i->second->name();
+                auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+                if (ignore_errors) {
+                    try {
+                        cursor->exec_direct(sql);
+                    }
+                    catch (const DBError &e) {
+                        logger()->warning(std::string("ignored DB error: ") + e.what());
+                    }
+                }
+                else
+                    cursor->exec_direct(sql);
+            }
+    }
+    if (get_dialect()->has_sequences()) {
+        i = schema.tbl_begin(), iend = schema.tbl_end();
+        for (; i != iend; ++i)
+            if (!str_empty(i->second->seq_name())) {
+                String sql = get_dialect()->drop_sequence(i->second->seq_name());
+                auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+                if (ignore_errors) {
+                    try {
+                        cursor->exec_direct(sql);
+                    }
+                    catch (const DBError &e) {
+                        logger()->warning(std::string("ignored DB error: ") + e.what());
+                    }
+                }
+                else
+                    cursor->exec_direct(sql);
+            }
+    }
+}
+
+void
 EngineBase::gen_sql_insert(String &sql, Values &params_out,
         ParamNums &param_nums_out, const Table &table,
         bool include_pk)

@@ -326,7 +326,7 @@ public:
             << Column(_T("AX"), Value::LONGINT, 0, 0, Value(), _T("A"), _T("X"));
         Schema r;
         r << t;
-        r.check();
+        r.check_cycles();
     }
     
     void test_registry_check_absent_fk_field()
@@ -338,7 +338,7 @@ public:
             << Column(_T("AX"), Value::LONGINT, 0, 0, Value(), _T("A"), _T("Y"));
         Schema r;
         r << t1 << t2;
-        r.check();
+        r.check_cycles();
     }
     
     void test_registry_check_cyclic_references()
@@ -357,13 +357,13 @@ public:
         Schema r;
         r << t1 << t2 << t3 << t4;
         try {
-            r.check();
+            r.check_cycles();
         }
         catch (const IntegrityCheckFailed &) {
             CPPUNIT_FAIL("Unexpected exception IntegrityCheckFailed");
         }
         *t1 << Column(_T("BX"), Value::LONGINT, 0, 0, Value(), _T("B"), _T("X"));
-        r.check();
+        r.check_cycles();
     }
 };
 

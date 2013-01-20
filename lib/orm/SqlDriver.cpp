@@ -119,8 +119,11 @@ public:
         }
         throw SqlDialectError(_T("Bad type"));
     }
-    const String gen_sequence(const String &seq_name) {
+    const String create_sequence(const String &seq_name) {
         return _T("CREATE SEQUENCE ") + seq_name;
+    }
+    const String drop_sequence(const String &seq_name) {
+        return _T("DROP SEQUENCE ") + seq_name;
     }
     const String sysdate_func() { return _T("SYSDATE"); }
 };
@@ -149,8 +152,11 @@ public:
         }
         throw SqlDialectError(_T("Bad type"));
     }
-    const String gen_sequence(const String &seq_name) {
+    const String create_sequence(const String &seq_name) {
         return _T("CREATE SEQUENCE ") + seq_name;
+    }
+    const String drop_sequence(const String &seq_name) {
+        return _T("DROP SEQUENCE ") + seq_name;
     }
 };
 
@@ -179,8 +185,11 @@ public:
         }
         throw SqlDialectError(_T("Bad type"));
     }
-    const String gen_sequence(const String &seq_name) {
+    const String create_sequence(const String &seq_name) {
         return _T("CREATE GENERATOR ") + seq_name;
+    }
+    const String drop_sequence(const String &seq_name) {
+        return _T("DROP GENERATOR ") + seq_name;
     }
 };
 
@@ -211,7 +220,10 @@ public:
         }
         throw SqlDialectError(_T("Bad type"));
     }
-    const String gen_sequence(const String &seq_name) {
+    const String create_sequence(const String &seq_name) {
+        throw SqlDialectError(_T("No sequences, please"));
+    }
+    const String drop_sequence(const String &seq_name) {
         throw SqlDialectError(_T("No sequences, please"));
     }
     const String suffix_create_table() {
@@ -261,7 +273,10 @@ public:
         throw SqlDialectError(_T("Bad type"));
     }
     bool fk_internal() { return true; }
-    const String gen_sequence(const String &seq_name) {
+    const String create_sequence(const String &seq_name) {
+        throw SqlDialectError(_T("No sequences, please"));
+    }
+    const String drop_sequence(const String &seq_name) {
         throw SqlDialectError(_T("No sequences, please"));
     }
     const String primary_key_flag() { return _T("PRIMARY KEY"); }
