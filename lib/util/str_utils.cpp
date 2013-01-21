@@ -165,7 +165,7 @@ const Yb::String c_string_escape(const Yb::String &s)
                 || char_code(s[pos]) >= _T('\x7F'))
         {
             char buf[20];
-#if YB_USE_UNICODE
+#if defined(YB_USE_UNICODE)
             sprintf(buf, "\\u%04x", char_code(s[pos]));
 #else
             sprintf(buf, "\\x%02x", char_code(s[pos]));
