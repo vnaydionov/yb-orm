@@ -320,6 +320,7 @@ public:
     void master_object(DataObject *obj) { master_object_ = obj; }
     DataObject *master_object() const { return master_object_; }
     SlaveObjects &slave_objects() { return slave_objects_; }
+    SlaveObjects::iterator find(DataObject *obj);
     void status(Status stat) { status_ = stat; }
     Status status() const { return status_; }
     void calc_depth(int d, DataObject *parent = NULL);

@@ -837,6 +837,14 @@ void RelationObject::remove_slave(DataObject::Ptr slave)
     }
 }
 
+RelationObject::SlaveObjects::iterator RelationObject::find(DataObject *obj)
+{
+    SlaveObjectsOrder::iterator it = slave_order_.find(obj);
+    if (slave_order_.end() == it)
+        return slave_objects_.end();
+    return slave_objects_.begin() + it->second;
+}
+
 void RelationObject::calc_depth(int d, DataObject *parent)
 {
     SlaveObjects::iterator i = slave_objects_.begin(),

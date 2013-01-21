@@ -232,9 +232,8 @@ public:
                 ->slave_objects().end());
     }
     iterator find(const T &x) {
-        RelationObject::SlaveObjects::iterator 
-            it = load_if_needed(relation_object())
-                ->slave_objects().find(x.get_data_object());
+        typename RelationObject::SlaveObjects::iterator it
+            = load_if_needed(relation_object())->find(shptr_get(x.get_data_object()));
         return iterator(it);
     }
     const_iterator begin() const {
