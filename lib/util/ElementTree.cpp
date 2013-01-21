@@ -252,8 +252,7 @@ const std::string
 etree2json(ElementPtr node)
 {
     std::string r;
-    if (node->name_ == _T("_json_array")
-            || node->attrib_.get(_T("_json"), _T("")) == _T("array"))
+    if (node->attrib_.get(_T("_json"), _T("")) == _T("array"))
     {
         Elements::iterator i = node->children_.begin(),
             iend = node->children_.end();
@@ -264,8 +263,7 @@ etree2json(ElementPtr node)
         }
         r = "[" + r + "]";
     }
-    else if (node->name_ == _T("_json_dict")
-            || node->attrib_.get(_T("_json"), _T("")) == _T("dict"))
+    else if (node->attrib_.get(_T("_json"), _T("")) == _T("dict"))
     {
         Elements::iterator i = node->children_.begin(),
             iend = node->children_.end();
@@ -282,8 +280,7 @@ etree2json(ElementPtr node)
         }
         r = "{" + r + "}";
     }
-    else if (node->name_ == _T("_json_string")
-            || node->attrib_.get(_T("_json"), _T("")) == _T("string"))
+    else if (node->attrib_.get(_T("_json"), _T("")) == _T("string"))
     {
         r = "\"" + NARROW(StrUtils::c_string_escape(node->get_text())) + "\"";
     }
