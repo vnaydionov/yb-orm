@@ -161,8 +161,14 @@ const Yb::String c_string_escape(const Yb::String &s)
             str_append(r, _T("\\t"));
         else if (char_code(s[pos]) == _T('\\'))
             str_append(r, _T("\\\\"));
+#if defined(YB_USE_UNICODE)
         else if (char_code(s[pos]) < _T('\x20')
                 || char_code(s[pos]) >= _T('\x7F'))
+#else
+        else if ((char_code(s[pos]) >= _T('\0')
+                  && char_code(s[pos]) < _T('\x20'))
+                 || char_code(s[pos]) == _T('\x7F'))
+#endif
         {
             char buf[20];
 #if defined(YB_USE_UNICODE)
