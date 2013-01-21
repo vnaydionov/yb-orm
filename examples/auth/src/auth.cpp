@@ -142,7 +142,7 @@ login(const Yb::StringDict &params)
     if (-1 == uid)
         return BAD_RESP;
 
-    UserHolder user(*session, uid);
+    User::Holder user(*session, uid);
     while (user->login_sessions.begin() != user->login_sessions.end())
         user->login_sessions.begin()->delete_object();
     LoginSession login_session(*session);

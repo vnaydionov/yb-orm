@@ -24,17 +24,17 @@ int main()
         {
         Session session(Yb::theSchema::instance(), &engine);
 
-        ProductGroupHolder pg1(session);
+        ProductGroup::Holder pg1(session);
         pg1->name = "Group1";
 
-        ProductGroupHolder pg2(session);
+        ProductGroup::Holder pg2(session);
         pg2->name = "Group2";
         pg2->parent = pg1;
-        ProductGroupHolder pg3(session);
+        ProductGroup::Holder pg3(session);
         pg3->name = "Group3";
         pg3->parent = pg1;
 
-        ProductHolder pr1(session);
+        Product::Holder pr1(session);
         pr1->name = "Product1";
         pr1->price = Decimal("1.00");
         pr1->parent = pg2;
@@ -44,7 +44,7 @@ int main()
         }
         {
         Session session(Yb::theSchema::instance(), &engine);
-        ProductGroupHolder pg1(session, root);
+        ProductGroup::Holder pg1(session, root);
         cout << pg1->parent->id.is_null() << endl;
         pg1->delete_object();
 

@@ -511,10 +511,12 @@ void CppCodeGenerator::write_h_file_header(ostream &out)
     write_autogen(out, 2); // decl_relation_classes
     out << "\n"
         << "class " << class_name_ << ";\n"
+        // the following typedef is deprecated
         << "typedef Yb::DomainObjHolder<" << class_name_ << "> " << class_name_ << "Holder;\n\n"
         << "class " << class_name_ << ": public Yb::DomainObject\n"
         << "{\n"
-        << "public:\n";
+        << "public:\n"
+        << "\ttypedef Yb::DomainObjHolder<" << class_name_ << "> Holder;\n";
     write_autogen(out, 7); // write_domain_columns_decl
     out << "\tstatic const Yb::String get_table_name() { return _T(\""
         << table_name_ << "\"); }\n"

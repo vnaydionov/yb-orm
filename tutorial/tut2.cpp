@@ -13,13 +13,13 @@ int main()
         Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
         Yb::Session session(Yb::init_schema(), &engine);
 
-        Domain::OrderHolder order;
+        Domain::Order::Holder order;
         string amount;
         cout << "Enter order amount: \n";
         cin >> amount;
         order->total_sum = Yb::Decimal(amount);
 
-        Domain::ClientHolder client;
+        Domain::Client::Holder client;
         string name, email;
         cout << "Enter name, email: \n";
         cin >> name >> email;

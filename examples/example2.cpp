@@ -41,14 +41,14 @@ int main()
     engine.set_echo(true);
     engine.set_logger(root_logger.new_logger("yb"));
     Yb::Session session(Yb::theSchema::instance(), &engine);
-    Domain::ClientHolder client(session);
+    Domain::Client::Holder client(session);
     string name, email;
     cout << "Enter name, email: \n";
     cin >> name >> email;
     client->name = WIDEN(name);
     client->email = WIDEN(email);
     client->dt = Yb::now();
-    Domain::ClientHolder client_x(session);
+    Domain::Client::Holder client_x(session);
     client_x->name = WIDEN(name + "x");
     client_x->email = WIDEN(email);
     client_x->dt = Yb::now();
@@ -82,7 +82,7 @@ int main()
     engine.commit();
     }
     
-    Domain::ClientHolder c2(session, client->id.value());
+    Domain::Client::Holder c2(session, client->id.value());
     cout << "c2.orders size: " << c2->orders.size() << endl;
     Yb::ManagedList<Domain::Order> &lst = c2->orders;
     Yb::ManagedList<Domain::Order>::iterator it = lst.begin(), end = lst.end();
