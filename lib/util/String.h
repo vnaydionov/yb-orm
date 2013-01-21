@@ -167,7 +167,7 @@ typedef std::wstring String;
 typedef char Char;
 typedef std::string String;
 #endif
-inline int char_code(Char c) { return c; }
+inline int char_code(Char c) { return (unsigned char)c; }
 inline const String str_n(int n, Char c) { return String((size_t)n, c); }
 inline const String str_from_chars(const Char *s) { return String(s); }
 inline size_t str_length(const String &s) { return s.size(); }

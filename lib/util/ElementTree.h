@@ -53,6 +53,8 @@ ElementPtr new_element(const Yb::String &name, const Yb::String &s = _T(""));
 ElementPtr parse(const std::string &content);
 ElementPtr parse(std::istream &inp);
 
+const std::string etree2json(ElementPtr);
+
 } // end of namespace ElementTree
 
 } // end of namespace Yb

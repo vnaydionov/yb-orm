@@ -144,6 +144,40 @@ const Yb::String sql_string_escape(const Yb::String &s)
     return r;
 }
 
+const Yb::String c_string_escape(const Yb::String &s)
+{
+    Yb::String r;
+    r.reserve(s.size() * 2);
+    for (int pos = 0; pos < s.size(); ++pos) {
+        if (char_code(s[pos]) == _T('\''))
+            str_append(r, _T("\\\'"));
+        else if (char_code(s[pos]) == _T('\"'))
+            str_append(r, _T("\\\""));
+        else if (char_code(s[pos]) == _T('\n'))
+            str_append(r, _T("\\n"));
+        else if (char_code(s[pos]) == _T('\r'))
+            str_append(r, _T("\\r"));
+        else if (char_code(s[pos]) == _T('\t'))
+            str_append(r, _T("\\t"));
+        else if (char_code(s[pos]) == _T('\\'))
+            str_append(r, _T("\\\\"));
+        else if (char_code(s[pos]) < _T('\x20')
+                || char_code(s[pos]) >= _T('\x7F'))
+        {
+            char buf[20];
+#if YB_USE_UNICODE
+            sprintf(buf, "\\u%04x", char_code(s[pos]));
+#else
+            sprintf(buf, "\\x%02x", char_code(s[pos]));
+#endif
+            str_append(r, WIDEN(buf));
+        }
+        else
+            str_append(r, s[pos]);
+    }
+    return r;
+}
+
 const Yb::String html_escape(const Yb::String &s)
 {
     Yb::String r;

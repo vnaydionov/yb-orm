@@ -1,5 +1,6 @@
 
 #include <util/ElementTree.h>
+#include <util/str_utils.hpp>
 #if defined(YB_USE_WX)
 #include <wx/mstream.h>
 #include <wx/xml/xml.h>
@@ -245,6 +246,52 @@ parse(std::istream &inp)
             out.put(c);
     }
     return parse(out.str());
+}
+
+const std::string
+etree2json(ElementPtr node)
+{
+    std::string r;
+    if (node->name_ == _T("_json_array")
+            || node->attrib_.get(_T("_json"), _T("")) == _T("array"))
+    {
+        Elements::iterator i = node->children_.begin(),
+            iend = node->children_.end();
+        for (; i != iend; ++i) {
+            if (!r.empty())
+                r += ", ";
+            r += etree2json(*i);
+        }
+        r = "[" + r + "]";
+    }
+    else if (node->name_ == _T("_json_dict")
+            || node->attrib_.get(_T("_json"), _T("")) == _T("dict"))
+    {
+        Elements::iterator i = node->children_.begin(),
+            iend = node->children_.end();
+        for (; i != iend; ++i) {
+            if (!r.empty())
+                r += ", ";
+            r += "\"" + NARROW(StrUtils::c_string_escape((*i)->name_)) + "\": ";
+            if ((*i)->attrib_.has(_T("_json")))
+                r += etree2json(*i);
+            else if ((*i)->children_.size())
+                r += etree2json((*i)->children_[0]);
+            else
+                r += "null";
+        }
+        r = "{" + r + "}";
+    }
+    else if (node->name_ == _T("_json_string")
+            || node->attrib_.get(_T("_json"), _T("")) == _T("string"))
+    {
+        r = "\"" + NARROW(StrUtils::c_string_escape(node->get_text())) + "\"";
+    }
+    else
+    {
+        r = NARROW(node->get_text());
+    }
+    return r;
 }
 
 } // end of namespace ElementTree

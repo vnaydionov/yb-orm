@@ -4,6 +4,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <util/str_utils.hpp>
+#include <util/ElementTree.h>
 
 using namespace std;
 using namespace Yb;
@@ -432,5 +433,51 @@ public:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestOrderedDict);
+
+class TestElementTree: public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(TestElementTree);
+
+    CPPUNIT_TEST(testEtreeCons);
+    CPPUNIT_TEST(testEtreeParse);
+    CPPUNIT_TEST(testEtreeSerialize);
+    CPPUNIT_TEST(testEtreeJson);
+
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testEtreeCons()
+    {
+        ElementTree::ElementPtr root = ElementTree::new_element(_T("a"));
+        root->sub_element(_T("b"))->sub_element(_T("c"), _T("hello"));
+        CPPUNIT_ASSERT_EQUAL(string("hello"), NARROW(root->get_text()));
+    }
+    void testEtreeParse()
+    {
+        ElementTree::ElementPtr root = ElementTree::parse(
+                "<x><y q='&amp;Q'/><z>&gt;ABC&lt;</z></x>");
+        CPPUNIT_ASSERT_EQUAL(string(">ABC<"), NARROW(root->get_text()));
+        CPPUNIT_ASSERT_EQUAL(string("&Q"), NARROW(root->children_[0]->attrib_[_T("q")]));
+    }
+    void testEtreeSerialize()
+    {
+        ElementTree::ElementPtr root = ElementTree::new_element(_T("a"));
+        root->attrib_[_T("t")] = _T("T&");
+        root->sub_element(_T("b"))->sub_element(_T("c"), _T("<hello>"));
+        CPPUNIT_ASSERT_EQUAL(string("<a t=\"T&amp;\"><b><c>&lt;hello&gt;</c></b></a>\n"),
+                root->serialize());
+    }
+    void testEtreeJson()
+    {
+        ElementTree::ElementPtr root = ElementTree::parse(
+                "<x _json='dict'><y _json='string'>qwerty\n</y><z><xx>11.22</xx></z>"
+                "<aaa _json='array'><i>1</i><i>2</i></aaa></x>");
+        CPPUNIT_ASSERT_EQUAL(
+                string("{\"y\": \"qwerty\\n\", \"z\": 11.22, \"aaa\": [1, 2]}"),
+                etree2json(root));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(TestElementTree);
 
 // vim:ts=4:sts=4:sw=4:et:

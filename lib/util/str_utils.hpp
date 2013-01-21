@@ -52,6 +52,8 @@ const Yb::String str_to_upper(const Yb::String &s);
 
 const Yb::String trim_trailing_space(const Yb::String &s);
 
+const Yb::String c_string_escape(const Yb::String &s);
+
 const Yb::String sql_string_escape(const Yb::String &s);
 
 const Yb::String html_escape(const Yb::String &s);
