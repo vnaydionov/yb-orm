@@ -421,7 +421,8 @@ public:
         CPPUNIT_ASSERT_EQUAL((size_t)2, d2.size());
         CPPUNIT_ASSERT(d1 != d2);
         CPPUNIT_ASSERT(d1 < d2);
-        d2[_T("B")] = d2.pop(_T("B"));
+        String x = d2.pop(_T("B"));
+        d2[_T("B")] = x;
         CPPUNIT_ASSERT(d1 == d2);
         d2[_T("B")] = _T("3");
         CPPUNIT_ASSERT_EQUAL((size_t)2, d2.keys().size());
