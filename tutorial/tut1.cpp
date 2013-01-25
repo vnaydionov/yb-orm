@@ -7,11 +7,12 @@ using namespace std;
 int main()
 {
     try {
+        Yb::init_schema();
         auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(
                     "sqlite+sqlite://c:/yborm/examples/test1_db"));
         Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-        //engine.drop_schema(Yb::init_schema(), true);
-        //engine.create_schema(Yb::init_schema(), false);
+        engine.drop_schema(Yb::theSchema::instance(), true);
+        engine.create_schema(Yb::theSchema::instance(), false);
         Yb::Session session(Yb::theSchema::instance(), &engine);
 
         Domain::Client client;

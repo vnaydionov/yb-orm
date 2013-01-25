@@ -22,33 +22,33 @@ int main()
 
         LongInt root = -1;
         {
-        Session session(Yb::theSchema::instance(), &engine);
+            Session session(Yb::theSchema::instance(), &engine);
 
-        ProductGroup::Holder pg1(session);
-        pg1->name = "Group1";
+            ProductGroup::Holder pg1(session);
+            pg1->name = "Group1";
 
-        ProductGroup::Holder pg2(session);
-        pg2->name = "Group2";
-        pg2->parent = pg1;
-        ProductGroup::Holder pg3(session);
-        pg3->name = "Group3";
-        pg3->parent = pg1;
+            ProductGroup::Holder pg2(session);
+            pg2->name = "Group2";
+            pg2->parent = pg1;
+            ProductGroup::Holder pg3(session);
+            pg3->name = "Group3";
+            pg3->parent = pg1;
 
-        Product::Holder pr1(session);
-        pr1->name = "Product1";
-        pr1->price = Decimal("1.00");
-        pr1->parent = pg2;
+            Product::Holder pr1(session);
+            pr1->name = "Product1";
+            pr1->price = Decimal("1.00");
+            pr1->parent = pg2;
 
-        session.commit();
-        root = pg1->id;
+            session.commit();
+            root = pg1->id;
         }
         {
-        Session session(Yb::theSchema::instance(), &engine);
-        ProductGroup::Holder pg1(session, root);
-        cout << pg1->parent->id.is_null() << endl;
-        pg1->delete_object();
+            Session session(Yb::theSchema::instance(), &engine);
+            ProductGroup::Holder pg1(session, root);
+            cout << pg1->parent->id.is_null() << endl;
+            pg1->delete_object();
 
-        session.commit();
+            session.commit();
         }
         return 0;
     }
