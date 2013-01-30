@@ -19,6 +19,8 @@ add_executable (example2 example2.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/OrderItem.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Product.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/ProductGroup.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Payment.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/CCardPayment.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Contract.cpp)
 
 set_source_files_properties (
@@ -27,6 +29,8 @@ set_source_files_properties (
     ${CMAKE_CURRENT_BINARY_DIR}/domain/OrderItem.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Product.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/ProductGroup.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/Payment.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/domain/CCardPayment.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Contract.cpp
     PROPERTIES GENERATED 1)
 

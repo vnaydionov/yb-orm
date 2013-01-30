@@ -117,15 +117,9 @@ DataObjectPtr Session::add_to_identity_map(DataObjectPtr obj, bool return_found)
         const Key &key = obj->key();
         IdentityMap::iterator i = identity_map_.find(key);
         if (i != identity_map_.end()) {
-            if (!return_found)
-                throw DataObjectAlreadyInSession(key);
-            DataObjectPtr eobj = i->second;
-            const Table &table = obj->table();
-            for (size_t i = 0; i < table.size(); ++i)
-                if (!table[i].is_pk())
-                    eobj->values_[i] = obj->values_[i];
-            eobj->status_ = obj->status_;
-            return eobj;
+            if (return_found)
+                return i->second;
+            throw DataObjectAlreadyInSession(key);
         }
         identity_map_[key] = obj;
     }
@@ -145,6 +139,13 @@ void Session::save(DataObjectPtr obj0)
 DataObjectPtr Session::save_or_update(DataObjectPtr obj0)
 {
     DataObjectPtr obj = add_to_identity_map(obj0, true);
+    if (shptr_get(obj) != shptr_get(obj0)) {
+        const Table &table = obj->table();
+        for (size_t i = 0; i < table.size(); ++i)
+            if (!table[i].is_pk())
+                obj->values_[i] = obj0->values_[i];
+        obj->status_ = obj0->status_;
+    }
     Objects::iterator i = objects_.find(obj);
     if (i == objects_.end()) {
         objects_.insert(obj);
@@ -247,6 +248,7 @@ void Session::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
     for (i = keyed_objs.begin(); i != iend; ++i) {
         (*i)->refresh_master_fkeys();
         rows.push_back((*i)->raw_values());
+        add_to_identity_map(*i, true);
     }
     engine_->insert(tbl, rows, false);
 }

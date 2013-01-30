@@ -431,8 +431,11 @@ void CppCodeGenerator::write_decl_relation_classes(ostream &out)
         }
     }
     set<String>::const_iterator j = classes.begin(), jend = classes.end();
-    for (; j != jend; ++j)
-        out << "class " << NARROW(*j) << ";\n";
+    for (; j != jend; ++j) {
+        out << "class " << NARROW(*j) << ";\n"
+            << "typedef Yb::DomainObjHolder<" << NARROW(*j)
+            << "> " << NARROW(*j) << "Holder;\n";
+    }
 }
 
 void CppCodeGenerator::write_domain_columns_decl(ostream &out)
@@ -479,7 +482,7 @@ void CppCodeGenerator::write_properties(ostream &out)
         {
             String prop = i->second->attr(1, _T("property")),
                    class_one = i->second->side(0);
-            out << "\t" << NARROW(class_one) << "Holder "
+            out << "\t" << NARROW(class_one) << "::Holder "
                 << NARROW(prop) << ";\n";
         }
     }
@@ -492,8 +495,12 @@ void CppCodeGenerator::write_properties(ostream &out)
         {
             String prop = i->second->attr(0, _T("property")),
                    class_many = i->second->side(1);
-            out << "\tYb::ManagedList<" << NARROW(class_many)
-                << "> " << NARROW(prop) << ";\n";
+            if (i->second->has_attr(0, _T("use-list")) &&
+                    i->second->attr(0, _T("use-list")) == _T("false"))
+                out << "\t" << NARROW(class_many) << "Holder ";
+            else
+                out << "\tYb::ManagedList<" << NARROW(class_many) << "> ";
+            out << NARROW(prop) << ";\n";
         }
     }
 }
@@ -703,7 +710,11 @@ void CppCodeGenerator::write_props_cons_calls(ostream &out)
         {
             String prop = i->second->attr(0, _T("property"));
             out << "\t, " << NARROW(prop) << "(this, _T(\"" << NARROW(prop)
-                << "\"))\n";
+                << "\")";
+            if (i->second->has_attr(0, _T("use-list")) &&
+                    i->second->attr(0, _T("use-list")) == _T("false"))
+                out << ", true";
+            out << ")\n";
         }
     }
 }

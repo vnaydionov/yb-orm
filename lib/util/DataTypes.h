@@ -479,7 +479,7 @@ public:
     }
 
     // comparison
-    bool operator ==(const OrderedDict &other) const {
+    bool eq(const OrderedDict &other) const {
         if (a_.size() != other.a_.size())
             return false;
         typename BaseVector::const_iterator i = a_.begin(), iend = a_.end(),
@@ -489,8 +489,7 @@ public:
                 return false;
         return true;
     }
-    bool operator != (const OrderedDict &other) const { return !(*this == other); }
-    bool operator <(const OrderedDict &other) const {
+    bool lt(const OrderedDict &other) const {
         if (p_ < other.p_)
             return true;
         if (p_ > other.p_)
@@ -505,9 +504,12 @@ public:
         }
         return false;
     }
-    bool operator >=(const OrderedDict &other) const { return !(*this < other); }
-    bool operator >(const OrderedDict &other) const { return other > *this; }
-    bool operator <=(const OrderedDict &other) const { return !(other > *this); }
+    bool operator ==(const OrderedDict &other) const { return eq(other); }
+    bool operator != (const OrderedDict &other) const { return !eq(other); }
+    bool operator <(const OrderedDict &other) const { return lt(other); }
+    bool operator >=(const OrderedDict &other) const { return !lt(other); }
+    bool operator >(const OrderedDict &other) const { return other.lt(*this); }
+    bool operator <=(const OrderedDict &other) const { return !other.lt(*this); }
 
     // indexing
     const BasePair &item(const K__ &key) const {

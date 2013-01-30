@@ -181,6 +181,10 @@
         <column name="PAYER_PURSE" type="string" size="13" />
         <column name="SYS_TRANS_NO" type="longint" />
     </table>
+    <relation type="one-to-many">
+        <one class="Payment" property="ccard_payment" use-list="false" />
+        <many class="CCardPayment" property="payment" />
+    </relation>
     <relation type="parent-child">
         <parent class="Payment" discr-column="PAYSYS_CODE" />
         <child class="CCardPayment" discr-value="CCARD" />

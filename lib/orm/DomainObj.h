@@ -321,23 +321,29 @@ class DomainObjHolder {
     mutable std::auto_ptr<DObj> p_;
     Yb::DomainObject *owner_;
     const Yb::String prop_name_;
+    typedef ManagedList<DObj> SlaveList;
+    mutable std::auto_ptr<SlaveList> slaves_;
+    bool one2one_;
 public:
-    DomainObjHolder(Yb::DomainObject *owner, const Yb::String &prop_name)
+    DomainObjHolder(Yb::DomainObject *owner, const Yb::String &prop_name,
+            bool one2one = false)
         : owner_(owner)
         , prop_name_(prop_name)
+        , one2one_(one2one)
     {}
     DomainObjHolder()
-        : p_(new DObj), owner_(NULL) {}
+        : p_(new DObj), owner_(NULL), one2one_(false) {}
     explicit DomainObjHolder(Yb::Session &session)
-        : p_(new DObj(session)), owner_(NULL) {}
+        : p_(new DObj(session)), owner_(NULL), one2one_(false) {}
     explicit DomainObjHolder(Yb::DataObject::Ptr d)
-        : p_(new DObj(d)), owner_(NULL) {}
+        : p_(new DObj(d)), owner_(NULL), one2one_(false) {}
     DomainObjHolder(Yb::Session &session, const Yb::Key &key)
-        : p_(new DObj(session, key)), owner_(NULL) {}
+        : p_(new DObj(session, key)), owner_(NULL), one2one_(false) {}
     DomainObjHolder(Yb::Session &session, Yb::LongInt id)
-        : p_(new DObj(session, id)), owner_(NULL) {}
+        : p_(new DObj(session, id)), owner_(NULL), one2one_(false) {}
     DomainObjHolder(const DomainObjHolder &other)
-        : p_(new DObj(other._get_p()->get_data_object())), owner_(NULL) {}
+        : p_(new DObj(other._get_p()->get_data_object()))
+        , owner_(NULL), one2one_(false) {}
     DomainObjHolder &operator=(const DomainObjHolder &other)
     {
         if (this != &other) {
@@ -350,8 +356,14 @@ public:
         return *_get_p() == *other._get_p();
     }
     DObj *_get_p() const {
-        if (!p_.get() && owner_)
-            p_.reset(new DObj(owner_, prop_name_));
+        if (!p_.get() && owner_) {
+            if (one2one_) {
+                slaves_.reset(new SlaveList(owner_, prop_name_));
+                p_.reset(new DObj(*slaves_->begin()));
+            }
+            else
+                p_.reset(new DObj(owner_, prop_name_));
+        }
         return p_.get();
     }
     DObj &operator * () const { return *_get_p(); }

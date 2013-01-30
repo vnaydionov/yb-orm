@@ -31,7 +31,7 @@ example1_LDFLAGS = \
 
 example2_SOURCES=example2.cpp domain/Client.cpp domain/Order.cpp \
 	domain/Product.cpp domain/ProductGroup.cpp domain/Contract.cpp \
-	domain/OrderItem.cpp
+	domain/OrderItem.cpp domain/Payment.cpp domain/CCardPayment.cpp
 
 example2_LDFLAGS = \
 	$(top_builddir)/lib/orm/libyborm.la \

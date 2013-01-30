@@ -6,6 +6,8 @@
 #include <orm/XMLMetaDataConfig.h>
 #include "domain/Client.h"
 #include "domain/Order.h"
+#include "domain/Payment.h"
+#include "domain/CCardPayment.h"
 //#define HAVE_DBPOOL3
 #ifdef HAVE_DBPOOL3
 #include <orm/DBPoolDriver.h>
@@ -122,6 +124,16 @@ int main()
         for (; q != qend; ++q)
             cout << q->id.value() << ",";
         cout << endl;
+
+        Domain::Payment::Holder pm(session);
+        pm->amount = Yb::Decimal(100);
+        pm->paysys_code = _T("CCARD");
+        Domain::CCardPayment ccpm(session);
+        ccpm.payment = pm;
+        session.flush();
+        pm->ccard_payment->card_number = _T("3454****5676");
+        session.flush();
+
         c2->delete_object();
         session.flush();
         engine.commit();
