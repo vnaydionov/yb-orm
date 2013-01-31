@@ -1,4 +1,18 @@
 
+0.3.4
+    * Implement order-by relationship property.
+    * Implement use-list='false' relationship property: useful for one-to-one relation.
+    * Add Engine::create_schema(), Engine::drop_schema().
+    * Basic JSON serializer from ElementTree.
+    * Optimize DataObject and RelationObject structures algorithmically.
+    * CodeGen: move Holder typedef into domain class.
+    * Fix domain object comparison, allowing to put them in maps and sets.
+    * Fix to allow actually use tables without a surrogate key
+      and tables with a manually assigned surrogate key.
+    * Fixes for better support of tables with compound keys.
+    * Fix flushing of new keyed DataObjects.
+    * Bunch of fixed typos.
+
 0.3.3
     * refactor Engine classes hierarchy
     * refactor methods Engine::insert(), Engine::update(), Engine::delete()
