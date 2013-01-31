@@ -140,8 +140,8 @@ Relation::Ptr XMLMetaDataConfig::parse_relation(ElementTree::ElementPtr node)
     String one, many;
     Relation::AttrMap a1, a2;
     static const char
-        *anames_one[] = {"property", "use-list"},
-        *anames_many[] = {"property", "filter", "key"};
+        *anames_one[] = {"property", "use-list", },
+        *anames_many[] = {"property", "order-by", "key", };
     ElementTree::Elements::const_iterator child = node->children_.begin(),
         cend = node->children_.end();
     for (; child != cend; ++child) {

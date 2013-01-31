@@ -128,8 +128,13 @@ int main()
         Domain::Payment::Holder pm(session);
         pm->amount = Yb::Decimal(100);
         pm->paysys_code = _T("CCARD");
-        Domain::CCardPayment ccpm(session);
-        ccpm.payment = pm;
+        Domain::CCardPayment::Holder ccpm(session);
+        // It works either way:
+#if 1
+        ccpm->payment = pm;
+#else
+        pm->ccard_payment = ccpm;
+#endif
         session.flush();
         pm->ccard_payment->card_number = _T("3454****5676");
         session.flush();

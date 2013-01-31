@@ -347,7 +347,14 @@ public:
     DomainObjHolder &operator=(const DomainObjHolder &other)
     {
         if (this != &other) {
-            *_get_p() = *other._get_p();
+            if (one2one_) {
+                if (!slaves_.get())
+                    slaves_.reset(new SlaveList(owner_, prop_name_));
+                p_.reset(new DObj(*other));
+                slaves_->insert(*p_);
+            }
+            else
+                *_get_p() = *other._get_p();
         }
         return *this;
     }

@@ -932,9 +932,14 @@ void RelationObject::lazy_load_slaves()
     Columns::const_iterator j = slave_tbl.begin(), jend = slave_tbl.end();
     for (; j != jend; ++j)
         cols << ColumnExpr(slave_tbl.name(), j->name());
-    RowsPtr result = session.engine()->
-        select(cols, Expression(slave_tbl.name()), KeyFilter(gen_fkey()));
-    Rows::const_iterator k = result->begin(), kend = result->end();
+    SelectExpr select_expr = SelectExpr(cols)
+        .from_(Expression(slave_tbl.name()))
+        .where_(KeyFilter(gen_fkey()));
+    if (relation_info_.has_attr(1, _T("order-by")))
+        select_expr.order_by_(
+                Expression(relation_info_.attr(1, _T("order-by"))));
+    SqlResultSet rs = session.engine()->select_iter(select_expr);
+    SqlResultSet::iterator k = rs.begin(), kend = rs.end();
     for (; k != kend; ++k) {
         Key pkey;
         bool assigned_key = slave_tbl.mk_key(*k, pkey);

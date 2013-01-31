@@ -66,7 +66,7 @@
     </table>
     <relation type="one-to-many">
         <one class="Client" property="orders" />
-        <many class="Order" property="owner" />
+        <many class="Order" property="owner" order-by="DT DESC" />
     </relation>
     <relation type="one-to-many">
         <one class="Order" property="items" />
