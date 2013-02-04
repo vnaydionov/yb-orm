@@ -323,27 +323,32 @@ const String url_encode(const string &s, bool path_mode)
     return result;
 }
 
-const StringDict parse_url(const String &url)
+void parse_url_proto(const String &url,
+        String &proto, String &proto_ext, String &url_tail)
 {
-    StringDict params;
     Strings url_parts, proto_parts;
     split_str(url, _T("://"), url_parts);
     if (url_parts.size() != 2)
         throw ValueError(_T("url parse error"));
+    url_tail = url_parts[1];
     split_str(url_parts[0], _T("+"), proto_parts);
     if (proto_parts.size() == 1) {
-        params.set(_T("&proto"), proto_parts[0]);
+        proto = proto_parts[0];
+        proto_ext = String();
     }
     else if (proto_parts.size() == 2) {
-        params.set(_T("&proto"), proto_parts[0]);
-        params.set(_T("&proto_ext"), proto_parts[1]);
+        proto = proto_parts[0];
+        proto_ext = proto_parts[1];
     }
     else
         throw ValueError(_T("url parse error"));
+}
 
+void parse_url_tail(const String &url_tail, StringDict &params)
+{
     String host_etc;
     Strings user_host_parts;
-    split_str(url_parts[1], _T("@"), user_host_parts);
+    split_str(url_tail, _T("@"), user_host_parts);
     if (user_host_parts.size() == 1) {
         host_etc = user_host_parts[0];
     }
@@ -416,7 +421,17 @@ const StringDict parse_url(const String &url)
         }
         params.set(_T("&host"), host_etc);
     }
+}
 
+const StringDict parse_url(const String &url)
+{
+    String proto, proto_ext, url_tail;
+    parse_url_proto(url, proto, proto_ext, url_tail);
+    StringDict params;
+    parse_url_tail(url_tail, params);
+    params.set(_T("&proto"), proto);
+    if (!str_empty(proto_ext))
+        params.set(_T("&proto_ext"), proto_ext);
     return params;
 }
 

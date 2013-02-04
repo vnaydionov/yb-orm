@@ -59,6 +59,11 @@ SqlDriverError::SqlDriverError(const String &msg)
 
 SqlDialect::~SqlDialect() {}
 
+bool SqlDialect::parse_url_tail(const String &url_tail, StringDict &source)
+{
+    return false;
+}
+
 bool SqlDialect::native_driver_eats_slash() { return true; }
 
 bool SqlDialect::explicit_begin_trans() { return false; }
@@ -341,6 +346,14 @@ SqlCursorBackend::~SqlCursorBackend() {}
 SqlConnectionBackend::~SqlConnectionBackend() {}
 SqlDriver::~SqlDriver() {}
 
+void SqlDriver::parse_url_tail(const String &dialect_name,
+        const String &url_tail, StringDict &source)
+{
+    if (sql_dialect(dialect_name)->parse_url_tail(url_tail, source))
+        return;
+    Yb::StrUtils::parse_url_tail(url_tail, source);
+}
+
 typedef SingletonHolder<ItemRegistry<SqlDriver> > theDriverRegistry;
 
 void register_std_drivers()
@@ -407,16 +420,30 @@ SqlSource::SqlSource()
     set(_T("&port"), String());
 }
 
-SqlSource::SqlSource(const String &url)
-    : StringDict(parse_url(url))
+static String find_driver_name(
+        const String &driver_name, const String &dialect_name)
 {
-    set(_T("&dialect"), str_to_upper(pop(_T("&proto"))));
-    set(_T("&driver"), str_to_upper(pop(_T("&proto_ext"), _T("DEFAULT"))));
-    if (!empty_key(_T("&host")) &&
-            empty_key(_T("&port")) && empty_key(_T("&path")))
-        set(_T("&db"), pop(_T("&host"), String()));
-    else
-        set(_T("&db"), pop(_T("&path"), String()));
+    if (str_empty(driver_name))
+        return _T("DEFAULT");
+    return str_to_upper(driver_name);
+}
+
+SqlSource::SqlSource(const String &url)
+{
+    String dialect_name, driver_name, url_tail;
+    parse_url_proto(url, dialect_name, driver_name, url_tail);
+    dialect_name = str_to_upper(dialect_name);
+    driver_name = find_driver_name(driver_name, dialect_name);
+    sql_driver(driver_name)->parse_url_tail(dialect_name, url_tail, *this);
+    set(_T("&dialect"), dialect_name);
+    set(_T("&driver"), driver_name);
+    if (empty_key(_T("&db"))) {
+        if (!empty_key(_T("&host")) &&
+                empty_key(_T("&port")) && empty_key(_T("&path")))
+            set(_T("&db"), pop(_T("&host"), String()));
+        else
+            set(_T("&db"), pop(_T("&path"), String()));
+    }
     set(_T("&user"), pop(_T("&user"), String()));
     set(_T("&passwd"), pop(_T("&passwd"), String()));
     set(_T("&host"), pop(_T("&host"), String()));

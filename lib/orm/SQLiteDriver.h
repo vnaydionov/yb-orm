@@ -50,6 +50,8 @@ class SQLiteDriver: public SqlDriver
 public:
     SQLiteDriver();
     std::auto_ptr<SqlConnectionBackend> create_backend();
+    void parse_url_tail(const String &dialect_name,
+            const String &url_tail, StringDict &source);
 };
 
 } //namespace Yb

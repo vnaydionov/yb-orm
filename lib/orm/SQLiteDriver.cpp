@@ -168,13 +168,19 @@ SQLiteDriver::SQLiteDriver():
     SqlDriver(_T("SQLITE"))
 {}
 
-
 auto_ptr<SqlConnectionBackend>
 SQLiteDriver::create_backend()
 {
     auto_ptr<SqlConnectionBackend> p(
             (SqlConnectionBackend *)new SQLiteConnectionBackend(this));
     return p;
+}
+
+void
+SQLiteDriver::parse_url_tail(const String &dialect_name,
+        const String &url_tail, StringDict &source)
+{
+    source.set(_T("&db"), url_tail);
 }
 
 } //namespace Yb

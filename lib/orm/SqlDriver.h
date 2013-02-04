@@ -136,6 +136,7 @@ public:
         , has_sequences_(has_sequences)
     {}
     virtual ~SqlDialect();
+    virtual bool parse_url_tail(const String &url_tail, StringDict &source);
     const String &get_name() { return name_; }
     const String &dual_name() { return dual_; }
     bool has_sequences() { return has_sequences_; }
@@ -228,6 +229,8 @@ public:
     virtual ~SqlDriver();
     const String &get_name() { return name_; }
     virtual std::auto_ptr<SqlConnectionBackend> create_backend() = 0;
+    virtual void parse_url_tail(const String &dialect_name,
+            const String &url_tail, StringDict &source);
 };
 
 SqlDriver *sql_driver(const String &name);
