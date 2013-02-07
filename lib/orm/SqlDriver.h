@@ -320,6 +320,11 @@ public:
     RowsPtr fetch_rows(int max_rows = -1); // -1 = all
 };
 
+bool find_subst_signs(const String &sql,
+        std::vector<int> &pos_list, String &first_word);
+void split_by_subst_sign(const String &sql,
+        const std::vector<int> &pos_list, std::vector<String> &parts);
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

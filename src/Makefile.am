@@ -11,6 +11,7 @@ AM_CXXFLAGS = \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(SQLITE3_CFLAGS) \
+	$(SOCI_CXXFLAGS) \
 	$(WX_CFLAGS) \
 	$(QT_CFLAGS)
 
@@ -22,6 +23,7 @@ yborm_gen_LDFLAGS = \
 	$(BOOST_LIBS_R) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
+	$(SOCI_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS) \
 	$(WX_LIBS) \

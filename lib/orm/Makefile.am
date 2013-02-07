@@ -13,12 +13,18 @@ DEFAULT_DRV_H = QtSqlDriver.h
 DEFAULT_DRV_CPP = QtSqlDriver.cpp
 SQLITE3_DRV_H =
 SQLITE3_DRV_CPP =
+SOCI_DRV_H =
+SOCI_DRV_CPP =
 else
 DEFAULT_DRV_H = OdbcDriver.h tiodbc.hpp
 DEFAULT_DRV_CPP = OdbcDriver.cpp tiodbc.cpp
 if SQLITE3_PRESENT
 SQLITE3_DRV_H = SQLiteDriver.h
 SQLITE3_DRV_CPP = SQLiteDriver.cpp
+endif
+if SOCI_PRESENT
+SOCI_DRV_H = SOCIDriver.h
+SOCI_DRV_CPP = SOCIDriver.cpp
 endif
 endif
 
@@ -31,15 +37,19 @@ DBPOOL_DRV_CPP =
 endif
 
 yborminclude_HEADERS = \
-	$(H_FILES) $(DEFAULT_DRV_H) $(SQLITE3_DRV_H) $(DBPOOL_DRV_H)
+	$(H_FILES) $(DEFAULT_DRV_H) $(SQLITE3_DRV_H) $(SOCI_DRV_H) \
+	$(DBPOOL_DRV_H)
+
 libyborm_la_SOURCES = \
-	$(CPP_FILES) $(DEFAULT_DRV_CPP) $(SQLITE3_DRV_CPP) $(DBPOOL_DRV_CPP)
+	$(CPP_FILES) $(DEFAULT_DRV_CPP) $(SQLITE3_DRV_CPP) $(SOCI_DRV_CPP) \
+	$(DBPOOL_DRV_CPP)
 
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(SQLITE3_CFLAGS) \
+	$(SOCI_CXXFLAGS) \
 	$(DBPOOL3_CXXFLAGS) \
 	$(WX_CFLAGS) \
 	$(QT_CFLAGS)
@@ -86,6 +96,7 @@ libyborm_la_LIBADD = \
 	$(BOOST_LIBS_R) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
+	$(SOCI_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS) \
 	$(WX_LIBS) \

@@ -5,6 +5,7 @@ AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \
 	$(SQLITE3_CFLAGS) \
+	$(SOCI_CXXFLAGS) \
 	$(BOOST_CPPFLAGS)
 
 noinst_PROGRAMS=tut1 tut2 tut3 tut4
@@ -19,6 +20,7 @@ tut1_LDFLAGS = \
 	$(BOOST_LIBS_R) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
+	$(SOCI_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS)
 
@@ -32,6 +34,7 @@ tut2_LDFLAGS = \
 	$(BOOST_LIBS_R) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
+	$(SOCI_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS)
 
@@ -45,6 +48,7 @@ tut3_LDFLAGS = \
 	$(BOOST_LIBS_R) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
+	$(SOCI_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS)
 
@@ -58,6 +62,7 @@ tut4_LDFLAGS = \
 	$(BOOST_LIBS_R) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
+	$(SOCI_LIBS) \
 	$(DBPOOL3_LDFLAGS) \
 	$(DBPOOL3_LIBS)
 

@@ -445,6 +445,64 @@ AC_DEFUN([YB_SQLITE3],
     LIBS="$ac_save_libs"
 ])
 
+dnl YB_SOCI([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
+dnl Test for the SOCI library
+dnl Defines
+dnl   SOCI_CXXFLAGS to the set of flags required to include SOCI headers
+dnl   SOCI_LIBS to the set of flags required to link against SOCI
+AC_DEFUN([YB_SOCI],
+[
+    AC_SUBST(SOCI_CXXFLAGS)
+    AC_SUBST(SOCI_LIBS)
+    AC_MSG_CHECKING([whether we can use SOCI library])
+
+    AC_ARG_WITH([soci-includes],
+        AC_HELP_STRING([--with-soci-includes=DIR],
+            [Place where SOCI includes are]),
+        [ac_soci_includes="$withval"],[ac_soci_includes=""])
+    AC_ARG_WITH([soci-libs],
+        AC_HELP_STRING([--with-soci-libs=DIR],
+            [Place where SOCI library is]),
+        [ac_soci_libs="$withval"],[ac_soci_libs=""])
+
+    SOCI_CXXFLAGS=-I/usr/local/include/soci
+    SOCI_LIBS=-lsoci_core
+    if test "x$ac_soci_includes" != "x" ; then
+        SOCI_CXXFLAGS="-I$ac_soci_includes"
+    fi
+    if test "x$ac_soci_libs" != "x" ; then
+        SOCI_LIBS="-L$ac_soci_libs -lsoci_core"
+    fi
+    ac_save_cxxflags="$CXXFLAGS"
+    ac_save_libs="$LIBS"
+    CXXFLAGS="$ac_save_cxxflags $SOCI_CXXFLAGS"
+    LIBS="$ac_save_libs $SOCI_LIBS"
+
+    AC_LANG_PUSH(C++)
+    AC_TRY_LINK(
+        [
+#include <soci.h>
+        ],
+        [
+        soci::session sql("mysql", "db=xxx");
+        return 0;
+        ], 
+        [
+        AC_MSG_RESULT([yes])
+        have_soci="yes"
+        ifelse([$1], , :, [$1])
+        ],
+        [ 
+        AC_MSG_RESULT([no])
+        have_soci="no"
+        ifelse([$2], , :, [$2])
+        ])
+
+    AC_LANG_POP(C++)
+    CXXFLAGS="$ac_save_cxxflags"
+    LIBS="$ac_save_libs"
+])
+
 dnl
 dnl YB_PATH_CPPUNIT(MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
 dnl

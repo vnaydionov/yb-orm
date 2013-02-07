@@ -107,94 +107,6 @@ DBPoolConfig::list_data_sources() const
     return names;
 }
 
-bool find_subst_signs(const String &sql, vector<int> &pos_list)
-{
-    enum { NORMAL, MINUS_FOUND, LINE_COMMENT, SLASH_FOUND, COMMENT,
-        COMMENT_ASTER_FOUND, IN_QUOT, IN_QUOT_QFOUND, IN_DQUOT } st;
-    st = NORMAL;
-    for (int i = 0; i < sql.size();) {
-        Char c = sql[i];
-        switch (st) {
-        case NORMAL:
-            switch (char_code(c)) {
-            case '-': st = MINUS_FOUND; break;
-            case '/': st = SLASH_FOUND; break;
-            case '"': st = IN_DQUOT; break;
-            case '\'': st = IN_QUOT; break;
-            case '?': pos_list.push_back(i); break;
-            }
-            ++i;
-            break;
-        case MINUS_FOUND:
-            if (c == '-') {
-                st = LINE_COMMENT;
-                ++i;
-            }
-            else
-                st = NORMAL;
-            break;
-        case LINE_COMMENT:
-            if (c == '\n')
-                st = NORMAL;
-            ++i;
-            break;
-        case SLASH_FOUND:
-            if (c == '*') {
-                st = COMMENT;
-                ++i;
-            }
-            else
-                st = NORMAL;
-            break;
-        case COMMENT:
-            if (c == '*')
-                st = COMMENT_ASTER_FOUND;
-            ++i;
-            break;
-        case COMMENT_ASTER_FOUND:
-            if (c == '/') {
-                st = NORMAL;
-                ++i;
-            }
-            else
-                st = COMMENT;
-            break;
-        case IN_QUOT:
-            if (c == '\'')
-                st = IN_QUOT_QFOUND;
-            ++i;
-            break;
-        case IN_QUOT_QFOUND:
-            if (c == '\'') {
-                st = IN_QUOT;
-                ++i;
-            }
-            else
-                st = NORMAL;
-            break;
-        case IN_DQUOT:
-            if (c == '"')
-                st = NORMAL;
-            ++i;
-            break;
-        }
-    }
-    return st == NORMAL || st == IN_QUOT_QFOUND \
-               || st == LINE_COMMENT || st == SLASH_FOUND;
-}
-
-void split_by_subst_sign(const String &sql,
-        const vector<int> &pos_list, vector<String> &parts)
-{
-    int prev_pos = -1;
-    for (int i = 0; i < pos_list.size(); ++i) {
-        int cur_pos = pos_list[i];
-        parts.push_back(str_substr(sql, prev_pos + 1, cur_pos - prev_pos - 1));
-        prev_pos = cur_pos;
-    }
-    parts.push_back(str_substr(sql, prev_pos + 1, sql.size() - prev_pos - 1));
-}
-
 const String format_sql(const vector<String> &parts,
         const Values &values, SqlDialect *dialect)
 {
@@ -305,7 +217,8 @@ void DBPoolCursorBackend::prepare(const String &sql)
 {
     saved_sql_ = sql;
     vector<int> pos_list;
-    find_subst_signs(sql, pos_list);
+    String first_word;
+    find_subst_signs(sql, pos_list, first_word);
     vector<String> empty;
     sql_parts_.swap(empty);
     split_by_subst_sign(sql, pos_list, sql_parts_);

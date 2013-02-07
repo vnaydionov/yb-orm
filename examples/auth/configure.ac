@@ -27,9 +27,13 @@ YB_QT([
     YB_SQLITE3([
         CPPFLAGS="$CPPFLAGS -DYB_USE_SQLITE3"
     ], [])
+    YB_SOCI([
+        CPPFLAGS="$CPPFLAGS -DYB_USE_SOCI"
+    ], [])
 ])
 AM_CONDITIONAL([QT4_PRESENT], [test x$have_qt = xyes])
 AM_CONDITIONAL([SQLITE3_PRESENT], [test x$have_sqlite3 = xyes])
+AM_CONDITIONAL([SOCI_PRESENT], [test x$have_soci = xyes])
 
 # optional dependencies
 YB_CHECK_DBPOOL3()
