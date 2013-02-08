@@ -6,6 +6,8 @@
 using namespace std;
 using Yb::StrUtils::str_to_upper;
 
+//#define YB_SOCI_DEBUG
+
 namespace Yb {
 
 SOCICursorBackend::SOCICursorBackend(SOCIDatabase *conn)
@@ -48,11 +50,11 @@ void
 SOCICursorBackend::prepare(const String &sql)
 {
     close();
-    std::vector<int> pos_list;
+    vector<int> pos_list;
     String first_word;
     if (!find_subst_signs(sql, pos_list, first_word))
         throw DBError(_T("SQL syntax error"));
-    std::vector<String> parts;
+    vector<String> parts;
     split_by_subst_sign(sql, pos_list, parts);
     String sql2 = parts[0];
     for (int i = 1; i < parts.size(); ++i) {
@@ -92,7 +94,7 @@ SOCICursorBackend::exec(const Values &params)
             if (param.get_type() == Value::INVALID) {
                 if (in_params_[i].size() < sizeof(int))
                     in_params_[i].resize(sizeof(int));
-                std::strcpy(&(in_params_[i][0]), "");
+                strcpy(&(in_params_[i][0]), "");
                 in_flags_[i] = soci::i_null;
                 stmt_->exchange(soci::use(in_params_[i], in_flags_[i]));
             }
@@ -114,7 +116,7 @@ SOCICursorBackend::exec(const Values &params)
                 if (in_params_[i].size() < sizeof(std::tm))
                     in_params_[i].resize(sizeof(std::tm));
                 std::tm &when = *(std::tm *)&(in_params_[i][0]);
-                std::memset(&when, 0, sizeof(when));
+                memset(&when, 0, sizeof(when));
                 DateTime d = param.as_date_time();
                 when.tm_year = dt_year(d) - 1900;
                 when.tm_mon = dt_month(d) - 1;
@@ -125,10 +127,10 @@ SOCICursorBackend::exec(const Values &params)
                 stmt_->exchange(soci::use(when));
             }
             else {
-                std::string s = NARROW(param.as_string());
+                string s = NARROW(param.as_string());
                 if (in_params_[i].size() < s.size())
                     in_params_[i].resize(s.size());
-                std::strcpy(&(in_params_[i][0]), s.c_str());
+                strcpy(&(in_params_[i][0]), s.c_str());
                 stmt_->exchange(soci::use(in_params_[i]));
             }
         }
@@ -145,19 +147,27 @@ SOCICursorBackend::exec(const Values &params)
 RowPtr SOCICursorBackend::fetch_row()
 {
     try {
-        if (!stmt_->fetch())
+        if (!stmt_->fetch()) {
+#ifdef YB_SOCI_DEBUG
+            cerr << "fetch(): false" << endl;
+#endif
             return RowPtr();
+        }
         RowPtr result(new Row);
         int col_count = row_.size();
+#ifdef YB_SOCI_DEBUG
+        cerr << "fetch(): col_count=" << col_count << endl;
+#endif
         for (int i = 0; i < col_count; ++i) {
             const soci::column_properties &props = row_.get_properties(i);
             String name = str_to_upper(WIDEN(props.get_name()));
             Value v;
             if (row_.get_indicator(i) != soci::i_null) {
                 std::tm when;
+                unsigned long long x;
                 switch (props.get_data_type()) {
                 case soci::dt_string:
-                    v = Value(WIDEN(row_.get<std::string>(i)));
+                    v = Value(WIDEN(row_.get<string>(i)));
                     break;
                 case soci::dt_double:
                     v = Value(Decimal(row_.get<double>(i)));
@@ -165,9 +175,19 @@ RowPtr SOCICursorBackend::fetch_row()
                 case soci::dt_integer:
                     v = Value(row_.get<int>(i));
                     break;
+#if 0
                 case soci::dt_unsigned_long:
+                    x = row_.get<unsigned long>(i);
+                    v = Value((LongInt)x);
+                    break;
+#endif
                 case soci::dt_long_long:
-                    v = Value(row_.get<long long>(i));
+                    x = row_.get<long long>(i);
+                    v = Value((LongInt)x);
+                    break;
+                case soci::dt_unsigned_long_long:
+                    x = row_.get<unsigned long long>(i);
+                    v = Value((LongInt)x);
                     break;
                 case soci::dt_date:
                     when = row_.get<std::tm>(i);
@@ -177,6 +197,11 @@ RowPtr SOCICursorBackend::fetch_row()
                     break;
                 }
             }
+#ifdef YB_SOCI_DEBUG
+            cerr << "fetch(): col[" << i << "]: name=" << props.get_name()
+                << " type=" << props.get_data_type()
+                << " value=" << NARROW(v.sql_str()) << endl;
+#endif
             result->push_back(make_pair(name, v));
         }
         return result;
@@ -195,7 +220,7 @@ SOCIConnectionBackend::~SOCIConnectionBackend()
     close();
 }
 
-static const std::string soci_convert_dialect(const String &dialect_name)
+static const string soci_convert_dialect(const String &dialect_name)
 {
     if (dialect_name == _T("POSTGRES"))
         return "postgresql";
@@ -218,7 +243,9 @@ SOCIConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
     try {
         conn_ = new SOCIDatabase(soci_convert_dialect(dialect->get_name()),
                 NARROW(source.db()));
-        //conn_->set_log_stream(&std::cerr);
+#ifdef YB_SOCI_DEBUG
+        conn_->set_log_stream(&cerr);
+#endif
     }
     catch (const soci::soci_error &e) {
         throw DBError(WIDEN(e.what()));
