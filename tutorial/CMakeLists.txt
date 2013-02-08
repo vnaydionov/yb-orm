@@ -103,6 +103,31 @@ else ()
     set (USE_SQLITE3 OFF)
 endif ()
 
+if (SOCI_INCLUDEDIR)
+    find_path (SOCI_INCLUDEDIR soci.h ${SOCI_INCLUDEDIR})
+elseif (UNIX)
+    find_path (SOCI_INCLUDEDIR soci.h /usr/include)
+else ()
+    find_path (SOCI_INCLUDEDIR soci.h c:/yborm/include)
+endif ()
+
+if (SOCI_LIBDIR)
+    find_library (SOCI_LIBS soci ${SOCI_LIBDIR})
+elseif (UNIX)
+    find_library (SOCI_LIBS soci)
+else ()
+    find_library (SOCI_LIBS soci c:/yborm/lib c:/yborm/bin)
+endif ()
+
+if (SOCI_INCLUDEDIR AND SOCI_LIBS)
+    add_definitions (-D YB_USE_SOCI)
+    set (USE_SOCI ON)
+else ()
+    set (SOCI_LIBS "")
+    set (SOCI_INCLUDEDIR "")
+    set (USE_SOCI OFF)
+endif ()
+
 if (BOOST_INCLUDEDIR AND (NOT BORLAND))
     add_definitions (-D YB_USE_TUPLE)
 endif()
@@ -201,16 +226,16 @@ add_dependencies (tut4 gen_cpp_tut4)
 add_dependencies (tut4 gen_sql_tut4)
 
 target_link_libraries (tut1 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
-    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS})
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS})
 
 target_link_libraries (tut2 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
-    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS})
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS})
 
 target_link_libraries (tut3 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
-    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS})
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS})
 
 target_link_libraries (tut4 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
-    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS})
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS})
 
 install (TARGETS tut1 tut2 tut3 tut4 DESTINATION examples)
 install (FILES tut1.xml tut4.xml ${CMAKE_CURRENT_BINARY_DIR}/tut1.sql

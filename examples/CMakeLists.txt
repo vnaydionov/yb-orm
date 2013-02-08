@@ -38,10 +38,12 @@ add_dependencies (example1 generate_domain)
 add_dependencies (example2 generate_domain)
 
 target_link_libraries (example1 ybutil yborm ${LIBXML2_LIBS}
-    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${QT_LIBRARIES})
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS}
+    ${QT_LIBRARIES})
 
 target_link_libraries (example2 ybutil yborm ${LIBXML2_LIBS}
-    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${QT_LIBRARIES})
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS}
+    ${QT_LIBRARIES})
 
 install (TARGETS example1 example2 DESTINATION examples)
 install (FILES ex1_schema.xml ex2_schema.xml 
