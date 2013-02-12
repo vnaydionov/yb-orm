@@ -145,6 +145,16 @@ void SQLiteConnectionBackend::close()
 }
 
 void
+SQLiteConnectionBackend::begin_trans()
+{
+    sqlite3_exec(conn_, "BEGIN TRANSACTION", NULL, 0, 0);
+    if (SQLITE_OK != sqlite3_errcode(conn_)) {
+        const char *err = sqlite3_errmsg(conn_);
+        throw DBError(WIDEN(err));
+    }
+}
+
+void
 SQLiteConnectionBackend::commit()
 {
     sqlite3_exec(conn_, "COMMIT", NULL, 0, 0);

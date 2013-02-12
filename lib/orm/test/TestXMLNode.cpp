@@ -137,7 +137,7 @@ public:
             };
             st = st_data;
         }
-        conn.begin_trans();
+        conn.begin_trans_if_necessary();
         for (size_t i = 0; i < NUM_STMT; ++i)
             conn.exec_direct(WIDEN(st[i]));
         conn.commit();

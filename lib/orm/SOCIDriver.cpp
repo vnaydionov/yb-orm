@@ -275,6 +275,17 @@ void SOCIConnectionBackend::close()
 }
 
 void
+SOCIConnectionBackend::begin_trans()
+{
+    try {
+        conn_->begin();
+    }
+    catch (const soci::soci_error &e) {
+        throw DBError(WIDEN(e.what()));
+    }
+}
+
+void
 SOCIConnectionBackend::commit()
 {
     try {

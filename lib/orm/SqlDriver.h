@@ -215,6 +215,7 @@ public:
     virtual void open(SqlDialect *dialect, const SqlSource &source) = 0;
     virtual std::auto_ptr<SqlCursorBackend> new_cursor() = 0;
     virtual void close() = 0;
+    virtual void begin_trans() = 0;
     virtual void commit() = 0;
     virtual void rollback() = 0;
 };
@@ -309,6 +310,8 @@ public:
     bool bad() const { return bad_; }
     bool activity() const { return activity_; }
     bool explicit_trans() const { return explicit_trans_; }
+    bool explicit_transaction_control() const;
+    void begin_trans_if_necessary();
     void begin_trans();
     void commit();
     void rollback();

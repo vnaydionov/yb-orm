@@ -31,6 +31,7 @@ public:
     void open(SqlDialect *dialect, const SqlSource &source);
     std::auto_ptr<SqlCursorBackend> new_cursor();
     void close();
+    void begin_trans();
     void commit();
     void rollback();
 };

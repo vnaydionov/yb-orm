@@ -200,9 +200,7 @@ EngineBase::rollback()
 void
 EngineBase::touch()
 {
-    if (get_dialect()->explicit_begin_trans()
-            && !get_conn()->explicit_trans())
-        get_conn()->begin_trans();
+    get_conn()->begin_trans_if_necessary();
 }
 
 void

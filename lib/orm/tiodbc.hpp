@@ -191,6 +191,7 @@ namespace tiodbc
 		*/
 		void disconnect();
 
+		bool begin_trans();
 		bool commit();
 		bool rollback();
 

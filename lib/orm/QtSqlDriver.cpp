@@ -176,6 +176,13 @@ QtSqlConnectionBackend::close()
 }
 
 void
+QtSqlConnectionBackend::begin_trans()
+{
+    if (!conn_->transaction())
+        throw DBError(conn_->lastError().text());
+}
+
+void
 QtSqlConnectionBackend::commit()
 {
     if (!conn_->commit())

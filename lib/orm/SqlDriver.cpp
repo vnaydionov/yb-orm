@@ -174,6 +174,7 @@ public:
     InterbaseDialect()
         : SqlDialect(_T("INTERBASE"), _T("RDB$DATABASE"), true)
     {}
+    bool explicit_begin_trans() { return true; }
     const String select_curr_value(const String &seq_name)
     { return _T("GEN_ID(") + seq_name + _T(", 0)"); }
     const String select_next_value(const String &seq_name)
@@ -706,16 +707,28 @@ SqlConnection::new_cursor()
     return auto_ptr<SqlCursor>(new SqlCursor(*this));
 }
 
+bool
+SqlConnection::explicit_transaction_control() const
+{
+    return dialect_->explicit_begin_trans();
+}
+
+void
+SqlConnection::begin_trans_if_necessary()
+{
+    if (explicit_transaction_control() && !explicit_trans_)
+    {
+        begin_trans();
+    }
+}
+
 void
 SqlConnection::begin_trans()
 {
     try {
-        if (dialect_->explicit_begin_trans()) {
-            bool a = activity_;
-            exec_direct(_T("BEGIN TRANSACTION"));
-            explicit_trans_ = true;
-            activity_ = a;
-        }
+        debug(_T("begin transaction"));
+        backend_->begin_trans();
+        explicit_trans_ = true;
     }
     catch (const std::exception &e) {
         mark_bad(e);
@@ -727,7 +740,7 @@ void
 SqlConnection::commit()
 {
     try {
-        if (!dialect_->explicit_begin_trans() || explicit_trans_) {
+        if (!explicit_transaction_control() || explicit_trans_) {
             if (echo_)
                 debug(_T("commit"));
             backend_->commit();
@@ -745,7 +758,7 @@ void
 SqlConnection::rollback()
 {
     try {
-        if (!dialect_->explicit_begin_trans() || explicit_trans_) {
+        if (!explicit_transaction_control() || explicit_trans_) {
             if (echo_)
                 debug(_T("rollback"));
             backend_->rollback();

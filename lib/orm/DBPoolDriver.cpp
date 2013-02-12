@@ -187,6 +187,12 @@ public:
         }
     }
 
+    void begin_trans()
+    {
+        DBPoolCursorBackend cur(this);
+        cur.exec_direct(_T("BEGIN TRANSACTION"));
+    }
+
     void commit()
     {
         DBPoolCursorBackend cur(this);

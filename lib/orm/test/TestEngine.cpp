@@ -331,7 +331,7 @@ public:
     {
         SqlConnection conn(Engine::sql_source_from_env());
         setup_log(conn);
-        conn.begin_trans();
+        conn.begin_trans_if_necessary();
         record_id_ = get_next_test_id(&conn);
         //CPPUNIT_ASSERT(record_id_ > 0);
         Values params;
@@ -348,7 +348,7 @@ public:
     {
         SqlConnection conn(Engine::sql_source_from_env());
         setup_log(conn);
-        conn.begin_trans();
+        conn.begin_trans_if_necessary();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
         conn.commit();

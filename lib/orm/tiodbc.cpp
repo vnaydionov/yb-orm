@@ -271,6 +271,12 @@ namespace tiodbc
 		b_connected = false;
 	}
 
+	bool connection::begin_trans()
+	{
+		// do nothing: ODBC has no such thing
+		return true;
+	}
+
 	bool connection::commit()
 	{
 		RETCODE rc;

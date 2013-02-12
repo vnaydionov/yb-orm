@@ -133,6 +133,13 @@ OdbcConnectionBackend::close()
 }
 
 void
+OdbcConnectionBackend::begin_trans()
+{
+    if (!conn_->begin_trans())
+        throw DBError(conn_->last_error_ex());
+}
+
+void
 OdbcConnectionBackend::commit()
 {
     if (!conn_->commit())

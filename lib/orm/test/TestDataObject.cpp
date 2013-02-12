@@ -408,7 +408,7 @@ public:
     {
         SqlConnection conn(Engine::sql_source_from_env());
         setup_log(conn);
-        conn.begin_trans();
+        conn.begin_trans_if_necessary();
         {
             String sql_str =
                 _T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)");
@@ -476,7 +476,7 @@ public:
     {
         SqlConnection conn(Engine::sql_source_from_env());
         setup_log(conn);
-        conn.begin_trans();
+        conn.begin_trans_if_necessary();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
         conn.commit();
