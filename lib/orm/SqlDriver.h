@@ -141,7 +141,6 @@ public:
     const String &dual_name() { return dual_; }
     bool has_sequences() { return has_sequences_; }
     virtual bool native_driver_eats_slash();
-    virtual bool explicit_begin_trans();
     virtual const String select_curr_value(
             const String &seq_name) = 0;
     virtual const String select_next_value(
@@ -232,6 +231,7 @@ public:
     virtual std::auto_ptr<SqlConnectionBackend> create_backend() = 0;
     virtual void parse_url_tail(const String &dialect_name,
             const String &url_tail, StringDict &source);
+    virtual bool explicit_begin_trans_required();
 };
 
 SqlDriver *sql_driver(const String &name);
@@ -283,7 +283,7 @@ class SqlConnection: NonCopyable
     SqlDialect *dialect_;
     std::auto_ptr<SqlConnectionBackend> backend_;
     std::auto_ptr<SqlCursor> cursor_;
-    bool activity_, echo_, bad_, explicit_trans_;
+    bool activity_, echo_, bad_, explicit_trans_started_;
     time_t free_since_;
     ILogger::Ptr log_;
     void debug(const String &s) { if (log_.get()) log_->debug(NARROW(s)); }
@@ -309,7 +309,7 @@ public:
     std::auto_ptr<SqlCursor> new_cursor();
     bool bad() const { return bad_; }
     bool activity() const { return activity_; }
-    bool explicit_trans() const { return explicit_trans_; }
+    bool explicit_trans_started() const { return explicit_trans_started_; }
     bool explicit_transaction_control() const;
     void begin_trans_if_necessary();
     void begin_trans();

@@ -296,6 +296,12 @@ DBPoolDriver::create_backend()
     return pimpl_->create_backend();
 }
 
+bool
+DBPoolDriver::explicit_begin_trans_required()
+{
+    return false;
+}
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

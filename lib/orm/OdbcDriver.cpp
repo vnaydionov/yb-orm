@@ -165,6 +165,12 @@ OdbcDriver::create_backend()
     return p;
 }
 
+bool
+OdbcDriver::explicit_begin_trans_required()
+{
+    return false;
+}
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

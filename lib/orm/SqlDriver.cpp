@@ -69,8 +69,6 @@ bool SqlDialect::parse_url_tail(const String &url_tail, StringDict &source)
 
 bool SqlDialect::native_driver_eats_slash() { return true; }
 
-bool SqlDialect::explicit_begin_trans() { return false; }
-
 const String SqlDialect::select_last_inserted_id(const String &table_name) {
     throw SqlDialectError(_T("No autoincrement flag"));
 }
@@ -174,7 +172,6 @@ public:
     InterbaseDialect()
         : SqlDialect(_T("INTERBASE"), _T("RDB$DATABASE"), true)
     {}
-    bool explicit_begin_trans() { return true; }
     const String select_curr_value(const String &seq_name)
     { return _T("GEN_ID(") + seq_name + _T(", 0)"); }
     const String select_next_value(const String &seq_name)
@@ -258,7 +255,6 @@ public:
         : SqlDialect(_T("SQLITE"), _T(""), false)
     {}
     bool native_driver_eats_slash() { return false; }
-    bool explicit_begin_trans() { return true; }
     const String select_curr_value(const String &seq_name)
     { throw SqlDialectError(_T("No sequences, please")); }
     const String select_next_value(const String &seq_name)
@@ -356,6 +352,11 @@ void SqlDriver::parse_url_tail(const String &dialect_name,
     if (sql_dialect(dialect_name)->parse_url_tail(url_tail, source))
         return;
     Yb::StrUtils::parse_url_tail(url_tail, source);
+}
+
+bool SqlDriver::explicit_begin_trans_required()
+{
+    return true; // the default policy
 }
 
 typedef SingletonHolder<ItemRegistry<SqlDriver> > theDriverRegistry;
@@ -646,7 +647,7 @@ SqlConnection::SqlConnection(const String &driver_name,
     , activity_(false)
     , echo_(false)
     , bad_(false)
-    , explicit_trans_(false)
+    , explicit_trans_started_(false)
     , free_since_(0)
 {
     source_[_T("&driver")] = driver_->get_name();
@@ -661,7 +662,7 @@ SqlConnection::SqlConnection(const SqlSource &source)
     , activity_(false)
     , echo_(false)
     , bad_(false)
-    , explicit_trans_(false)
+    , explicit_trans_started_(false)
     , free_since_(0)
 {
     source_[_T("&driver")] = driver_->get_name();
@@ -676,7 +677,7 @@ SqlConnection::SqlConnection(const String &url)
     , activity_(false)
     , echo_(false)
     , bad_(false)
-    , explicit_trans_(false)
+    , explicit_trans_started_(false)
     , free_since_(0)
 {
     source_[_T("&driver")] = driver_->get_name();
@@ -710,13 +711,13 @@ SqlConnection::new_cursor()
 bool
 SqlConnection::explicit_transaction_control() const
 {
-    return dialect_->explicit_begin_trans();
+    return driver_->explicit_begin_trans_required();
 }
 
 void
 SqlConnection::begin_trans_if_necessary()
 {
-    if (explicit_transaction_control() && !explicit_trans_)
+    if (explicit_transaction_control() && !explicit_trans_started_)
     {
         begin_trans();
     }
@@ -728,7 +729,7 @@ SqlConnection::begin_trans()
     try {
         debug(_T("begin transaction"));
         backend_->begin_trans();
-        explicit_trans_ = true;
+        explicit_trans_started_ = true;
     }
     catch (const std::exception &e) {
         mark_bad(e);
@@ -740,13 +741,13 @@ void
 SqlConnection::commit()
 {
     try {
-        if (!explicit_transaction_control() || explicit_trans_) {
+        if (!explicit_transaction_control() || explicit_trans_started_) {
             if (echo_)
                 debug(_T("commit"));
             backend_->commit();
         }
         activity_ = false;
-        explicit_trans_ = false;
+        explicit_trans_started_ = false;
     }
     catch (const std::exception &e) {
         mark_bad(e);
@@ -758,13 +759,13 @@ void
 SqlConnection::rollback()
 {
     try {
-        if (!explicit_transaction_control() || explicit_trans_) {
+        if (!explicit_transaction_control() || explicit_trans_started_) {
             if (echo_)
                 debug(_T("rollback"));
             backend_->rollback();
         }
         activity_ = false;
-        explicit_trans_ = false;
+        explicit_trans_started_ = false;
     }
     catch (const std::exception &e) {
         mark_bad(e);

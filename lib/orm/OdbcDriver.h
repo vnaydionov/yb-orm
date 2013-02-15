@@ -43,6 +43,7 @@ class OdbcDriver: public SqlDriver
 public:
     OdbcDriver();
     std::auto_ptr<SqlConnectionBackend> create_backend();
+    bool explicit_begin_trans_required();
 };
 
 } // namespace Yb
