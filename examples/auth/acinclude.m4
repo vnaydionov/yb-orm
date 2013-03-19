@@ -436,6 +436,8 @@ AC_DEFUN([YB_SQLITE3],
         ],
         [ 
         AC_MSG_RESULT([no])
+        SQLITE3_CFLAGS=""
+        SQLITE3_LIBS=""
         have_sqlite3="no"
         ifelse([$2], , :, [$2])
         ])
@@ -494,6 +496,8 @@ AC_DEFUN([YB_SOCI],
         ],
         [ 
         AC_MSG_RESULT([no])
+        SOCI_CXXFLAGS=""
+        SOCI_LIBS=""
         have_soci="no"
         ifelse([$2], , :, [$2])
         ])
