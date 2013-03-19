@@ -425,7 +425,8 @@ public:
         CPPUNIT_ASSERT(d1 <= d2);
         CPPUNIT_ASSERT(!(d1 > d2));
         CPPUNIT_ASSERT(!(d1 >= d2));
-        d2[_T("B")] = d2.pop(_T("B"));
+        String x = d2.pop(_T("B"));
+        d2[_T("B")] = x;
         CPPUNIT_ASSERT(d1 == d2);
         CPPUNIT_ASSERT(!(d1 != d2));
         CPPUNIT_ASSERT(!(d1 < d2));
