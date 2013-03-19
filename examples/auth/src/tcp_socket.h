@@ -33,7 +33,7 @@ public:
     bool ok() const { return INVALID_SOCKET == s_; }
     void bind(int port);
     void listen();
-    SOCKET accept();
+    SOCKET accept(std::string *ip_addr = NULL, int *ip_port = NULL);
     std::string readline();
     const std::string read(size_t n);
     void write(const std::string &msg);

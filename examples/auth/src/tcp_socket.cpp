@@ -1,7 +1,8 @@
 #include "tcp_socket.h"
 #include <iostream>
-#include <stdlib.h>
 #include <cstring>
+#include <cstdlib>
+#include <cstdio>
 #include <util/String.h>
 
 using namespace std;
@@ -86,11 +87,28 @@ TcpSocket::listen()
 }
 
 SOCKET
-TcpSocket::accept()
+TcpSocket::accept(string *ip_addr, int *ip_port)
 {
-    SOCKET s2 = ::accept(s_, NULL, NULL);
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    struct sockaddr *p_addr = NULL;
+    socklen_t addr_len = sizeof(addr), *p_addr_len = NULL;
+    if (ip_addr || ip_port) {
+        p_addr = (struct sockaddr *)&addr;
+        p_addr_len = &addr_len;
+    }
+    SOCKET s2 = ::accept(s_, p_addr, p_addr_len);
     if (INVALID_SOCKET == s2)
         throw SocketEx("accept", get_last_error());
+    if (ip_port)
+        *ip_port = ntohs(*(unsigned short *)&addr.sin_port);
+    if (ip_addr) {
+        unsigned ip = ntohl(*(unsigned *)&addr.sin_addr);
+        char buf[20];
+        sprintf(buf, "%d.%d.%d.%d",
+                ip >> 24, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255);
+        *ip_addr = string(buf);
+    }
     return s2;
 }
 

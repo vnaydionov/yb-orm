@@ -151,8 +151,10 @@ HttpServer::serve()
     while (1) {
         // accept request
         try {
-            SOCKET cl_sock = sock_.accept();
-            log_->info("accepted");
+            string ip_addr;
+            int ip_port;
+            SOCKET cl_sock = sock_.accept(&ip_addr, &ip_port);
+            log_->info("accepted from " + ip_addr + ":" + Yb::to_stdstring(ip_port));
             WorkerThreadPtr worker(new WorkerThread(
                     cl_sock, log_.get(), &handlers_, HttpServer::process));
             workers.push_back(worker);
