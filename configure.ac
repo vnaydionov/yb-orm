@@ -34,6 +34,7 @@ YB_QT([
 AM_CONDITIONAL([QT4_PRESENT], [test x$have_qt = xyes])
 AM_CONDITIONAL([SQLITE3_PRESENT], [test x$have_sqlite3 = xyes])
 AM_CONDITIONAL([SOCI_PRESENT], [test x$have_soci = xyes])
+AM_CONDITIONAL([TUTORIAL_PRESENT], [test x$have_qt != xyes])
 
 # optional dependencies
 YB_PATH_CPPUNIT([1.10.0],[],
