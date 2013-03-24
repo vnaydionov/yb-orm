@@ -92,6 +92,9 @@ TcpSocket::accept(string *ip_addr, int *ip_port)
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     struct sockaddr *p_addr = NULL;
+#if defined(__WIN32__) || defined(_WIN32)
+    typedef int socklen_t;
+#endif
     socklen_t addr_len = sizeof(addr), *p_addr_len = NULL;
     if (ip_addr || ip_port) {
         p_addr = (struct sockaddr *)&addr;
