@@ -395,12 +395,12 @@ public:
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         RowsData rows;
         LongInt id = get_next_test_id(engine.get_conn());
-        RowData row;
+        Values row;
         row.push_back(id);
         row.push_back(Value(_T("inserted")));
         row.push_back(now());
         row.push_back(Decimal(_T("1.1")));
-        rows.push_back(row);
+        rows.push_back(&row);
         engine.insert(t, rows, false);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")),
@@ -424,13 +424,13 @@ public:
         t.add_column(Column(_T("C"), Value::DECIMAL, 0, 0));
         setup_log(engine);
         RowsData rows;
-        RowData row;
+        Values row;
         DateTime timestamp = now();
         row.push_back(record_id_);
         row.push_back(Value(_T("updated")));
         row.push_back(timestamp);
         row.push_back(Decimal(_T("1.3")));
-        rows.push_back(row);
+        rows.push_back(&row);
         engine.update(t, rows);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")), Expression(_T("T_ORM_TEST")),

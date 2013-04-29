@@ -239,7 +239,6 @@ public:
     Value &get(const String &name) {
         return get(table_.idx_by_name(name));
     }
-    const Value get_typed_value(const Column &col, const Value &v);
     void touch();
     void set(int i, const Value &v);
     void set(const String &name, const Value &v) {
@@ -248,7 +247,9 @@ public:
     const Key &key();
     Key fk_value_for(const Relation &r);
     const Values &raw_values() const { return values_; }
-    const Row values(bool include_key=true);
+    /*
+    void get_values(Row &row, bool include_key=true);
+    */
     bool assigned_key();
     SlaveRelations &slave_relations() {
         return slave_relations_;
@@ -256,7 +257,7 @@ public:
     MasterRelations &master_relations() {
         return master_relations_;
     }
-    size_t fill_from_row(const Row &r, size_t pos = 0);
+    size_t fill_from_row(Row &r, size_t pos = 0);
     void refresh_slaves_fkeys();
     void refresh_master_fkeys();
 

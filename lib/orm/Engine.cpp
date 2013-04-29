@@ -66,7 +66,7 @@ EngineBase::insert(const Table &table, const RowsData &rows,
             ParamNums::const_iterator f = param_nums.begin(),
                 fend = param_nums.end();
             for (; f != fend; ++f)
-                params[f->second] = (*r)[table.idx_by_name(f->first)];
+                params[f->second] = (**r)[table.idx_by_name(f->first)];
             cursor->exec(params);
         }
     }
@@ -78,7 +78,7 @@ EngineBase::insert(const Table &table, const RowsData &rows,
             ParamNums::const_iterator f = param_nums.begin(),
                 fend = param_nums.end();
             for (; f != fend; ++f)
-                params[f->second] = (*r)[table.idx_by_name(f->first)];
+                params[f->second] = (**r)[table.idx_by_name(f->first)];
             cursor->exec(params);
             cursor.reset(NULL);
             auto_ptr<SqlCursor> cursor2 = get_conn()->new_cursor();
@@ -112,7 +112,7 @@ EngineBase::update(const Table &table, const RowsData &rows)
         ParamNums::const_iterator f = param_nums.begin(),
             fend = param_nums.end();
         for (; f != fend; ++f)
-            params[f->second] = (*r)[table.idx_by_name(f->first)];
+            params[f->second] = (**r)[table.idx_by_name(f->first)];
         cursor->exec(params);
     }
 }

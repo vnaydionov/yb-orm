@@ -9,61 +9,196 @@ using namespace Yb::StrUtils;
 
 namespace Yb {
 
-ValueHolderBase::~ValueHolderBase() {}
-
-template <class T>
-struct ValueHolder: public ValueHolderBase {
-    T d_;
-    ValueHolder(const T &d): d_(d) {}
-};
-
-template <class T>
-const T &typed_value(SharedPtr<ValueHolderBase>::Type data)
-{
-    return reinterpret_cast<ValueHolder<T> * > (shptr_get(data))->d_;
-}
-
 Value::Value()
     : type_(INVALID)
 {}
 
 Value::Value(int x)
     : type_(INTEGER)
-    , data_(new ValueHolder<int>(x))
-{}
+{
+    copy_as<int>(x);
+}
 
 Value::Value(LongInt x)
     : type_(LONGINT)
-    , data_(new ValueHolder<LongInt>(x))
-{}
+{
+    copy_as<LongInt>(x);
+}
 
 Value::Value(const Char *x)
     : type_(STRING)
-    , data_(new ValueHolder<String>(str_from_chars(x)))
-{}
+{
+    copy_as<String>(x);
+}
 
 Value::Value(const String &x)
     : type_(STRING)
-    , data_(new ValueHolder<String>(x))
-{}
+{
+    copy_as<String>(x);
+}
 
 Value::Value(const Decimal &x)
     : type_(DECIMAL)
-    , data_(new ValueHolder<Decimal>(x))
-{}
+{
+    copy_as<Decimal>(x);
+}
 
 Value::Value(const DateTime &x)
     : type_(DATETIME)
-    , data_(new ValueHolder<DateTime>(x))
-{}
+{
+    copy_as<DateTime>(x);
+}
+
+void
+Value::init()
+{
+    switch (type_) {
+    case STRING:
+        cons_as<String>();
+        break;
+    case DECIMAL:
+        cons_as<Decimal>();
+        break;
+    case DATETIME:
+        cons_as<DateTime>();
+        break;
+    }
+}
+
+void
+Value::destroy()
+{
+    switch (type_) {
+    case STRING:
+        des_as<String>();
+        break;
+    case DECIMAL:
+        des_as<Decimal>();
+        break;
+    case DATETIME:
+        des_as<DateTime>();
+        break;
+    }
+}
+
+Value::~Value()
+{
+    destroy();
+}
+
+Value::Value(const Value &other)
+    : type_(INVALID)
+{
+    *this = other;
+}
+
+Value &Value::operator=(const Value &other)
+{
+    if (type_ != other.type_) {
+        destroy();
+        type_ = other.type_;
+        init();
+    }
+    switch (other.type_) {
+    case INTEGER:
+        get_as<int>() = other.get_as<int>();
+        break;
+    case LONGINT:
+        get_as<LongInt>() = other.get_as<LongInt>();
+        break;
+    case STRING:
+        get_as<String>() = other.get_as<String>();
+        break;
+    case DECIMAL:
+        get_as<Decimal>() = other.get_as<Decimal>();
+        break;
+    case DATETIME:
+        get_as<DateTime>() = other.get_as<DateTime>();
+        break;
+    }
+    return *this;
+}
+
+void
+Value::swap(Value &other)
+{
+    type_ ^= other.type_;
+    other.type_ ^= type_;
+    type_ ^= other.type_;
+    char *p1 = &bytes_[0], *p2 = &other.bytes_[0];
+    char *limit1 = p1 + sizeof(bytes_);
+    for (; p1 != limit1; ++p1, ++p2) {
+        *p1 ^= *p2;
+        *p2 ^= *p1;
+        *p1 ^= *p2;
+    }
+}
+
+void
+Value::fix_type(int type)
+{
+    if (type_ == type || type_ == INVALID)
+        return;
+    switch (type) {
+    case Value::INVALID:
+        {
+            destroy();
+            type_ = type;
+        }
+        break;
+    case Value::INTEGER:
+        {
+            int t = as_integer();
+            destroy();
+            type_ = type;
+            get_as<int>() = t;
+        }
+        break;
+    case Value::LONGINT:
+        {
+            LongInt t = as_longint();
+            destroy();
+            type_ = type;
+            get_as<LongInt>() = t;
+        }
+        break;
+    case Value::STRING:
+        {
+            String t = as_string();
+            destroy();
+            type_ = type;
+            init();
+            get_as<String>() = t;
+        }
+        break;
+    case Value::DECIMAL:
+        {
+            Decimal t = as_decimal();
+            destroy();
+            type_ = type;
+            init();
+            get_as<Decimal>() = t;
+        }
+        break;
+    case Value::DATETIME:
+        {
+            DateTime t = as_date_time();
+            destroy();
+            type_ = type;
+            init();
+            get_as<DateTime>() = t;
+        }
+        break;
+    }
+}
 
 int
 Value::as_integer() const
 {
     if (type_ == INTEGER)
-        return typed_value<int>(data_);
+        return get_as<int>();
     if (type_ == LONGINT) {
-        LongInt x = typed_value<LongInt>(data_);
+        LongInt x = get_as<LongInt>();
         LongInt m = 0xFFFF;
         m = (m << 16) | m;
         LongInt h = (x >> 32) & m;
@@ -86,9 +221,9 @@ LongInt
 Value::as_longint() const
 {
     if (type_ == LONGINT)
-        return typed_value<LongInt>(data_);
+        return get_as<LongInt>();
     if (type_ == INTEGER)
-        return typed_value<int>(data_);
+        return get_as<int>();
     String s = as_string();
     try {
         LongInt x;
@@ -103,7 +238,7 @@ const Decimal
 Value::as_decimal() const
 {
     if (type_ == DECIMAL)
-        return typed_value<Decimal>(data_);
+        return get_as<Decimal>();
     String s = as_string();
     try {
         return Decimal(s);
@@ -131,7 +266,7 @@ const DateTime
 Value::as_date_time() const
 {
     if (type_ == DATETIME)
-        return typed_value<DateTime>(data_);
+        return get_as<DateTime>();
     String s = as_string();
     try {
         DateTime x;
@@ -155,15 +290,15 @@ Value::as_string() const
     if (type_ == INVALID)
         throw ValueIsNull();
     if (type_ == STRING)
-        return typed_value<String>(data_);
+        return get_as<String>();
     if (type_ == DECIMAL)
-        return to_string(typed_value<Decimal>(data_));
+        return to_string(get_as<Decimal>());
     if (type_ == INTEGER)
-        return to_string(typed_value<int>(data_));
+        return to_string(get_as<int>());
     if (type_ == LONGINT)
-        return to_string(typed_value<LongInt>(data_));
+        return to_string(get_as<LongInt>());
     if (type_ == DATETIME)
-        return to_string(typed_value<DateTime>(data_));
+        return to_string(get_as<DateTime>());
     throw ValueBadCast(_T("UnknownType"), _T("Value::as_string()"));
 }
 
@@ -173,9 +308,9 @@ Value::sql_str() const
     if (is_null())
         return _T("NULL");
     if (type_ == STRING)
-        return quote(sql_string_escape(typed_value<String>(data_)));
+        return quote(sql_string_escape(get_as<String>()));
     else if (type_ == DATETIME) {
-        String t(to_string(typed_value<DateTime>(data_)));
+        String t(to_string(get_as<DateTime>()));
         int pos = str_find(t, _T('T'));
         if (pos != -1)
             t[pos] = _T(' ');
@@ -193,29 +328,29 @@ Value::cmp(const Value &x) const
         return -1;
     if (x.is_null())
         return 1;
-    if (type_ == DECIMAL || x.type_ == DECIMAL)
-    {
-        return as_decimal().cmp(x.as_decimal());
-    }
-    if (type_ == LONGINT || x.type_ == LONGINT || 
-            type_ == INTEGER || x.type_ == INTEGER)
+    if (type_ == STRING && x.type_ == STRING)
+        return get_as<String>().compare(x.get_as<String>());
+    if ((type_ == LONGINT || type_ == INTEGER) &&
+        (x.type_ == LONGINT || x.type_ == INTEGER))
     {
         LongInt a, b;
         if (type_ == INTEGER)
-            a = as_integer();
+            a = get_as<int>();
         else
-            a = as_longint();
+            a = get_as<LongInt>();
         if (x.type_ == INTEGER)
-            b = x.as_integer();
+            b = x.get_as<int>();
         else
-            b = x.as_longint();
+            b = x.get_as<LongInt>();
         return a < b? -1: (a > b? 1: 0);
     }
-    if (type_ == DATETIME || x.type_ == DATETIME)
+    if (type_ == DATETIME && x.type_ == DATETIME)
     {
-        DateTime a = as_date_time(), b = x.as_date_time();
+        const DateTime &a = get_as<DateTime>(), &b = x.get_as<DateTime>();
         return a < b? -1: (a > b? 1: 0);
     }
+    if (type_ == DECIMAL && x.type_ == DECIMAL)
+        return get_as<Decimal>().cmp(x.get_as<Decimal>());
     return as_string().compare(x.as_string());
 }
 

@@ -91,15 +91,14 @@ RowPtr SQLiteCursorBackend::fetch_row()
         return RowPtr();
     if (SQLITE_ROW != last_code_)
         throw DBError(WIDEN(sqlite3_errmsg(conn_)));
-    RowPtr row(new Row);
     int col_count = sqlite3_column_count(stmt_);
+    RowPtr row(new Row(col_count));
     for (int i = 0; i < col_count; ++i) {
         String name = str_to_upper(WIDEN(sqlite3_column_name(stmt_, i)));
         int type = sqlite3_column_type(stmt_, i);
-        Value v;
+        (*row)[i].first = name;
         if (SQLITE_NULL != type)
-            v = Value(WIDEN((const char *)sqlite3_column_text(stmt_, i)));
-        row->push_back(make_pair(name, v));
+            (*row)[i].second = WIDEN((const char *)sqlite3_column_text(stmt_, i));
     }
     last_code_ = sqlite3_step(stmt_);
     return row;

@@ -239,9 +239,9 @@ int DomainObject::cmp(const DomainObject &x) const
         return -1;
     if (!shptr_get(p2))
         return 1;
-    if (p1->values() == p2->values())
+    if (p1->raw_values() == p2->raw_values())
         return 0;
-    return p1->values() < p2->values()? -1: 1;
+    return p1->raw_values() < p2->raw_values()? -1: 1;
 }
 
 ElementTree::ElementPtr DomainObject::xmlize(

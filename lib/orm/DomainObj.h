@@ -297,13 +297,20 @@ public:
     U as()
     {
         YB_ASSERT(pobj_ != NULL);
-        Value v = pobj_->get(ColNum);
+        const Value &v = pobj_->get(ColNum);
         YB_ASSERT(!v.is_null());
         U u;
         return from_variant(v, u);
     }
-    T value() { return as<T>(); }
-    operator T () { return as<T>(); }
+    const T &value() {
+        YB_ASSERT(pobj_ != NULL);
+        const Value &v = pobj_->get(ColNum);
+        YB_ASSERT(!v.is_null());
+        return v.read_as<T>();
+    }
+    operator const T & () {
+        return value();
+    }
     operator Value ()
     {
         YB_ASSERT(pobj_ != NULL);

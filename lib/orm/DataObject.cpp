@@ -34,7 +34,7 @@ bool DataObjectResultSet::fetch(ObjectList &row)
     if (rs_.end() == *it_)
         return false;
     ObjectList new_row;
-    const Row &cur = **it_;
+    Row &cur = **it_;
     size_t pos = 0;
     for (int i = 0; i < tables_.size(); ++i) {
         DataObject::Ptr d = DataObject::create_new
@@ -244,10 +244,11 @@ void Session::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
     bool use_autoinc = !sql_seq &&
         (tbl.autoinc() || !str_empty(tbl.seq_name()));
     RowsData rows;
+    rows.reserve(keyed_objs.size());
     Objects::iterator i, iend = keyed_objs.end();
     for (i = keyed_objs.begin(); i != iend; ++i) {
         (*i)->refresh_master_fkeys();
-        rows.push_back((*i)->raw_values());
+        rows.push_back(&(*i)->raw_values());
         add_to_identity_map(*i, true);
     }
     engine_->insert(tbl, rows, false);
@@ -266,9 +267,10 @@ void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
             (*i)->set(pk, engine_->get_next_value(tbl.seq_name()));
     }
     RowsData rows;
+    rows.reserve(unkeyed_objs.size());
     for (i = unkeyed_objs.begin(); i != iend; ++i) {
         (*i)->refresh_master_fkeys();
-        rows.push_back((*i)->raw_values());
+        rows.push_back(&(*i)->raw_values());
     }
     vector<LongInt> ids = engine_->insert(tbl, rows, use_autoinc);
     if (use_autoinc) {
@@ -357,7 +359,7 @@ void Session::flush_update(IdentityMap &idmap_copy)
             const String &tbl_name = i->first.first;
             i->second->refresh_master_fkeys();
             add_row_to_rows_by_table(rows_by_table, tbl_name,
-                                     i->second->raw_values());
+                                     &i->second->raw_values());
             i->second->set_status(DataObject::Ghost);
         }
     RowsDataByTable::iterator j = rows_by_table.begin(), jend = rows_by_table.end();
@@ -461,18 +463,6 @@ void DataObject::forget_session()
     session_ = NULL;
 }
 
-const Value DataObject::get_typed_value(const Column &col, const Value &v)
-{
-    try {
-        return v.get_typed_value(col.type());
-    }
-    catch (ValueBadCast &) {
-        throw BadTypeCast(table_.name(), col.name(),
-                          v.as_string(),
-                          Value::get_type_name(col.type()));
-    }
-}
-
 void DataObject::touch()
 {
     if (status_ == Sync)
@@ -482,25 +472,24 @@ void DataObject::touch()
 void DataObject::set(int i, const Value &v)
 {
     const Column &c = table_[i];
+    if (c.is_ro() && !c.is_pk())
+        throw ReadOnlyColumn(table_.name(), c.name());
     lazy_load(&c);
+    Value new_v = v;
+    new_v.fix_type(c.type());
+    bool equal = values_[i] == new_v;
     if (c.is_pk() && session_ != NULL
-        && values_[i] != v && !values_[i].is_null())
+        && !equal && !values_[i].is_null())
     {
         throw ReadOnlyColumn(table_.name(), c.name());
     }
-    if (c.is_ro() && !c.is_pk())
-        throw ReadOnlyColumn(table_.name(), c.name());
-    Value new_value;
     if (c.type() == Value::STRING) {
-        String s = v.as_string();
+        const String &s = new_v.read_as<String>();
         if (c.size() && c.size() < s.size())
             throw StringTooLong(table_.name(), c.name(), c.size(), s);
-        new_value = Value(s);
     }
-    else
-        new_value = get_typed_value(c, v);
-    if (values_[i] != new_value) {
-        values_[i] = new_value;
+    if (!equal) {
+        values_[i].swap(new_v);
         if (c.is_pk())
             update_key();
         else
@@ -520,15 +509,21 @@ const Key &DataObject::key()
     return key_;
 }
 
-const Row DataObject::values(bool include_key)
+/*
+void DataObject::get_values(Row &row, bool include_key)
 {
-    Row values;
+    Row new_row;
+    new_row.reserve(table_.size());
     for (size_t i = 0; i < table_.size(); ++i)
-        if (!table_[i].is_pk() || include_key)
-            values.push_back(make_pair(table_[i].name(),
-                        values_[i].get_typed_value(table_[i].type())));
-    return values;
+        if (!table_[i].is_pk() || include_key) {
+            new_row.push_back(make_pair(table_[i].name(),
+                        values_[i]);
+            new_row[new_row.size() - 1].second.fix_type(
+                table_[i].type());
+        }
+    row.swap(new_row);
 }
+*/
 
 bool DataObject::assigned_key()
 {
@@ -714,11 +709,13 @@ DataObject::populate_all_master_relations()
 DataObject::~DataObject()
 {}
 
-size_t DataObject::fill_from_row(const Row &r, size_t pos)
+size_t DataObject::fill_from_row(Row &r, size_t pos)
 {
     size_t i = 0;
-    for (; i < table_.size(); ++i)
-        values_[i] = get_typed_value(table_[i], r[pos + i].second);
+    for (; i < table_.size(); ++i) {
+        values_[i].swap(r[pos + i].second);
+        values_[i].fix_type(table_[i].type());
+    }
     update_key();
     status_ = Sync;
     return pos + i;
