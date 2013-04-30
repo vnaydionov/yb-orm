@@ -327,9 +327,6 @@ public:
     const String &key_str();
     Key fk_value_for(const Relation &r);
     const Values &raw_values() const { return values_; }
-    /*
-    void get_values(Row &row, bool include_key=true);
-    */
     bool assigned_key();
     SlaveRelations &slave_relations() {
         return slave_relations_;

@@ -9,46 +9,6 @@ using namespace Yb::StrUtils;
 
 namespace Yb {
 
-Value::Value()
-    : type_(INVALID)
-{}
-
-Value::Value(int x)
-    : type_(INTEGER)
-{
-    copy_as<int>(x);
-}
-
-Value::Value(LongInt x)
-    : type_(LONGINT)
-{
-    copy_as<LongInt>(x);
-}
-
-Value::Value(const Char *x)
-    : type_(STRING)
-{
-    copy_as<String>(x);
-}
-
-Value::Value(const String &x)
-    : type_(STRING)
-{
-    copy_as<String>(x);
-}
-
-Value::Value(const Decimal &x)
-    : type_(DECIMAL)
-{
-    copy_as<Decimal>(x);
-}
-
-Value::Value(const DateTime &x)
-    : type_(DATETIME)
-{
-    copy_as<DateTime>(x);
-}
-
 void
 Value::init()
 {
@@ -81,25 +41,15 @@ Value::destroy()
     }
 }
 
-Value::~Value()
-{
-    destroy();
-}
-
-Value::Value(const Value &other)
-    : type_(INVALID)
-{
-    *this = other;
-}
-
-Value &Value::operator=(const Value &other)
+void
+Value::assign(const Value &other)
 {
     if (type_ != other.type_) {
         destroy();
         type_ = other.type_;
         init();
     }
-    switch (other.type_) {
+    switch (type_) {
     case INTEGER:
         get_as<int>() = other.get_as<int>();
         break;
@@ -116,7 +66,6 @@ Value &Value::operator=(const Value &other)
         get_as<DateTime>() = other.get_as<DateTime>();
         break;
     }
-    return *this;
 }
 
 void
@@ -352,27 +301,6 @@ Value::cmp(const Value &x) const
     if (type_ == DECIMAL && x.type_ == DECIMAL)
         return get_as<Decimal>().cmp(x.get_as<Decimal>());
     return as_string().compare(x.as_string());
-}
-
-const Value
-Value::get_typed_value(int type) const
-{
-    if (is_null())
-        return *this;
-    switch (type) {
-        case Value::INTEGER:
-            return as_integer();
-        case Value::LONGINT:
-            return as_longint();
-        case Value::DECIMAL:
-            return as_decimal();
-        case Value::DATETIME:
-            return as_date_time();
-        case Value::STRING:
-            return as_string();
-        default:
-            throw ValueBadCast(as_string(), Value::get_type_name(type));
-    }
 }
 
 const String

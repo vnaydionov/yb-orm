@@ -524,22 +524,6 @@ const String &DataObject::key_str()
     return key_str_;
 }
 
-/*
-void DataObject::get_values(Row &row, bool include_key)
-{
-    Row new_row;
-    new_row.reserve(table_.size());
-    for (size_t i = 0; i < table_.size(); ++i)
-        if (!table_[i].is_pk() || include_key) {
-            new_row.push_back(make_pair(table_[i].name(),
-                        values_[i]);
-            new_row[new_row.size() - 1].second.fix_type(
-                table_[i].type());
-        }
-    row.swap(new_row);
-}
-*/
-
 bool DataObject::assigned_key()
 {
     if (str_empty(key_.first))

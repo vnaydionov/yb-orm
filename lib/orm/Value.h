@@ -2,6 +2,7 @@
 #ifndef YB__ORM__VALUE__INCLUDED
 #define YB__ORM__VALUE__INCLUDED
 
+#include <string.h>
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -49,18 +50,41 @@ struct ValueTraits<DateTime> { enum { TYPE_CODE = 5 }; };
  */
 class Value
 {
+    template <class T__>
+    T__ &get_as() {
+        return *reinterpret_cast<T__ *>(&bytes_[0]);
+    }
+    template <class T__>
+    const T__ &get_as() const {
+        return *reinterpret_cast<const T__ *>(&bytes_[0]);
+    }
+    template <class T__>
+    void cons_as() { new (&bytes_[0]) T__(); }
+    template <class T__>
+    void copy_as(const T__ &x) { new (&bytes_[0]) T__(x); }
+    template <class T__>
+    void des_as() { get_as<T__>().~T__(); }
+
+    void init();
+    void destroy();
+    void assign(const Value &other);
 public:
     enum Type { INVALID = 0, INTEGER, LONGINT, STRING, DECIMAL, DATETIME };
-    Value();
-    Value(int x);
-    Value(LongInt x);
-    Value(const Char *x);
-    Value(const String &x);
-    Value(const Decimal &x);
-    Value(const DateTime &x);
-    ~Value();
-    Value(const Value &other);
-    Value &operator=(const Value &other);
+    Value() : type_(INVALID) {}
+    Value(int x) : type_(INTEGER) { copy_as<int>(x); }
+    Value(LongInt x) : type_(LONGINT) { copy_as<LongInt>(x); }
+    Value(const Char *x) : type_(STRING) { copy_as<String>(String(x)); }
+    Value(const String &x) : type_(STRING) { copy_as<String>(x); }
+    Value(const Decimal &x) : type_(DECIMAL) { copy_as<Decimal>(x); }
+    Value(const DateTime &x) : type_(DATETIME) { copy_as<DateTime>(x); }
+    ~Value() { destroy(); }
+    Value(const Value &other) : type_(INVALID) {
+        memset(bytes_, 0, sizeof(bytes_));
+        assign(other);
+    }
+    Value &operator=(const Value &other) {
+        if (this != &other) assign(other); return *this;
+    }
     void swap(Value &other);
     void fix_type(int type);
 
@@ -74,7 +98,6 @@ public:
     const Value nvl(const Value &def_value) const { return is_null()? def_value: *this; }
     int cmp(const Value &x) const;
     int get_type() const { return type_; }
-    const Value get_typed_value(int type) const;
     static const String get_type_name(int type);
 
     template <class T__>
@@ -83,30 +106,6 @@ public:
         return get_as<T__>();
     }
 private:
-    template <class T__>
-    T__ &get_as() {
-        return *reinterpret_cast<T__ *>(&bytes_[0]);
-    }
-    template <class T__>
-    const T__ &get_as() const {
-        return *reinterpret_cast<const T__ *>(&bytes_[0]);
-    }
-    template <class T__>
-    void cons_as() {
-        new (&bytes_[0]) T__();
-    }
-    template <class T__>
-    void copy_as(const T__ &x) {
-        new (&bytes_[0]) T__(x);
-    }
-    template <class T__>
-    void des_as() {
-        get_as<T__>().~T__();
-    }
-
-    void init();
-    void destroy();
-
     int type_;
     char bytes_[MAX(sizeof(LongInt), MAX(sizeof(String), MAX(sizeof(Decimal), sizeof(DateTime))))];
 };
