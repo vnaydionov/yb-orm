@@ -25,10 +25,87 @@ class TestDataObjectSaveLoad;
 
 namespace Yb {
 
+template <class T__>
+class IntrusivePtr
+{
+    T__ *p_;
+public:
+    IntrusivePtr(): p_(0) {}
+    explicit IntrusivePtr(T__ *p): p_(p) {
+        if (p_)
+            p_->add_ref();
+    }
+    IntrusivePtr(const IntrusivePtr &other): p_(other.p_) {
+        if (p_)
+            p_->add_ref();
+    }
+    IntrusivePtr &operator = (const IntrusivePtr &other) {
+        if (this != &other && p_ != other.p_) {
+            if (p_)
+                p_->release();
+            p_ = other.p_;
+            if (p_)
+                p_->add_ref();
+        }
+        return *this;
+    }
+    ~IntrusivePtr() {
+        if (p_)
+            p_->release();
+    }
+    T__ *release() {
+        T__ *p = p_;
+        if (p_)
+            p_->release();
+        return p;
+    }
+    T__ &operator * () const { return *p_; }
+    T__ *operator -> () const { return p_; }
+    T__ *get() const { return p_; }
+};
+
+template <class T__>
+inline bool operator == (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() == b.get(); }
+
+template <class T__>
+inline bool operator != (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() != b.get(); }
+
+template <class T__>
+inline bool operator < (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() < b.get(); }
+
+template <class T__>
+inline bool operator > (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() > b.get(); }
+
+template <class T__>
+inline bool operator <= (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() <= b.get(); }
+
+template <class T__>
+inline bool operator >= (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() >= b.get(); }
+
+
+class RefCountBase {
+protected:
+    int ref_count_;
+public:
+    RefCountBase();
+    virtual ~RefCountBase();
+    void add_ref();
+    void release();
+};
+
 class DataObject;
 class RelationObject;
-typedef SharedPtr<DataObject>::Type DataObjectPtr;
-typedef SharedPtr<RelationObject>::Type RelationObjectPtr;
+
+typedef IntrusivePtr<DataObject> DataObjectPtr;
+typedef IntrusivePtr<RelationObject> RelationObjectPtr;
+inline DataObject *shptr_get(DataObjectPtr p) { return p.get(); }
+inline RelationObject *shptr_get(RelationObjectPtr p) { return p.get(); }
 typedef std::vector<DataObjectPtr> ObjectList;
 
 const String key2str(const Key &key);
@@ -59,7 +136,7 @@ class Session: NonCopyable {
     friend class ::TestDataObject;
     friend class ::TestDataObjectSaveLoad;
     typedef std::set<DataObjectPtr> Objects;
-    typedef std::map<Key, DataObjectPtr> IdentityMap;
+    typedef std::map<String, DataObject *> IdentityMap;
 
     ILogger::Ptr logger_;
     Objects objects_;
@@ -67,7 +144,7 @@ class Session: NonCopyable {
     const Schema &schema_;
     std::auto_ptr<EngineBase> engine_;
 
-    DataObjectPtr add_to_identity_map(DataObjectPtr obj, bool return_found);
+    DataObject *add_to_identity_map(DataObject *obj, bool return_found);
     void flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs);
     void flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs);
     void flush_new();
@@ -77,6 +154,7 @@ public:
     void debug(const String &s) { if (logger_.get()) logger_->debug(NARROW(s)); }
     Session(const Schema &schema, EngineSource *engine = NULL);
     ~Session();
+    void clear();
     const Schema &schema() const { return schema_; }
     //! Save a detached or new DataObject into Session
     void save(DataObjectPtr obj);
@@ -172,7 +250,7 @@ enum DeletionMode { DelNormal, DelDryRun, DelUnchecked };
   <li>Each relation is a pointer to a RelationObject instance.
 </ul>
 */
-class DataObject: NonCopyable {
+class DataObject: private NonCopyable, public RefCountBase {
 
     friend class Session;
 public:
@@ -189,6 +267,7 @@ private:
     MasterRelations master_relations_;
     Session *session_;
     Key key_;
+    String key_str_;
     bool assigned_key_;
     int depth_;
 
@@ -245,6 +324,7 @@ public:
         set(table_.idx_by_name(name), v);
     }
     const Key &key();
+    const String &key_str();
     Key fk_value_for(const Relation &r);
     const Values &raw_values() const { return values_; }
     /*
@@ -292,7 +372,7 @@ public:
   <li>and vector of pointers to slaves.
 </ul>
 */
-class RelationObject: NonCopyable {
+class RelationObject: private NonCopyable, public RefCountBase {
     friend class DataObject;
 public:
     typedef RelationObjectPtr Ptr;

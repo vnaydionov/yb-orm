@@ -134,7 +134,7 @@ EngineBase::delete_from(const Table &table, const Keys &keys)
     Keys::const_iterator k = keys.begin(), kend = keys.end();
     for (; k != kend; ++k) {
         for (size_t i = 0; i < k->second.size(); ++i)
-            params[i] = k->second[i];
+            params[i] = k->second[i].second;
         cursor->exec(params);
     }
 }

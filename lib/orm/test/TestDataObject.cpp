@@ -103,12 +103,12 @@ public:
     {
         DataObject::Ptr d = DataObject::create_new(r_.table(_T("A")));
         ValueMap values;
-        values[_T("X")] = Value();
+        values.push_back(make_pair(_T("X"), Value()));
         CPPUNIT_ASSERT(Key(_T("A"), values) == d->key());
         CPPUNIT_ASSERT(!d->assigned_key());
         d->set(_T("X"), Value(10));
         CPPUNIT_ASSERT(d->assigned_key());
-        values[_T("X")] = Value(10);
+        values[0].second = Value(10);
         CPPUNIT_ASSERT(Key(_T("A"), values) == d->key());
     }
 
@@ -136,10 +136,10 @@ public:
         session.save(d);
         CPPUNIT_ASSERT_EQUAL(&session, d->session());
         ValueMap values;
-        values[_T("X")] = Value(10);
+        values.push_back(make_pair(_T("X"), Value(10)));
         DataObject::Ptr e = session.get_lazy(Key(_T("A"), values));
         CPPUNIT_ASSERT_EQUAL(shptr_get(d), shptr_get(e));
-        values[_T("X")] = Value(11);
+        values[0].second = Value(11);
         e = session.get_lazy(Key(_T("A"), values));
         CPPUNIT_ASSERT(shptr_get(d) != shptr_get(e));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)e->status());
@@ -330,7 +330,7 @@ public:
     void test_filter_by_key()
     {
         ValueMap values;
-        values[_T("X")] = Value(10);
+        values.push_back(make_pair(_T("X"), Value(10)));
         Session session(r_);
         DataObject::Ptr d = session.get_lazy(Key(_T("A"), values));
         KeyFilter kf(d->key());

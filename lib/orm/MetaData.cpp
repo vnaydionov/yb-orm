@@ -197,10 +197,13 @@ Table::mk_key(const Values &row_values, Key &key) const
     key.first = name();
     bool assigned_key = true;
     ValueMap key_values;
+    key_values.reserve(pk_fields().size());
     Strings::const_iterator i = pk_fields().begin(), iend = pk_fields().end();
-    for (; i != iend; ++i)
-        if ((key_values[*i] = row_values[idx_by_name(*i)]).is_null())
+    for (; i != iend; ++i) {
+        key_values.push_back(make_pair(*i, row_values[idx_by_name(*i)]));
+        if (key_values[key_values.size() - 1].second.is_null())
             assigned_key = false;
+    }
     key.second.swap(key_values);
     return assigned_key;
 }
@@ -211,10 +214,13 @@ Table::mk_key(const Row &row_values, Key &key) const
     key.first = name();
     bool assigned_key = true;
     ValueMap key_values;
+    key_values.reserve(pk_fields().size());
     Strings::const_iterator i = pk_fields().begin(), iend = pk_fields().end();
-    for (; i != iend; ++i)
-        if ((key_values[*i] = row_values[idx_by_name(*i)].second).is_null())
+    for (; i != iend; ++i) {
+        key_values.push_back(make_pair(*i, row_values[idx_by_name(*i)].second));
+        if (key_values[key_values.size() - 1].second.is_null())
             assigned_key = false;
+    }
     key.second.swap(key_values);
     return assigned_key;
 }
@@ -233,7 +239,7 @@ Table::mk_key(LongInt id) const
     Key key;
     key.first = name();
     String pk_name = get_surrogate_pk();
-    key.second[pk_name] = Value(id);
+    key.second.push_back(make_pair(pk_name, Value(id)));
     return key;
 }
 

@@ -696,7 +696,7 @@ FilterBackendByPK::build_expr(const Key &key)
         iend = key.second.end();
     for (; i != iend; ++i)
         expr = expr && BinaryOpExpr(
-                ColumnExpr(key.first, *i->first),
+                ColumnExpr(key.first, i->first),
                 _T("="), ConstExpr(i->second));
     return expr;
 }

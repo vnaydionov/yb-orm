@@ -12,6 +12,14 @@ using namespace std;
 
 namespace Yb {
 
+RefCountBase::RefCountBase(): ref_count_(0) {}
+
+RefCountBase::~RefCountBase() {}
+
+void RefCountBase::add_ref() { ++ref_count_; }
+
+void RefCountBase::release() { if (!--ref_count_) delete this; }
+
 StringTooLong::StringTooLong(
         const String &table_name, const String &field_name,
         int max_len, const String &value)
@@ -75,7 +83,7 @@ const String key2str(const Key &key)
     ValueMap::const_iterator i = key.second.begin(),
         iend = key.second.end();
     for (; i != iend; ++i)
-        out << "'" << NARROW(*i->first) << "': "
+        out << "'" << NARROW(i->first) << "': "
             << NARROW(i->second.sql_str()) << ", ";
     out << "}";
     return WIDEN(out.str());
@@ -95,31 +103,30 @@ Session::Session(const Schema &schema, EngineSource *engine)
     }
 }
 
-Session::~Session()
+Session::~Session() { clear(); }
+
+void Session::clear()
 {
-    Objects objects_copy = objects_;
-#if 0
-    using namespace boost::lambda;
-    for_each(objects_copy.begin(), objects_copy.end(),
-             bind(&Session::detach, this, _1));
-#else
-    Objects::iterator i = objects_copy.begin(), iend = objects_copy.end();
+    Objects::iterator i = objects_.begin(), iend = objects_.end();
     for (; i != iend; ++i)
-        detach(*i);
-#endif
+        (*i)->forget_session();
+    Objects empty_objects;
+    objects_.swap(empty_objects);
+    IdentityMap empty_map;
+    identity_map_.swap(empty_map);
     if (engine_.get())
         engine_->rollback();
 }
 
-DataObjectPtr Session::add_to_identity_map(DataObjectPtr obj, bool return_found)
+DataObject *Session::add_to_identity_map(DataObject *obj, bool return_found)
 {
     if (obj->assigned_key()) {
-        const Key &key = obj->key();
+        const String &key = obj->key_str();
         IdentityMap::iterator i = identity_map_.find(key);
         if (i != identity_map_.end()) {
             if (return_found)
                 return i->second;
-            throw DataObjectAlreadyInSession(key);
+            throw DataObjectAlreadyInSession(obj->key());
         }
         identity_map_[key] = obj;
     }
@@ -128,36 +135,33 @@ DataObjectPtr Session::add_to_identity_map(DataObjectPtr obj, bool return_found)
 
 void Session::save(DataObjectPtr obj0)
 {
-    DataObjectPtr obj = add_to_identity_map(obj0, false);
-    Objects::iterator i = objects_.find(obj);
-    if (i == objects_.end()) {
-        objects_.insert(obj);
+    DataObject *obj = add_to_identity_map(shptr_get(obj0), false);
+    if (obj == shptr_get(obj0)) {
+        objects_.insert(obj0);
         obj->set_session(this);
     }
 }
 
 DataObjectPtr Session::save_or_update(DataObjectPtr obj0)
 {
-    DataObjectPtr obj = add_to_identity_map(obj0, true);
-    if (shptr_get(obj) != shptr_get(obj0)) {
-        const Table &table = obj->table();
-        for (size_t i = 0; i < table.size(); ++i)
-            if (!table[i].is_pk())
-                obj->values_[i] = obj0->values_[i];
-        obj->status_ = obj0->status_;
-    }
-    Objects::iterator i = objects_.find(obj);
-    if (i == objects_.end()) {
-        objects_.insert(obj);
+    DataObject *obj = add_to_identity_map(shptr_get(obj0), true);
+    if (obj == shptr_get(obj0)) {
+        objects_.insert(obj0);
         obj->set_session(this);
+        return obj0;
     }
-    return obj;
+    const Table &table = obj->table();
+    for (size_t i = 0; i < table.size(); ++i)
+        if (!table[i].is_pk())
+            obj->values_[i] = obj0->values_[i];
+    obj->status_ = obj0->status_;
+    return DataObjectPtr(obj);
 }
 
 void Session::detach(DataObjectPtr obj)
 {
     if (obj->assigned_key()) {
-        const Key &key = obj->key();
+        const String &key = obj->key_str();
         IdentityMap::iterator i = identity_map_.find(key);
         if (i != identity_map_.end())
             identity_map_.erase(i);
@@ -203,9 +207,10 @@ DataObjectResultSet Session::load_collection(
 
 DataObject::Ptr Session::get_lazy(const Key &key)
 {
-    IdentityMap::iterator i = identity_map_.find(key);
+    String key_str = key2str(key);
+    IdentityMap::iterator i = identity_map_.find(key_str);
     if (i != identity_map_.end())
-        return i->second;
+        return DataObject::Ptr(i->second);
     bool empty = empty_key(key);
     //if (empty)
     //    throw NullPK(key.first);
@@ -213,9 +218,10 @@ DataObject::Ptr Session::get_lazy(const Key &key)
         DataObject::create_new(schema_[key.first], DataObject::Ghost);
     ValueMap::const_iterator j = key.second.begin(), jend = key.second.end();
     for (; j != jend; ++j)
-        new_obj->set(*j->first, j->second);
+        new_obj->set(j->first, j->second);
+    objects_.insert(new_obj);
     new_obj->set_session(this);
-    identity_map_[key] = new_obj;
+    identity_map_[key_str] = shptr_get(new_obj);
     return new_obj;
 }
 
@@ -249,7 +255,7 @@ void Session::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
     for (i = keyed_objs.begin(); i != iend; ++i) {
         (*i)->refresh_master_fkeys();
         rows.push_back(&(*i)->raw_values());
-        add_to_identity_map(*i, true);
+        add_to_identity_map(shptr_get(*i), true);
     }
     engine_->insert(tbl, rows, false);
 }
@@ -283,7 +289,7 @@ void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
     // add flushed objects to the identity_map_
     for (i = unkeyed_objs.begin(); i != iend; ++i) {
         (*i)->refresh_slaves_fkeys();
-        add_to_identity_map(*i, false);
+        add_to_identity_map(shptr_get(*i), false);
     }
 }
 
@@ -356,7 +362,7 @@ void Session::flush_update(IdentityMap &idmap_copy)
     IdentityMap::iterator i = idmap_copy.begin(), iend = idmap_copy.end();
     for (; i != iend; ++i)
         if (i->second->status() == DataObject::Dirty) {
-            const String &tbl_name = i->first.first;
+            const String &tbl_name = i->second->table().name();
             i->second->refresh_master_fkeys();
             add_row_to_rows_by_table(rows_by_table, tbl_name,
                                      &i->second->raw_values());
@@ -395,9 +401,10 @@ void Session::flush_delete(IdentityMap &idmap_copy)
             q = keys_by_table.find(tbl_name);
         }
         Keys &keys = q->second;
-        keys.push_back(i->first);
+        keys.push_back(i->second->key());
         i->second->set_status(DataObject::Deleted);
     }
+
     for (int d = max_depth; d >= 0; --d) {
         debug(_T("flush_delete: depth: ") + to_string(d));
         GroupsByDepth::iterator k = groups_by_depth.find(d);
@@ -426,7 +433,7 @@ void Session::flush()
         Objects::iterator i = obj_copy.begin(), iend = obj_copy.end();
         for (; i != iend; ++i)
             if ((*i)->status() == DataObject::Deleted) {
-                IdentityMap::iterator k = identity_map_.find((*i)->key());
+                IdentityMap::iterator k = identity_map_.find((*i)->key_str());
                 if (k != identity_map_.end())
                     identity_map_.erase(k);
                 objects_.erase(objects_.find(*i));
@@ -500,6 +507,7 @@ void DataObject::set(int i, const Value &v)
 void DataObject::update_key()
 {
     assigned_key_ = table_.mk_key(values_, key_);
+    key_str_ = key2str(key_);
 }
 
 const Key &DataObject::key()
@@ -507,6 +515,13 @@ const Key &DataObject::key()
     if (str_empty(key_.first))
         update_key();
     return key_;
+}
+
+const String &DataObject::key_str()
+{
+    if (str_empty(key_.first))
+        update_key();
+    return key_str_;
 }
 
 /*
@@ -591,7 +606,7 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
         Key pkey = master->key();
         const Strings &fkey_parts = r.fk_fields();
         for (int i = 0; i < fkey_parts.size(); ++i)
-            slave->set(fkey_parts[i], pkey.second[i]);
+            slave->set(fkey_parts[i], pkey.second[i].second);
     }
     else if (slave->status() == DataObject::Sync &&
         (master->status() == DataObject::New ||
@@ -618,12 +633,13 @@ Key DataObject::fk_value_for(const Relation &r)
         &slave_tbl = table_;
     const Strings &parts = r.fk_fields();
     Key fkey;
+    fkey.second.reserve(master_tbl.pk_fields().size());
     fkey.first = master_tbl.name();
     Strings::const_iterator i = parts.begin(), iend = parts.end(),
         j = master_tbl.pk_fields().begin(),
         jend = master_tbl.pk_fields().end();
     for (; i != iend && j != jend; ++i, ++j)
-        fkey.second[*j] = get(*i);
+        fkey.second.push_back(make_pair(*j, get(*i)));
     return fkey;
 }
 
@@ -890,12 +906,13 @@ const Key RelationObject::gen_fkey() const
         &slave_tbl = relation_info_.table(1);
     const Strings &parts = relation_info_.fk_fields();
     Key fkey;
+    fkey.second.reserve(master_tbl.pk_fields().size());
     fkey.first = slave_tbl.name();
     Strings::const_iterator i = parts.begin(), iend = parts.end(),
         j = master_tbl.pk_fields().begin(),
         jend = master_tbl.pk_fields().end();
     for (; i != iend && j != jend; ++i, ++j)
-        fkey.second[*i] = master_object_->get(*j);
+        fkey.second.push_back(make_pair(*i, master_object_->get(*j)));
     return fkey;
 }
 

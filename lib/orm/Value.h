@@ -124,7 +124,7 @@ inline bool operator<=(const Value &x, const Value &y) { return x.cmp(y) <= 0; }
 typedef std::vector<Value> Values;
 typedef const Values *RowDataPtr;
 typedef std::vector<RowDataPtr> RowsData;
-typedef OrderedDict<String, Value> ValueMap;
+typedef std::vector<std::pair<String, Value> > ValueMap;
 typedef std::pair<String, ValueMap> Key;
 typedef std::vector<Key> Keys;
 
