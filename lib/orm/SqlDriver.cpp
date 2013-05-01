@@ -118,10 +118,11 @@ public:
     const String type2sql(int t) {
         switch (t) {
             case Value::INTEGER:    return _T("NUMBER(10)");    break;
-            case Value::LONGINT:    return _T("NUMBER");        break;
+            case Value::LONGINT:    return _T("NUMBER(20)");    break;
             case Value::STRING:     return _T("VARCHAR2");      break;
-            case Value::DECIMAL:    return _T("NUMBER");        break;
             case Value::DATETIME:   return _T("DATE");          break;
+            case Value::FLOAT:
+            case Value::DECIMAL:    return _T("NUMBER");        break;
         }
         throw SqlDialectError(_T("Bad type"));
     }
@@ -155,6 +156,7 @@ public:
             case Value::STRING:     return _T("VARCHAR");       break;
             case Value::DECIMAL:    return _T("DECIMAL");       break;
             case Value::DATETIME:   return _T("TIMESTAMP");     break;
+            case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
         }
         throw SqlDialectError(_T("Bad type"));
     }
@@ -188,6 +190,7 @@ public:
             case Value::STRING:     return _T("VARCHAR");       break;
             case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
             case Value::DATETIME:   return _T("TIMESTAMP");     break;
+            case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
         }
         throw SqlDialectError(_T("Bad type"));
     }
@@ -223,6 +226,7 @@ public:
             case Value::STRING:     return _T("VARCHAR");       break;
             case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
             case Value::DATETIME:   return _T("TIMESTAMP");     break;
+            case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
         }
         throw SqlDialectError(_T("Bad type"));
     }
@@ -274,6 +278,7 @@ public:
             case Value::STRING:     return _T("VARCHAR");       break;
             case Value::DECIMAL:    return _T("NUMERIC");       break;
             case Value::DATETIME:   return _T("TIMESTAMP");     break;
+            case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
         }
         throw SqlDialectError(_T("Bad type"));
     }

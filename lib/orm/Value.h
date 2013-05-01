@@ -20,25 +20,15 @@ public:
     {}
 };
 
-template <class T__>
-struct ValueTraits {};
+template <class T__> struct ValueTraits {};
+template <> struct ValueTraits<int> { enum { TYPE_CODE = 1 }; };
+template <> struct ValueTraits<LongInt> { enum { TYPE_CODE = 2 }; };
+template <> struct ValueTraits<String> { enum { TYPE_CODE = 3 }; };
+template <> struct ValueTraits<Decimal> { enum { TYPE_CODE = 4 }; };
+template <> struct ValueTraits<DateTime> { enum { TYPE_CODE = 5 }; };
+template <> struct ValueTraits<double> { enum { TYPE_CODE = 6 }; };
 
-template <>
-struct ValueTraits<int> { enum { TYPE_CODE = 1 }; };
-
-template <>
-struct ValueTraits<LongInt> { enum { TYPE_CODE = 2 }; };
-
-template <>
-struct ValueTraits<String> { enum { TYPE_CODE = 3 }; };
-
-template <>
-struct ValueTraits<Decimal> { enum { TYPE_CODE = 4 }; };
-
-template <>
-struct ValueTraits<DateTime> { enum { TYPE_CODE = 5 }; };
-
-#define MAX(x, y) ((x) > (y)? (x): (y))
+#define YB_MAX(x, y) ((x) > (y)? (x): (y))
 
 //! Variant data type for communication to the database layer
 /** Value class objects can hold NULL values.  Copying such objects
@@ -69,21 +59,26 @@ class Value
     void destroy();
     void assign(const Value &other);
 public:
-    enum Type { INVALID = 0, INTEGER, LONGINT, STRING, DECIMAL, DATETIME };
+    enum Type {
+        INVALID = 0, INTEGER, LONGINT, STRING, DECIMAL, DATETIME, FLOAT
+    };
     Value() : type_(INVALID) {}
-    Value(int x) : type_(INTEGER) { copy_as<int>(x); }
-    Value(LongInt x) : type_(LONGINT) { copy_as<LongInt>(x); }
-    Value(const Char *x) : type_(STRING) { copy_as<String>(String(x)); }
-    Value(const String &x) : type_(STRING) { copy_as<String>(x); }
-    Value(const Decimal &x) : type_(DECIMAL) { copy_as<Decimal>(x); }
+    Value(const int &x)      : type_(INTEGER)  { copy_as<int>(x); }
+    Value(const LongInt &x)  : type_(LONGINT)  { copy_as<LongInt>(x); }
+    Value(const double &x)   : type_(FLOAT)    { copy_as<double>(x); }
+    Value(const Decimal &x)  : type_(DECIMAL)  { copy_as<Decimal>(x); }
     Value(const DateTime &x) : type_(DATETIME) { copy_as<DateTime>(x); }
+    Value(const String &x)   : type_(STRING)   { copy_as<String>(x); }
+    Value(const Char *x)     : type_(STRING)   { copy_as<String>(String(x)); }
     ~Value() { destroy(); }
     Value(const Value &other) : type_(INVALID) {
         memset(bytes_, 0, sizeof(bytes_));
         assign(other);
     }
     Value &operator=(const Value &other) {
-        if (this != &other) assign(other); return *this;
+        if (this != &other)
+            assign(other);
+        return *this;
     }
     void swap(Value &other);
     void fix_type(int type);
@@ -94,6 +89,7 @@ public:
     const String as_string() const;
     const Decimal as_decimal() const;
     const DateTime as_date_time() const;
+    double as_float() const;
     const String sql_str() const;
     const Value nvl(const Value &def_value) const { return is_null()? def_value: *this; }
     int cmp(const Value &x) const;
@@ -107,7 +103,9 @@ public:
     }
 private:
     int type_;
-    char bytes_[MAX(sizeof(LongInt), MAX(sizeof(String), MAX(sizeof(Decimal), sizeof(DateTime))))];
+    char bytes_[YB_MAX(sizeof(int), YB_MAX(sizeof(LongInt),
+                YB_MAX(sizeof(String), YB_MAX(sizeof(Decimal),
+                YB_MAX(sizeof(DateTime), sizeof(double))))))];
 };
 
 //! @name Overloaded operations for Value class
@@ -157,6 +155,12 @@ inline Decimal &from_variant(const Value &x, Decimal &t) {
 template <>
 inline DateTime &from_variant(const Value &x, DateTime &t) {
     t = x.as_date_time();
+    return t;
+}
+
+template <>
+inline double &from_variant(const Value &x, double &t) {
+    t = x.as_float();
     return t;
 }
 //! @}

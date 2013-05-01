@@ -18,6 +18,9 @@ class TestValue : public CppUnit::TestFixture
     CPPUNIT_TEST(test_as_sql_string);
     CPPUNIT_TEST(test_as_string);
     CPPUNIT_TEST(test_as_integer);
+    CPPUNIT_TEST(test_as_float);
+    CPPUNIT_TEST(test_swap);
+    CPPUNIT_TEST(test_fix_type);
     CPPUNIT_TEST_EXCEPTION(test_value_is_null, ValueIsNull);
     CPPUNIT_TEST_EXCEPTION(test_value_bad_cast_long_long, ValueBadCast);
     CPPUNIT_TEST_EXCEPTION(test_value_bad_cast_integer, ValueBadCast);
@@ -29,12 +32,13 @@ public:
     void test_type()
     {
         CPPUNIT_ASSERT(Value::STRING == Value(_T("z")).get_type());
+        CPPUNIT_ASSERT(Value::STRING == Value(String(_T("xyz"))).get_type());
         CPPUNIT_ASSERT(Value::INTEGER == Value(0).get_type());
-        CPPUNIT_ASSERT(Value::INTEGER == Value(12).get_type());
+        CPPUNIT_ASSERT(Value::INTEGER == Value(345).get_type());
         CPPUNIT_ASSERT(Value::LONGINT == Value((LongInt)12).get_type());
         CPPUNIT_ASSERT(Value::DECIMAL == Value(Decimal(_T("1"))).get_type());
-        DateTime a(now());
-        CPPUNIT_ASSERT(Value::DATETIME == Value(a).get_type());
+        CPPUNIT_ASSERT(Value::DATETIME == Value(now()).get_type());
+        CPPUNIT_ASSERT(Value::FLOAT == Value(1.5).get_type());
     }
 
     void test_value()
@@ -42,6 +46,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("z"), NARROW(Value(_T("z")).as_string()));
         CPPUNIT_ASSERT_EQUAL(12, (int)Value(_T("12")).as_longint());
         CPPUNIT_ASSERT(Decimal(_T("12.3")) == Value(_T("012.30")).as_decimal());
+        CPPUNIT_ASSERT_EQUAL(12.3, Value(_T("12.30")).as_float());
         DateTime a(dt_make(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT(a == Value(_T("2006-11-16T15:05:10")).as_date_time());
         CPPUNIT_ASSERT(a == Value(_T("2006-11-16 15:05:10")).as_date_time());
@@ -77,6 +82,8 @@ public:
         DateTime a(dt_from_time_t(t)), b(dt_from_time_t(t + 1));
         CPPUNIT_ASSERT(Value(a) == Value(a));
         CPPUNIT_ASSERT(Value(a) != Value(b));
+        CPPUNIT_ASSERT(Value(1.4) == Value(1.4));
+        CPPUNIT_ASSERT(Value(-1.4) != Value(1.4));
     }
 
     void test_less()
@@ -105,6 +112,7 @@ public:
                 NARROW(Value(Decimal(_T("0123.450"))).sql_str()));
         DateTime a(dt_make(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT_EQUAL(string("'2006-11-16 15:05:10'"), NARROW(Value(a).sql_str()));
+        CPPUNIT_ASSERT_EQUAL(string("123.45"), NARROW(Value(123.45).sql_str()));
     }
 
     void test_as_string()
@@ -114,6 +122,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("123.45"), NARROW(Value(Decimal(_T("0123.450"))).as_string()));
         DateTime a(dt_make(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT_EQUAL(string("2006-11-16T15:05:10"), NARROW(Value(a).as_string()));
+        CPPUNIT_ASSERT_EQUAL(string("1e+30"), NARROW(Value(1E30).as_string()));
     }
 
     void test_as_integer()
@@ -124,6 +133,38 @@ public:
         CPPUNIT_ASSERT_EQUAL(0, Value(_T("0")).as_integer());
         CPPUNIT_ASSERT_EQUAL(0, Value(0).as_integer());
         CPPUNIT_ASSERT_EQUAL(0, Value((LongInt)0).as_integer());
+        CPPUNIT_ASSERT_EQUAL(-123, Value(-123.).as_integer());
+    }
+
+    void test_as_float()
+    {
+        CPPUNIT_ASSERT_EQUAL(-1.23, Value(-1.23).as_float());
+        CPPUNIT_ASSERT_EQUAL(-1.23, Value(_T("-1.23")).as_float());
+        CPPUNIT_ASSERT_EQUAL(-123., Value(-123).as_float());
+    }
+
+    void test_swap()
+    {
+        Value a(1234), b(_T("xyz"));
+        a.swap(b);
+        CPPUNIT_ASSERT_EQUAL(string("xyz"), NARROW(a.as_string()));
+        CPPUNIT_ASSERT_EQUAL(1234, b.as_integer());
+        std::swap(a, b);
+        CPPUNIT_ASSERT_EQUAL(string("xyz"), NARROW(b.as_string()));
+        CPPUNIT_ASSERT_EQUAL(1234, a.as_integer());
+    }
+
+    void test_fix_type()
+    {
+        Value a(1234), b(_T("12.3"));
+        CPPUNIT_ASSERT_EQUAL((int)Value::INTEGER, (int)a.get_type());
+        a.fix_type(Value::DECIMAL);
+        CPPUNIT_ASSERT_EQUAL((int)Value::DECIMAL, (int)a.get_type());
+        CPPUNIT_ASSERT(Decimal(1234) == a.read_as<Decimal>());
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, (int)b.get_type());
+        b.fix_type(Value::FLOAT);
+        CPPUNIT_ASSERT_EQUAL((int)Value::FLOAT, (int)b.get_type());
+        CPPUNIT_ASSERT_EQUAL(12.3, b.read_as<double>());
     }
 
     void test_value_is_null()

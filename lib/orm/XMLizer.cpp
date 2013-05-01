@@ -101,7 +101,7 @@ xmlize_row(const Row &row, const String &entry_name)
     Row::const_iterator it = row.begin(), end = row.end();
     for (; it != end; ++it)
         entry->sub_element(mk_xml_name(it->first, _T("")),
-                it->second.nvl(String(_T(""))).as_string());
+                it->second.nvl(Value(String(_T("")))).as_string());
     return entry;
 }
 

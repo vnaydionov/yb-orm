@@ -65,12 +65,17 @@ Value::assign(const Value &other)
     case DATETIME:
         get_as<DateTime>() = other.get_as<DateTime>();
         break;
+    case FLOAT:
+        get_as<double>() = other.get_as<double>();
+        break;
     }
 }
 
 void
 Value::swap(Value &other)
 {
+    if (this == &other)
+        return;
     type_ ^= other.type_;
     other.type_ ^= type_;
     type_ ^= other.type_;
@@ -136,6 +141,14 @@ Value::fix_type(int type)
             type_ = type;
             init();
             get_as<DateTime>() = t;
+        }
+        break;
+    case Value::FLOAT:
+        {
+            double t = as_float();
+            destroy();
+            type_ = type;
+            get_as<double>() = t;
         }
         break;
     }
@@ -233,21 +246,40 @@ Value::as_date_time() const
     }
 }
 
+double
+Value::as_float() const
+{
+    if (type_ == FLOAT)
+        return get_as<double>();
+    String s = as_string();
+    try {
+        double x;
+        return from_string(s, x);
+    }
+    catch (const std::exception &) {
+        throw ValueBadCast(s, _T("Float"));
+    }
+}
+
 const String
 Value::as_string() const
 {
-    if (type_ == INVALID)
+    switch (type_) {
+    case INVALID:
         throw ValueIsNull();
-    if (type_ == STRING)
-        return get_as<String>();
-    if (type_ == DECIMAL)
-        return to_string(get_as<Decimal>());
-    if (type_ == INTEGER)
+    case INTEGER:
         return to_string(get_as<int>());
-    if (type_ == LONGINT)
+    case LONGINT:
         return to_string(get_as<LongInt>());
-    if (type_ == DATETIME)
+    case STRING:
+        return get_as<String>();
+    case DECIMAL:
+        return to_string(get_as<Decimal>());
+    case DATETIME:
         return to_string(get_as<DateTime>());
+    case FLOAT:
+        return to_string(get_as<double>());
+    }
     throw ValueBadCast(_T("UnknownType"), _T("Value::as_string()"));
 }
 
@@ -300,6 +332,11 @@ Value::cmp(const Value &x) const
     }
     if (type_ == DECIMAL && x.type_ == DECIMAL)
         return get_as<Decimal>().cmp(x.get_as<Decimal>());
+    if (type_ == FLOAT && x.type_ == FLOAT)
+    {
+        const double &a = get_as<double>(), &b = x.get_as<double>();
+        return a < b? -1: (a > b? 1: 0);
+    }
     return as_string().compare(x.as_string());
 }
 
@@ -308,7 +345,7 @@ Value::get_type_name(int type)
 {
     static const char *type_names[] =
         { "Invalid", "Integer", "LongInt",
-          "String", "Decimal", "DateTime" };
+          "String", "Decimal", "DateTime", "Float" };
     if (type < 0 || type >= sizeof(type_names)/sizeof(const char *))
         return WIDEN("UnknownType");
     return WIDEN(type_names[type]);

@@ -31,6 +31,7 @@
 #define _TIODBC_HPP_DEFINED_
 
 #include <util/String.h>
+#include <util/Utility.h>
 
 // System headers
 #if defined(__WIN32__) || defined(_WIN32)
@@ -50,6 +51,8 @@
 */
 namespace tiodbc
 {
+	typedef Yb::LongInt LongLong;
+
 	//! MACRO for std::wstring or std::string based on _UNICODE definition.
 	typedef Yb::String _tstring;	
 
@@ -309,6 +312,9 @@ namespace tiodbc
 		//! Get field as unsigned short
 		unsigned short as_unsigned_short() const;
 
+		//! Get field as long long
+		LongLong as_long_long() const;
+
 		//! Get field as double
 		double as_double() const;
 
@@ -325,7 +331,7 @@ namespace tiodbc
 		const _tstring & get_name() const { return name; }
 
 		//! Check if the field is null
-		bool is_null() const;
+		int is_null() const { return is_null_flag; }
 
 		//! @}
 	}; // !field_impl
@@ -375,6 +381,14 @@ namespace tiodbc
 		//! Set parameter as unsigned long
 		const unsigned long & set_as_unsigned_long(
 				const unsigned long & _value, bool _is_null = false);
+
+		//! Set parameter as long long
+		const long long & set_as_long_long(
+				const long long & _value, bool _is_null = false);
+
+		//! Set parameter as double
+		const double & set_as_double(
+				const double & _value, bool _is_null = false);
 
 		//! Set parameter as DateTime
 		const TIMESTAMP_STRUCT & set_as_date_time(

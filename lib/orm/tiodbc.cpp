@@ -330,14 +330,17 @@ namespace tiodbc
 	//! @cond INTERNAL_FUNCTIONS
 
 	template<class T>
-	T __get_data(HSTMT _stmt, int _col, SQLSMALLINT _ttype, T error_value)
+	T __get_data(HSTMT _stmt, int _col, SQLSMALLINT _ttype, const T &error_value, int &is_null_flag)
 	{
 		T tmp_storage;
-		SQLLEN cb_needed;
+		SQLLEN cb_needed = 0;
 		RETCODE rc;
 		rc = SQLGetData(_stmt, _col, _ttype, &tmp_storage, sizeof(tmp_storage), &cb_needed);
-		if (!TIODBC_SUCCESS_CODE(rc))
+		if (!TIODBC_SUCCESS_CODE(rc) || cb_needed == SQL_NULL_DATA) {
+			is_null_flag = 1;
 			return error_value;
+		}
+		is_null_flag = 0;
 		return tmp_storage;
 	}
 
@@ -416,61 +419,51 @@ namespace tiodbc
 	// Get field as long
 	long field_impl::as_long() const
 	{
-		return __get_data<long>(stmt_h, col_num, SQL_C_SLONG, 0);
+		return __get_data<long>(stmt_h, col_num, SQL_C_SLONG, 0, is_null_flag);
 	}
 
 	// Get field as unsigned long
 	unsigned long field_impl::as_unsigned_long() const
 	{
-		return __get_data<unsigned long>(stmt_h, col_num, SQL_C_ULONG, 0);
-	}
-
-	// Get field as double
-	double field_impl::as_double() const
-	{
-		return __get_data<double>(stmt_h, col_num, SQL_C_DOUBLE, 0);
-	}
-
-	// Get field as float
-	float field_impl::as_float() const
-	{
-		return __get_data<float>(stmt_h, col_num, SQL_C_FLOAT, 0);
+		return __get_data<unsigned long>(stmt_h, col_num, SQL_C_ULONG, 0, is_null_flag);
 	}
 
 	// Get field as short
 	short field_impl::as_short() const
 	{
-		return __get_data<short>(stmt_h, col_num, SQL_C_SSHORT, 0);
+		return __get_data<short>(stmt_h, col_num, SQL_C_SSHORT, 0, is_null_flag);
 	}
 
 	// Get field as unsigned short
 	unsigned short field_impl::as_unsigned_short() const
 	{
-		return __get_data<unsigned short>(stmt_h, col_num, SQL_C_USHORT, 0);
+		return __get_data<unsigned short>(stmt_h, col_num, SQL_C_USHORT, 0, is_null_flag);
 	}
 
-	// Get field as DateTime
+	// Get field as long long
+	LongLong field_impl::as_long_long() const
+	{
+		return __get_data<LongLong>(stmt_h, col_num, SQL_C_SBIGINT, 0, is_null_flag);
+	}
+
+	// Get field as double
+	double field_impl::as_double() const
+	{
+		return __get_data<double>(stmt_h, col_num, SQL_C_DOUBLE, 0, is_null_flag);
+	}
+
+	// Get field as float
+	float field_impl::as_float() const
+	{
+		return __get_data<float>(stmt_h, col_num, SQL_C_FLOAT, 0, is_null_flag);
+	}
+
+	// Get field as TIMESTAMP_STRUCT
 	const TIMESTAMP_STRUCT field_impl::as_date_time() const
 	{
-		TIMESTAMP_STRUCT ts;
-		std::memset(&ts, 0, sizeof(ts));
-		SQLLEN sz_needed = 0;
-		is_null_flag = 0;
-		RETCODE rc = SQLGetData(stmt_h, col_num, SQL_C_TIMESTAMP,
-				&ts, sizeof(ts), &sz_needed);
-		if (!TIODBC_SUCCESS_CODE(rc) || sz_needed == SQL_NULL_DATA) {
-			std::memset(&ts, 0, sizeof(ts));
-			if (sz_needed == SQL_NULL_DATA)
-				is_null_flag = 1;
-		}
-		return ts;
-	}
-
-	bool field_impl::is_null() const
-	{
-		if (is_null_flag == -1)
-			as_string();
-		return is_null_flag == 1;
+		TIMESTAMP_STRUCT def_val;
+		std::memset(&def_val, 0, sizeof(def_val));
+		return __get_data<TIMESTAMP_STRUCT>(stmt_h, col_num, SQL_C_TIMESTAMP, def_val, is_null_flag);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////
@@ -582,6 +575,30 @@ namespace tiodbc
 		if (bound_sz < 0) {
 			bound_sz = 0;
 			__bind_param(stmt_h, par_num, SQL_C_ULONG, SQL_INTEGER,
+					_int_buffer, _int_SLOIP);
+		}
+		return __set_param(_value, _is_null, _int_buffer, _int_SLOIP);
+	}
+
+	// Set parameter as long long
+	const long long & param_impl::set_as_long_long(
+			const long long & _value, bool _is_null)
+	{
+		if (bound_sz < 0) {
+			bound_sz = 0;
+			__bind_param(stmt_h, par_num, SQL_C_SBIGINT, SQL_BIGINT,
+					_int_buffer, _int_SLOIP);
+		}
+		return __set_param(_value, _is_null, _int_buffer, _int_SLOIP);
+	}
+
+	// Set parameter as double
+	const double & param_impl::set_as_double(
+			const double & _value, bool _is_null)
+	{
+		if (bound_sz < 0) {
+			bound_sz = 0;
+			__bind_param(stmt_h, par_num, SQL_C_DOUBLE, SQL_DOUBLE,
 					_int_buffer, _int_SLOIP);
 		}
 		return __set_param(_value, _is_null, _int_buffer, _int_SLOIP);

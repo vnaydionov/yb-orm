@@ -37,6 +37,22 @@ public:
     {}
 };
 
+static LogAppender appender(cerr);
+static ILogger::Ptr root_logger;
+
+static void init_log()
+{
+    if (!root_logger.get())
+        root_logger.reset(new Logger(&appender));
+}
+
+static void setup_log(Engine &e)
+{
+    init_log();
+    e.set_logger(root_logger->new_logger("engine"));
+    e.set_echo(true);
+}
+
 class TestXMLNode : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestXMLNode);
@@ -202,6 +218,7 @@ public:
     {
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
+        setup_log(engine);
         Session session(theSchema::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize();
@@ -214,6 +231,7 @@ public:
     {
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
+        setup_log(engine);
         Session session(theSchema::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize(1);
@@ -227,6 +245,7 @@ public:
     {
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
+        setup_log(engine);
         Session session(theSchema::instance(), &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize(-1);

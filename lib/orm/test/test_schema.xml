@@ -9,6 +9,7 @@
         <column name="A" type="string" size="200" />
         <column name="B" type="datetime" default="sysdate"/>
         <column name="C" type="decimal"/>
+        <column name="D" type="float"/>
     </table>
     <table name="T_ORM_XML" sequence="S_ORM_XML_ID"
             class="OrmXml" xml-name="orm-xml">

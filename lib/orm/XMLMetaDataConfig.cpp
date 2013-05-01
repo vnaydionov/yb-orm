@@ -161,18 +161,15 @@ Relation::Ptr XMLMetaDataConfig::parse_relation(ElementTree::ElementPtr node)
 
 int XMLMetaDataConfig::string_type_to_int(const String &type, const String &field_name)
 {
-    if(Yb::StrUtils::str_to_lower(type) == _T("longint"))
-        return Value::LONGINT;
-    else if(Yb::StrUtils::str_to_lower(type) == _T("integer"))
-        return Value::INTEGER;
-    else if(Yb::StrUtils::str_to_lower(type) == _T("string"))
-        return Value::STRING;
-    else if(Yb::StrUtils::str_to_lower(type) == _T("decimal"))
-        return Value::DECIMAL;
-    else if(Yb::StrUtils::str_to_lower(type) == _T("datetime"))
-        return Value::DATETIME;
-    else
-        throw WrongColumnType(type, field_name);
+    for (int type_it = 1; true; ++type_it) {
+        String type_it_name = Yb::StrUtils::str_to_lower(
+                Value::get_type_name(type_it));
+        if (type_it_name == _T("unknowntype"))
+            break;
+        if (Yb::StrUtils::str_to_lower(type) == type_it_name)
+            return type_it;
+    }
+    throw WrongColumnType(type, field_name);
 }
 
 void XMLMetaDataConfig::parse_column(ElementTree::ElementPtr node, Table &table_meta)
@@ -212,7 +209,7 @@ Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
                 try {
                     Decimal x;
                     from_string(value, x);
-                    default_val = x;
+                    default_val = Value(x);
                 } catch(const std::exception &) {
                     throw ParseError(String(_T("Wrong default value '")) + value + _T("' for integer element '") + name + _T("'"));
                 }
@@ -222,7 +219,7 @@ Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
                 try {
                     LongInt x;
                     from_string(value, x);
-                    default_val = x;
+                    default_val = Value(x);
                 } catch(const std::exception &) {
                     throw ParseError(String(_T("Wrong default value '")) + value + _T("' for integer element '") + name + _T("'"));
                 }

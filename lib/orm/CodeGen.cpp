@@ -54,6 +54,7 @@ string type_nc_by_handle(int type)
         case Value::DATETIME: return "Yb::DateTime";
         case Value::STRING:   return "Yb::String";
         case Value::DECIMAL:  return "Yb::Decimal";
+        case Value::FLOAT:    return "double";
         default:
             throw CodeGenError(_T("Unknown type while parsing metadata"));
     }
@@ -61,16 +62,9 @@ string type_nc_by_handle(int type)
 
 string type_code_by_handle(int type)
 {
-    string code;
-    switch (type) {
-        case Value::INTEGER:  code = "INTEGER";  break;
-        case Value::LONGINT:  code = "LONGINT";  break;
-        case Value::DATETIME: code = "DATETIME"; break;
-        case Value::STRING:   code = "STRING";   break;
-        case Value::DECIMAL:  code = "DECIMAL";  break;
-        default:
-            throw CodeGenError(_T("Unknown type while parsing metadata"));
-    }
+    string code = NARROW(str_to_upper(Value::get_type_name(type)));
+    if ("UNKNOWNTYPE" == code)
+        throw CodeGenError(_T("Unknown type while parsing metadata"));
     return "Yb::Value::" + code;
 }
 
@@ -727,12 +721,6 @@ void CppCodeGenerator::do_write_cpp_ctor_body(ostream &out)
             out << "\tset(" << i << ", Yb::Value(";
             string default_value = NARROW(it->default_value().as_string());
             switch (it->type()) {
-                case Value::INTEGER:
-                    out << "(int)" << default_value;
-                    break;
-                case Value::LONGINT:
-                    out << "(Yb::LongInt)" << default_value;
-                    break;
                 case Value::DECIMAL:
                     out << "Yb::Decimal(_T(\"" << default_value << "\"))";
                     break;
@@ -742,6 +730,8 @@ void CppCodeGenerator::do_write_cpp_ctor_body(ostream &out)
                 case Value::STRING:
                     out << "_T(\"" << default_value << "\")";
                     break;
+                default:
+                    out << "(" << type_nc_by_handle(it->type()) << ")" << default_value;
             }
             out << "));\n";
         }

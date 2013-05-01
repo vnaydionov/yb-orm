@@ -31,32 +31,49 @@ OdbcCursorBackend::prepare(const String &sql)
 void
 OdbcCursorBackend::exec(const Values &params)
 {
-    for (unsigned i = 0; i < params.size(); ++i) {
-        if (params[i].get_type() == Value::DATETIME) {
-            TIMESTAMP_STRUCT ts;
-            memset(&ts, 0, sizeof(ts));
-            DateTime t = params[i].as_date_time();
-            ts.year = dt_year(t);
-            ts.month = dt_month(t);
-            ts.day = dt_day(t);
-            ts.hour = (SQLUSMALLINT)dt_hour(t);
-            ts.minute = (SQLUSMALLINT)dt_minute(t);
-            ts.second = (SQLUSMALLINT)dt_second(t);
-            ts.fraction = 0; // TODO
-            stmt_->param(i + 1).set_as_date_time(
-                    ts,
-                    params[i].is_null());
-        }
-        else if (params[i].get_type() == Value::INTEGER) {
-            long x = params[i].as_integer();
-            stmt_->param(i + 1).set_as_long(x, params[i].is_null());
-        }
-        else {
-            String value;
-            if (!params[i].is_null())
-                value = params[i].as_string();
-            stmt_->param(i + 1).set_as_string(value,
-                                              params[i].is_null());
+    for (size_t i = 0; i < params.size(); ++i) {
+        switch (params[i].get_type()) {
+            case Value::INVALID: {
+                stmt_->param(i + 1).set_as_null();
+                break;
+            }
+            case Value::DATETIME: {
+                const DateTime &t = params[i].read_as<DateTime>();
+                TIMESTAMP_STRUCT ts;
+                ts.year = dt_year(t);
+                ts.month = dt_month(t);
+                ts.day = dt_day(t);
+                ts.hour = (SQLUSMALLINT)dt_hour(t);
+                ts.minute = (SQLUSMALLINT)dt_minute(t);
+                ts.second = (SQLUSMALLINT)dt_second(t);
+                ts.fraction = dt_millisec(t) * 1000000;
+                stmt_->param(i + 1).set_as_date_time(ts, false);
+                break;
+            }
+            case Value::INTEGER: {
+                const int &x = params[i].read_as<int>();
+                stmt_->param(i + 1).set_as_long(x, false);
+                break;
+            }
+            case Value::LONGINT: {
+                const LongInt &x = params[i].read_as<LongInt>();
+                stmt_->param(i + 1).set_as_long_long(x, false);
+                break;
+            }
+            case Value::FLOAT: {
+                const double &x = params[i].read_as<double>();
+                stmt_->param(i + 1).set_as_double(x, false);
+                break;
+            }
+            case Value::STRING: {
+                const String &s = params[i].read_as<String>();
+                stmt_->param(i + 1).set_as_string(s, false);
+                break;
+            }
+            default: {
+                String s = params[i].as_string();
+                stmt_->param(i + 1).set_as_string(s, false);
+            }
         }
     }
     if (!stmt_->execute())
@@ -70,33 +87,59 @@ OdbcCursorBackend::fetch_row()
         return RowPtr();
     int col_count = stmt_->count_columns();
     RowPtr row(new Row);
+    row->reserve(col_count);
     for (int i = 0; i < col_count; ++i) {
         tiodbc::field_impl f = stmt_->field(i + 1);
-        String name = str_to_upper(f.get_name());
-        Value v;
-        if (f.get_type() == SQL_DATE ||
-                f.get_type() == SQL_TIMESTAMP ||
-                f.get_type() == SQL_TYPE_TIMESTAMP)
-        {
-            TIMESTAMP_STRUCT ts = f.as_date_time();
-            if (ts.year != 0 || f.is_null() != 1) {
-                v = Value(dt_make(ts.year, ts.month, ts.day,
-                            ts.hour, ts.minute, ts.second));
+        row->push_back(make_pair(str_to_upper(f.get_name()), Value()));
+        Value &v = (*row)[row->size() - 1].second;
+        switch (f.get_type()) {
+            case SQL_DATE:
+            case SQL_TIMESTAMP:
+            case SQL_TYPE_DATE:
+            case SQL_TYPE_TIME:
+            case SQL_TYPE_TIMESTAMP: {
+                TIMESTAMP_STRUCT ts = f.as_date_time();
+                if (!f.is_null())
+                    v = Value(dt_make(ts.year, ts.month, ts.day,
+                                       ts.hour, ts.minute, ts.second,
+                                       ts.fraction/1000000));
+                break;
+            }
+            case SQL_INTEGER:
+            case SQL_SMALLINT:
+            case SQL_TINYINT: {
+                int x = f.as_long();
+                if (!f.is_null())
+                    v = Value(x);
+                break;
+            }
+            case SQL_BIGINT: {
+                LongInt x = f.as_long_long();
+                if (!f.is_null())
+                    v = Value(x);
+                break;
+            }
+            case SQL_REAL:
+            case SQL_FLOAT:
+            case SQL_DOUBLE: {
+                double x = f.as_double();
+                if (!f.is_null())
+                    v = Value(x);
+                break;
+            }
+            case SQL_DECIMAL:
+            case SQL_NUMERIC: {
+                String x = f.as_string();
+                if (!f.is_null())
+                    v = Value(Decimal(x));
+                break;
+            }
+            default: {
+                String x = f.as_string();
+                if (!f.is_null())
+                    v = Value(x);
             }
         }
-        else if (!f.is_null() && f.get_type() == SQL_INTEGER) {
-            v = Value((int)f.as_long());
-        }
-        else if (!f.is_null() && f.get_type() == SQL_BIGINT) {
-            LongInt x;
-            v = Value(from_string(f.as_string(), x));
-        }
-        else {
-            String val = f.as_string();
-            if (f.is_null() != 1)
-                v = Value(val);
-        }
-        row->push_back(make_pair(name, v));
     }
     return row;
 }

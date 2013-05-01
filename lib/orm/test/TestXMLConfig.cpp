@@ -198,6 +198,10 @@ public:
                 XMLMetaDataConfig::string_type_to_int(String(_T("decimal")),a));
         CPPUNIT_ASSERT_EQUAL((int)Value::DATETIME,
                 XMLMetaDataConfig::string_type_to_int(String(_T("datetime")),a));
+        CPPUNIT_ASSERT_EQUAL((int)Value::INTEGER,
+                XMLMetaDataConfig::string_type_to_int(String(_T("Integer")),a));
+        CPPUNIT_ASSERT_EQUAL((int)Value::FLOAT,
+                XMLMetaDataConfig::string_type_to_int(String(_T("FLOAT")),a));
     }
     
     void testWrongColumnType()

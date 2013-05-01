@@ -270,7 +270,7 @@ void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
     if (use_seq) {
         String pk = tbl.get_surrogate_pk();
         for (i = unkeyed_objs.begin(); i != iend; ++i)
-            (*i)->set(pk, engine_->get_next_value(tbl.seq_name()));
+            (*i)->set(pk, Value(engine_->get_next_value(tbl.seq_name())));
     }
     RowsData rows;
     rows.reserve(unkeyed_objs.size());
@@ -283,7 +283,7 @@ void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
         String pk = tbl.get_surrogate_pk();
         i = unkeyed_objs.begin();
         for (int p = 0; i != iend; ++i, ++p)
-            (*i)->set(pk, ids[p]);
+            (*i)->set(pk, Value(ids[p]));
     }
     // Refresh fk values for all slaves and
     // add flushed objects to the identity_map_
