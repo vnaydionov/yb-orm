@@ -54,6 +54,79 @@ template<class X>
 inline X *shptr_get(const boost::shared_ptr<X> &p) { return p.get(); }
 #endif
 
+template <class T__>
+class IntrusivePtr
+{
+    T__ *p_;
+public:
+    IntrusivePtr(): p_(0) {}
+    explicit IntrusivePtr(T__ *p): p_(p) {
+        if (p_)
+            p_->add_ref();
+    }
+    IntrusivePtr(const IntrusivePtr &other): p_(other.p_) {
+        if (p_)
+            p_->add_ref();
+    }
+    IntrusivePtr &operator = (const IntrusivePtr &other) {
+        if (this != &other && p_ != other.p_) {
+            if (p_)
+                p_->release();
+            p_ = other.p_;
+            if (p_)
+                p_->add_ref();
+        }
+        return *this;
+    }
+    ~IntrusivePtr() {
+        if (p_)
+            p_->release();
+    }
+    T__ *release() {
+        T__ *p = p_;
+        if (p_)
+            p_->release();
+        return p;
+    }
+    T__ &operator * () const { return *p_; }
+    T__ *operator -> () const { return p_; }
+    T__ *get() const { return p_; }
+};
+
+template <class T__>
+inline bool operator == (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() == b.get(); }
+
+template <class T__>
+inline bool operator != (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() != b.get(); }
+
+template <class T__>
+inline bool operator < (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() < b.get(); }
+
+template <class T__>
+inline bool operator > (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() > b.get(); }
+
+template <class T__>
+inline bool operator <= (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() <= b.get(); }
+
+template <class T__>
+inline bool operator >= (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
+{ return a.get() >= b.get(); }
+
+class RefCountBase {
+protected:
+    int ref_count_;
+public:
+    RefCountBase(): ref_count_(0) {}
+    virtual ~RefCountBase() {}
+    void add_ref() { ++ref_count_; }
+    void release() { if (!--ref_count_) delete this; }
+};
+
 class NonCopyable {
     NonCopyable(const NonCopyable &);
     const NonCopyable &operator=(const NonCopyable &);

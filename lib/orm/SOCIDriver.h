@@ -9,13 +9,10 @@
 
 namespace Yb {
 
-typedef soci::session SOCIDatabase;
-typedef soci::statement SOCIQuery;
-
 class SOCICursorBackend: public SqlCursorBackend
 {
-    SOCIDatabase *conn_;
-    SOCIQuery *stmt_;
+    soci::session *conn_;
+    soci::statement *stmt_;
     int exec_count_;
     std::string sql_;
     bool is_select_;
@@ -23,7 +20,7 @@ class SOCICursorBackend: public SqlCursorBackend
     std::vector<std::string> in_params_;
     std::vector<soci::indicator> in_flags_;
 public:
-    SOCICursorBackend(SOCIDatabase *conn);
+    SOCICursorBackend(soci::session *conn);
     ~SOCICursorBackend();
     void close();
     void exec_direct(const String &sql);
@@ -36,7 +33,7 @@ class SOCIDriver;
 
 class SOCIConnectionBackend: public SqlConnectionBackend
 {
-    SOCIDatabase *conn_;
+    soci::session *conn_;
     SOCIDriver *drv_;
 public:
     SOCIConnectionBackend(SOCIDriver *drv);
@@ -58,6 +55,7 @@ public:
     std::auto_ptr<SqlConnectionBackend> create_backend();
     void parse_url_tail(const String &dialect_name,
             const String &url_tail, StringDict &source);
+    bool numbered_params();
 };
 
 } //namespace Yb

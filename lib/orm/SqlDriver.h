@@ -232,6 +232,9 @@ public:
     virtual void parse_url_tail(const String &dialect_name,
             const String &url_tail, StringDict &source);
     virtual bool explicit_begin_trans_required();
+    virtual bool numbered_params();
+    static const String convert_to_numbered_params(
+            const String &sql);
 };
 
 SqlDriver *sql_driver(const String &name);
@@ -262,7 +265,7 @@ class SqlCursor: NonCopyable
     friend class SqlConnection;
     SqlConnection &connection_;
     std::auto_ptr<SqlCursorBackend> backend_;
-    bool echo_;
+    bool echo_, conv_params_;
     ILogger *log_;
     void debug(const String &s) { if (log_) log_->debug(NARROW(s)); }
     SqlCursor(SqlConnection &connection);
@@ -283,7 +286,7 @@ class SqlConnection: NonCopyable
     SqlDialect *dialect_;
     std::auto_ptr<SqlConnectionBackend> backend_;
     std::auto_ptr<SqlCursor> cursor_;
-    bool activity_, echo_, bad_, explicit_trans_started_;
+    bool activity_, echo_, conv_params_, bad_, explicit_trans_started_;
     time_t free_since_;
     ILogger::Ptr log_;
     void debug(const String &s) { if (log_.get()) log_->debug(NARROW(s)); }
@@ -301,6 +304,7 @@ public:
     const String &get_db() const { return source_.db(); }
     const String &get_user() const { return source_.user(); }
     void set_echo(bool echo) { echo_ = echo; }
+    void set_convert_params(bool conv_params) { conv_params_ = conv_params; }
     void init_logger(ILogger *parent) {
         log_.reset(NULL);
         if (parent)

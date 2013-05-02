@@ -24,10 +24,10 @@ Expression::Expression(ExprBEPtr backend)
 {}
 
 const String
-Expression::generate_sql(Values *params) const
+Expression::generate_sql(Values *params, int *count) const
 {
     if (shptr_get(backend_))
-        return backend_->generate_sql(params);
+        return backend_->generate_sql(params, count);
     return sql_;
 }
 
@@ -117,13 +117,14 @@ ColumnExprBackend::ColumnExprBackend(const String &tbl_name, const String &col_n
 {}
 
 const String
-ColumnExprBackend::generate_sql(Values *params) const
+ColumnExprBackend::generate_sql(Values *params, int *count) const
 {
     String r;
     if (!str_empty(col_name_))
         r = sql_prefix(col_name_, tbl_name_);
     else
-        r += sql_parentheses_as_needed(expr_.generate_sql(params));
+        r += sql_parentheses_as_needed(
+                expr_.generate_sql(params, count));
     return sql_alias(r, alias_);
 }
 
@@ -144,11 +145,15 @@ ColumnExpr::alias() const {
 ConstExprBackend::ConstExprBackend(const Value &x): value_(x) {}
 
 const String
-ConstExprBackend::generate_sql(Values *params) const
+ConstExprBackend::generate_sql(Values *params, int *count) const
 {
     if (params) {
         params->push_back(value_);
-        return _T("?");
+        if (!count)
+            return _T("?");
+        int n = *count;
+        ++*count;
+        return _T(":") + to_string(n);
     }
     return value_.sql_str();
 }
@@ -174,13 +179,13 @@ UnaryOpExprBackend::UnaryOpExprBackend(
 {}
 
 const String
-UnaryOpExprBackend::generate_sql(Values *params) const
+UnaryOpExprBackend::generate_sql(Values *params, int *count) const
 {
     if (prefix_)
         return op_ + _T(" ") + sql_parentheses_as_needed(
-                expr_.generate_sql(params));
+                expr_.generate_sql(params, count));
     return sql_parentheses_as_needed(
-            expr_.generate_sql(params)) + _T(" ") + op_;
+            expr_.generate_sql(params, count)) + _T(" ") + op_;
 }
 
 UnaryOpExpr::UnaryOpExpr(bool prefix, const String &op, const Expression &expr)
@@ -210,17 +215,20 @@ BinaryOpExprBackend::BinaryOpExprBackend(const Expression &expr1,
 {}
 
 const String
-BinaryOpExprBackend::generate_sql(Values *params) const
+BinaryOpExprBackend::generate_sql(Values *params, int *count) const
 {
-    String sql1 = sql_parentheses_as_needed(expr1_.generate_sql(params));
-    String sql2_nosubst = sql_parentheses_as_needed(expr2_.generate_sql(NULL));
+    String sql1 = sql_parentheses_as_needed(
+            expr1_.generate_sql(params, count));
+    String sql2_nosubst = sql_parentheses_as_needed(
+            expr2_.generate_sql(NULL));
     if (sql2_nosubst == _T("NULL")) {
         if (op_ == _T("="))
             return sql1 + _T(" IS NULL");
         if (op_ == _T("<>"))
             return sql1 + _T(" IS NOT NULL");
     }
-    String sql2 = sql_parentheses_as_needed(expr2_.generate_sql(params));
+    String sql2 = sql_parentheses_as_needed(
+            expr2_.generate_sql(params, count));
     return sql1 + _T(" ") + op_ + _T(" ") + sql2;
 }
 
@@ -245,13 +253,16 @@ BinaryOpExpr::expr2() const {
 }
 
 const String
-JoinExprBackend::generate_sql(Values *params) const
+JoinExprBackend::generate_sql(Values *params, int *count) const
 {
-    String sql = sql_parentheses_as_needed(expr1_.generate_sql(params));
+    String sql = sql_parentheses_as_needed(
+            expr1_.generate_sql(params, count));
     sql += _T(" JOIN ");
-    sql += sql_parentheses_as_needed(expr2_.generate_sql(params));
+    sql += sql_parentheses_as_needed(
+            expr2_.generate_sql(params, count));
     sql += _T(" ON ");
-    sql += sql_parentheses_as_needed(cond_.generate_sql(params));
+    sql += sql_parentheses_as_needed(
+            cond_.generate_sql(params, count));
     return sql;
 }
 
@@ -276,13 +287,14 @@ JoinExpr::cond() const {
 }
 
 const String
-ExpressionListBackend::generate_sql(Values *params) const
+ExpressionListBackend::generate_sql(Values *params, int *count) const
 {
     String sql;
     for (size_t i = 0; i < items_.size(); ++i) {
         if (!str_empty(sql))
             sql += _T(", ");
-        sql += sql_parentheses_as_needed(items_[i].generate_sql(params));
+        sql += sql_parentheses_as_needed(
+                items_[i].generate_sql(params, count));
     }
     return sql;
 }
@@ -329,26 +341,31 @@ ExpressionList::item(int n) const {
 }
 
 const String
-SelectExprBackend::generate_sql(Values *params) const
+SelectExprBackend::generate_sql(Values *params, int *count) const
 {
     String sql = _T("SELECT ");
     if (distinct_flag_)
         sql += _T("DISTINCT ");
-    sql += select_expr_.generate_sql(params);
+    sql += select_expr_.generate_sql(params, count);
     if (!from_expr_.is_empty())
-        sql += _T(" FROM ") + from_expr_.generate_sql(params);
+        sql += _T(" FROM ")
+            + from_expr_.generate_sql(params, count);
     if (!where_expr_.is_empty())
-        sql += _T(" WHERE ") + where_expr_.generate_sql(params);
+        sql += _T(" WHERE ")
+            + where_expr_.generate_sql(params, count);
     if (!group_by_expr_.is_empty())
-        sql += _T(" GROUP BY ") + group_by_expr_.generate_sql(params);
+        sql += _T(" GROUP BY ")
+            + group_by_expr_.generate_sql(params, count);
     if (!having_expr_.is_empty()) {
         if (group_by_expr_.is_empty())
             throw BadSQLOperation(
                     _T("Trying to use HAVING without GROUP BY clause"));
-        sql += _T(" HAVING ") + having_expr_.generate_sql(params);
+        sql += _T(" HAVING ")
+            + having_expr_.generate_sql(params, count);
     }
     if (!order_by_expr_.is_empty())
-        sql += _T(" ORDER BY ") + order_by_expr_.generate_sql(params);
+        sql += _T(" ORDER BY ")
+            + order_by_expr_.generate_sql(params, count);
     if (for_update_flag_)
         sql += _T(" FOR UPDATE");
     return sql;
@@ -707,8 +724,8 @@ FilterBackendByPK::FilterBackendByPK(const Key &key)
 {}
 
 const String
-FilterBackendByPK::generate_sql(Values *params) const {
-    return expr_.generate_sql(params);
+FilterBackendByPK::generate_sql(Values *params, int *count) const {
+    return expr_.generate_sql(params, count);
 }
 
 KeyFilter::KeyFilter(const Key &key)

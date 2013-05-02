@@ -4,13 +4,13 @@
 #include <cstring>
 
 using namespace std;
-using Yb::StrUtils::str_to_upper;
+using namespace Yb::StrUtils;
 
 //#define YB_SOCI_DEBUG
 
 namespace Yb {
 
-SOCICursorBackend::SOCICursorBackend(SOCIDatabase *conn)
+SOCICursorBackend::SOCICursorBackend(soci::session *conn)
     :conn_(conn), stmt_(NULL), exec_count_(0)
 {}
 
@@ -50,19 +50,9 @@ void
 SOCICursorBackend::prepare(const String &sql)
 {
     close();
-    vector<int> pos_list;
-    String first_word;
-    if (!find_subst_signs(sql, pos_list, first_word))
-        throw DBError(_T("SQL syntax error"));
-    vector<String> parts;
-    split_by_subst_sign(sql, pos_list, parts);
-    String sql2 = parts[0];
-    for (int i = 1; i < parts.size(); ++i) {
-        sql2 += _T(":") + to_string(i);
-        sql2 += parts[i];
-    }
-    sql_ = NARROW(sql2);
-    is_select_ = str_to_upper(first_word) == _T("SELECT");
+    sql_ = NARROW(sql);
+    is_select_ = starts_with(
+            str_to_upper(trim_trailing_space(sql)), _T("SELECT"));
     try {
         stmt_ = new soci::statement(*conn_);
         stmt_->alloc();
@@ -241,7 +231,7 @@ SOCIConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
     close();
     ScopedLock lock(drv_->conn_mux_);
     try {
-        conn_ = new SOCIDatabase(soci_convert_dialect(dialect->get_name()),
+        conn_ = new soci::session(soci_convert_dialect(dialect->get_name()),
                 NARROW(source.db()));
 #ifdef YB_SOCI_DEBUG
         conn_->set_log_stream(&cerr);
@@ -324,6 +314,12 @@ SOCIDriver::parse_url_tail(const String &dialect_name,
         const String &url_tail, StringDict &source)
 {
     source.set(_T("&db"), url_tail);
+}
+
+bool
+SOCIDriver::numbered_params()
+{
+    return true;
 }
 
 } //namespace Yb

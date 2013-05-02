@@ -359,9 +359,25 @@ void SqlDriver::parse_url_tail(const String &dialect_name,
     Yb::StrUtils::parse_url_tail(url_tail, source);
 }
 
-bool SqlDriver::explicit_begin_trans_required()
+// the default policies
+bool SqlDriver::explicit_begin_trans_required() { return true; }
+bool SqlDriver::numbered_params() { return false; }
+
+const String SqlDriver::convert_to_numbered_params(
+        const String &sql)
 {
-    return true; // the default policy
+    String first_word;
+    vector<int> pos_list;
+    if (!find_subst_signs(sql, pos_list, first_word))
+        throw DBError(_T("SQL syntax error"));
+    vector<String> parts;
+    split_by_subst_sign(sql, pos_list, parts);
+    String sql2 = parts[0];
+    for (int i = 1; i < parts.size(); ++i) {
+        sql2 += _T(":") + to_string(i);
+        sql2 += parts[i];
+    }
+    return sql2;
 }
 
 typedef SingletonHolder<ItemRegistry<SqlDriver> > theDriverRegistry;
@@ -525,6 +541,7 @@ SqlCursor::SqlCursor(SqlConnection &connection)
     : connection_(connection)
     , backend_(connection.backend_->new_cursor().release())
     , echo_(connection.echo_)
+    , conv_params_(connection.conv_params_)
     , log_(connection.log_.get())
 {}
 
@@ -547,10 +564,13 @@ void
 SqlCursor::prepare(const String &sql)
 {
     try {
+        String fixed_sql = sql;
+        if (conv_params_ && connection_.driver_->numbered_params())
+            fixed_sql = SqlDriver::convert_to_numbered_params(sql);
         if (echo_)
-            debug(_T("prepare: ") + sql);
+            debug(_T("prepare: ") + fixed_sql);
         connection_.activity_ = true;
-        backend_->prepare(sql);
+        backend_->prepare(fixed_sql);
     }
     catch (const std::exception &e) {
         connection_.mark_bad(e);
@@ -651,6 +671,7 @@ SqlConnection::SqlConnection(const String &driver_name,
     , dialect_(sql_dialect(source_.dialect()))
     , activity_(false)
     , echo_(false)
+    , conv_params_(false)
     , bad_(false)
     , explicit_trans_started_(false)
     , free_since_(0)
@@ -666,6 +687,7 @@ SqlConnection::SqlConnection(const SqlSource &source)
     , dialect_(sql_dialect(source_.dialect()))
     , activity_(false)
     , echo_(false)
+    , conv_params_(false)
     , bad_(false)
     , explicit_trans_started_(false)
     , free_since_(0)
@@ -681,6 +703,7 @@ SqlConnection::SqlConnection(const String &url)
     , dialect_(sql_dialect(source_.dialect()))
     , activity_(false)
     , echo_(false)
+    , conv_params_(false)
     , bad_(false)
     , explicit_trans_started_(false)
     , free_since_(0)

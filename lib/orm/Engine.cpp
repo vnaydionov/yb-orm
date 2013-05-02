@@ -18,8 +18,12 @@ EngineSource::~EngineSource()
 SqlResultSet
 EngineBase::select_iter(const Expression &select_expr)
 {
+    bool num_params = get_conn()->get_driver()->numbered_params();
+    int count = 1, *pcount = NULL;
+    if (num_params)
+        pcount = &count;
     Values params;
-    String sql = select_expr.generate_sql(&params);
+    String sql = select_expr.generate_sql(&params, pcount);
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
     SqlResultSet rs = cursor->exec(params);
@@ -57,7 +61,7 @@ EngineBase::insert(const Table &table, const RowsData &rows,
     Values params;
     ParamNums param_nums;
     gen_sql_insert(sql, params, param_nums, table,
-            !collect_new_ids);
+            !collect_new_ids, get_conn()->get_driver()->numbered_params());
     if (!collect_new_ids) {
         auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
         cursor->prepare(sql);
@@ -104,7 +108,8 @@ EngineBase::update(const Table &table, const RowsData &rows)
     String sql;
     Values params;
     ParamNums param_nums;
-    gen_sql_update(sql, params, param_nums, table);
+    gen_sql_update(sql, params, param_nums, table,
+            get_conn()->get_driver()->numbered_params());
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
     RowsData::const_iterator r = rows.begin(), rend = rows.end();
@@ -128,7 +133,8 @@ EngineBase::delete_from(const Table &table, const Keys &keys)
     touch();
     String sql;
     Values params;
-    gen_sql_delete(sql, params, table);
+    gen_sql_delete(sql, params, table,
+            get_conn()->get_driver()->numbered_params());
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
     Keys::const_iterator k = keys.begin(), kend = keys.end();
@@ -273,8 +279,11 @@ EngineBase::drop_schema(const Schema &schema, bool ignore_errors)
 void
 EngineBase::gen_sql_insert(String &sql, Values &params_out,
         ParamNums &param_nums_out, const Table &table,
-        bool include_pk)
+        bool include_pk, bool numbered_params)
 {
+    int count = 1, *pcount = NULL;
+    if (numbered_params)
+        pcount = &count;
     String sql_query;
     sql_query = _T("INSERT INTO ") + table.name() + _T(" (");
     Values params;
@@ -289,7 +298,12 @@ EngineBase::gen_sql_insert(String &sql, Values &params_out,
             param_nums[col.name()] = params.size();
             params.push_back(Value(-1));
             names.push_back(col.name());
-            pholders.push_back(_T("?"));
+            if (pcount) {
+                pholders.push_back(_T(":") + to_string(*pcount));
+                ++*pcount;
+            }
+            else
+                pholders.push_back(_T("?"));
         }
     }
     sql_query += ExpressionList(names).get_sql() + _T(") VALUES (") + 
@@ -301,10 +315,14 @@ EngineBase::gen_sql_insert(String &sql, Values &params_out,
 
 void
 EngineBase::gen_sql_update(String &sql, Values &params_out,
-        ParamNums &param_nums_out, const Table &table)
+        ParamNums &param_nums_out, const Table &table,
+        bool numbered_params)
 {
     if (!table.pk_fields().size())
         throw BadSQLOperation(_T("cannot build update statement: no key in table"));
+    int count = 1, *pcount = NULL;
+    if (numbered_params)
+        pcount = &count;
     String sql_query = _T("UPDATE ") + table.name() + _T(" SET ");
     Values params;
     params.reserve(table.size());
@@ -315,7 +333,13 @@ EngineBase::gen_sql_update(String &sql, Values &params_out,
         if (!col.is_pk() && !col.is_ro()) {
             if (!params.empty())
                 sql_query += _T(", ");
-            sql_query += col.name() + _T(" = ?");
+            sql_query += col.name() + _T(" = ");
+            if (pcount) {
+                sql_query += _T(":") + to_string(*pcount);
+                ++*pcount;
+            }
+            else
+                sql_query += _T("?");
             param_nums[col.name()] = params.size();
             params.push_back(Value());
         }
@@ -328,22 +352,28 @@ EngineBase::gen_sql_update(String &sql, Values &params_out,
     Key key;
     Values fake_params(table.size(), Value(-1));
     table.mk_key(fake_params, key);
-    sql_query += _T(" WHERE ") + KeyFilter(key).generate_sql(&fake_params);
+    sql_query += _T(" WHERE ")
+        + KeyFilter(key).generate_sql(&fake_params, pcount);
     sql = sql_query;
     params_out.swap(params);
     param_nums_out.swap(param_nums);
 }
 
 void
-EngineBase::gen_sql_delete(String &sql, Values &params, const Table &table)
+EngineBase::gen_sql_delete(String &sql, Values &params,
+        const Table &table, bool numbered_params)
 {
     if (!table.pk_fields().size())
         throw BadSQLOperation(_T("cannot build update statement: no key in table"));
+    int count = 1, *pcount = NULL;
+    if (numbered_params)
+        pcount = &count;
     String sql_query = _T("DELETE FROM ") + table.name();
     Key key;
     Values fake_params(table.size(), Value(-1));
     table.mk_key(fake_params, key);
-    sql_query += _T(" WHERE ") + KeyFilter(key).generate_sql(&params);
+    sql_query += _T(" WHERE ")
+        + KeyFilter(key).generate_sql(&params, pcount);
     sql = sql_query;
 }
 

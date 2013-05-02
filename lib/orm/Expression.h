@@ -16,7 +16,8 @@ typedef std::map<String, int> ParamNums;
 class ExpressionBackend
 {
 public:
-    virtual const String generate_sql(Values *params) const = 0;
+    virtual const String generate_sql(
+            Values *params, int *count) const = 0;
     virtual ~ExpressionBackend();
 };
 
@@ -34,7 +35,8 @@ public:
     explicit Expression(const String &sql);
     Expression(const Column &col);
     Expression(ExprBEPtr backend);
-    const String generate_sql(Values *params) const;
+    const String generate_sql(
+            Values *params, int *count = NULL) const;
     const String get_sql() const { return generate_sql(NULL); }
     bool is_empty() const { return str_empty(sql_) && !shptr_get(backend_); }
     ExpressionBackend *backend() const { return shptr_get(backend_); }
@@ -55,7 +57,7 @@ public:
     ColumnExprBackend(const Expression &expr, const String &alias);
     ColumnExprBackend(const String &tbl_name, const String &col_name,
             const String &alias);
-    const String generate_sql(Values *params) const;
+    const String generate_sql(Values *params, int *count) const;
     const String &alias() const { return alias_; }
 };
 
@@ -73,7 +75,7 @@ class ConstExprBackend: public ExpressionBackend
     Value value_;
 public:
     ConstExprBackend(const Value &x);
-    const String generate_sql(Values *params) const;
+    const String generate_sql(Values *params, int *count) const;
     const Value &const_value() const { return value_; }
 };
 
@@ -92,7 +94,7 @@ class UnaryOpExprBackend: public ExpressionBackend
     Expression expr_;
 public:
     UnaryOpExprBackend(bool prefix, const String &op, const Expression &expr);
-    const String generate_sql(Values *params) const;
+    const String generate_sql(Values *params, int *count) const;
     bool prefix() const { return prefix_; }
     const String &op() const { return op_; }
     const Expression &expr() const { return expr_; }
@@ -114,7 +116,7 @@ class BinaryOpExprBackend: public ExpressionBackend
 public:
     BinaryOpExprBackend(const Expression &expr1,
             const String &op, const Expression &expr2);
-    const String generate_sql(Values *params) const;
+    const String generate_sql(Values *params, int *count) const;
     const String &op() const { return op_; }
     const Expression &expr1() const { return expr1_; }
     const Expression &expr2() const { return expr2_; }
@@ -137,7 +139,7 @@ public:
     JoinExprBackend(const Expression &expr1,
             const Expression &expr2, const Expression &cond)
         : expr1_(expr1), expr2_(expr2), cond_(cond) {}
-    const String generate_sql(Values *params) const;
+    const String generate_sql(Values *params, int *count) const;
     const Expression &expr1() const { return expr1_; }
     const Expression &expr2() const { return expr2_; }
     const Expression &cond() const { return cond_; }
@@ -159,7 +161,7 @@ class ExpressionListBackend: public ExpressionBackend
 public:
     ExpressionListBackend() {}
     void append(const Expression &expr) { items_.push_back(expr); }
-    const String generate_sql(Values *params) const;
+    const String generate_sql(Values *params, int *count) const;
     int size() const { return items_.size(); }
     const Expression &item(int n) const {
         YB_ASSERT(n >= 0 && (size_t)n < items_.size());
@@ -228,7 +230,7 @@ public:
     const Expression &order_by_expr() const { return order_by_expr_; }
     bool distinct_flag() const { return distinct_flag_; }
     bool for_update_flag() const { return for_update_flag_; }
-    const String generate_sql(Values *params) const;
+    const String generate_sql(Values *params, int *count) const;
 };
 
 class SelectExpr: public Expression
@@ -331,7 +333,7 @@ class FilterBackendByPK: public ExpressionBackend
     static const Expression build_expr(const Key &key);
 public:
     FilterBackendByPK(const Key &key);
-    const String generate_sql(Values *params) const;
+    const String generate_sql(Values *params, int *count) const;
     const Key &key() const { return key_; }
 };
 

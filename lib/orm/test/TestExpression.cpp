@@ -50,11 +50,21 @@ public:
             Expression(_T("A")) != String(_T("a"));
         Values pvalues;
         String sql = expr.generate_sql(&pvalues);
+        CPPUNIT_ASSERT_EQUAL(string("(ID = ?) AND (A <> ?)"),
+                NARROW(sql));
+        Values pvalues2;
+        int count = 1;
+        sql = expr.generate_sql(&pvalues2, &count);
+        CPPUNIT_ASSERT_EQUAL(string("(ID = :1) AND (A <> :2)"),
+                NARROW(sql));
         CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A <> 'a')"),
                 NARROW(expr.get_sql()));
         CPPUNIT_ASSERT_EQUAL((size_t)2, pvalues.size());
         CPPUNIT_ASSERT_EQUAL(1, pvalues[0].as_integer());
         CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(pvalues[1].as_string()));
+        CPPUNIT_ASSERT_EQUAL((size_t)2, pvalues2.size());
+        CPPUNIT_ASSERT_EQUAL(1, pvalues2[0].as_integer());
+        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(pvalues2[1].as_string()));
     }
 
     void testExprList()

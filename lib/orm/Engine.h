@@ -60,11 +60,12 @@ public:
 
     static void gen_sql_insert(String &sql, Values &params,
             ParamNums &param_nums, const Table &table,
-            bool include_pk);
+            bool include_pk, bool numbered_params = false);
     static void gen_sql_update(String &sql, Values &params,
-            ParamNums &param_nums, const Table &table);
+            ParamNums &param_nums, const Table &table, 
+            bool numbered_params = false);
     static void gen_sql_delete(String &sql, Values &params,
-            const Table &table);
+            const Table &table, bool numbered_params = false);
 };
 
 class EngineSource

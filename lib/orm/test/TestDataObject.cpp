@@ -409,6 +409,7 @@ public:
     void setUp()
     {
         SqlConnection conn(Engine::sql_source_from_env());
+        conn.set_convert_params(true);
         setup_log(conn);
         conn.begin_trans_if_necessary();
         {
