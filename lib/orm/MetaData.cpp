@@ -191,6 +191,23 @@ Table::find_fk_for(const Relation &rel, Strings &fkey_parts) const
     return fkey_parts;
 }
 
+void
+Table::mk_sample_key(TypeCodes &type_codes, Key &sample_key) const
+{
+    sample_key.first = name();
+    ValueMap key_values;
+    key_values.reserve(pk_fields().size());
+    Strings::const_iterator i = pk_fields().begin(), iend = pk_fields().end();
+    for (; i != iend; ++i) {
+        int col_type = column(*i).type();
+        Value x(_T("0"));
+        x.fix_type(col_type);
+        type_codes.push_back(col_type);
+        key_values.push_back(make_pair(*i, x));
+    }
+    sample_key.second.swap(key_values);
+}
+
 bool
 Table::mk_key(const Values &row_values, Key &key) const
 {

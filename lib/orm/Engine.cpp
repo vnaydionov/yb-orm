@@ -58,36 +58,27 @@ EngineBase::insert(const Table &table, const RowsData &rows,
         return ids;
     touch();
     String sql;
-    Values params;
+    TypeCodes type_codes;
     ParamNums param_nums;
-    gen_sql_insert(sql, params, param_nums, table,
+    gen_sql_insert(sql, type_codes, param_nums, table,
             !collect_new_ids, get_conn()->get_driver()->numbered_params());
-    if (!collect_new_ids) {
-        auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
-        cursor->prepare(sql);
-        RowsData::const_iterator r = rows.begin(), rend = rows.end();
-        for (; r != rend; ++r) {
-            ParamNums::const_iterator f = param_nums.begin(),
-                fend = param_nums.end();
-            for (; f != fend; ++f)
-                params[f->second] = (**r)[table.idx_by_name(f->first)];
-            cursor->exec(params);
-        }
-    }
-    else {
-        RowsData::const_iterator r = rows.begin(), rend = rows.end();
-        for (; r != rend; ++r) {
-            auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
-            cursor->prepare(sql);
-            ParamNums::const_iterator f = param_nums.begin(),
-                fend = param_nums.end();
-            for (; f != fend; ++f)
-                params[f->second] = (**r)[table.idx_by_name(f->first)];
-            cursor->exec(params);
-            cursor.reset(NULL);
-            auto_ptr<SqlCursor> cursor2 = get_conn()->new_cursor();
-            cursor2->prepare(
-                    get_dialect()->select_last_inserted_id(table.name()));
+    Values params(type_codes.size());
+    auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+    cursor->prepare(sql);
+    cursor->bind_params(type_codes);
+    auto_ptr<SqlCursor> cursor2;
+    if (collect_new_ids)
+        cursor2.reset(get_conn()->new_cursor().release());
+    RowsData::const_iterator r = rows.begin(), rend = rows.end();
+    for (; r != rend; ++r) {
+        ParamNums::const_iterator f = param_nums.begin(),
+            fend = param_nums.end();
+        for (; f != fend; ++f)
+            params[f->second] = (**r)[table.idx_by_name(f->first)];
+        cursor->exec(params);
+        if (collect_new_ids) {
+            cursor2->prepare(get_dialect()->
+                    select_last_inserted_id(table.name()));
             cursor2->exec(Values());
             RowsPtr id_rows = cursor2->fetch_rows();
             ids.push_back((*id_rows)[0][0].second.as_longint());
@@ -106,12 +97,14 @@ EngineBase::update(const Table &table, const RowsData &rows)
         return;
     touch();
     String sql;
-    Values params;
+    TypeCodes type_codes;
     ParamNums param_nums;
-    gen_sql_update(sql, params, param_nums, table,
+    gen_sql_update(sql, type_codes, param_nums, table,
             get_conn()->get_driver()->numbered_params());
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
+    cursor->bind_params(type_codes);
+    Values params(type_codes.size());
     RowsData::const_iterator r = rows.begin(), rend = rows.end();
     for (; r != rend; ++r) {
         ParamNums::const_iterator f = param_nums.begin(),
@@ -132,11 +125,13 @@ EngineBase::delete_from(const Table &table, const Keys &keys)
         return;
     touch();
     String sql;
-    Values params;
-    gen_sql_delete(sql, params, table,
+    TypeCodes type_codes;
+    gen_sql_delete(sql, type_codes, table,
             get_conn()->get_driver()->numbered_params());
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
+    cursor->bind_params(type_codes);
+    Values params(type_codes.size());
     Keys::const_iterator k = keys.begin(), kend = keys.end();
     for (; k != kend; ++k) {
         for (size_t i = 0; i < k->second.size(); ++i)
@@ -277,7 +272,7 @@ EngineBase::drop_schema(const Schema &schema, bool ignore_errors)
 }
 
 void
-EngineBase::gen_sql_insert(String &sql, Values &params_out,
+EngineBase::gen_sql_insert(String &sql, TypeCodes &type_codes_out,
         ParamNums &param_nums_out, const Table &table,
         bool include_pk, bool numbered_params)
 {
@@ -286,7 +281,8 @@ EngineBase::gen_sql_insert(String &sql, Values &params_out,
         pcount = &count;
     String sql_query;
     sql_query = _T("INSERT INTO ") + table.name() + _T(" (");
-    Values params;
+    TypeCodes type_codes;
+    type_codes.reserve(table.size());
     ParamNums param_nums;
     Strings names, pholders;
     size_t i;
@@ -295,26 +291,25 @@ EngineBase::gen_sql_insert(String &sql, Values &params_out,
         if ((!col.is_ro() || col.is_pk()) &&
                 (!col.is_pk() || include_pk))
         {
-            param_nums[col.name()] = params.size();
-            params.push_back(Value(-1));
-            names.push_back(col.name());
-            if (pcount) {
-                pholders.push_back(_T(":") + to_string(*pcount));
-                ++*pcount;
-            }
+            if (pcount)
+                pholders.push_back(_T(":") + to_string(count));
             else
                 pholders.push_back(_T("?"));
+            ++count;
+            param_nums[col.name()] = type_codes.size();
+            type_codes.push_back(col.type());
+            names.push_back(col.name());
         }
     }
     sql_query += ExpressionList(names).get_sql() + _T(") VALUES (") + 
         ExpressionList(pholders).get_sql() + _T(")");
-    sql = sql_query;
-    params_out.swap(params);
+    sql.swap(sql_query);
+    type_codes_out.swap(type_codes);
     param_nums_out.swap(param_nums);
 }
 
 void
-EngineBase::gen_sql_update(String &sql, Values &params_out,
+EngineBase::gen_sql_update(String &sql, TypeCodes &type_codes_out,
         ParamNums &param_nums_out, const Table &table,
         bool numbered_params)
 {
@@ -324,43 +319,42 @@ EngineBase::gen_sql_update(String &sql, Values &params_out,
     if (numbered_params)
         pcount = &count;
     String sql_query = _T("UPDATE ") + table.name() + _T(" SET ");
-    Values params;
-    params.reserve(table.size());
+    TypeCodes type_codes;
+    type_codes.reserve(table.size());
     ParamNums param_nums;
     size_t i;
     for (i = 0; i < table.size(); ++i) {
         const Column &col = table[i];
         if (!col.is_pk() && !col.is_ro()) {
-            if (!params.empty())
+            if (!type_codes.empty())
                 sql_query += _T(", ");
             sql_query += col.name() + _T(" = ");
-            if (pcount) {
-                sql_query += _T(":") + to_string(*pcount);
-                ++*pcount;
-            }
+            if (pcount)
+                sql_query += _T(":") + to_string(count);
             else
                 sql_query += _T("?");
-            param_nums[col.name()] = params.size();
-            params.push_back(Value());
+            ++count;
+            param_nums[col.name()] = type_codes.size();
+            type_codes.push_back(col.type());
         }
     }
     for (i = 0; i < table.pk_fields().size(); ++i) {
         const String &col_name = table.pk_fields()[i];
-        param_nums[col_name] = params.size();
-        params.push_back(Value());
+        param_nums[col_name] = type_codes.size();
+        type_codes.push_back(table[col_name].type());
     }
-    Key key;
-    Values fake_params(table.size(), Value(-1));
-    table.mk_key(fake_params, key);
-    sql_query += _T(" WHERE ")
-        + KeyFilter(key).generate_sql(&fake_params, pcount);
-    sql = sql_query;
-    params_out.swap(params);
+    type_codes_out.swap(type_codes);
     param_nums_out.swap(param_nums);
+    Key sample_key;
+    table.mk_sample_key(type_codes, sample_key);
+    Values sample_params;
+    sql_query += _T(" WHERE ")
+        + KeyFilter(sample_key).generate_sql(&sample_params, pcount);
+    sql.swap(sql_query);
 }
 
 void
-EngineBase::gen_sql_delete(String &sql, Values &params,
+EngineBase::gen_sql_delete(String &sql, TypeCodes &type_codes_out,
         const Table &table, bool numbered_params)
 {
     if (!table.pk_fields().size())
@@ -369,12 +363,14 @@ EngineBase::gen_sql_delete(String &sql, Values &params,
     if (numbered_params)
         pcount = &count;
     String sql_query = _T("DELETE FROM ") + table.name();
-    Key key;
-    Values fake_params(table.size(), Value(-1));
-    table.mk_key(fake_params, key);
+    TypeCodes type_codes;
+    Key sample_key;
+    table.mk_sample_key(type_codes, sample_key);
+    Values sample_params;
     sql_query += _T(" WHERE ")
-        + KeyFilter(key).generate_sql(&params, pcount);
-    sql = sql_query;
+        + KeyFilter(sample_key).generate_sql(&sample_params, pcount);
+    type_codes_out.swap(type_codes);
+    sql.swap(sql_query);
 }
 
 EngineCloned::~EngineCloned()

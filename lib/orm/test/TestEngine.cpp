@@ -141,14 +141,16 @@ public:
         t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
         t.add_column(Column(_T("A"), Value::STRING, 0, 0));
         String sql;
-        Values params;
+        TypeCodes types;
         ParamNums param_nums;
-        engine.gen_sql_insert(sql, params, param_nums, t, true);
+        engine.gen_sql_insert(sql, types, param_nums, t, true);
         CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (ID, A) VALUES (?, ?)"), NARROW(sql));
-        CPPUNIT_ASSERT_EQUAL(2, (int)params.size());
+        CPPUNIT_ASSERT_EQUAL(2, (int)types.size());
         CPPUNIT_ASSERT_EQUAL(2, (int)param_nums.size());
         CPPUNIT_ASSERT_EQUAL(0, (int)param_nums[_T("ID")]);
         CPPUNIT_ASSERT_EQUAL(1, (int)param_nums[_T("A")]);
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, types[0]);
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, types[1]);
     }
 
     void test_insert_exclude()
@@ -159,30 +161,33 @@ public:
                     Column::PK | Column::RO));
         t.add_column(Column(_T("A"), Value::STRING, 0, Column::RO));
         String sql;
-        Values params;
+        TypeCodes types;
         ParamNums param_nums;
-        engine.gen_sql_insert(sql, params, param_nums, t, true);
+        engine.gen_sql_insert(sql, types, param_nums, t, true);
         CPPUNIT_ASSERT_EQUAL(string("INSERT INTO T (ID) VALUES (?)"), NARROW(sql));
-        CPPUNIT_ASSERT_EQUAL(1, (int)params.size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)types.size());
         CPPUNIT_ASSERT_EQUAL(1, (int)param_nums.size());
         CPPUNIT_ASSERT_EQUAL(0, (int)param_nums[_T("ID")]);
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, types[0]);
     }
 
     void test_update_where()
     {
         Engine engine(Engine::READ_ONLY);
         Table t(_T("T"));
-        t.add_column(Column(_T("A"), Value::LONGINT, 0, 0));
+        t.add_column(Column(_T("A"), Value::INTEGER, 0, 0));
         t.add_column(Column(_T("B"), Value::LONGINT, 0, Column::PK));
         String sql;
-        Values params;
+        TypeCodes types;
         ParamNums param_nums;
-        engine.gen_sql_update(sql, params, param_nums, t);
+        engine.gen_sql_update(sql, types, param_nums, t);
         CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET A = ? WHERE T.B = ?"), NARROW(sql));
-        CPPUNIT_ASSERT_EQUAL((size_t)2, params.size());
+        CPPUNIT_ASSERT_EQUAL((size_t)2, types.size());
         CPPUNIT_ASSERT_EQUAL((size_t)2, param_nums.size());
         CPPUNIT_ASSERT_EQUAL(0, param_nums[_T("A")]);
         CPPUNIT_ASSERT_EQUAL(1, param_nums[_T("B")]);
+        CPPUNIT_ASSERT_EQUAL((int)Value::INTEGER, types[0]);
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, types[1]);
     }
 
     void test_update_combo()
@@ -190,23 +195,28 @@ public:
         Engine engine(Engine::READ_ONLY);
         Table t(_T("T"));
         t.add_column(Column(_T("Q"), Value::LONGINT, 0, Column::PK));
-        t.add_column(Column(_T("E"), Value::LONGINT, 0, 0));
-        t.add_column(Column(_T("B"), Value::LONGINT, 0, Column::PK));
-        t.add_column(Column(_T("F"), Value::LONGINT, 0, 0));
-        t.add_column(Column(_T("D"), Value::LONGINT, 0, Column::PK));
+        t.add_column(Column(_T("E"), Value::STRING, 0, 0));
+        t.add_column(Column(_T("B"), Value::DATETIME, 0, Column::PK));
+        t.add_column(Column(_T("F"), Value::FLOAT, 0, 0));
+        t.add_column(Column(_T("D"), Value::DECIMAL, 0, Column::PK));
         String sql;
-        Values params;
+        TypeCodes types;
         ParamNums param_nums;
-        engine.gen_sql_update(sql, params, param_nums, t);
+        engine.gen_sql_update(sql, types, param_nums, t);
         CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET E = ?, F = ? "
                     "WHERE ((T.Q = ?) AND (T.B = ?)) AND (T.D = ?)"), NARROW(sql));
-        CPPUNIT_ASSERT_EQUAL((size_t)5, params.size());
+        CPPUNIT_ASSERT_EQUAL((size_t)5, types.size());
         CPPUNIT_ASSERT_EQUAL((size_t)5, param_nums.size());
         CPPUNIT_ASSERT_EQUAL(0, param_nums[_T("E")]);
         CPPUNIT_ASSERT_EQUAL(1, param_nums[_T("F")]);
         CPPUNIT_ASSERT_EQUAL(2, param_nums[_T("Q")]);
         CPPUNIT_ASSERT_EQUAL(3, param_nums[_T("B")]);
         CPPUNIT_ASSERT_EQUAL(4, param_nums[_T("D")]);
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, types[0]);
+        CPPUNIT_ASSERT_EQUAL((int)Value::FLOAT, types[1]);
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, types[2]);
+        CPPUNIT_ASSERT_EQUAL((int)Value::DATETIME, types[3]);
+        CPPUNIT_ASSERT_EQUAL((int)Value::DECIMAL, types[4]);
     }
 
     void test_update_wo_clause()
@@ -216,9 +226,9 @@ public:
         t.add_column(Column(_T("Q"), Value::LONGINT, 0, 0));
         t.add_column(Column(_T("E"), Value::LONGINT, 0, 0));
         String sql;
-        Values params;
+        TypeCodes types;
         ParamNums param_nums;
-        engine.gen_sql_update(sql, params, param_nums, t);
+        engine.gen_sql_update(sql, types, param_nums, t);
     }
 
     void test_delete()
@@ -227,10 +237,11 @@ public:
         Table t(_T("T"));
         t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
         String sql;
-        Values params;
-        engine.gen_sql_delete(sql, params, t);
+        TypeCodes types;
+        engine.gen_sql_delete(sql, types, t);
         CPPUNIT_ASSERT_EQUAL(string("DELETE FROM T WHERE T.ID = ?"), NARROW(sql));
-        CPPUNIT_ASSERT_EQUAL((size_t)1, params.size());
+        CPPUNIT_ASSERT_EQUAL((size_t)1, types.size());
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, types[0]);
     }
 
     void test_delete_wo_pk()
@@ -238,8 +249,8 @@ public:
         Engine engine(Engine::READ_ONLY);
         Table t(_T("T"));
         String sql;
-        Values params;
-        engine.gen_sql_delete(sql, params, t);
+        TypeCodes types;
+        engine.gen_sql_delete(sql, types, t);
     }
 
     void test_insert_ro_mode()

@@ -11,7 +11,8 @@ using namespace Yb::StrUtils;
 namespace Yb {
 
 SOCICursorBackend::SOCICursorBackend(soci::session *conn)
-    :conn_(conn), stmt_(NULL), exec_count_(0)
+    : conn_(conn), stmt_(NULL), is_select_(false)
+    , bound_first_(false), executed_(false)
 {}
 
 SOCICursorBackend::~SOCICursorBackend()
@@ -26,7 +27,9 @@ SOCICursorBackend::close()
         if (stmt_) {
             delete stmt_;
             stmt_ = NULL;
-            exec_count_ = 0;
+            is_select_ = false;
+            bound_first_ = false;
+            executed_ = false;
             sql_.empty();
         }
     }
@@ -64,69 +67,119 @@ SOCICursorBackend::prepare(const String &sql)
 }
 
 void
-SOCICursorBackend::exec(const Values &params)
+SOCICursorBackend::bind_params(const TypeCodes &types)
 {
-    try {
-        if (!exec_count_) {
-            in_params_.resize(params.size());
-            in_flags_.resize(params.size());
-        }
-        else {
-            delete stmt_;
-            stmt_ = new soci::statement(*conn_);
-            stmt_->alloc();
-            stmt_->prepare(sql_);
-        }
-        ++exec_count_;
-        for (size_t i = 0; i < params.size(); ++i) {
-            const Value &param = params[i];
-            in_flags_[i] = soci::i_ok;
-            if (param.get_type() == Value::INVALID) {
-                if (in_params_[i].size() < sizeof(int))
-                    in_params_[i].resize(sizeof(int));
-                strcpy(&(in_params_[i][0]), "");
-                in_flags_[i] = soci::i_null;
-                stmt_->exchange(soci::use(in_params_[i], in_flags_[i]));
-            }
-            else if (param.get_type() == Value::INTEGER) {
+    param_types_ = types;
+    if (in_params_.size())
+        throw DBError(_T("bind_params: already bound!"));
+    in_params_.resize(types.size());
+    in_flags_.resize(types.size());
+    for (size_t i = 0; i < types.size(); ++i) {
+        in_flags_[i] = soci::i_null;
+        switch (types[i]) {
+            case Value::INTEGER: {
                 if (in_params_[i].size() < sizeof(int))
                     in_params_[i].resize(sizeof(int));
                 int &x = *(int *)&(in_params_[i][0]);
-                x = param.as_integer();
-                stmt_->exchange(soci::use(x));
+                x = 0;
+                stmt_->exchange(soci::use(x, in_flags_[i]));
+                break;
             }
-            else if (param.get_type() == Value::LONGINT) {
+            case Value::LONGINT: {
                 if (in_params_[i].size() < sizeof(LongInt))
                     in_params_[i].resize(sizeof(LongInt));
                 LongInt &x = *(LongInt *)&(in_params_[i][0]);
-                x = param.as_longint();
-                stmt_->exchange(soci::use(x));
+                x = 0;
+                stmt_->exchange(soci::use(x, in_flags_[i]));
+                break;
             }
-            else if (param.get_type() == Value::DATETIME) {
+            case Value::FLOAT: {
+                if (in_params_[i].size() < sizeof(double))
+                    in_params_[i].resize(sizeof(double));
+                double &x = *(double *)&(in_params_[i][0]);
+                x = 0;
+                stmt_->exchange(soci::use(x, in_flags_[i]));
+                break;
+            }
+            case Value::DATETIME: {
                 if (in_params_[i].size() < sizeof(std::tm))
                     in_params_[i].resize(sizeof(std::tm));
-                std::tm &when = *(std::tm *)&(in_params_[i][0]);
-                memset(&when, 0, sizeof(when));
-                DateTime d = param.as_date_time();
-                when.tm_year = dt_year(d) - 1900;
-                when.tm_mon = dt_month(d) - 1;
-                when.tm_mday = dt_day(d);
-                when.tm_hour = dt_hour(d);
-                when.tm_min = dt_minute(d);
-                when.tm_sec = dt_second(d);
-                stmt_->exchange(soci::use(when));
+                std::tm &x = *(std::tm *)&(in_params_[i][0]);
+                memset(&x, 0, sizeof(x));
+                stmt_->exchange(soci::use(x, in_flags_[i]));
+                break;
             }
-            else {
-                string s = NARROW(param.as_string());
-                if (in_params_[i].size() < s.size())
-                    in_params_[i].resize(s.size());
-                strcpy(&(in_params_[i][0]), s.c_str());
-                stmt_->exchange(soci::use(in_params_[i]));
+            default: {
+                stmt_->exchange(soci::use(in_params_[i], in_flags_[i]));
             }
         }
-        if (is_select_)
-            stmt_->exchange(soci::into(row_));
-        stmt_->define_and_bind();
+    }
+    if (is_select_)
+        stmt_->exchange(soci::into(row_));
+    stmt_->define_and_bind();
+}
+
+void
+SOCICursorBackend::exec(const Values &params)
+{
+    try {
+        if (!executed_ && in_params_.size())
+            bound_first_ = true;
+        if (!bound_first_) {
+            if (executed_) {
+                delete stmt_;
+                stmt_ = new soci::statement(*conn_);
+                stmt_->alloc();
+                stmt_->prepare(sql_);
+                in_params_.clear();
+                in_flags_.clear();
+            }
+            TypeCodes types(params.size());
+            for (size_t i = 0; i < params.size(); ++i)
+                types[i] = params[i].get_type();
+            bind_params(types);
+        }
+        executed_ = true;
+        for (size_t i = 0; i < params.size(); ++i) {
+            const Value &param = params[i];
+            if (param.is_null()) {
+                in_flags_[i] = soci::i_null;
+                continue;
+            }
+            in_flags_[i] = soci::i_ok;
+            switch (param_types_[i]) {
+                case Value::INTEGER: {
+                    int &x = *(int *)&(in_params_[i][0]);
+                    x = param.as_integer();
+                    break;
+                }
+                case Value::LONGINT: {
+                    LongInt &x = *(LongInt *)&(in_params_[i][0]);
+                    x = param.as_longint();
+                    break;
+                }
+                case Value::FLOAT: {
+                    double &x = *(double *)&(in_params_[i][0]);
+                    x = param.as_float();
+                    break;
+                }
+                case Value::DATETIME: {
+                    std::tm &x = *(std::tm *)&(in_params_[i][0]);
+                    memset(&x, 0, sizeof(x));
+                    const DateTime &d = param.as_date_time();
+                    x.tm_year = dt_year(d) - 1900;
+                    x.tm_mon = dt_month(d) - 1;
+                    x.tm_mday = dt_day(d);
+                    x.tm_hour = dt_hour(d);
+                    x.tm_min = dt_minute(d);
+                    x.tm_sec = dt_second(d);
+                    break;
+                }
+                default: {
+                    in_params_[i] = NARROW(param.as_string());
+                }
+            }
+        }
         stmt_->execute(!is_select_);
     }
     catch (const soci::soci_error &e) {
@@ -160,7 +213,7 @@ RowPtr SOCICursorBackend::fetch_row()
                     v = Value(WIDEN(row_.get<string>(i)));
                     break;
                 case soci::dt_double:
-                    v = Value(Decimal(row_.get<double>(i)));
+                    v = Value(row_.get<double>(i));
                     break;
                 case soci::dt_integer:
                     v = Value(row_.get<int>(i));

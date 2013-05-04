@@ -171,6 +171,7 @@ typedef std::vector<RowItem> Row;
 typedef std::auto_ptr<Row> RowPtr;
 typedef std::vector<Row> Rows;
 typedef std::auto_ptr<Rows> RowsPtr;
+typedef std::vector<int> TypeCodes;
 
 class SqlCursorBackend: NonCopyable
 {
@@ -179,6 +180,7 @@ public:
     virtual ~SqlCursorBackend();
     virtual void exec_direct(const String &sql) = 0;
     virtual void prepare(const String &sql) = 0;
+    virtual void bind_params(const TypeCodes &types);
     virtual void exec(const Values &params) = 0;
     virtual RowPtr fetch_row() = 0;
 };
@@ -272,6 +274,7 @@ class SqlCursor: NonCopyable
 public:
     void exec_direct(const String &sql);
     void prepare(const String &sql);
+    void bind_params(const TypeCodes &types);
     SqlResultSet exec(const Values &params);
     RowPtr fetch_row();
     RowsPtr fetch_rows(int max_rows = -1); // -1 = all

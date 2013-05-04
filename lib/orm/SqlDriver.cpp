@@ -348,6 +348,7 @@ const Strings list_sql_dialects()
 }
 
 SqlCursorBackend::~SqlCursorBackend() {}
+void SqlCursorBackend::bind_params(const TypeCodes &types) {}
 SqlConnectionBackend::~SqlConnectionBackend() {}
 SqlDriver::~SqlDriver() {}
 
@@ -571,6 +572,27 @@ SqlCursor::prepare(const String &sql)
             debug(_T("prepare: ") + fixed_sql);
         connection_.activity_ = true;
         backend_->prepare(fixed_sql);
+    }
+    catch (const std::exception &e) {
+        connection_.mark_bad(e);
+        throw;
+    }
+}
+
+void
+SqlCursor::bind_params(const TypeCodes &types)
+{
+    try {
+        if (echo_) {
+            String type_names;
+            for (size_t i = 0; i < types.size(); ++i) {
+                if (i)
+                    type_names += _T(", ");
+                type_names += Value::get_type_name(types[i]);
+            }
+            debug(_T("bind: (") + type_names + _T(")"));
+        }
+        backend_->bind_params(types);
     }
     catch (const std::exception &e) {
         connection_.mark_bad(e);

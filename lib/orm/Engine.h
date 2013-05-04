@@ -58,13 +58,13 @@ public:
     void create_schema(const Schema &schema, bool ignore_errors = false);
     void drop_schema(const Schema &schema, bool ignore_errors = false);
 
-    static void gen_sql_insert(String &sql, Values &params,
+    static void gen_sql_insert(String &sql, TypeCodes &type_codes,
             ParamNums &param_nums, const Table &table,
             bool include_pk, bool numbered_params = false);
-    static void gen_sql_update(String &sql, Values &params,
+    static void gen_sql_update(String &sql, TypeCodes &type_codes,
             ParamNums &param_nums, const Table &table, 
             bool numbered_params = false);
-    static void gen_sql_delete(String &sql, Values &params,
+    static void gen_sql_delete(String &sql, TypeCodes &type_codes,
             const Table &table, bool numbered_params = false);
 };
 

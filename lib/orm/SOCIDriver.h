@@ -13,9 +13,9 @@ class SOCICursorBackend: public SqlCursorBackend
 {
     soci::session *conn_;
     soci::statement *stmt_;
-    int exec_count_;
     std::string sql_;
-    bool is_select_;
+    bool is_select_, bound_first_, executed_;
+    TypeCodes param_types_;
     soci::row row_;
     std::vector<std::string> in_params_;
     std::vector<soci::indicator> in_flags_;
@@ -25,6 +25,7 @@ public:
     void close();
     void exec_direct(const String &sql);
     void prepare(const String &sql);
+    void bind_params(const TypeCodes &types);
     void exec(const Values &params);
     RowPtr fetch_row();
 };

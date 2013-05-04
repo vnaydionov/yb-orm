@@ -205,6 +205,7 @@ public:
     void set_class_name(const String &class_name) { class_name_ = class_name; }
     void set_depth(int depth) { depth_ = depth; }
     const Strings &pk_fields() const { return pk_fields_; }
+    void mk_sample_key(TypeCodes &type_codes, Key &sample_key) const;
     bool mk_key(const Values &row_values, Key &key) const;
     bool mk_key(const Row &row_values, Key &key) const;
     const Key mk_key(const Row &row_values) const;

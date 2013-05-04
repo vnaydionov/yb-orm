@@ -55,6 +55,8 @@ QtSqlCursorBackend::exec(const Values &params)
             bound_[i] = QVariant(params[i].as_integer());
         else if (params[i].get_type() == Value::LONGINT)
             bound_[i] = QVariant(params[i].as_longint());
+        else if (params[i].get_type() == Value::FLOAT)
+            bound_[i] = QVariant(params[i].as_float());
         else
             bound_[i] = QVariant(params[i].as_string());
         stmt_->bindValue(i, bound_[i]);
@@ -84,14 +86,8 @@ QtSqlCursorBackend::fetch_row()
                 v = Value(stmt_->value(i).toLongLong());
             else if (t == QVariant::DateTime || t == QVariant::Date)
                 v = Value(stmt_->value(i).toDateTime());
-            else if (t == QVariant::Double) {
-                try {
-                    v = Value(Decimal(stmt_->value(i).toDouble()));
-                }
-                catch (const decimal::exception &) {
-                    v = Value(stmt_->value(i).toString());
-                }
-            }
+            else if (t == QVariant::Double || t == QMetaType::Float)
+                v = Value(stmt_->value(i).toDouble());
             else
                 v = Value(stmt_->value(i).toString());
         }
