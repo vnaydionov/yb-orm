@@ -414,13 +414,14 @@ public:
         conn.begin_trans_if_necessary();
         {
             String sql_str =
-                _T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)");
+                _T("INSERT INTO T_ORM_TEST(ID, A, B, C, D) VALUES(?, ?, ?, ?, ?)");
             conn.prepare(sql_str);
-            Values params(4);
+            Values params(5);
             params[0] = Value(-10);
             params[1] = Value(_T("item"));
             params[2] = Value(now());
             params[3] = Value(Decimal(_T("1.2")));
+            params[4] = Value(4.56);
             conn.exec(params);
         }
         {
@@ -451,6 +452,7 @@ public:
 "        <column name=\"A\" type=\"string\" size=\"200\" />"
 "        <column name=\"B\" type=\"datetime\" default=\"sysdate\"/>"
 "        <column name=\"C\" type=\"decimal\"/>"
+"        <column name=\"D\" type=\"float\"/>"
 "    </table>"
 "    <table name=\"T_ORM_XML\" sequence=\"S_ORM_XML_ID\""
 "            class=\"OrmXml\" xml-name=\"orm-xml\">"

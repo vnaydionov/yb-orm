@@ -1,5 +1,61 @@
 
-Building YB.ORM under Windows using CMake.
+** About pre-built packages for Windows **
+
+First of all, there are pre-built packages released for Microsoft Windows
+developers in form of .zip-files, to make it easier to play with the library.
+These packages are built against certain version of Boost or Qt,
+and also against certain version of C++ compiler (MinGW 4, MSVC 2008/2010).
+A Boost-enabled package includes all the required components of Boost
+libraries within itself, whereas Qt-enabled one requires you to install
+proper version of Qt SDK beforehand.  Of course, you can still rebuild
+YB.ORM against your toolkit/compiler of choice, because the package
+contains library sources.
+
+** Pre-built package contents **
+
+A .zip-file containing YB.ORM library pre-built for MS Windows is extracted
+at location c:\yborm by default.  All the instructions below assume this
+path as root folder.  Upon extraction there is the following folder layout:
+
+    c:\yborm
+            \bin        - .dll-files that this build of YB.ORM may depend on:
+                          boost_date_time, boost_thread, cppunit, libxml2,
+                          sqlite3, mingw runtime;
+                        - useful utilities: iconv.exe, xmllint.exe,
+                          xsltproc.exe, sqlite3.exe
+                        - code-generation utility: yborm_gen.exe
+            \build      - build folder for the library itself
+            \build-auth - build folder for the Auth demo
+            \build-tut  - build folder for examples from the Tutorial
+            \doc        - bits of documentation
+            \examples   - compiled examples and tests, schema files,
+                        - test SQLite database, convenience .bat-files
+            \include    - header files for sqlite3 and:
+            \include\boost      - Boost version bundled
+            \include\cppunit    - CppUnit version bundled
+            \include\libxml     - LibXml2 version bundled
+            \include\yb         - YB.ORM itself
+            \lib        - YB.ORM in form of static libraries:
+                          ybutil.lib, yborm.lib (.a-files for MinGW);
+                          as well as import libraries for YB.ORM dependencies
+            \src        - source code of that released version
+
+** Rebuilding YB.ORM package **
+
+The most simple way to build YB.ORM under MS Windows is to rebuild one of
+pre-built packages.  This may be useful if you already have YB.ORM installed
+and just want to update your installation with fresh sources from Git.
+It this case put updated sources under src folder, then "cd" into build
+folder and start corresponding .bat file from there.  If you're using
+MS Visual C++ you'll need to launch that .bat-file from within MS Visual C++
+command line prompt.  Those .bat-files just call CMake script with
+predefined configuration parameters and then run "make" command.
+After build is successfully completed the new libraries, headers, examples
+and code generation utility replace old versions in corresponding folders.
+
+** Building from scratch **
+
+WARNING!! the following info is a bit out of date
 
 This method applies if you have Microsoft Visual C++ or Borland C++ Builder
 installed.  Also these cmake scripts were tested under GNU/Linux with GCC.
@@ -100,7 +156,6 @@ Unpack them to c:\build-yborm\
 Packages needed:
     iconv-1.9.2.win32.zip
     libxml2-2.7.7.win32.zip
-    libxslt-1.1.26.win32.zip
     zlib-1.2.5.win32.zip
 
 - Build YB.ORM with cmake
@@ -109,8 +164,7 @@ Create directory for an out-of-source build, setup PATH, run cmake.
     C:\build-yborm>cd b
     C:\build-yborm\b>set PATH=c:\cmake28\bin;c:\build-yborm\boost_1_38_0\stage\lib;
       c:\build-yborm\cppunit-1.12.1\lib;c:\build-yborm\libxml2-2.7.7.win32\bin;
-      c:\build-yborm\libxslt-1.1.26.win32\bin;c:\build-yborm\iconv-1.9.2.win32\bin;
-      c:\build-yborm\zlib-1.2.5\bin;%PATH%
+      c:\build-yborm\iconv-1.9.2.win32\bin;c:\build-yborm\zlib-1.2.5\bin;%PATH%
     C:\build-yborm\b>cmake -G "NMake Makefiles" --build ..\trunk
 here goes some CMake output.
     -- Build files have been written to: C:/build-yborm/b
@@ -119,17 +173,13 @@ If all went fine you will find static two static libraries:
     lib\util\ybutil.lib
     lib\orm\yborm.lib
 
-- Run the tests and examples
-Before running the tests and examples you will need to execute the SQL DDL
-statements on your testing DB.  These files can be produced by applying
-XSLT trasformation found in src/gen_sql.xsl to a schema XML-based file.
-When applying be sure to specify an SQL dialect.
+- Running tests and examples
+Before running the tests and examples you will need to create tables in your
+test database.  To auto-generate DDL code for the tables use yborm_gen tool,
+pass a schema file to it and specify proper SQL dialect as follows:
 
-Run the transformation:
-xsltproc --stringparam dialect MYSQL|INTERBASE|ORACLE src/gen_sql.xsl 
-        lib/orm/test/test_schema.xml > lib/orm/test/mk_tables.sql
-xsltproc --stringparam dialect MYSQL|INTERBASE|ORACLE src/gen_sql.xsl 
-        examples/ex1_schema.xml > examples/mk_tables.sql
+    C:\yborm\examples>c:\yborm\bin\yborm_gen --ddl tut1.xml MYSQL
+
 
 These two executables can run without any additional settings:
     lib\util\test\ybutil_unit_tests.exe

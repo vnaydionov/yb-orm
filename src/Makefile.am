@@ -2,10 +2,6 @@
 bin_PROGRAMS = yborm_gen
 yborm_gen_SOURCES = yborm_gen.cpp
 
-bin_SCRIPTS = yborm_gen_sql
-yborm_datadir = $(prefix)/share/yborm
-yborm_data_DATA = yborm_gen_sql.xsl
-
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \

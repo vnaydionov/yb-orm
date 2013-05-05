@@ -741,12 +741,10 @@ AC_DEFUN([YB_CHECK_YBORM],
     AC_SUBST(YBORM_LDFLAGS)
     AC_SUBST(YBORM_LIBS)
     AC_SUBST(YBORM_GEN)
-    AC_SUBST(YBORM_GEN_SQL)
     YBORM_CXXFLAGS=""
     YBORM_LDFLAGS=""
     YBORM_LIBS=""
     YBORM_GEN=""
-    YBORM_GEN_SQL=""
 
     AC_ARG_WITH([yborm-includes],
         AC_HELP_STRING([--with-yborm-includes=DIR],
@@ -800,13 +798,11 @@ AC_DEFUN([YB_CHECK_YBORM],
     if test "$ac_yborm_present" = "yes" ; then
         if test "x$ac_yborm_bin" = "x" ; then
             YBORM_GEN="yborm_gen"
-            YBORM_GEN_SQL="yborm_gen_sql"
             if ! which "$YBORM_GEN" > /dev/null ; then
                 ac_yborm_present=no
             fi
         else
             YBORM_GEN="$ac_yborm_bin/yborm_gen"
-            YBORM_GEN_SQL="$ac_yborm_bin/yborm_gen_sql"
             if ! test -x "$YBORM_GEN" ; then
                 ac_yborm_present=no
             fi
@@ -821,7 +817,6 @@ AC_DEFUN([YB_CHECK_YBORM],
         YBORM_LDFLAGS=""
         YBORM_LIBS=""
         YBORM_GEN=""
-        YBORM_GEN_SQL=""
         AC_MSG_RESULT([no])
         ifelse([$2], , :, [$2])
     fi
