@@ -116,7 +116,7 @@ registration(const Yb::StringDict &params)
     user.login = params[_T("login")];
     user.name = params[_T("name")];
     user.pass = md5_hash(params[_T("pass")]);
-    user.status = params.get_as<int>(_T("status"));
+    user.status = params.get_as<int>(Yb::String(_T("status")));
     session->commit();
     return OK_RESP;
 }

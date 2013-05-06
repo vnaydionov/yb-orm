@@ -1,5 +1,5 @@
 @echo off
-rem set PATH=c:\yborm\bin;c:\QtSDK\Desktop\Qt\4.8.1\mingw\bin;%PATH%
-set PATH=c:\yborm\bin;c:\QtSDK\Desktop\Qt\4.8.1\msvc2010\bin;%PATH%
+call %~dp0..\bin\yborm_env.bat
+cd %~dp0
 ybutil_unit_tests.exe
 pause

@@ -1,15 +1,17 @@
 
 ** About pre-built packages for Windows **
 
-First of all, there are pre-built packages released for Microsoft Windows
-developers in form of .zip-files, to make it easier to play with the library.
-These packages are built against certain version of Boost or Qt,
-and also against certain version of C++ compiler (MinGW 4, MSVC 2008/2010).
+There are pre-built packages released for Microsoft Windows developers
+in form of .zip-files, to make it easier to play with the library.
+These packages are built against certain version of Boost or Qt toolkit,
+and also against certain version of C++ compiler (MinGW 4.4, MSVC 2008/2010).
 A Boost-enabled package includes all the required components of Boost
 libraries within itself, whereas Qt-enabled one requires you to install
-proper version of Qt SDK beforehand.  Of course, you can still rebuild
-YB.ORM against your toolkit/compiler of choice, because the package
-contains library sources.
+proper version of Qt SDK beforehand.  By default, Boost-enabled version
+has ODBC as database backend API plus SQLite native driver, and Qt-enabled
+version relies on QtSql.  Of course, you can still rebuild YB.ORM library
+to use your toolkit/compiler/database backend of choice, because
+the package contains library source code.
 
 ** Pre-built package contents **
 
@@ -18,7 +20,7 @@ at location c:\yborm by default.  All the instructions below assume this
 path as root folder.  Upon extraction there is the following folder layout:
 
     c:\yborm
-            \bin        - .dll-files that this build of YB.ORM may depend on:
+            \bin        - .dll-files that this build may depend on:
                           boost_date_time, boost_thread, cppunit, libxml2,
                           sqlite3, mingw runtime;
                         - useful utilities: iconv.exe, xmllint.exe,
@@ -29,8 +31,8 @@ path as root folder.  Upon extraction there is the following folder layout:
             \build-tut  - build folder for examples from the Tutorial
             \doc        - bits of documentation
             \examples   - compiled examples and tests, schema files,
-                        - test SQLite database, convenience .bat-files
-            \include    - header files for sqlite3 and:
+                          test SQLite database, convenience .bat-files
+            \include    - header files for sqlite3 and for:
             \include\boost      - Boost version bundled
             \include\cppunit    - CppUnit version bundled
             \include\libxml     - LibXml2 version bundled
@@ -47,15 +49,21 @@ pre-built packages.  This may be useful if you already have YB.ORM installed
 and just want to update your installation with fresh sources from Git.
 It this case put updated sources under src folder, then "cd" into build
 folder and start corresponding .bat file from there.  If you're using
-MS Visual C++ you'll need to launch that .bat-file from within MS Visual C++
+MS Visual C++ you'll need to launch that .bat-file from within Visual Studio
 command line prompt.  Those .bat-files just call CMake script with
 predefined configuration parameters and then run "make" command.
 After build is successfully completed the new libraries, headers, examples
-and code generation utility replace old versions in corresponding folders.
+and code generation utility replace old ones in corresponding folders.
+Below are the prerequisites for the rebuild process.
+
+Build system:   CMake 2.8
+Compiler:       MinGW 4.4, MS Visual C++ 2008 or 2010,
+                whatever the package was built with
+Qt SDK:         Only for Qt-enabled build
 
 ** Building from scratch **
 
-WARNING!! the following info is a bit out of date
+WARNING!! the following info is a bit outdated
 
 This method applies if you have Microsoft Visual C++ or Borland C++ Builder
 installed.  Also these cmake scripts were tested under GNU/Linux with GCC.

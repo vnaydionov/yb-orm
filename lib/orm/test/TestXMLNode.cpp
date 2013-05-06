@@ -7,7 +7,6 @@
 #include <orm/DomainObj.h>
 #include <orm/Engine.h>
 
-#define TEST_TBL1 "T_ORM_TEST"
 #define NUM_STMT 6
 
 using namespace std;
@@ -53,6 +52,14 @@ static void setup_log(Engine &e)
     e.set_echo(true);
 }
 
+static void setup_log(SqlConnection &c)
+{
+    init_log();
+    c.init_logger(root_logger.get());
+    c.set_echo(true);
+}
+
+
 class TestXMLNode : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestXMLNode);
@@ -66,7 +73,6 @@ class TestXMLNode : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE_END();
 
     Schema r_;
-    String db_type_;
 
     void init_singleton_registry()
     {
@@ -80,34 +86,29 @@ class TestXMLNode : public CppUnit::TestFixture
         }
 
         Schema &r = theSchema::instance();
-//      if(r.size() == 0) {
         Table::Ptr t(new Table(_T("T_ORM_TEST"), _T("orm-test"), _T("OrmTest")));
-            t->set_seq_name(_T("S_ORM_TEST_ID"));
-            t->add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t->add_column(Column(_T("A"), Value::STRING, 50, 0));
-            t->add_column(Column(_T("B"), Value::DATETIME, 0, 0));
-            t->add_column(Column(_T("C"), Value::DECIMAL, 0, 0));
-            r.add_table(t);
-            Table::Ptr t2(new Table(_T("T_ORM_XML"), _T("orm-xml"), _T("OrmXml")));
-            t2->set_seq_name(_T("S_ORM_TEST_ID"));
-            t2->add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK | Column::RO));
-            t2->add_column(Column(_T("ORM_TEST_ID"), Value::LONGINT, 0, 0,
-                        Value(), _T("T_ORM_TEST"), _T("ID")));
-            t2->add_column(Column(_T("B"), Value::DECIMAL, 0, 0));
-            r.add_table(t2);
-            Relation::AttrMap a1, a2;
-            a2[_T("property")] = _T("orm_test");
-            Relation::Ptr re(new Relation(Relation::ONE2MANY, _T("OrmTest"), a1, _T("OrmXml"), a2));
-            r.add_relation(re);
-//      }
+        t->set_seq_name(_T("S_ORM_TEST_ID"));
+        t->add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK | Column::RO));
+        t->add_column(Column(_T("A"), Value::STRING, 50, 0));
+        t->add_column(Column(_T("B"), Value::DATETIME, 0, 0));
+        t->add_column(Column(_T("C"), Value::DECIMAL, 0, 0));
+        r.add_table(t);
+        Table::Ptr t2(new Table(_T("T_ORM_XML"), _T("orm-xml"), _T("OrmXml")));
+        t2->set_seq_name(_T("S_ORM_TEST_ID"));
+        t2->add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK | Column::RO));
+        t2->add_column(Column(_T("ORM_TEST_ID"), Value::LONGINT, 0, 0,
+                    Value(), _T("T_ORM_TEST"), _T("ID")));
+        t2->add_column(Column(_T("B"), Value::DECIMAL, 0, 0));
+        r.add_table(t2);
+        Relation::AttrMap a1, a2;
+        a2[_T("property")] = _T("orm_test");
+        Relation::Ptr re(new Relation(Relation::ONE2MANY, _T("OrmTest"), a1, _T("OrmXml"), a2));
+        r.add_relation(re);
     }
 
 public:
     void setUp()
     {
-        SqlConnection conn(Engine::sql_source_from_env());
-        db_type_ = conn.get_dialect()->get_name();
-
         Table::Ptr t(new Table(_T("A")));
         t->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
         t->add_column(Column(_T("Y"), Value::STRING, 0, 0));
@@ -124,38 +125,45 @@ public:
         r.add_table(t3);
         r_ = r;
 
-        const char **st;
-        if (db_type_ == _T("ORACLE")) {
-            static const char *st_data[NUM_STMT] = {
-                "DELETE FROM T_ORM_XML",
-                "DELETE FROM " TEST_TBL1,
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
-                    "'abc', TO_DATE('1981-05-30', 'YYYY-MM-DD'), 3.14)",
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
-                    "'xyz', TO_DATE('2006-11-22 09:54:00', 'YYYY-MM-DD HH24:MI:SS'), -0.5)",
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
-                    "'@#$', TO_DATE('2006-11-22', 'YYYY-MM-DD'), 0.01)",
-                "INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES(10, 1, 4)",
-            };
-            st = st_data;
-        }
-        else {
-            static const char *st_data[NUM_STMT] = {
-                "DELETE FROM T_ORM_XML",
-                "DELETE FROM " TEST_TBL1,
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(1, "
-                    "'abc', '1981-05-30', 3.14)",
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(2, "
-                    "'xyz', '2006-11-22 09:54:00', -0.5)",
-                "INSERT INTO " TEST_TBL1 "(ID, A, B, C) VALUES(3, "
-                    "'@#$', '2006-11-22', 0.01)",
-                "INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES(10, 1, 4)",
-            };
-            st = st_data;
-        }
+        SqlConnection conn(Engine::sql_source_from_env());
+        conn.set_convert_params(true);
+        setup_log(conn);
         conn.begin_trans_if_necessary();
-        for (size_t i = 0; i < NUM_STMT; ++i)
-            conn.exec_direct(WIDEN(st[i]));
+        conn.prepare(
+            _T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)"));
+        Values params(4);
+        params[0] = Value(1);
+        params[1] = Value(_T("abc"));
+        params[2] = Value(dt_make(1981, 5, 30));
+        params[3] = Value(Decimal(_T("3.14")));
+        conn.exec(params);
+        params[0] = Value(2);
+        params[1] = Value(_T("xyz"));
+        params[2] = Value(dt_make(2006, 11, 22, 9, 54));
+        params[3] = Value(Decimal(_T("-0.5")));
+        conn.exec(params);
+        params[0] = Value(3);
+        params[1] = Value(_T("@#$"));
+        params[2] = Value(dt_make(2006, 11, 22));
+        params[3] = Value(Decimal(_T("0.01")));
+        conn.exec(params);
+        conn.prepare(
+            _T("INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES (?, ?, ?)"));
+        params.resize(3);
+        params[0] = Value(10);
+        params[1] = Value(1);
+        params[2] = Value(4);
+        conn.exec(params);
+        conn.commit();
+    }
+
+    void tearDown()
+    {
+        SqlConnection conn(Engine::sql_source_from_env());
+        setup_log(conn);
+        conn.begin_trans_if_necessary();
+        conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
+        conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
         conn.commit();
     }
 

@@ -237,12 +237,12 @@ public:
         CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("B")));
         CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("C")));
         CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(t[_T("A")]));
-        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(_T("A")));
-        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(_T("A"), 10));
-        CPPUNIT_ASSERT_EQUAL(2, t.get_as<int>(_T("B"), 2));
-        CPPUNIT_ASSERT_EQUAL(3, t.get_as<int>(_T("C"), 3));
+        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(String(_T("A"))));
+        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(String(_T("A")), 10));
+        CPPUNIT_ASSERT_EQUAL(2, t.get_as<int>(String(_T("B")), 2));
+        CPPUNIT_ASSERT_EQUAL(3, t.get_as<int>(String(_T("C")), 3));
         CPPUNIT_ASSERT_EQUAL(string("4"),
-                to_stdstring(t.get_as<Decimal>(_T("D"), 4)));
+                to_stdstring(t.get_as<Decimal>(String(_T("D")), 4)));
     }
     void testDictPop()
     {
@@ -278,7 +278,7 @@ public:
     {
         StringDict d;
         d[_T("A")] = _T("*");
-        d.get_as<int>(_T("A"));
+        d.get_as<int>(String(_T("A")));
     }
     void testDictPopKeyError()
     {
@@ -332,12 +332,12 @@ public:
         CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("B")));
         CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("C")));
         CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(t[_T("A")]));
-        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(_T("A")));
-        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(_T("A"), 10));
-        CPPUNIT_ASSERT_EQUAL(2, t.get_as<int>(_T("B"), 2));
-        CPPUNIT_ASSERT_EQUAL(3, t.get_as<int>(_T("C"), 3));
+        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(String(_T("A"))));
+        CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(String(_T("A")), 10));
+        CPPUNIT_ASSERT_EQUAL(2, t.get_as<int>(String(_T("B")), 2));
+        CPPUNIT_ASSERT_EQUAL(3, t.get_as<int>(String(_T("C")), 3));
         CPPUNIT_ASSERT_EQUAL(string("4"),
-                to_stdstring(t.get_as<Decimal>(_T("D"), 4)));
+                to_stdstring(t.get_as<Decimal>(String(_T("D")), 4)));
     }
     void testOrderedDictPop()
     {
@@ -373,7 +373,7 @@ public:
     {
         OrderedStringDict d;
         d[_T("A")] = _T("*");
-        d.get_as<int>(_T("A"));
+        d.get_as<int>(String(_T("A")));
     }
     void testOrderedDictPopKeyError()
     {
@@ -484,7 +484,7 @@ public:
                 "<aaa _json='array'><i>1</i><i>2</i></aaa></x>");
         CPPUNIT_ASSERT_EQUAL(
                 string("{\"y\": \"qwerty\\n\", \"z\": 11.22, \"aaa\": [1, 2]}"),
-                etree2json(root));
+                ElementTree::etree2json(root));
     }
 };
 

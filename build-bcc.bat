@@ -1,4 +1,8 @@
-set PATH=c:\borland\bcc55\bin;c:\yborm\bin;%PATH%
-copy /-Y ilink32.cfg c:\borland\bcc55\bin
-cmake -G "Borland Makefiles" -D CMAKE_INSTALL_PREFIX:PATH=c:/yborm ../src
+set BAT_DIR=%~dp0
+call %BAT_DIR%..\bin\yborm_env.bat
+
+set BAT_DIR=%~dp0
+find /i "yborm" %BCC_DIR%\ilink32.cfg && echo "OK" || echo /L%BAT_DIR%..\lib >> %BCC_DIR%\ilink32.cfg
+
+cmake -G "Borland Makefiles" -D CMAKE_INSTALL_PREFIX:PATH=%BAT_DIR%.. %BAT_DIR%..\src
 make && make install

@@ -1,9 +1,8 @@
-rem Supported dialects are: MYSQL, INTERBASE, ORACLE, POSTGRES, SQLITE
-set DIALECT=SQLITE
-rem set PATH=c:\yborm\bin;c:\QtSDK\Desktop\Qt\4.8.1\mingw\bin;%PATH%
-set PATH=c:\yborm\bin;c:\QtSDK\Desktop\Qt\4.8.1\msvc2010\bin;%PATH%
-yborm_gen --ddl test_schema.xml %DIALECT% test_schema.sql
-yborm_gen --ddl ex1_schema.xml %DIALECT% ex1_schema.sql
-yborm_gen --ddl ex2_schema.xml %DIALECT% ex2_schema.sql
-yborm_gen --ddl auth_schema.xml %DIALECT% auth_schema.sql
+set BAT_DIR=%~dp0
+call %BAT_DIR%..\bin\yborm_env.bat
+set BAT_DIR=%~dp0
+yborm_gen --ddl %BAT_DIR%test_schema.xml %DIALECT% %BAT_DIR%test_schema.sql
+yborm_gen --ddl %BAT_DIR%ex1_schema.xml %DIALECT% %BAT_DIR%ex1_schema.sql
+yborm_gen --ddl %BAT_DIR%ex2_schema.xml %DIALECT% %BAT_DIR%ex2_schema.sql
+yborm_gen --ddl %BAT_DIR%auth_schema.xml %DIALECT% %BAT_DIR%auth_schema.sql
 

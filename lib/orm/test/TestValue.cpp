@@ -2,10 +2,12 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
 #include <util/nlogger.h>
+#include <util/str_utils.hpp>
 #include <orm/Value.h>
 
 using namespace std;
 using namespace Yb;
+using namespace Yb::StrUtils;
 
 class TestValue : public CppUnit::TestFixture
 {
@@ -122,7 +124,9 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("123.45"), NARROW(Value(Decimal(_T("0123.450"))).as_string()));
         DateTime a(dt_make(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT_EQUAL(string("2006-11-16T15:05:10"), NARROW(Value(a).as_string()));
-        CPPUNIT_ASSERT_EQUAL(string("1e+30"), NARROW(Value(1E30).as_string()));
+        String s = str_to_lower(Value(1E30).as_string());
+        CPPUNIT_ASSERT(starts_with(s, _T("1e")));
+        CPPUNIT_ASSERT(ends_with(s, _T("30")));
     }
 
     void test_as_integer()

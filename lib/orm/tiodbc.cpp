@@ -581,8 +581,8 @@ namespace tiodbc
 	}
 
 	// Set parameter as long long
-	const long long & param_impl::set_as_long_long(
-			const long long & _value, bool _is_null)
+	const LongLong & param_impl::set_as_long_long(
+			const LongLong & _value, bool _is_null)
 	{
 		if (bound_sz < 0) {
 			bound_sz = 0;

@@ -523,7 +523,7 @@ void
 Schema::check_foreign_key(const String &table, const String &fk_table, const String &fk_field)
 {
     TblMap::const_iterator i = tables_lookup_.find(fk_table);
-    if (tables_lookup_.end() == i)
+    if (const_cast<const TblMap *>(&tables_lookup_)->end() == i)
         throw IntegrityCheckFailed(String(_T("Table '")) + fk_table +
                 _T("' not found as foreign key for '") + table + _T("'"));
     try {

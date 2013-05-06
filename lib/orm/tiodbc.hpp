@@ -383,8 +383,8 @@ namespace tiodbc
 				const unsigned long & _value, bool _is_null = false);
 
 		//! Set parameter as long long
-		const long long & set_as_long_long(
-				const long long & _value, bool _is_null = false);
+		const LongLong & set_as_long_long(
+				const LongLong & _value, bool _is_null = false);
 
 		//! Set parameter as double
 		const double & set_as_double(

@@ -1,3 +1,6 @@
-set PATH=c:\borland\bcc55\bin;c:\yborm\bin;%PATH%
-cmake -G "Borland Makefiles" -D CMAKE_INSTALL_PREFIX:PATH=c:/yborm -D YBORM_ROOT:PATH=c:/yborm ../src/examples/auth
+set BAT_DIR=%~dp0
+call %BAT_DIR%..\bin\yborm_env.bat
+
+set BAT_DIR=%~dp0
+cmake -G "Borland Makefiles" -D CMAKE_INSTALL_PREFIX:PATH=%BAT_DIR%.. -D YBORM_ROOT:PATH=%BAT_DIR%.. %BAT_DIR%..\src\examples\auth
 make && make install

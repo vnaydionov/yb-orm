@@ -22,7 +22,7 @@ class TestExpression : public CppUnit::TestFixture
 public:
     void testFilterAll()
     {
-        CPPUNIT_ASSERT_EQUAL(string(), NARROW(Filter().get_sql()));
+        CPPUNIT_ASSERT_EQUAL(string(""), NARROW(Expression().get_sql()));
     }
 
     void testFilterEq()

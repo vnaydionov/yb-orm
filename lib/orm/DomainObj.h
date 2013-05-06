@@ -126,6 +126,48 @@ inline bool operator>=(const DomainObject &a, const DomainObject &b)
 { return !(a.cmp(b)<0); }
 
 template <class T>
+class ManagedList;
+
+template <class U__, class V__>
+class ManagedListIter: public std::iterator<std::forward_iterator_tag,
+        V__, ptrdiff_t, V__ *, V__ & >
+{
+    U__ it_;
+    mutable std::auto_ptr<V__> d_;
+public:
+    ManagedListIter() {}
+    ManagedListIter(const ManagedListIter &obj): it_(obj.it_) {}
+    ManagedListIter &operator=(const ManagedListIter &obj) {
+        if (this != &obj) {
+            it_ = obj.it_;
+            d_.reset(NULL);
+        }
+        return *this;
+    }
+    ManagedListIter(U__ it): it_(it) {}
+    bool operator==(const ManagedListIter &obj) const {
+        return it_ == obj.it_;
+    }
+    bool operator!=(const ManagedListIter &obj) const {
+        return it_ != obj.it_;
+    }
+    V__ &operator*() const {
+        if (!d_.get())
+            d_.reset(new V__(*it_));
+        return *d_;
+    }
+    V__ *operator->() const {
+        if (!d_.get())
+            d_.reset(new V__(*it_));
+        return d_.get();
+    }
+    ManagedListIter &operator++() { ++it_; d_.reset(NULL); return *this; }
+    ManagedListIter &operator--() { --it_; d_.reset(NULL); return *this; }
+    ManagedListIter operator++(int) { ManagedListIter t(*this); ++it_; d_.reset(NULL); return t; }
+    ManagedListIter operator--(int) { ManagedListIter t(*this); --it_; d_.reset(NULL); return t; }
+};
+
+template <class T>
 class ManagedList {
     RelationObject *ro_;
     DataObject::Ptr master_;
@@ -142,48 +184,8 @@ class ManagedList {
         return ro;
     }
 public:
-    template <class U, class V>
-    class Iter: public std::iterator<std::forward_iterator_tag,
-            V, ptrdiff_t, V *, V & >
-    {
-        friend class ManagedList;
-        U it_;
-        mutable std::auto_ptr<V> d_;
-        Iter(U it): it_(it) {}
-    public:
-        Iter() {}
-        Iter(const Iter &obj): it_(obj.it_) {}
-        Iter &operator=(const Iter &obj) {
-            if (this != &obj) {
-                it_ = obj.it_;
-                d_.reset(NULL);
-            }
-            return *this;
-        }
-        bool operator==(const Iter &obj) const {
-            return it_ == obj.it_;
-        }
-        bool operator!=(const Iter &obj) const {
-            return it_ != obj.it_;
-        }
-        V &operator*() const {
-            if (!d_.get())
-                d_.reset(new V(*it_));
-            return *d_;
-        }
-        V *operator->() const {
-            if (!d_.get())
-                d_.reset(new V(*it_));
-            return d_.get();
-        }
-        Iter &operator++() { ++it_; d_.reset(NULL); return *this; }
-        Iter &operator--() { --it_; d_.reset(NULL); return *this; }
-        Iter operator++(int) { Iter t(*this); ++it_; d_.reset(NULL); return t; }
-        Iter operator--(int) { Iter t(*this); --it_; d_.reset(NULL); return t; }
-    };
-
-    typedef Iter<RelationObject::SlaveObjects::iterator, T> iterator;
-    typedef Iter<RelationObject::SlaveObjects::const_iterator, const T> const_iterator;
+    typedef ManagedListIter<RelationObject::SlaveObjects::iterator, T> iterator;
+    typedef ManagedListIter<RelationObject::SlaveObjects::const_iterator, const T> const_iterator;
 
     ManagedList(): ro_(NULL), owner_(NULL) {}
     ManagedList(RelationObject *ro, DataObject::Ptr m)

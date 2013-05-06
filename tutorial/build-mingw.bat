@@ -1,3 +1,6 @@
-set PATH=c:\QtSDK\mingw\bin;c:\yborm\bin;%PATH%
-cmake -G "MinGW Makefiles" -D CMAKE_INSTALL_PREFIX:PATH=c:/yborm -D YBORM_ROOT:PATH=c:/yborm ../src/tutorial
+set BAT_DIR=%~dp0
+call %BAT_DIR%..\bin\yborm_env.bat
+
+set BAT_DIR=%~dp0
+cmake -G "MinGW Makefiles" -D CMAKE_INSTALL_PREFIX:PATH=%BAT_DIR%.. -D YBORM_ROOT:PATH=%BAT_DIR%.. %BAT_DIR%..\src\tutorial
 mingw32-make && mingw32-make install

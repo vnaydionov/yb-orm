@@ -9,5 +9,6 @@ target_link_libraries (yborm_gen yborm ybutil ${LIBXML2_LIBS}
     ${QT_LIBRARIES})
 
 install (TARGETS yborm_gen DESTINATION bin)
+#install (FILES yborm_env.bat DESTINATION bin)
 install (FILES yborm_gen_sql.bat init_sqlite.bat DESTINATION examples)
 
