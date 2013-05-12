@@ -108,18 +108,32 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
     }
     catch (const SocketEx &ex) {
         logger->error(string("socket error: ") + ex.what());
-        //if connection is closed by peer - this is killing the whole process:
-        //send_response(cl_sock, *logger, 400, "Short read", BAD_RESP);
-        cl_sock.close(true);
+        try {
+            send_response(cl_sock, *logger, 400, "Short read", BAD_RESP);
+        }
+        catch (const std::exception &ex2) {
+            logger->error(string("unable to send: ") + ex2.what());
+        }
     }
     catch (const ParserEx &ex) {
         logger->error(string("parser error: ") + ex.what());
-        send_response(cl_sock, *logger, 400, "Bad request", BAD_RESP);
+        try {
+            send_response(cl_sock, *logger, 400, "Bad request", BAD_RESP);
+        }
+        catch (const std::exception &ex2) {
+            logger->error(string("unable to send: ") + ex2.what());
+        }
     }
     catch (const std::exception &ex) {
         logger->error(string("exception: ") + ex.what());
-        send_response(cl_sock, *logger, 500, "Internal server error", BAD_RESP);
+        try {
+            send_response(cl_sock, *logger, 500, "Internal server error", BAD_RESP);
+        }
+        catch (const std::exception &ex2) {
+            logger->error(string("unable to send: ") + ex2.what());
+        }
     }
+    cl_sock.close(true);
 }
 
 typedef void (*WorkerFunc)(SOCKET, Yb::ILogger *, const HttpHandlerMap *);
