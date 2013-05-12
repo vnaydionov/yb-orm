@@ -1,4 +1,5 @@
 #include <time.h>
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <orm/SqlDriver.h>
@@ -631,7 +632,8 @@ SqlCursor::fetch_row()
             Row::iterator j = row->begin(), jend = row->end();
             for (; j != jend; ++j) {
                 String uname = str_to_upper(j->first);
-                std::swap(j->first, uname);
+                using namespace std;
+                swap(j->first, uname);
             }
         }
         if (echo_) {

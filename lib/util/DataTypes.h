@@ -2,6 +2,7 @@
 #ifndef YB__UTIL__DATA_TYPES__INCLUDED
 #define YB__UTIL__DATA_TYPES__INCLUDED
 
+#include <algorithm>
 #include <iterator>
 #include <vector>
 #include <set>
@@ -414,8 +415,9 @@ public:
             if (j->second > pos)
                 --(j->second);
         p_.erase(i);
+        using namespace std;
         if (v)
-            std::swap(*v, a_[pos].second);
+            swap(*v, a_[pos].second);
         a_.erase(a_.begin() + pos);
         return true;
     }
@@ -624,7 +626,7 @@ public:
             (*this)[*i->first] = i->second;
         return *this;
     }
-    void swap(OrderedDict &other) {
+    void do_swap(OrderedDict &other) {
         a_.swap(other.a_);
         p_.swap(other.p_);
     }
@@ -659,7 +661,7 @@ void swap(::Yb::Dict<K__, V__> &a, ::Yb::Dict<K__, V__> &b) {
 
 template <class K__, class V__>
 void swap(::Yb::OrderedDict<K__, V__> &a, ::Yb::OrderedDict<K__, V__> &b) {
-    a.swap(b);
+    a.do_swap(b);
 }
 
 } // end of namespace std
