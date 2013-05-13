@@ -9,7 +9,9 @@ using namespace Yb;
 class TestXMLConfig : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestXMLConfig);
+#if !defined(__BORLANDC__)
     CPPUNIT_TEST_EXCEPTION(testBadXML, ParseError);
+#endif
     CPPUNIT_TEST(testParseColumn);
     CPPUNIT_TEST(testParseForeignKey);
     CPPUNIT_TEST(testStrTypeToInt);

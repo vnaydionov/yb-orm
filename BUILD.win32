@@ -3,29 +3,32 @@
 
 There are pre-built packages released for Microsoft Windows developers
 in form of .zip-files, to make it easier to play with the library.
-These packages are built against certain version of Boost or Qt toolkit,
-and also against certain version of C++ compiler (MinGW 4.4, MSVC 2008/2010).
-A Boost-enabled package includes all the required components of Boost
+These packages are built against a specific version of Boost or Qt toolkit,
+compiled using a specific version of C++ compiler (MinGW 4.4, MSVC 2010,
+MSVC 2008, Borland C++ Builder 6, Borland C++ 5.5).
+A Boost-enabled package includes all required components of Boost
 libraries within itself, whereas Qt-enabled one requires you to install
 proper version of Qt SDK beforehand.  By default, Boost-enabled version
 has ODBC as database backend API plus SQLite native driver, and Qt-enabled
 version relies on QtSql.  Of course, you can still rebuild YB.ORM library
 to use your toolkit/compiler/database backend of choice, because
-the package contains library source code.
+the package contains library's source code.
 
 ** Pre-built package contents **
 
 A .zip-file containing YB.ORM library pre-built for MS Windows is extracted
-at location c:\yborm by default.  All the instructions below assume this
-path as root folder.  Upon extraction there is the following folder layout:
+at location c:\yborm-<compiler name> by default.  All the instructions below
+assume path "c:\yborm" as a root folder.  Upon extraction there is the
+following folder layout:
 
-    c:\yborm
+     c:\yborm
             \bin        - .dll-files that this build may depend on:
                           boost_date_time, boost_thread, cppunit, libxml2,
-                          sqlite3, mingw runtime;
-                        - useful utilities: iconv.exe, xmllint.exe,
+                          sqlite3, misc. runtime;
+                        - some utilities: iconv.exe, xmllint.exe,
                           xsltproc.exe, sqlite3.exe
                         - code-generation utility: yborm_gen.exe
+                        - environment configuration: yborm_env.bat
             \build      - build folder for the library itself
             \build-auth - build folder for the Auth demo
             \build-tut  - build folder for examples from the Tutorial
@@ -47,7 +50,7 @@ path as root folder.  Upon extraction there is the following folder layout:
 The most simple way to build YB.ORM under MS Windows is to rebuild one of
 pre-built packages.  This may be useful if you already have YB.ORM installed
 and just want to update your installation with fresh sources from Git.
-It this case put updated sources under src folder, then "cd" into build
+It this case put updated sources under "src" folder, then "cd" into "build"
 folder and start corresponding .bat file from there.  If you're using
 MS Visual C++ you'll need to launch that .bat-file from within Visual Studio
 command line prompt.  Those .bat-files just call CMake script with
@@ -56,10 +59,15 @@ After build is successfully completed the new libraries, headers, examples
 and code generation utility replace old ones in corresponding folders.
 Below are the prerequisites for the rebuild process.
 
-Build system:   CMake 2.8
-Compiler:       MinGW 4.4, MS Visual C++ 2008 or 2010,
+Build system:   CMake 2.8 installed, accessible via %PATH%
+Compiler:       MinGW GCC 4.4, MS Visual C++ 2008 or 2010,
+                Borland C++ Builder 6 or Borland C++ 5.5,
                 whatever the package was built with
 Qt SDK:         Only for Qt-enabled build
+
+Make sure you specified proper toolkit mode (with or without Qt)
+and also set PATH to your compiler and Qt SDK in file "bin\yborm_env.bat"
+In same way you can build Auth example and tutorial examples.
 
 ** Building from scratch **
 

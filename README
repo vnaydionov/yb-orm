@@ -4,8 +4,10 @@ ABOUT
 YB.ORM tool is developed to simplify writing C++ code dealing with SQL
 databases.  The goal is to provide a convenient interface like SQLAlchemy
 (Python) or Hibernate (Java).  Available ports to Linux and Windows (MinGW, VC).
-SQL dialects supported: MySQL, Postgres, Oracle, Firebird.  You can use YB.ORM
-with your favorite toolkit: Boost, Qt4, or wxWidgets.
+SQL dialects supported: SQLite, MySQL, Postgres, Oracle, Firebird.
+You can use YB.ORM with your favorite toolkit: Boost, Qt4, or wxWidgets.
+This library also provides basic means for logging, database connection
+pooling, serialization of domain objects into XML and JSON.
 
 Warning!  The software is under development, so it may behave unstable.
 Many interesting features are still to be implemented.
@@ -33,7 +35,7 @@ Typical usage scenario is the following:
 
 This tool employs many ideas explained in the book
 "Patterns of Enterprise Application Architecture" by Martin Fawler.
-Such patterns as "Data Mapper", "Unit of Work" etc.
+Such patterns as "Identity Map", "Unit of Work" etc.
 Also I was inspired by the power of frameworks like
 Hibernate (http://www.hibernate.org/) for Java programming language and
 SQLAlchemy (http://www.sqlalchemy.org/) for Python.
@@ -63,10 +65,12 @@ should be met:
     under GNU/Linux x86_64 I have used unixODBC = 2.3.0)
 
 The library aims to be database independent.  At the time of this writing 
-it is tested to work with Oracle, Postgres, MySQL and Firebird via
-corresponding ODBC drivers.
+it is tested to work with SQLite, Oracle, Postgres, MySQL and Firebird.
+To connect to database there are several SQL backends present: ODBC, through
+native library (SQLite), through SOCI library (http://soci.sourceforge.net/),
+through QtSql library, in case of Qt-enabled build.
 
-Also, to access some database you will need one of the following:
+If you use ODBC, then to access database you will need one of the following:
 - myodbc >= 3.51.15 (MySQL ODBC driver)
 - instantclient >= 10.2 (ODBC driver for Oracle)
 - odbc-postgresql (ODBC driver for Postgres)
@@ -88,4 +92,4 @@ Any feedback, patches or comments are welcome!
 
 -- 
 Viacheslav Naydenov
-07 jun 2012
+13 may 2013
