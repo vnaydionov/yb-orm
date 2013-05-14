@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <util/ElementTree.h>
+#include <util/Utility.h>
 #include <orm/DataObject.h>
 #include <orm/SqlDriver.h>
 
@@ -33,10 +34,11 @@ ElementTree::ElementPtr xmlize_row(const Row &row, const String &entry_name);
 ElementTree::ElementPtr xmlize_rows(const Rows &rows,
         const String &entries_name, const String &entry_name);
 
-class XMLizable
+class XMLizable: public RefCountBase
 {
 public:
-    virtual ~XMLizable() {}
+    typedef IntrusivePtr<XMLizable> Ptr;
+    virtual ~XMLizable();
     virtual ElementTree::ElementPtr xmlize(int depth,
         const String &alt_name = _T("")) const = 0;
 };

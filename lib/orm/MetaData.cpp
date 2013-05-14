@@ -2,8 +2,9 @@
 #include <algorithm>
 #include <util/str_utils.hpp>
 #include <util/Exception.h>
-#include <orm/MetaData.h>
 #include <orm/Value.h>
+#include <orm/MetaData.h>
+#include <orm/DomainFactory.h>
 
 using namespace std;
 using namespace Yb::StrUtils;
@@ -592,6 +593,15 @@ Schema::join_expr(const Strings &tables) const
     Strings::const_iterator it = tables.begin();
     const String &tbl1 = *it;
     return make_join_expr(Expression(tbl1), tbl1, ++it, tables.end());
+}
+
+Schema &init_schema()
+{
+    Schema &schema = theSchema::instance();
+    DomainObject::save_registered(schema);
+    schema.fill_fkeys();
+    schema.check_cycles();
+    return schema;
 }
 
 } // namespace Yb

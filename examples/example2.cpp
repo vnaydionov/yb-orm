@@ -2,16 +2,12 @@
 #include <iostream>
 #include <util/str_utils.hpp>
 #include <orm/DataObject.h>
-#include <orm/SchemaSingleton.h>
+#include <orm/DomainObj.h>
 #include <orm/XMLMetaDataConfig.h>
 #include "domain/Client.h"
 #include "domain/Order.h"
 #include "domain/Payment.h"
 #include "domain/CCardPayment.h"
-//#define HAVE_DBPOOL3
-#ifdef HAVE_DBPOOL3
-#include <orm/DBPoolDriver.h>
-#endif
 
 using namespace std;
 
@@ -28,19 +24,7 @@ int main()
 #else
         Yb::init_schema();
 #endif
-#ifdef HAVE_DBPOOL3
-        auto_ptr<Yb::DBPoolConfig> conf(
-                new Yb::DBPoolConfig(conf_dir + _T("/dbpool.cfg.xml")));
-        auto_ptr<Yb::SqlDriver> drv(
-                new Yb::DBPoolDriver(conf, _T("MY_DBPOOL")));
-        Yb::register_sql_driver(drv);
-        auto_ptr<Yb::SqlConnection> conn(
-                new Yb::SqlConnection(_T("MY_DBPOOL"),
-                    Yb::env_cfg(_T("DBTYPE")), _T("default")));
-        Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-#else
         Yb::Engine engine;
-#endif
         engine.set_echo(true);
         engine.set_logger(root_logger.new_logger("yb"));
         Yb::Session session(Yb::theSchema::instance(), &engine);

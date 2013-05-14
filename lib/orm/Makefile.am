@@ -1,6 +1,5 @@
 
-include $(top_srcdir)/dirs.mk
-ybormincludedir=$(ybincludedir)/orm
+ybormincludedir=$(includedir)/yb/orm
 
 if CPPUNIT_PRESENT
 SUBDIRS = . test
@@ -28,21 +27,11 @@ SOCI_DRV_CPP = SOCIDriver.cpp
 endif
 endif
 
-if DBPOOL3_PRESENT
-DBPOOL_DRV_H = DBPoolDriver.h
-DBPOOL_DRV_CPP = DBPoolDriver.cpp
-else
-DBPOOL_DRV_H =
-DBPOOL_DRV_CPP =
-endif
-
 yborminclude_HEADERS = \
-	$(H_FILES) $(DEFAULT_DRV_H) $(SQLITE3_DRV_H) $(SOCI_DRV_H) \
-	$(DBPOOL_DRV_H)
+	$(H_FILES) $(DEFAULT_DRV_H) $(SQLITE3_DRV_H) $(SOCI_DRV_H)
 
 libyborm_la_SOURCES = \
-	$(CPP_FILES) $(DEFAULT_DRV_CPP) $(SQLITE3_DRV_CPP) $(SOCI_DRV_CPP) \
-	$(DBPOOL_DRV_CPP)
+	$(CPP_FILES) $(DEFAULT_DRV_CPP) $(SQLITE3_DRV_CPP) $(SOCI_DRV_CPP)
 
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
@@ -50,7 +39,6 @@ AM_CXXFLAGS = \
 	$(BOOST_CPPFLAGS) \
 	$(SQLITE3_CFLAGS) \
 	$(SOCI_CXXFLAGS) \
-	$(DBPOOL3_CXXFLAGS) \
 	$(WX_CFLAGS) \
 	$(QT_CFLAGS)
 
@@ -63,8 +51,6 @@ H_FILES = \
 	SqlPool.h \
 	DomainObj.h \
 	DomainFactory.h \
-	DomainFactorySingleton.h \
-	SchemaSingleton.h MetaDataSingleton.h \
 	XMLMetaDataConfig.h \
 	XMLizer.h \
 	DataObject.h \
@@ -97,8 +83,6 @@ libyborm_la_LIBADD = \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
 	$(SOCI_LIBS) \
-	$(DBPOOL3_LDFLAGS) \
-	$(DBPOOL3_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
 	$(QT_LIBS)

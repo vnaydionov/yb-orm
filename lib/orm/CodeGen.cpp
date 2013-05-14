@@ -749,7 +749,7 @@ void CppCodeGenerator::write_cpp_ctor_body(ostream &out, bool save_to_session)
 void CppCodeGenerator::write_cpp_file(ostream &out)
 {
     out << "#include \"" << inc_prefix_ << class_name_ << ".h\"\n"
-        << "#include <orm/DomainFactorySingleton.h>\n"
+        << "#include <orm/DomainFactory.h>\n"
         << "namespace Domain {\n\n"
         << class_name_ << "::Columns " << class_name_ << "::c;\n\n";
 

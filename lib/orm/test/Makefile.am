@@ -1,6 +1,4 @@
 
-include $(top_srcdir)/dirs.mk
-
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \
@@ -35,8 +33,6 @@ unit_tests_LDFLAGS = \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
 	$(SOCI_LIBS) \
-	$(DBPOOL3_LDFLAGS) \
-	$(DBPOOL3_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
 	$(QT_LIBS)

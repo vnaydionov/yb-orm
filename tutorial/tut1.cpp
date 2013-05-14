@@ -1,6 +1,6 @@
 #include <memory>
 #include <iostream>
-#include <orm/SchemaSingleton.h>
+#include <orm/DomainObj.h>
 #include "domain/Client.h"
 using namespace std;
 

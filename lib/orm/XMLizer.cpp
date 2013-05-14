@@ -1,5 +1,5 @@
 #include <orm/XMLizer.h>
-#include <orm/DomainFactorySingleton.h>
+#include <orm/DomainFactory.h>
 
 using namespace std;
 
@@ -77,7 +77,7 @@ deep_xmlize(Session &session, DataObject::Ptr d,
                         (!j->second->has_attr(1, _T("key")) ||
                          j->second->attr(1, _T("key")) == it->name()))
                     {
-                        SharedPtr<XMLizable>::Type domain_obj = 
+                        DomainObjectPtr domain_obj = 
                             theDomainFactory::instance().create_object(
                                 session, fk_table.name(), fk_v.as_longint());
                         ElementTree::ElementPtr ref_node = domain_obj->xmlize(
@@ -114,6 +114,8 @@ xmlize_rows(const Rows &rows, const String &entries_name, const String &entry_na
         entries->children_.push_back(xmlize_row(*it, entry_name));
     return entries;
 }
+
+XMLizable::~XMLizable() {}
 
 } // namespace Yb
 

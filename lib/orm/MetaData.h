@@ -10,6 +10,7 @@
 #include <list>
 #include <util/Utility.h>
 #include <util/Exception.h>
+#include <util/Singleton.h>
 #include <orm/Value.h>
 #include <orm/Expression.h>
 #include <orm/SqlDriver.h>
@@ -340,6 +341,10 @@ private:
 };
 
 const String mk_xml_name(const String &name, const String &xml_name);
+
+typedef SingletonHolder<Schema> theSchema;
+
+Schema &init_schema();
 
 } // namespace Yb
 

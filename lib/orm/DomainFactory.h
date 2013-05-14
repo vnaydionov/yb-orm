@@ -4,11 +4,10 @@
 #include <map>
 #include <stdexcept>
 #include <util/Utility.h>
+#include <util/Singleton.h>
 #include <orm/DomainObj.h>
 
 namespace Yb {
-
-typedef SharedPtr<DomainObject>::Type DomainObjectPtr;
 
 class NoCreator: public std::logic_error
 {
@@ -69,8 +68,9 @@ private:
     Map creator_map_;
     static char init_[16];
 };
-    
-    
+
+typedef SingletonHolder<DomainFactory> theDomainFactory;
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

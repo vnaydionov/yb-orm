@@ -13,8 +13,8 @@ set (SOURCES_CPP Engine.cpp Expression.cpp MetaData.cpp
     SqlPool.cpp DataObject.cpp DomainObj.cpp DomainFactory.cpp
     CodeGen.cpp)
 
-set (SOURCES_H DomainFactorySingleton.h Expression.h
-    SchemaSingleton.h MetaDataSingleton.h SqlDriver.h SqlPool.h Value.h XMLizer.h
+set (SOURCES_H Expression.h
+    SqlDriver.h SqlPool.h Value.h XMLizer.h
     DomainObj.h DomainFactory.h Engine.h MetaData.h
     XMLMetaDataConfig.h DataObject.h CodeGen.h)
 

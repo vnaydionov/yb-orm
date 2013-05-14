@@ -13,7 +13,7 @@ namespace Yb {
 
 typedef std::map<String, int> ParamNums;
 
-class ExpressionBackend
+class ExpressionBackend: public RefCountBase
 {
 public:
     virtual const String generate_sql(
@@ -21,7 +21,7 @@ public:
     virtual ~ExpressionBackend();
 };
 
-typedef SharedPtr<ExpressionBackend>::Type ExprBEPtr;
+typedef IntrusivePtr<ExpressionBackend> ExprBEPtr;
 
 class Column;
 
@@ -38,8 +38,8 @@ public:
     const String generate_sql(
             Values *params, int *count = NULL) const;
     const String get_sql() const { return generate_sql(NULL); }
-    bool is_empty() const { return str_empty(sql_) && !shptr_get(backend_); }
-    ExpressionBackend *backend() const { return shptr_get(backend_); }
+    bool is_empty() const { return str_empty(sql_) && !backend_.get(); }
+    ExpressionBackend *backend() const { return backend_.get(); }
 };
 
 bool is_number_or_object_name(const String &s);

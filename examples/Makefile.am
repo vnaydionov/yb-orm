@@ -25,8 +25,6 @@ example1_LDFLAGS = \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
 	$(SOCI_LIBS) \
-	$(DBPOOL3_LDFLAGS) \
-	$(DBPOOL3_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
 	$(QT_LIBS)
@@ -44,8 +42,6 @@ example2_LDFLAGS = \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
 	$(SOCI_LIBS) \
-	$(DBPOOL3_LDFLAGS) \
-	$(DBPOOL3_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
 	$(QT_LIBS)

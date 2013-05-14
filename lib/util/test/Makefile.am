@@ -1,6 +1,4 @@
 
-include $(top_srcdir)/dirs.mk
-
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \
 	$(XML_CPPFLAGS) \

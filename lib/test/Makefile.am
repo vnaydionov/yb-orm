@@ -1,6 +1,4 @@
 
-include $(top_srcdir)/dirs.mk
-
 AM_CXXFLAGS = $(CPPUNIT_CFLAGS)
 
 noinst_LTLIBRARIES = libtestmain.la

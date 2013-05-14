@@ -1,6 +1,6 @@
 #include "App.h"
 #include <stdexcept>
-#include <orm/SchemaSingleton.h>
+#include <orm/DomainObj.h>
 
 using namespace std;
 

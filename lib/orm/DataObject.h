@@ -176,8 +176,8 @@ enum DeletionMode { DelNormal, DelDryRun, DelUnchecked };
   <li>Each relation is a pointer to a RelationObject instance.
 </ul>
 */
-class DataObject: private NonCopyable, public RefCountBase {
-
+class DataObject: private NonCopyable, public RefCountBase
+{
     friend class Session;
 public:
     typedef DataObjectPtr Ptr;

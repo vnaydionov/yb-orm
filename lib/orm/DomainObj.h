@@ -57,8 +57,6 @@ public:
     {}
 };
 
-class DomainObject;
-
 template <class T>
 class ManagedList;
 
@@ -111,6 +109,8 @@ public:
     static bool register_relation_meta(Relation::Ptr rel);
     static void save_registered(Schema &schema);
 };
+
+typedef IntrusivePtr<DomainObject> DomainObjectPtr;
 
 inline bool operator==(const DomainObject &a, const DomainObject &b)
 { return !a.cmp(b); }

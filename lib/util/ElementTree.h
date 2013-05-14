@@ -16,8 +16,8 @@ namespace Yb {
 namespace ElementTree {
 
 typedef std::vector<Yb::String> Strings;
-struct Element;
-typedef SharedPtr<Element>::Type ElementPtr;
+class Element;
+typedef IntrusivePtr<Element> ElementPtr;
 typedef std::vector<ElementPtr> Elements;
 typedef std::auto_ptr<Elements> ElementsPtr;
 
@@ -31,8 +31,9 @@ public: ParseError(const std::string &t): std::runtime_error(t) {}
 
 inline ElementPtr mark_json(ElementPtr node, const Yb::String &json_type);
 
-struct Element
+class Element: public RefCountBase
 {
+public:
     Yb::String name_;
     StringDict attrib_;
     Strings text_;
@@ -59,12 +60,12 @@ struct Element
     ElementPtr add_json_string(const Yb::String &name = _T("string"),
             const Yb::String &s = _T(""))
     {
-        return  mark_json(sub_element(name, s), _T("string"));
+        return mark_json(sub_element(name, s), _T("string"));
     }
     ElementPtr add_json(const Yb::String &name = _T("value"),
             const Yb::String &s = _T(""))
     {
-        return  mark_json(sub_element(name, s), _T("raw"));
+        return mark_json(sub_element(name, s), _T("raw"));
     }
 };
 

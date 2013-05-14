@@ -2,9 +2,8 @@
 #include <cppunit/TestAssert.h>
 #include <util/str_utils.hpp>
 #include <orm/XMLizer.h>
-#include <orm/SchemaSingleton.h>
-#include <orm/DomainFactorySingleton.h>
 #include <orm/DomainObj.h>
+#include <orm/DomainFactory.h>
 #include <orm/Engine.h>
 
 #define NUM_STMT 6
@@ -60,9 +59,9 @@ static void setup_log(SqlConnection &c)
 }
 
 
-class TestXMLNode : public CppUnit::TestFixture
+class TestXMLizer : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(TestXMLNode);
+    CPPUNIT_TEST_SUITE(TestXMLizer);
     CPPUNIT_TEST(test_xmlize_data_object);
     CPPUNIT_TEST(test_replace_child_object);
     CPPUNIT_TEST(test_add_node);
@@ -264,6 +263,6 @@ public:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(TestXMLNode);
+CPPUNIT_TEST_SUITE_REGISTRATION(TestXMLizer);
 
 // vim:ts=4:sts=4:sw=4:et:

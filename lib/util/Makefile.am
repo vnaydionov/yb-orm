@@ -1,6 +1,5 @@
 
-include $(top_srcdir)/dirs.mk
-ybutilincludedir=$(ybincludedir)/util
+ybutilincludedir=$(includedir)/yb/util
 
 if CPPUNIT_PRESENT
 SUBDIRS = . test
@@ -28,7 +27,6 @@ ybutilinclude_HEADERS = \
 	XmlWriter.h \
 	ElementTree.h \
 	nlogger.h \
-	param.hpp \
 	stacktrace.h \
 	ResultSet.h \
 	Singleton.h
