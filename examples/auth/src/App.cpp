@@ -1,6 +1,6 @@
 #include "App.h"
 #include <stdexcept>
-#include <orm/DomainObj.h>
+#include <orm/DomainObject.h>
 
 using namespace std;
 

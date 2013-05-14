@@ -9,7 +9,7 @@
 #include <set>
 #include <stdexcept>
 #include <util/nlogger.h>
-#include <orm/Value.h>
+#include <util/Value.h>
 #include <orm/Expression.h>
 #include <orm/SqlDriver.h>
 #include <orm/SqlPool.h>

@@ -2,7 +2,7 @@
 #include <cppunit/TestAssert.h>
 #include <util/str_utils.hpp>
 #include <orm/XMLizer.h>
-#include <orm/DomainObj.h>
+#include <orm/DomainObject.h>
 #include <orm/DomainFactory.h>
 #include <orm/Engine.h>
 

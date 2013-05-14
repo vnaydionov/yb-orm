@@ -505,7 +505,7 @@ void CppCodeGenerator::write_h_file_header(ostream &out)
         NARROW(str_to_upper(table_.class_name())) + "__INCLUDED";
     out << "#ifndef " << def_name << "\n"
         << "#define " << def_name << "\n\n"
-        << "#include <orm/DomainObj.h>\n";
+        << "#include <orm/DomainObject.h>\n";
     write_autogen(out, 1); // include_dependencies
     out << "\n"
         << "namespace Domain {\n\n";

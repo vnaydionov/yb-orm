@@ -1,7 +1,6 @@
 #include <memory>
 #include <iostream>
 #include <boost/foreach.hpp>
-#include <orm/DomainObj.h>
 #include "domain/ProductGroup.h"
 #include "domain/Product.h"
 using namespace std;

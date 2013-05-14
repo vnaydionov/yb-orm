@@ -26,6 +26,7 @@ ybutilinclude_HEADERS = \
 	str_utils.hpp \
 	XmlWriter.h \
 	ElementTree.h \
+	Value.h \
 	nlogger.h \
 	stacktrace.h \
 	ResultSet.h \
@@ -41,6 +42,7 @@ libybutil_la_SOURCES = \
 	str_utils.cpp \
 	XmlWriter.cpp \
 	ElementTree.cpp \
+	Value.cpp \
 	nlogger.cpp
 
 libybutil_la_LDFLAGS = -version-info 0:0:0

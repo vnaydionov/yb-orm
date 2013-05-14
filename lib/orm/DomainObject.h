@@ -1,6 +1,6 @@
 // -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
-#ifndef YB__ORM__DOMAIN_OBJ__INCLUDED
-#define YB__ORM__DOMAIN_OBJ__INCLUDED
+#ifndef YB__ORM__DOMAIN_OBJECT__INCLUDED
+#define YB__ORM__DOMAIN_OBJECT__INCLUDED
 
 #include <iterator>
 #include <stdexcept>
@@ -592,4 +592,4 @@ public:
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__ORM__DOMAIN_OBJ__INCLUDED
+#endif // YB__ORM__DOMAIN_OBJECT__INCLUDED

@@ -16,7 +16,7 @@
 #include <map>
 #include <util/Utility.h>
 #include <util/Exception.h>
-#include <orm/Value.h>
+#include <util/Value.h>
 #include <orm/MetaData.h>
 #include <orm/Engine.h>
 

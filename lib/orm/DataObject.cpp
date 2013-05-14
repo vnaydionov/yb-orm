@@ -686,7 +686,7 @@ DataObject::populate_all_master_relations()
             //        it->second->get_table(0)->name() + _T(" > ") +
             //        it->second->get_table(1)->name());
             RelationObject *ro = get_slaves(*it->second);
-            // TODO: fix code duplication: DomainObj.h:123
+            // TODO: fix code duplication: DomainObject.h:123
             /*
             if (ro->master_object()->status() != DataObject::New &&
                 ro->status() != RelationObject::Sync)

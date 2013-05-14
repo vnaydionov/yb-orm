@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <util/Utility.h>
 #include <util/Singleton.h>
-#include <orm/DomainObj.h>
+#include <orm/DomainObject.h>
 
 namespace Yb {
 

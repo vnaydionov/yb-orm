@@ -1,8 +1,5 @@
 #include <memory>
 #include <iostream>
-#include <util/str_utils.hpp>
-#include <orm/DataObject.h>
-#include <orm/DomainObj.h>
 #include "domain/Client.h"
 #include "domain/Order.h"
 

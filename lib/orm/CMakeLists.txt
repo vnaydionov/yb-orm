@@ -9,13 +9,13 @@ include_directories (${ICONV_INCLUDES}
     ${PROJECT_SOURCE_DIR}/lib)
 
 set (SOURCES_CPP Engine.cpp Expression.cpp MetaData.cpp
-    Value.cpp XMLMetaDataConfig.cpp XMLizer.cpp SqlDriver.cpp
-    SqlPool.cpp DataObject.cpp DomainObj.cpp DomainFactory.cpp
+    XMLMetaDataConfig.cpp XMLizer.cpp SqlDriver.cpp
+    SqlPool.cpp DataObject.cpp DomainObject.cpp DomainFactory.cpp
     CodeGen.cpp)
 
 set (SOURCES_H Expression.h
-    SqlDriver.h SqlPool.h Value.h XMLizer.h
-    DomainObj.h DomainFactory.h Engine.h MetaData.h
+    SqlDriver.h SqlPool.h XMLizer.h
+    DomainObject.h DomainFactory.h Engine.h MetaData.h
     XMLMetaDataConfig.h DataObject.h CodeGen.h)
 
 if (USE_QT4)

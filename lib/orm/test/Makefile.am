@@ -16,10 +16,9 @@ check_PROGRAMS = unit_tests
 unit_tests_SOURCES = \
 	TestExpression.cpp \
 	TestMetaData.cpp \
-	TestValue.cpp \
 	TestEngine.cpp \
 	TestXMLConfig.cpp \
-	TestXMLNode.cpp \
+	TestXMLizer.cpp \
 	TestDataObject.cpp
 
 unit_tests_LDFLAGS = \

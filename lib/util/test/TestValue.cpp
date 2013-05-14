@@ -3,7 +3,7 @@
 #include <cppunit/TestAssert.h>
 #include <util/nlogger.h>
 #include <util/str_utils.hpp>
-#include <orm/Value.h>
+#include <util/Value.h>
 
 using namespace std;
 using namespace Yb;

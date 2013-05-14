@@ -13,7 +13,8 @@ unit_tests_SOURCES = \
 	TestDecimal.cpp \
 	TestSingleton.cpp \
 	TestResultSet.cpp \
-	TestMisc.cpp
+	TestMisc.cpp \
+	TestValue.cpp
 
 unit_tests_LDFLAGS = \
 	$(top_builddir)/lib/test/libtestmain.la \

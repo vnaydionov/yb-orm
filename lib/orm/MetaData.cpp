@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <util/str_utils.hpp>
 #include <util/Exception.h>
-#include <orm/Value.h>
+#include <util/Value.h>
 #include <orm/MetaData.h>
 #include <orm/DomainFactory.h>
 

@@ -45,11 +45,10 @@ AM_CXXFLAGS = \
 H_FILES = \
 	Expression.h \
 	MetaData.h \
-	Value.h \
 	Engine.h \
 	SqlDriver.h \
 	SqlPool.h \
-	DomainObj.h \
+	DomainObject.h \
 	DomainFactory.h \
 	XMLMetaDataConfig.h \
 	XMLizer.h \
@@ -60,7 +59,6 @@ CPP_FILES = \
 	$(H_FILES) \
 	Expression.cpp \
 	MetaData.cpp \
-	Value.cpp \
 	Engine.cpp \
 	SqlDriver.cpp \
 	SqlPool.cpp \
@@ -68,7 +66,7 @@ CPP_FILES = \
 	XMLizer.cpp \
 	DomainFactory.cpp \
 	DataObject.cpp \
-	DomainObj.cpp \
+	DomainObject.cpp \
 	CodeGen.cpp
 
 lib_LTLIBRARIES = libyborm.la

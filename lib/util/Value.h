@@ -1,6 +1,6 @@
 // -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
-#ifndef YB__ORM__VALUE__INCLUDED
-#define YB__ORM__VALUE__INCLUDED
+#ifndef YB__UTIL__VALUE__INCLUDED
+#define YB__UTIL__VALUE__INCLUDED
 
 #include <string.h>
 #include <string>
@@ -175,4 +175,4 @@ inline void swap(::Yb::Value &x, ::Yb::Value &y) { x.swap(y); }
 } // namespace std
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__ORM__VALUE__INCLUDED
+#endif // YB__UTIL__VALUE__INCLUDED

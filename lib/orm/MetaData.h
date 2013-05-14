@@ -11,7 +11,7 @@
 #include <util/Utility.h>
 #include <util/Exception.h>
 #include <util/Singleton.h>
-#include <orm/Value.h>
+#include <util/Value.h>
 #include <orm/Expression.h>
 #include <orm/SqlDriver.h>
 

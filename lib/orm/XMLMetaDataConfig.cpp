@@ -1,7 +1,7 @@
 #include <fstream>
 #include <util/ElementTree.h>
 #include <util/str_utils.hpp>
-#include <orm/Value.h>
+#include <util/Value.h>
 #include <orm/XMLMetaDataConfig.h>
 
 using namespace std;
@@ -205,13 +205,22 @@ Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
     if (node->has_attr(_T("default"))) {
        String value = node->get_attr(_T("default"));
         switch (col_type) {
+            case Value::FLOAT:
+                try {
+                    double x;
+                    from_string(value, x);
+                    default_val = Value(x);
+                } catch(const std::exception &) {
+                    throw ParseError(String(_T("Wrong default value '")) + value + _T("' for float element '") + name + _T("'"));
+                }
+                break;
             case Value::DECIMAL:
                 try {
                     Decimal x;
                     from_string(value, x);
                     default_val = Value(x);
                 } catch(const std::exception &) {
-                    throw ParseError(String(_T("Wrong default value '")) + value + _T("' for integer element '") + name + _T("'"));
+                    throw ParseError(String(_T("Wrong default value '")) + value + _T("' for decimal element '") + name + _T("'"));
                 }
                 break;
             case Value::INTEGER:

@@ -10,7 +10,7 @@
 #include <util/Thread.h>
 #include <util/ResultSet.h>
 #include <util/nlogger.h>
-#include <orm/Value.h>
+#include <util/Value.h>
 
 namespace Yb {
 
