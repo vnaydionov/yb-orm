@@ -2,17 +2,29 @@
 0.3.5
     * New SQL driver for SOCI library (http://soci.sourceforge.net/).
       If you build with SOCI then you can use connection URL like this:
-      "mysql+soci://user=test1 pass=test1_pwd host=localhost service=test1_db"
-    * Support for floating point numeric types (Value::FLOAT).
+      "mysql+soci://user=test1 pass=test1_pwd host=localhost service=test1_db" -
+      this example shows usage of native MySQL driver, and the following
+      one shows usage of ODBC through SOCI -
+      "mysql+soci_odbc://DSN=test1_dsn;UID=test1;PWD=test1_pwd".
+    * Support for floating point numeric types (Value::FLOAT),
+      i.e. float and double in C++.
     * Did some profiling and made significant improvements in speed,
       in particular: fixed input parameter binding; removed excessive use
-      of shared pointers, replaced them with intrusive pointers;
-      variant type Yb::Value is optimized to make less memory allocations.
+      of shared pointers, replaced them with intrusive pointers, especially
+      where thread-safety makes no sense; now the variant type Yb::Value
+      is optimized to make fewer memory allocations.
     * Pre-built packages for Windows now make use of single 
-      configuration file bin\yborm_env.bat.
+      configuration file bin\yborm_env.bat, this is the place to set PATH
+      environment variable and to specify the connection string for
+      the test database.
     * Auth sample: TcpSocket::accept() now can return source address of
-      incoming connection.
-    * Tested with Borland C++ Builder 6, kind of work.
+      incoming connection; fixed exception handing in micro_http.cpp.
+    * Tested with Borland C++ Builder 6: kind of works.
+      Yes, the compiler is an old piece of crap, I know.
+    * NOTE: there is a new field named 'D' in test table 'T_ORM_TEST',
+      so you may encounter problems in case you run tests on existing table,
+      things can be altered like this (example shown for MySQL):
+      mysql> alter table T_ORM_TEST add (D double precision);
 
 0.3.4
     * Implement order-by relationship property.

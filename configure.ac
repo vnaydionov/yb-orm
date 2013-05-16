@@ -22,16 +22,18 @@ YB_QT([
         YB_BOOST_DATETIME([],
             AC_MSG_ERROR([Package requires the Boost date_time library!]))
     ])
-    YB_ODBC([],
-        AC_MSG_ERROR([ODBC library is required!]))
-    YB_SQLITE3([
-        CPPFLAGS="$CPPFLAGS -DYB_USE_SQLITE3"
-    ], [])
-    YB_SOCI([
-        CPPFLAGS="$CPPFLAGS -DYB_USE_SOCI"
-    ], [])
 ])
+YB_ODBC([
+    CPPFLAGS="$CPPFLAGS -DYB_USE_ODBC"
+], [])
+YB_SQLITE3([
+    CPPFLAGS="$CPPFLAGS -DYB_USE_SQLITE3"
+], [])
+YB_SOCI([
+    CPPFLAGS="$CPPFLAGS -DYB_USE_SOCI"
+], [])
 AM_CONDITIONAL([QT4_PRESENT], [test x$have_qt = xyes])
+AM_CONDITIONAL([ODBC_PRESENT], [test x$have_odbc = xyes])
 AM_CONDITIONAL([SQLITE3_PRESENT], [test x$have_sqlite3 = xyes])
 AM_CONDITIONAL([SOCI_PRESENT], [test x$have_soci = xyes])
 AM_CONDITIONAL([TUTORIAL_PRESENT], [test x$have_qt != xyes])

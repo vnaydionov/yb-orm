@@ -8,30 +8,42 @@ SUBDIRS =
 endif
 
 if QT4_PRESENT
-DEFAULT_DRV_H = QtSqlDriver.h
-DEFAULT_DRV_CPP = QtSqlDriver.cpp
-SQLITE3_DRV_H =
-SQLITE3_DRV_CPP =
-SOCI_DRV_H =
-SOCI_DRV_CPP =
+QTSQL_DRV_H = QtSqlDriver.h
+QTSQL_DRV_CPP = QtSqlDriver.cpp
 else
-DEFAULT_DRV_H = OdbcDriver.h tiodbc.hpp
-DEFAULT_DRV_CPP = OdbcDriver.cpp tiodbc.cpp
+QTSQL_DRV_H =
+QTSQL_DRV_CPP =
+endif
+
+if ODBC_PRESENT
+ODBC_DRV_H = OdbcDriver.h tiodbc.hpp
+ODBC_DRV_CPP = OdbcDriver.cpp tiodbc.cpp
+else
+ODBC_DRV_H =
+ODBC_DRV_CPP =
+endif
+
 if SQLITE3_PRESENT
 SQLITE3_DRV_H = SQLiteDriver.h
 SQLITE3_DRV_CPP = SQLiteDriver.cpp
+else
+SQLITE3_DRV_H =
+SQLITE3_DRV_CPP =
 endif
+
 if SOCI_PRESENT
 SOCI_DRV_H = SOCIDriver.h
 SOCI_DRV_CPP = SOCIDriver.cpp
-endif
+else
+SOCI_DRV_H =
+SOCI_DRV_CPP =
 endif
 
 yborminclude_HEADERS = \
-	$(H_FILES) $(DEFAULT_DRV_H) $(SQLITE3_DRV_H) $(SOCI_DRV_H)
+	$(H_FILES) $(QTSQL_DRV_H) $(ODBC_DRV_H) $(SQLITE3_DRV_H) $(SOCI_DRV_H)
 
 libyborm_la_SOURCES = \
-	$(CPP_FILES) $(DEFAULT_DRV_CPP) $(SQLITE3_DRV_CPP) $(SOCI_DRV_CPP)
+	$(CPP_FILES) $(QTSQL_DRV_CPP) $(ODBC_DRV_CPP) $(SQLITE3_DRV_CPP) $(SOCI_DRV_CPP)
 
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/lib \

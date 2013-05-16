@@ -52,7 +52,7 @@ class SOCIDriver: public SqlDriver
     friend class SOCIConnectionBackend;
     Mutex conn_mux_;
 public:
-    SOCIDriver();
+    SOCIDriver(bool use_odbc);
     std::auto_ptr<SqlConnectionBackend> create_backend();
     void parse_url_tail(const String &dialect_name,
             const String &url_tail, StringDict &source);

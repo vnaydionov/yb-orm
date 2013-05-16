@@ -284,8 +284,11 @@ SOCIConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
     close();
     ScopedLock lock(drv_->conn_mux_);
     try {
-        conn_ = new soci::session(soci_convert_dialect(dialect->get_name()),
-                NARROW(source.db()));
+        String driver = source.driver();
+        std::string soci_backend = "odbc";
+        if (driver == _T("SOCI"))
+            soci_backend = soci_convert_dialect(dialect->get_name());
+        conn_ = new soci::session(soci_backend, NARROW(source.db()));
 #ifdef YB_SOCI_DEBUG
         conn_->set_log_stream(&cerr);
 #endif
@@ -350,8 +353,8 @@ SOCIConnectionBackend::rollback()
     }
 }
 
-SOCIDriver::SOCIDriver():
-    SqlDriver(_T("SOCI"))
+SOCIDriver::SOCIDriver(bool use_odbc):
+    SqlDriver(use_odbc? _T("SOCI_ODBC"): _T("SOCI"))
 {}
 
 auto_ptr<SqlConnectionBackend>

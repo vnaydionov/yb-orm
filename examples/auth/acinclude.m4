@@ -389,10 +389,13 @@ AC_DEFUN([YB_ODBC],
         ], 
         [
         AC_MSG_RESULT([yes])
+        have_odbc="yes"
         ifelse([$1], , :, [$1])
         ],
         [ 
         AC_MSG_RESULT([no])
+        ODBC_LIBS=""
+        have_odbc="no"
         ifelse([$2], , :, [$2])
         ])
 

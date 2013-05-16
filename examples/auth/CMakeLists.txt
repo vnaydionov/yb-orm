@@ -72,6 +72,14 @@ else ()
     find_library (LIBXML2_LIBS libxml2 c:/yborm/bin)
 endif ()
 
+else (USE_QT4)
+
+find_package (Qt4 4.4.0 REQUIRED QtCore QtXml QtSql)
+include (${QT_USE_FILE})
+add_definitions (-DYB_USE_QT)
+
+endif ()
+
 if (UNIX)
     find_library (ODBC_LIBS odbc)
 elseif (BORLAND)
@@ -81,6 +89,8 @@ elseif (MSVC)
 elseif (MINGW)
     set (ODBC_LIBS -lodbc32 CACHE STRING "odbc32 lib" FORCE)
 endif ()
+add_definitions (-DYB_USE_ODBC)
+set (USE_ODBC ON)
 
 if (SQLITE3_INCLUDEDIR)
     find_path (SQLITE3_INCLUDEDIR sqlite3.h ${SQLITE3_INCLUDEDIR})
@@ -101,11 +111,7 @@ else ()
 endif ()
 
 if (SQLITE3_INCLUDEDIR AND SQLITE3_LIBS)
-if (BORLAND)
     add_definitions (-DYB_USE_SQLITE3)
-else ()
-    add_definitions (-D YB_USE_SQLITE3)
-endif ()
     set (USE_SQLITE3 ON)
 else ()
     set (SQLITE3_LIBS "")
@@ -130,7 +136,7 @@ else ()
 endif ()
 
 if (SOCI_INCLUDEDIR AND SOCI_LIBS)
-    add_definitions (-D YB_USE_SOCI)
+    add_definitions (-DYB_USE_SOCI)
     set (USE_SOCI ON)
 else ()
     set (SOCI_LIBS "")
@@ -138,16 +144,8 @@ else ()
     set (USE_SOCI OFF)
 endif ()
 
-else (USE_QT4)
-
-find_package (Qt4 4.4.0 REQUIRED QtCore QtXml QtSql)
-include (${QT_USE_FILE})
-add_definitions (-D YB_USE_QT)
-
-endif ()
-
 if (BOOST_INCLUDEDIR AND (NOT BORLAND))
-    add_definitions (-D YB_USE_TUPLE)
+    add_definitions (-DYB_USE_TUPLE)
 endif()
 
 function (check_yborm_root YBORM_ROOT)

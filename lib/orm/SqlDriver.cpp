@@ -2,24 +2,35 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <util/str_utils.hpp>
+#include <util/Singleton.h>
 #include <orm/SqlDriver.h>
 #if defined(YB_USE_QT)
 #include <orm/QtSqlDriver.h>
-typedef Yb::QtSqlDriver DefaultSqlDriver;
-#define DEFAULT_DRIVER _T("QODBC3")
-#else
+#endif
+#if defined(YB_USE_ODBC)
 #include <orm/OdbcDriver.h>
-typedef Yb::OdbcDriver DefaultSqlDriver;
-#define DEFAULT_DRIVER _T("ODBC")
+#endif
 #if defined(YB_USE_SQLITE3)
 #include <orm/SQLiteDriver.h>
 #endif
 #if defined(YB_USE_SOCI)
 #include <orm/SOCIDriver.h>
 #endif
+
+#if defined(YB_USE_QT)
+typedef Yb::QtSqlDriver DefaultSqlDriver;
+#define DEFAULT_DRIVER _T("QODBC3")
+#elif defined(YB_USE_ODBC)
+typedef Yb::OdbcDriver DefaultSqlDriver;
+#define DEFAULT_DRIVER _T("ODBC")
+#elif defined(YB_USE_SOCI)
+typedef Yb::SOCIDriver DefaultSqlDriver;
+#define DEFAULT_DRIVER _T("SOCI")
+#elif defined(YB_USE_SQLITE3)
+typedef Yb::SQLiteDriver DefaultSqlDriver;
+#define DEFAULT_DRIVER _T("SQLITE")
 #endif
-#include <util/str_utils.hpp>
-#include <util/Singleton.h>
 
 using namespace std;
 using namespace Yb::StrUtils;
@@ -394,20 +405,24 @@ void register_std_drivers()
     auto_ptr<SqlDriver> driver_qodbc((SqlDriver *)new QtSqlDriver(true));
     p = driver_qodbc.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver_qodbc);
-#else
+#endif
+#if defined(YB_USE_ODBC)
     auto_ptr<SqlDriver> driver_odbc((SqlDriver *)new OdbcDriver());
     p = driver_odbc.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver_odbc);
+#endif
 #if defined(YB_USE_SQLITE3)
     auto_ptr<SqlDriver> driver_sqlite3((SqlDriver *)new SQLiteDriver());
     p = driver_sqlite3.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver_sqlite3);
 #endif
 #if defined(YB_USE_SOCI)
-    auto_ptr<SqlDriver> driver_soci((SqlDriver *)new SOCIDriver());
+    auto_ptr<SqlDriver> driver_soci((SqlDriver *)new SOCIDriver(false));
     p = driver_soci.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver_soci);
-#endif
+    auto_ptr<SqlDriver> driver_soci_odbc((SqlDriver *)new SOCIDriver(true));
+    p = driver_soci_odbc.get();
+    theDriverRegistry::instance().register_item(p->get_name(), driver_soci_odbc);
 #endif
 }
 
