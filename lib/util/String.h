@@ -211,6 +211,11 @@ T &from_stdstring(const std::string &s, T &x);
 template <class T>
 T &from_string(const String &s, T &x);
 
+inline void str_swap(String &a, String &b) {
+    using namespace std;
+    swap(a, b);
+}
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:

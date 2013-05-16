@@ -69,7 +69,8 @@ public:
     Value(const Decimal &x)  : type_(DECIMAL)  { copy_as<Decimal>(x); }
     Value(const DateTime &x) : type_(DATETIME) { copy_as<DateTime>(x); }
     Value(const String &x)   : type_(STRING)   { copy_as<String>(x); }
-    Value(const Char *x)     : type_(STRING)   { copy_as<String>(String(x)); }
+    Value(const Char *x)     : type_(STRING)
+        { copy_as<String>(str_from_chars(x)); }
     ~Value() { destroy(); }
     Value(const Value &other) : type_(INVALID) {
         memset(bytes_, 0, sizeof(bytes_));

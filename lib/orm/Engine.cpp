@@ -303,7 +303,7 @@ EngineBase::gen_sql_insert(String &sql, TypeCodes &type_codes_out,
     }
     sql_query += ExpressionList(names).get_sql() + _T(") VALUES (") + 
         ExpressionList(pholders).get_sql() + _T(")");
-    sql.swap(sql_query);
+    str_swap(sql, sql_query);
     type_codes_out.swap(type_codes);
     param_nums_out.swap(param_nums);
 }
@@ -350,7 +350,7 @@ EngineBase::gen_sql_update(String &sql, TypeCodes &type_codes_out,
     Values sample_params;
     sql_query += _T(" WHERE ")
         + KeyFilter(sample_key).generate_sql(&sample_params, pcount);
-    sql.swap(sql_query);
+    str_swap(sql, sql_query);
 }
 
 void
@@ -370,7 +370,7 @@ EngineBase::gen_sql_delete(String &sql, TypeCodes &type_codes_out,
     sql_query += _T(" WHERE ")
         + KeyFilter(sample_key).generate_sql(&sample_params, pcount);
     type_codes_out.swap(type_codes);
-    sql.swap(sql_query);
+    str_swap(sql, sql_query);
 }
 
 EngineCloned::~EngineCloned()
