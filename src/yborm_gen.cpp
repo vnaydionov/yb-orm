@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <orm/MetaData.h>
-#include <orm/XMLMetaDataConfig.h>
+#include <orm/MetaDataConfig.h>
 #include <orm/CodeGen.h>
 
 using namespace std;

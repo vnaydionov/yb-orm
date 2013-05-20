@@ -50,10 +50,10 @@ public:
     {}
 };
 
-class XMLMetaDataConfig
+class MetaDataConfig
 {
 public:
-    XMLMetaDataConfig(const std::string &xml_string);
+    MetaDataConfig(const std::string &xml_string);
     void parse(Schema &reg);
     bool need_generation(const String &table_name) const {
         return std::find(skip_generation_.begin(), skip_generation_.end(), table_name) == skip_generation_.end();
@@ -77,7 +77,7 @@ private:
 };
  
 template <typename T>
-void XMLMetaDataConfig::get_node_ptr_value(ElementTree::ElementPtr node, T &t) {
+void MetaDataConfig::get_node_ptr_value(ElementTree::ElementPtr node, T &t) {
     String str = node->get_text();
     try {
         from_string(str, t);
@@ -88,7 +88,7 @@ void XMLMetaDataConfig::get_node_ptr_value(ElementTree::ElementPtr node, T &t) {
 }
 
 template <typename T> 
-bool XMLMetaDataConfig::get_value_of(ElementTree::ElementPtr node, const String &field, T &t)
+bool MetaDataConfig::get_value_of(ElementTree::ElementPtr node, const String &field, T &t)
 {
     if (node->name_ == field) {
         get_node_ptr_value(node, t);

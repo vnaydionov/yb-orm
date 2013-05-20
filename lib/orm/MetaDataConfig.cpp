@@ -2,7 +2,7 @@
 #include <util/ElementTree.h>
 #include <util/str_utils.hpp>
 #include <util/Value.h>
-#include <orm/XMLMetaDataConfig.h>
+#include <orm/MetaDataConfig.h>
 
 using namespace std;
 
@@ -28,14 +28,14 @@ void load_schema(const String &name, Schema &reg, bool check)
     string xml;
     if (!load_xml_file(name, xml))
         throw XMLConfigError(_T("Can't read file: ") + name);
-    XMLMetaDataConfig xml_config(xml);
+    MetaDataConfig xml_config(xml);
     xml_config.parse(reg);
     reg.fill_fkeys();
     if (check)
         reg.check_cycles();
 }
 
-XMLMetaDataConfig::XMLMetaDataConfig(const string &xml_string)
+MetaDataConfig::MetaDataConfig(const string &xml_string)
 {
     try {
         node_ = ElementTree::parse(xml_string);
@@ -45,7 +45,7 @@ XMLMetaDataConfig::XMLMetaDataConfig(const string &xml_string)
     }
 }
 
-void XMLMetaDataConfig::parse(Schema &reg)
+void MetaDataConfig::parse(Schema &reg)
 {
     if (node_->name_.compare(_T("schema")))
         throw ParseError(String(_T("Unknown element '")) + node_->name_ + 
@@ -67,7 +67,7 @@ void XMLMetaDataConfig::parse(Schema &reg)
     }
 }
 
-Table::Ptr XMLMetaDataConfig::parse_table(ElementTree::ElementPtr node)
+Table::Ptr MetaDataConfig::parse_table(ElementTree::ElementPtr node)
 {
     String sequence_name, name, xml_name, class_name;
     bool autoinc = false;
@@ -100,7 +100,7 @@ Table::Ptr XMLMetaDataConfig::parse_table(ElementTree::ElementPtr node)
     return table_meta;
 }
 
-void XMLMetaDataConfig::parse_relation_side(ElementTree::ElementPtr node,
+void MetaDataConfig::parse_relation_side(ElementTree::ElementPtr node,
         const char **attr_names, size_t attr_count,
         String &cname, Relation::AttrMap &attrs)
 {
@@ -114,7 +114,7 @@ void XMLMetaDataConfig::parse_relation_side(ElementTree::ElementPtr node,
     attrs.swap(new_attrs);
 }
 
-Relation::Ptr XMLMetaDataConfig::parse_relation(ElementTree::ElementPtr node)
+Relation::Ptr MetaDataConfig::parse_relation(ElementTree::ElementPtr node)
 {
     if (!node->has_attr(_T("type")))
         throw MandatoryAttributeAbsent(_T("relation"), _T("type"));
@@ -159,7 +159,7 @@ Relation::Ptr XMLMetaDataConfig::parse_relation(ElementTree::ElementPtr node)
     return rel;
 }
 
-int XMLMetaDataConfig::string_type_to_int(const String &type, const String &field_name)
+int MetaDataConfig::string_type_to_int(const String &type, const String &field_name)
 {
     for (int type_it = 1; true; ++type_it) {
         String type_it_name = Yb::StrUtils::str_to_lower(
@@ -172,7 +172,7 @@ int XMLMetaDataConfig::string_type_to_int(const String &type, const String &fiel
     throw WrongColumnType(type, field_name);
 }
 
-void XMLMetaDataConfig::parse_column(ElementTree::ElementPtr node, Table &table_meta)
+void MetaDataConfig::parse_column(ElementTree::ElementPtr node, Table &table_meta)
 {
     ElementTree::Elements::const_iterator child = node->children_.begin(),
         cend = node->children_.end();
@@ -185,7 +185,7 @@ void XMLMetaDataConfig::parse_column(ElementTree::ElementPtr node, Table &table_
     }
 }
 
-Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
+Column MetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
 {
     String name, type, fk_table, fk_field, prop_name, xml_name;
     int flags = 0, size = 0, col_type = 0;
@@ -280,7 +280,7 @@ Column XMLMetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
     return result;
 }
 
-void XMLMetaDataConfig::get_foreign_key_data(ElementTree::ElementPtr node, String &fk_table, String &fk_field)
+void MetaDataConfig::get_foreign_key_data(ElementTree::ElementPtr node, String &fk_table, String &fk_field)
 {
     if (!node->has_attr(_T("table")))
         throw MandatoryAttributeAbsent(_T("foreign-key"), _T("table"));

@@ -4,7 +4,7 @@
 #include <util/str_utils.hpp>
 #include <orm/DataObject.h>
 #include <orm/DomainObject.h>
-#include <orm/XMLMetaDataConfig.h>
+#include <orm/MetaDataConfig.h>
 
 using namespace std;
 using namespace Yb;
@@ -470,7 +470,7 @@ public:
 "        <many class='OrmXml' property='orm_test' />"
 "    </relation>"
 "</schema>";
-        XMLMetaDataConfig cfg(xml);
+        MetaDataConfig cfg(xml);
         Schema r0;
         r_ = r0;
         cfg.parse(r_);

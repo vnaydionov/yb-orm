@@ -1,6 +1,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-#include <orm/XMLMetaDataConfig.h>
+#include <orm/MetaDataConfig.h>
 #include <util/Value.h>
 
 using namespace std;
@@ -37,7 +37,7 @@ class TestXMLConfig : public CppUnit::TestFixture
     CPPUNIT_TEST(testSerialize2);
     CPPUNIT_TEST_SUITE_END();
 
-    XMLMetaDataConfig cfg_;
+    MetaDataConfig cfg_;
 public:
     TestXMLConfig(): cfg_("<x/>") {}
 
@@ -56,7 +56,7 @@ public:
             "<column type='longint' name='BA'></column>"
             "</table>"
             "</schema>";
-        XMLMetaDataConfig cfg(xml);
+        MetaDataConfig cfg(xml);
         Schema reg;
         cfg.parse(reg);
         CPPUNIT_ASSERT_EQUAL(2, (int)reg.tbl_count());
@@ -185,7 +185,7 @@ public:
     void testGetWrongNodeValue()
     {
         int a;
-        XMLMetaDataConfig::get_node_ptr_value(
+        MetaDataConfig::get_node_ptr_value(
                 ElementTree::parse("<size>a</size>"), a);
     }
     
@@ -193,23 +193,23 @@ public:
     {
         String a;
         CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT,
-                XMLMetaDataConfig::string_type_to_int(String(_T("longint")),a));
+                MetaDataConfig::string_type_to_int(String(_T("longint")),a));
         CPPUNIT_ASSERT_EQUAL((int)Value::STRING,
-                XMLMetaDataConfig::string_type_to_int(String(_T("string")),a));
+                MetaDataConfig::string_type_to_int(String(_T("string")),a));
         CPPUNIT_ASSERT_EQUAL((int)Value::DECIMAL,
-                XMLMetaDataConfig::string_type_to_int(String(_T("decimal")),a));
+                MetaDataConfig::string_type_to_int(String(_T("decimal")),a));
         CPPUNIT_ASSERT_EQUAL((int)Value::DATETIME,
-                XMLMetaDataConfig::string_type_to_int(String(_T("datetime")),a));
+                MetaDataConfig::string_type_to_int(String(_T("datetime")),a));
         CPPUNIT_ASSERT_EQUAL((int)Value::INTEGER,
-                XMLMetaDataConfig::string_type_to_int(String(_T("Integer")),a));
+                MetaDataConfig::string_type_to_int(String(_T("Integer")),a));
         CPPUNIT_ASSERT_EQUAL((int)Value::FLOAT,
-                XMLMetaDataConfig::string_type_to_int(String(_T("FLOAT")),a));
+                MetaDataConfig::string_type_to_int(String(_T("FLOAT")),a));
     }
     
     void testWrongColumnType()
     {
         string xml = "<column type='long' name='ID'></column>";
-        Column col = XMLMetaDataConfig::fill_column_meta(ElementTree::parse(xml));
+        Column col = MetaDataConfig::fill_column_meta(ElementTree::parse(xml));
     }
     
     void testParseColumn()
@@ -217,7 +217,7 @@ public:
         string xml = "<column type='longint' name='ID' xml-name='i-d'>"
                      "<read-only/><primary-key/></column>";
         ElementTree::ElementPtr node(ElementTree::parse(xml));
-        Column col = XMLMetaDataConfig::fill_column_meta(node);
+        Column col = MetaDataConfig::fill_column_meta(node);
         CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(col.name()));
         CPPUNIT_ASSERT_EQUAL(true, col.is_pk());
         CPPUNIT_ASSERT_EQUAL(true, col.is_ro());
@@ -230,7 +230,7 @@ public:
         string xml = "<foreign-key table='T_INVOICE' key='ID'></foreign-key>";
         ElementTree::ElementPtr node(ElementTree::parse(xml));
         String fk_table, fk_field;
-        XMLMetaDataConfig::get_foreign_key_data(node, fk_table, fk_field);
+        MetaDataConfig::get_foreign_key_data(node, fk_table, fk_field);
         CPPUNIT_ASSERT_EQUAL(string("T_INVOICE"), NARROW(fk_table));
         CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(fk_field));
     }
@@ -239,14 +239,14 @@ public:
     {      
         string xml = "<column type='longint' name='ID' size='10' />";
         ElementTree::ElementPtr node(ElementTree::parse(xml));
-        Column col = XMLMetaDataConfig::fill_column_meta(node);
+        Column col = MetaDataConfig::fill_column_meta(node);
     }
 
     void testAbsentForeignKeyField()
     {
         string xml = "<foreign-key table='T_INVOICE'></foreign-key>";
         String fk_table, fk_field;
-        XMLMetaDataConfig::get_foreign_key_data(ElementTree::parse(xml),
+        MetaDataConfig::get_foreign_key_data(ElementTree::parse(xml),
                 fk_table, fk_field);
         CPPUNIT_ASSERT(str_empty(fk_field));
     }
@@ -255,7 +255,7 @@ public:
     {
         string xml = "<foreign-key key='ID'></foreign-key>";
         String fk_table, fk_field;
-        XMLMetaDataConfig::get_foreign_key_data(ElementTree::parse(xml),
+        MetaDataConfig::get_foreign_key_data(ElementTree::parse(xml),
                 fk_table, fk_field);
     }
     
@@ -263,19 +263,19 @@ public:
     {
         string xml = "<column type='longint'></column>";
         ElementTree::ElementPtr node(ElementTree::parse(xml));
-        Column col = XMLMetaDataConfig::fill_column_meta(node);
+        Column col = MetaDataConfig::fill_column_meta(node);
     }
 
     void testAbsentColumnType()
     {
         string xml = "<column name='ID'></column>";
         ElementTree::ElementPtr node(ElementTree::parse(xml));
-        Column col = XMLMetaDataConfig::fill_column_meta(node);
+        Column col = MetaDataConfig::fill_column_meta(node);
     }
 
     void testBadXML()
     {
-        XMLMetaDataConfig config("not a XML");
+        MetaDataConfig config("not a XML");
     }
 
     void testRelationSide() {

@@ -62,7 +62,7 @@ H_FILES = \
 	SqlPool.h \
 	DomainObject.h \
 	DomainFactory.h \
-	XMLMetaDataConfig.h \
+	MetaDataConfig.h \
 	XMLizer.h \
 	DataObject.h \
 	CodeGen.h
@@ -74,7 +74,7 @@ CPP_FILES = \
 	Engine.cpp \
 	SqlDriver.cpp \
 	SqlPool.cpp \
-	XMLMetaDataConfig.cpp \
+	MetaDataConfig.cpp \
 	XMLizer.cpp \
 	DomainFactory.cpp \
 	DataObject.cpp \
