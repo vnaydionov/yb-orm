@@ -1,5 +1,5 @@
 
-0.3.5
+0.4.0
     * New SQL driver for SOCI library (http://soci.sourceforge.net/).
       If you build with SOCI then you can use connection URL like this:
       "mysql+soci://user=test1 pass=test1_pwd host=localhost service=test1_db" -
@@ -25,6 +25,21 @@
       so you may encounter problems in case you run tests on existing table,
       things can be altered like this (example shown for MySQL):
       mysql> alter table T_ORM_TEST add (D double precision);
+
+0.3.5
+    * New SQL driver for SOCI library (http://soci.sourceforge.net/).
+      If you build with SOCI then you can use connection URL like this:
+      "mysql+soci://user=test1 pass=test1_pwd host=localhost service=test1_db"
+    * Support for floating point numeric types (Value::FLOAT).
+    * Did some profiling and made significant improvements in speed,
+      in particular: fixed input parameter binding; removed excessive use
+      of shared pointers, replaced them with intrusive pointers;
+      variant type Yb::Value is optimized to make less memory allocations.
+    * Pre-built packages for Windows now make use of single 
+      configuration file bin\yborm_env.bat.
+    * Auth sample: TcpSocket::accept() now can return source address of
+      incoming connection.
+    * Tested with Borland C++ Builder 6, kind of work.
 
 0.3.4
     * Implement order-by relationship property.

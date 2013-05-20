@@ -1,0 +1,240 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
+	<META NAME="CREATED" CONTENT="20130519;17473900">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20130519;17583600">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 21cm 29.7cm; margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H1 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H1.western { font-family: "Times New Roman", serif; font-size: 24pt; font-weight: bold }
+		H1.cjk { font-family: "Droid Sans Fallback"; font-size: 24pt; font-weight: bold }
+		H1.ctl { font-family: "Lohit Hindi"; font-size: 24pt; font-weight: bold }
+		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
+		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
+		TT.western { font-family: "Droid Sans Mono", monospace }
+		TT.cjk { font-family: "Droid Sans Fallback", monospace }
+		TT.ctl { font-family: "Lohit Hindi", monospace }
+		A:link { color: #000080; so-language: zxx; text-decoration: underline }
+		STRONG { font-weight: bold }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="ru-RU" LINK="#000080" VLINK="#800000" DIR="LTR">
+<H1 CLASS="western">Архтектура потоков данных</H1>
+<P>Подход ORM подразумевает добавление
+слоев абстракции, рассмотрим эти слои,
+начиная с самого верхнего и до нижнего.
+</P>
+<H2 CLASS="western"><A NAME="Объект-сессия_(Session)"></A><IMG SRC="pics/SqlDriver.1.png" NAME="Pic1" ALIGN=RIGHT WIDTH=274 HEIGHT=511 BORDER=0>Объект-сессия
+(Session)</H2>
+<P>Как и во многих решениях класса ORM,
+центральную роль в работе YB.ORM играет
+экземпляр класса сессии <TT CLASS="western">Yb::Session</TT>,
+который занимается отслеживанием всех
+отображенных объектов. Такие объекты
+можно создавать, удалять, загружать из
+базы или менять значения их атрибутов.
+Когда нужно применить все произведенные
+изменения к БД зовется соответствующий
+метод <TT CLASS="western">session.flush()</TT>. Он отправляет
+в БД последовательности запросов,
+отражающих данные изменения, поэтому-то
+объекту сессии нужен способ взаимодействия
+с базой. 
+</P>
+<H2 CLASS="western"><A NAME="Объект-шлюз_данных_(Engine)"></A>
+Объект-шлюз данных (Engine)</H2>
+<P>Каждый раз при создании новой сессии
+ей дается экземпляр класса <TT CLASS="western">Yb::Engine</TT>,
+служащий шлюзом между сессией и базой
+данных. В частности, шлюз заботится о
+генерации правильного кода SQL, и, конечно,
+он берет на себя обработку соединения
+с базой данных (<TT CLASS="western">Yb::SqlConnection</TT>)
+одним из следующих способов: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">Шлюз владеет одним
+	<I>объектом-подключением</I> к БД, который
+	он принимает при создании, шлюз отправляет
+	все операторы SQL в это соединение. 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">Как и в предыдущем
+	варианте, но шлюз при создании не
+	получает объект-подключение, вместо
+	этого он сам создает новое подключение
+	на основе <I>строки подключения</I>,
+	находящейся в переменной окружения
+	<TT CLASS="western">YBORM_URL</TT>. 
+	</P>
+	<LI><P>Шлюз держит <I>пул подключений</I> к
+	базе данных <TT CLASS="western">Yb::SqlPool</TT>, из
+	которого он извлекает по объекту-подключению
+	для каждой вновь создаваемой сессии.
+	Соответственно, шлюз же обеспечивает
+	возврат объекта-подключения обратно
+	в пул при окончании сессии. 
+	</P>
+</UL>
+<H2 CLASS="western"><A NAME="Объект-подключение_(Connection)"></A>
+Объект-подключение (Connection)</H2>
+<P>В языке C++, на сегодняшний день, нет
+стандартного способа взаимодействия
+с базой данных. Хотя существуют некоторые
+предложения (см. <A HREF="https://groups.google.com/a/isocpp.org/forum/#%21topic/std-proposals/iqOtgxP_IRA">N3612</A>),
+так что ситуация может поменяться.
+Использование интерфейса ODBC для языка
+C встречается часто, но считается, что
+ему не хватает производительности
+родных клиентских библиотек. Так что
+очевидным решением здесь стало создание
+тонкого слоя абстракции, чтобы в
+дальнейшем можно было реализовать
+различные варианты. Это как раз то, что
+делают классы <TT CLASS="western">Yb::SqlDriver</TT>,
+<TT CLASS="western">Yb::SqlConnection</TT>, <TT CLASS="western">Yb::SqlCursor</TT>
+и <TT CLASS="western">Yb::SqlResultSet</TT>. Они представляют
+довольно общий, но упрощенный интерфейс
+для выполнения операторов SQL и выборки
+результатов запросов, достаточный для
+работы шлюза. 
+</P>
+<H2 CLASS="western"><A NAME="Драйверы_SQL"></A>Драйверы
+SQL</H2>
+<P>Разработано несколько драйверов для
+различных интерфейсов API баз данных,
+каждый драйвер имеет свое имя: <TT CLASS="western">ODBC</TT>,
+<TT CLASS="western">SQLITE</TT>, <TT CLASS="western">QTSQL</TT>,
+<TT CLASS="western">QODBC3</TT>, <TT CLASS="western">SOCI</TT> и
+<TT CLASS="western">SOCI_ODBC</TT>. Некоторые из этих
+драйверов могут быть быть недоступны,
+в зависимости от конфигурации вашей
+сборки. При сборке YB.ORM с библиотекой
+Qt, становятся доступны родные драйверы
+БД под именем <TT CLASS="western">QTSQL</TT>, а под
+именем <TT CLASS="western">QODBC3</TT> доступна обертка
+для Qt над ODBC API. Имя <TT CLASS="western">SQLITE</TT>
+относится к родному драйверу для SQLite3.
+Недавно были добавлены драйверы <TT CLASS="western">SOCI</TT>
+и <TT CLASS="western">SOCI_ODBC</TT>, работающие через
+популярную библиотеку <A HREF="http://soci.sourceforge.net/">SOCI</A>.
+</P>
+<H1 CLASS="western"><A NAME="Создание_объекта-подключения"></A>
+Создание объекта-подключения</H1>
+<P>Можно инициализировать объект класса
+<TT CLASS="western">Yb::SqlConnection</TT> строкой
+подключения, которая содержит все
+необходимые параметры для установления
+подключения. Строка подключения для
+YB.ORM может выглядеть как адрес URL. В ней
+первым компонентом является часть
+<TT CLASS="western">диалект+драйвер://</TT>. Остальня
+часть строки может выглядеть специфично
+для драйвера. Поля диалект и драйвер не
+чувствительны к регистру. На данный
+момент диалект может принимать следующие
+значения: <TT CLASS="western">ORACLE</TT>, <TT CLASS="western">POSTGRES</TT>,
+<TT CLASS="western">INTERBASE</TT>, <TT CLASS="western">MYSQL</TT>
+или <TT CLASS="western">SQLITE</TT>. В этом списке
+диалект <TT CLASS="western">INTERBASE</TT> относится
+к СУБД InterBase и Firebird. 
+</P>
+<P>Ниже приведены некоторые примеры
+того, как указать подключение через
+ODBC: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&quot;interbase+odbc://test1_usr:test1_pwd@test1_dsn&quot;</TT>
+		</P>
+	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&quot;postgres+qodbc3://test1_usr:test1_pwd@test1_dsn&quot;</TT>
+		</P>
+	<LI><P><TT CLASS="western">&quot;mysql+soci_odbc://DSN=test1_dsn;UID=test1_usr;PWS=test1_pwd&quot;</TT>
+		</P>
+</UL>
+<P>а так же через родные драйверы: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&quot;mysql+qtsql://test1_usr:test1_pwd@127.0.0.1:3306/test1_db&quot;</TT>
+		</P>
+	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&quot;mysql+soci://user=test1_usr
+	pass=test1_pwd host=localhost service=test1_db&quot;</TT> 
+	</P>
+	<LI><P><TT CLASS="western">&quot;sqlite+sqlite://c:/yborm/examples/test1_db&quot;</TT>
+		</P>
+</UL>
+<P>Как можно видеть, для драйверов <TT CLASS="western">ODBC</TT>,
+<TT CLASS="western">QTSQL</TT>, <TT CLASS="western">QODBC3</TT>,
+<TT CLASS="western">SQLITE</TT> используется общий
+стиль строки подключения, похожий на
+адрес HTTP: 
+</P>
+<UL>
+	<LI><P><TT CLASS="western">&quot;диалект+драйвер://[пользователь[:пароль]@]узел[:порт]/база_данных[?свойство1=значение1...]&quot;</TT>
+		</P>
+</UL>
+<P>или, в случае подключения через ODBC,
+используется укороченная форма: 
+</P>
+<UL>
+	<LI><P><TT CLASS="western">&quot;диалект+драйвер://[пользователь[:пароль]@]источник_данных[?свойство1=значение1...]&quot;</TT>
+		</P>
+</UL>
+<P>В то же время, для драйверов <TT CLASS="western">SOCI</TT>
+и <TT CLASS="western">SOCI_ODBC</TT> остаток строки
+подключения просто передается в драйвер
+SOCI. 
+</P>
+<P><STRONG>ORACLE</STRONG> и <STRONG>ODBC</STRONG>: чтобы
+заработала данная связка под GNU/Linux
+x86_64 мне пришлось использовать
+unixODBC=2.3.0. Также заметьте, что кроме строки
+подключения, правильно настроенной
+записи источника данных ODBC DSN и обычных
+переменных окружения Oracle (<TT CLASS="western">ORACLE_HOME</TT>,
+<TT CLASS="western">TNS_ADMIN</TT>), может потребоваться
+установка специальной переменной
+окружения <TT CLASS="western">TWO_TASK</TT> в название
+вашей БД из файла <TT CLASS="western">tnsnames.ora</TT>,
+чтобы все заработало. 
+</P>
+<H2 CLASS="western"><A NAME="Переменная_окружения_YBORM_URL"></A>
+Переменная окружения YBORM_URL</H2>
+<P>Строка подключения к базе данных для
+запуска примеров и тестов передается
+через переменную окружения <TT CLASS="western">YBORM_URL</TT>,
+за исключением примеров из папки
+&quot;tutorial&quot;: у них строка подключения
+вшита прямо в исходный код. Фактически,
+эта переменная окружения используется
+если объект-шлюз класса <TT CLASS="western">Yb::Engine</TT>
+конструируется без параметров, кроме
+того, можно явно передать шлюзу при
+создании объект-подключение или пул
+подключений. 
+</P>
+<P><STRONG>POSIX</STRONG>: Можно установить эту
+переменную для всей сборки при запуске
+скрипта &quot;configure&quot;, просто передайте
+параметр вроде такого: 
+</P>
+<UL>
+	<LI><P><TT CLASS="western">--with-test-db-url=&quot;mysql+odbc://test1_usr:test1_pwd@test1_dsn&quot;</TT>
+		</P>
+</UL>
+<P><STRONG>WINDOWS</STRONG>: В предварительно
+собранном пакете для Windows ищите эту
+переменную внутри файла <TT CLASS="western">\bin\yborm_env.bat</TT>.
+</P>
+<P STYLE="margin-bottom: 0cm"><BR>
+</P>
+</BODY>
+</HTML>

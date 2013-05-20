@@ -1,10 +1,11 @@
-install (FILES 
-    Internals.en.odt Internals.ru.odt 
-    XmlFormat.en.odt XmlFormat.ru.odt 
-    Tutorial1.en.odt Tutorial1.ru.odt 
-    Tutorial2.en.odt Tutorial2.ru.odt 
-    Tutorial3.en.odt Tutorial3.ru.odt 
-    build-yborm-under-mingw.odt 
-    msvc-settings.odt msvc-settings.pdf 
-    README.msvc2008.txt
+install (FILES
+    Internals.en.html Internals.ru.html
+    SqlDriver.en.html SqlDriver.ru.html
+    XmlFormat.en.html XmlFormat.ru.html
+    Tutorial1.en.html Tutorial1.ru.html
+    Tutorial2.en.html Tutorial2.ru.html
+    Tutorial3.en.html Tutorial3.ru.html
+    msvc-settings.html
     DESTINATION doc)
+
+add_subdirectory (pics)

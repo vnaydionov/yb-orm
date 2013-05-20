@@ -1,0 +1,221 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
+	<META NAME="CREATED" CONTENT="20130520;9440700">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20130520;9461600">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 21cm 29.7cm; margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
+		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
+		PRE.western { font-family: "Droid Sans Mono", monospace; font-size: 10pt }
+		PRE.cjk { font-family: "Droid Sans Fallback", monospace; font-size: 10pt }
+		PRE.ctl { font-family: "Lohit Hindi", monospace; font-size: 10pt }
+		TT.western { font-family: "Droid Sans Mono", monospace }
+		TT.cjk { font-family: "Droid Sans Fallback", monospace }
+		TT.ctl { font-family: "Lohit Hindi", monospace }
+		A:link { color: #000080; so-language: zxx; text-decoration: underline }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" LINK="#000080" VLINK="#800000" DIR="LTR">
+<H2 CLASS="western">Mapping related tables: one-to-many (tut2.cpp)</H2>
+<P>Suppose you have two related tables: there are many rows in
+<TT CLASS="western">order_tbl</TT> table corresponding to just one
+row in <TT CLASS="western">client</TT> table. At SQL level this can
+be expressed as having &quot;foreign key constraint&quot; on column
+<TT CLASS="western">order_tbl.client_id</TT> in &quot;child&quot;
+table referencing column <TT CLASS="western">client.id</TT> in
+&quot;parent&quot; table. 
+</P>
+<P>At ORM level such relations are represented by objects'
+properties. An instance of a class that maps to the child table
+usually has an object reference property, referring to the parent
+object. From the other side of such relation, the instance of a class
+that maps to the parent table may have a collection-of-objects
+property (which is sometimes called &quot;backref&quot;), to be able
+to iterate all over its children. 
+</P>
+<P>First, let's define table mapping and describe their relationship
+in XML file: 
+</P>
+<PRE CLASS="western">&lt;schema&gt;
+&nbsp; &nbsp; &lt;table name=&quot;client_tbl&quot; sequence=&quot;seq_client&quot; class=&quot;Client&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;primary-key /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;/column&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;dt&quot; type=&quot;datetime&quot; null=&quot;false&quot; default=&quot;sysdate&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;name&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;email&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;budget&quot; type=&quot;decimal&quot; /&gt;
+&nbsp; &nbsp; &lt;/table&gt;
+&nbsp; &nbsp; &lt;table name=&quot;order_tbl&quot; sequence=&quot;seq_order&quot; class=&quot;Order&quot; xml-name=&quot;order&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;primary-key /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;/column&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;client_id&quot; type=&quot;longint&quot; null=&quot;false&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;foreign-key table=&quot;client&quot; key=&quot;id&quot;/&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;/column&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;dt&quot; type=&quot;datetime&quot; null=&quot;false&quot; default=&quot;sysdate&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;memo&quot; type=&quot;string&quot; size=&quot;100&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;total_sum&quot; type=&quot;decimal&quot; null=&quot;false&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;receipt_sum&quot; type=&quot;decimal&quot; default=&quot;0&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;receipt_dt&quot; type=&quot;datetime&quot; /&gt;
+&nbsp; &nbsp; &lt;/table&gt;
+&nbsp; &nbsp; &lt;relation type=&quot;one-to-many&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;one class=&quot;Client&quot; property=&quot;orders&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;many class=&quot;Order&quot; property=&quot;owner&quot; /&gt;
+&nbsp; &nbsp; &lt;/relation&gt;
+&lt;/schema&gt;</PRE><P>
+When you generate SQL code (MySQL dialect) for the declaration above
+(see <A HREF="Tutorial1.en.html">Tutorial1</A>),
+it will look like this: 
+</P>
+<PRE CLASS="western">&nbsp;CREATE TABLE client (
+&nbsp; &nbsp; &nbsp;id BIGINT NOT NULL AUTO_INCREMENT,
+&nbsp; &nbsp; &nbsp;dt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+&nbsp; &nbsp; &nbsp;name VARCHAR(100) NOT NULL,
+&nbsp; &nbsp; &nbsp;email VARCHAR(100) NOT NULL,
+&nbsp; &nbsp; &nbsp;budget DECIMAL(16, 6)
+&nbsp; &nbsp; &nbsp;, PRIMARY KEY (id)
+&nbsp;) ENGINE=INNODB DEFAULT CHARSET=utf8;
+&nbsp;
+CREATE TABLE order_tbl (
+&nbsp; &nbsp; &nbsp;id BIGINT NOT NULL AUTO_INCREMENT,
+&nbsp; &nbsp; &nbsp;client_id BIGINT NOT NULL,
+&nbsp; &nbsp; &nbsp;dt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+&nbsp; &nbsp; &nbsp;memo VARCHAR(100),
+&nbsp; &nbsp; &nbsp;total_sum DECIMAL(16, 6) NOT NULL,
+&nbsp; &nbsp; &nbsp;receipt_sum DECIMAL(16, 6) DEFAULT 0,
+&nbsp; &nbsp; &nbsp;receipt_dt TIMESTAMP
+&nbsp; &nbsp; &nbsp;, PRIMARY KEY (id)
+&nbsp;) ENGINE=INNODB DEFAULT CHARSET=utf8;
+&nbsp;
+ALTER TABLE order_tbl ADD FOREIGN KEY (client_id) REFERENCES client(id);
+&nbsp;</PRE><P>
+The following program uses the domain classes, generated from the XML
+description, see <A HREF="Tutorial1.en.html">Tutorial1</A>.
+The program creates the child object first and assigns some values to
+its fields, then it creates the parent object, and then it links the
+child to the parent. After all it stores the objects to the session
+and flushes them to the database committing transaction as well
+(<TT CLASS="western">session.commit();</TT>). Note, that these
+objects will be stored in proper sequence (first - parent, second -
+child), also note that the foreign key value is assigned
+automatically, as well as primary key values. 
+</P>
+<PRE CLASS="western">#include &lt;memory&gt;
+#include &lt;iostream&gt;
+#include &quot;domain/Client.h&quot;
+#include &quot;domain/Order.h&quot;
+using namespace std;
+int main()
+{
+&nbsp; &nbsp; //Yb::LogAppender appender(cerr);
+&nbsp; &nbsp; auto_ptr&lt;Yb::SqlConnection&gt; conn(new Yb::SqlConnection(
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &quot;mysql://test1_usr:test1_pwd@test1_db&quot;));
+&nbsp; &nbsp; Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
+&nbsp; &nbsp; //engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&amp;appender)));
+&nbsp; &nbsp; //engine.set_echo(true);
+&nbsp; &nbsp; Yb::Session session(Yb::init_schema(), &amp;engine);
+&nbsp; &nbsp; Domain::OrderHolder order;
+&nbsp; &nbsp; string amount;
+&nbsp; &nbsp; cout &lt;&lt; &quot;Enter order amount: \n&quot;;
+&nbsp; &nbsp; cin &gt;&gt; amount;
+&nbsp; &nbsp; order-&gt;total_sum = Yb::Decimal(amount);
+&nbsp; &nbsp; Domain::ClientHolder client;
+&nbsp; &nbsp; string name, email;
+&nbsp; &nbsp; cout &lt;&lt; &quot;Enter name, email: \n&quot;;
+&nbsp; &nbsp; cin &gt;&gt; name &gt;&gt; email;
+&nbsp; &nbsp; client-&gt;name = name;
+&nbsp; &nbsp; client-&gt;email = email;
+&nbsp; &nbsp; client-&gt;dt = Yb::now();
+&nbsp; &nbsp; cout &lt;&lt; &quot;Client's orders count: &quot; &lt;&lt; client-&gt;orders.size() &lt;&lt; &quot;\n&quot;;
+&nbsp; &nbsp; order-&gt;owner = client;
+&nbsp; &nbsp; cout &lt;&lt; &quot;Client's orders count: &quot; &lt;&lt; client-&gt;orders.size() &lt;&lt; &quot;\n&quot;;
+&nbsp; &nbsp; order-&gt;save(session);
+&nbsp; &nbsp; client-&gt;save(session);
+&nbsp; &nbsp; session.commit();
+&nbsp; &nbsp; cout &lt;&lt; order-&gt;xmlize(1)-&gt;serialize() &lt;&lt; endl;
+&nbsp; &nbsp; return 0;
+}</PRE><P>
+Here you can see that linking a child (<TT CLASS="western">Order</TT>
+class) to a parent (<TT CLASS="western">Client</TT> class) looks like
+an assignment (<TT CLASS="western">order-&gt;owner = client;</TT>).
+But this operation also leads to the alteration of <TT CLASS="western">orders</TT>
+collection of corresponding instance of <TT CLASS="western">Client</TT>
+class. This is because both <TT CLASS="western">client-&gt;orders</TT>
+and <TT CLASS="western">order-&gt;client</TT> share the same
+<TT CLASS="western">RelationObject</TT> internally. 
+</P>
+<P>This example does not operate the domain classes directly, as in
+<A HREF="Tutorial1.en.html">Tutorial1</A>,
+but instead uses <TT CLASS="western">&lt;Domain&gt;Holder</TT>
+classes which are necessary to implement recurrent (nested) object
+references. That is, all the object properties are implemented using
+<TT CLASS="western">&lt;Domain&gt;Holder</TT> classes, and therefore
+they must be de-referenced using arrow (<TT CLASS="western">-&gt;</TT>),
+not just dot (<TT CLASS="western">.</TT>). 
+</P>
+<P>If you trace the SQL operators, by enabling logging for example
+(just uncomment commented lines in the example), then you'll see the
+following (in case of using MySQL): 
+</P>
+<PRE CLASS="western">&nbsp;prepare: INSERT INTO client (dt, name, email, budget) VALUES (?, ?, ?, ?)
+&nbsp;exec prepared: p1=&quot;'2012-07-16 15:29:17'&quot; p2=&quot;'Petya'&quot; p3=&quot;'petya@pupkin.com'&quot; p4=&quot;NULL&quot;
+&nbsp;exec_direct: SELECT LAST_INSERT_ID() LID
+&nbsp;fetch: LID=9 
+&nbsp;fetch: no more rows
+&nbsp;prepare: INSERT INTO order_tbl (client_id, dt, memo, total_sum, receipt_sum, receipt_dt) VALUES (?, ?, ?, ?, ?, ?)
+&nbsp;exec prepared: p1=&quot;9&quot; p2=&quot;'2012-07-16 15:29:01'&quot; p3=&quot;NULL&quot; p4=&quot;123.45&quot; p5=&quot;0&quot; p6=&quot;NULL&quot;
+&nbsp;exec_direct: SELECT LAST_INSERT_ID() LID
+&nbsp;fetch: LID=8 
+&nbsp;fetch: no more rows
+&nbsp;commit
+&nbsp;prepare: SELECT id, client_id, dt, memo, total_sum, receipt_sum, receipt_dt FROM order_tbl WHERE 1=1 AND id = ?
+&nbsp;exec prepared: p1=&quot;8&quot;
+&nbsp;fetch: ID=8 CLIENT_ID=9 DT='2012-07-16 15:29:01' MEMO=NULL TOTAL_SUM='123.450000' RECEIPT_SUM='0.000000' RECEIPT_DT=NULL 
+&nbsp;fetch: no more rows
+&nbsp;prepare: SELECT id, dt, name, email, budget FROM client WHERE 1=1 AND id = ?
+&nbsp;exec prepared: p1=&quot;9&quot;
+&nbsp;fetch: ID=9 DT='2012-07-16 15:29:17' NAME='Petya' EMAIL='petya@pupkin.com' BUDGET=NULL 
+&nbsp;fetch: no more rows
+&nbsp;rollback
+&nbsp;</PRE><P>
+or something like that (in case you're using ORACLE): 
+</P>
+<PRE CLASS="western">&nbsp;prepare: SELECT seq_client.NEXTVAL FROM DUAL
+&nbsp;exec prepared:
+&nbsp;fetch: NEXTVAL='2' 
+&nbsp;fetch: no more rows
+&nbsp;prepare: INSERT INTO client (id, dt, name, email, budget) VALUES (?, ?, ?, ?, ?)
+&nbsp;exec prepared: p1=&quot;2&quot; p2=&quot;'2012-07-16 15:28:09'&quot; p3=&quot;'Petya'&quot; p4=&quot;'petya@pupkin.com'&quot; p5=&quot;NULL&quot;
+&nbsp;prepare: SELECT seq_order.NEXTVAL FROM DUAL
+&nbsp;exec prepared:
+&nbsp;fetch: NEXTVAL='4' 
+&nbsp;fetch: no more rows
+&nbsp;prepare: INSERT INTO order_tbl (id, client_id, dt, memo, total_sum, receipt_sum, receipt_dt) VALUES (?, ?, ?, ?, ?, ?, ?)
+&nbsp;exec prepared: p1=&quot;4&quot; p2=&quot;2&quot; p3=&quot;'2012-07-16 15:27:58'&quot; p4=&quot;NULL&quot; p5=&quot;123.45&quot; p6=&quot;0&quot; p7=&quot;NULL&quot;
+&nbsp;commit
+&nbsp;prepare: SELECT id, client_id, dt, memo, total_sum, receipt_sum, receipt_dt FROM order_tbl WHERE 1=1 AND id = ?
+&nbsp;exec prepared: p1=&quot;4&quot;
+&nbsp;fetch: ID='4' CLIENT_ID='2' DT='2012-07-16 15:27:58' MEMO=NULL TOTAL_SUM='123.45' RECEIPT_SUM='0' RECEIPT_DT=NULL
+&nbsp;fetch: no more rows
+&nbsp;prepare: SELECT id, dt, name, email, budget FROM client WHERE 1=1 AND id = ?
+&nbsp;exec prepared: p1=&quot;2&quot;
+&nbsp;fetch: ID='2' DT='2012-07-16 15:28:09' NAME='Petya' EMAIL='petya@pupkin.com' BUDGET=NULL
+&nbsp;fetch: no more rows
+&nbsp;rollback
+&nbsp;</PRE><P STYLE="margin-bottom: 0cm">
+<BR>
+</P>
+</BODY>
+</HTML>

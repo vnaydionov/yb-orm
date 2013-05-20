@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
+	<META NAME="CREATED" CONTENT="20130520;10223900">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20130520;10235200">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 21cm 29.7cm; margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
+		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
+		TT.western { font-family: "Droid Sans Mono", monospace }
+		TT.cjk { font-family: "Droid Sans Fallback", monospace }
+		TT.ctl { font-family: "Lohit Hindi", monospace }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" LINK="#000080" VLINK="#800000" DIR="LTR">
+<H2 CLASS="western">Implementing the “1 to n” relation</H2>
+<P>Here is my view on how one could implement the “1 to n”
+relation. Side “1” is the master table, whereas side “n”
+corresponds to the slave (child) table. I suppose, we want to
+manipulate the relation from both sides. From slave's point the
+relation would look like a single object property, possibly with
+ability to set/change/clear the object reference specified by the
+property. From master's point the same relation would be a
+collection-like property, providing us with the means to iterate
+over/add/delete object references from that collection. Since any
+changes made to one side of the relation must be instantly made
+available from the other side, we have two options: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">Propagate the changes to all
+	participants of the relation immediately. In this case the
+	collection-like property mentioned above could be implemented using
+	general-purpose container class, with the alteration methods
+	overridden. 
+	</P>
+	<LI><P>Introduce some kind of intermediate “instance-of-relation”
+	object, which will own all of the information about the relation for
+	just one instance of master object. In this case each call for
+	properties from either side will fetch requested info from that
+	intermediate object. 
+	</P>
+</UL>
+<P>Choosing between the two involves answering several important
+questions: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">How the instances of mapped
+	classes should be created? Could we create an instance without
+	saving it in the <TT CLASS="western">IdentityMap</TT>? How about
+	creating a linked structure of newly created objects? 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">Could the instances of mapped
+	classes be copied, at the same time retaining some knowledge one
+	about each other, to propagate the changes? Or maybe we should have
+	exactly one instance for each table record? 
+	</P>
+	<LI><P>Who is responsible for object deletion in all possible cases?
+		</P>
+</UL>
+<P>In either case the are some features, that are usually present in
+any ORM-like solution. For example, the <TT CLASS="western">IdentityMap</TT>
+design pattern assumes you register all instances of mapped classes
+that should render their changes to the DB in some kind of registry.
+This is necessary to perform later the “flush” operation. Of
+course, this requires maintaining the record status. I found the
+“instance-of-relation” approach to be relatively easier to
+implement. Particularly, take a look at source files <TT CLASS="western">DataObject.h</TT>,
+<TT CLASS="western">DataObject.cpp</TT>, and the tests in
+<TT CLASS="western">TestDataObject.cpp</TT> (folder <TT CLASS="western">lib/orm/</TT>).
+YB.ORM library employs variant typed objects internally with
+statically typed “thin” wrappers on top. The <TT CLASS="western">DataObject</TT>
+class represents an instance of mapped class, where mapping rules are
+given in the metadata description. Such objects are always allocated
+in heap and are not copyable. They store the data values. They have a
+link to metadata information for the mapped table. Of course, current
+state is maintained within those objects, one of: <TT CLASS="western">New</TT>
+(a newly created object), <TT CLASS="western">Ghost</TT> (no object
+present, just an ID), <TT CLASS="western">Dirty</TT> (object is
+loaded and altered), <TT CLASS="western">Sync</TT> (object is loaded,
+no changes), <TT CLASS="western">ToBeDeleted</TT> (marked for
+deletion), <TT CLASS="western">Deleted</TT> (finally deleted). To
+support relations in which this class presents the “n” side, each
+of them has a set of pointers to instances of <TT CLASS="western">RelationObject</TT>
+class (<TT CLASS="western">slave_relations_</TT> member). To support
+relations in which this class presents the “1” side, each of them
+also has a set of shared pointers to instances of <TT CLASS="western">RelationObject</TT>
+class (<TT CLASS="western">master_relations_</TT> member). 
+</P>
+<P>The <TT CLASS="western">RelationObject</TT> class represents an
+instance of a relation. Such objects are always allocated in heap and
+are not copyable. They store and enumerate pointers to related
+<TT CLASS="western">DataObject</TT> instances: one pointer to master,
+and set of shared pointers to slaves. Thus they “own” slave
+<TT CLASS="western">DataObject</TT> instances, and the <TT CLASS="western">DataObject</TT>
+instances “own” (indirectly) all of the slave objects. Note, that
+<TT CLASS="western">RelationObject</TT> itself maintains something
+like state, to support lazy loading. 
+</P>
+<P>Some pics: 
+</P>
+<IMG SRC="pics/Internals.1.en.png" NAME="Pic1" ALIGN=BOTTOM WIDTH=1024 HEIGHT=550 BORDER=0>
+<P STYLE="margin-bottom: 0cm"><BR>
+</P>
+</BODY>
+</HTML>

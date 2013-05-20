@@ -1,0 +1,186 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
+	<META NAME="CREATED" CONTENT="20130520;10080200">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20130520;10121000">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 21cm 29.7cm; margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H1 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H1.western { font-family: "Times New Roman", serif; font-size: 24pt; font-weight: bold }
+		H1.cjk { font-family: "Droid Sans Fallback"; font-size: 24pt; font-weight: bold }
+		H1.ctl { font-family: "Lohit Hindi"; font-size: 24pt; font-weight: bold }
+		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
+		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
+		TT.western { font-family: "Droid Sans Mono", monospace }
+		TT.cjk { font-family: "Droid Sans Fallback", monospace }
+		TT.ctl { font-family: "Lohit Hindi", monospace }
+		A:link { color: #000080; so-language: zxx; text-decoration: underline }
+		STRONG { font-weight: bold }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" LINK="#000080" VLINK="#800000" DIR="LTR">
+<H1 CLASS="western">Data flow architecture</H1>
+<P>ORM is all about abstraction layers, so let's look at the layers
+from top to bottom. 
+</P>
+<H2 CLASS="western"><A NAME="Session"></A><IMG SRC="pics/SqlDriver.1.png" NAME="Pic1" ALIGN=RIGHT WIDTH=274 HEIGHT=511 BORDER=0>Session</H2>
+<P>Like in many ORM solutions, the central role in YB.ORM workflow
+plays instance of <TT CLASS="western">Yb::Session</TT> class, which
+keeps track of all mapped objects. These objects may be created or
+deleted, get loaded or receive changes to their attributes. When
+there's a need to apply all changes to database, one calls
+<TT CLASS="western">session.flush()</TT>. This method issues
+sequences of SQL statements to the database to reflect all the
+changes made, so session needs a way to communicate to database. 
+</P>
+<H2 CLASS="western"><A NAME="Engine"></A>Engine</H2>
+<P>Each time a new session is created, the session is given an
+engine, an instance of <TT CLASS="western">Yb::Engine</TT> class,
+which acts like a gate between session and database. In particular,
+engine takes care of correct SQL code generation for certain dialect,
+and, of course, it handles the connection to database
+(<TT CLASS="western">Yb::SqlConnection</TT>) in one of the following
+ways: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">Engine owns a single <I>connection
+	object</I>, that was passed in on engine creation, it sends all SQL
+	statements to that connection. 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">Like the above, but no connection
+	object is passed on engine creation, instead, engine creates a new
+	connection based on <I>connection string</I> found in environment
+	variable <TT CLASS="western">YBORM_URL</TT>. 
+	</P>
+	<LI><P>Engine holds a <I>pool of database connections</I>
+	<TT CLASS="western">Yb::SqlPool</TT>, from which it fetches a
+	connection object for each newly created session. Respectively,
+	engine manages to return connection object back into the pool on
+	session destruction. 
+	</P>
+</UL>
+<H2 CLASS="western"><A NAME="Connection"></A>Connection</H2>
+<P>In C++, at least for now, there is no standard way to communicate
+to a relational database. Although, there are some proposals (see
+<A HREF="https://groups.google.com/a/isocpp.org/forum/#%21topic/std-proposals/iqOtgxP_IRA">N3612</A>),
+so things may change. Use of pure C ODBC API is common, but is
+considered as lacking speed of native client libraries. So the
+obvious decision here was to make a thin layer of abstraction to
+allow for multiple future implementations. This is what classes
+<TT CLASS="western">Yb::SqlDriver</TT>, <TT CLASS="western">Yb::SqlConnection</TT>,
+<TT CLASS="western">Yb::SqlCursor</TT> and <TT CLASS="western">Yb::SqlResultSet</TT>
+do. They provide generic but still basic interface for SQL statement
+execution and result set fetching, for engine to do its job. 
+</P>
+<H2 CLASS="western"><A NAME="SQL_drivers"></A>SQL drivers</H2>
+<P>Several drivers for distinct database API are available now, each
+has its own name: <TT CLASS="western">ODBC</TT>, <TT CLASS="western">SQLITE</TT>,
+<TT CLASS="western">QTSQL</TT>, <TT CLASS="western">QODBC3</TT>, <TT CLASS="western">SOCI</TT>
+and <TT CLASS="western">SOCI_ODBC</TT>. Some of the drivers may not
+be available, depending on your build configuration. When building
+YB.ORM against Qt, there are native database drivers available under
+<TT CLASS="western">QTSQL</TT> name, while <TT CLASS="western">QODBC3</TT>
+means Qt wrapper around ODBC API. Name <TT CLASS="western">SQLITE</TT>
+refers to the native driver for SQLite3. Recently <TT CLASS="western">SOCI</TT>
+and <TT CLASS="western">SOCI_ODBC</TT> drivers have been added, that
+work through a popular library <A HREF="http://soci.sourceforge.net/">SOCI</A>.
+</P>
+<H1 CLASS="western"><A NAME="Creating_a_connection_object"></A>Creating
+a connection object</H1>
+<P><TT CLASS="western">Yb::SqlConnection</TT> object may be
+initialized with a connection string, that contains all the necessary
+properties for the connection. A connection string for YB.ORM looks
+like an URL. First component of such URL is <TT CLASS="western">dialect+driver://</TT>
+part. The rest of connection string may look driver-specific. Dialect
+and driver names are case-insensitive. For now <TT CLASS="western">dialect</TT>
+can be one of the following: <TT CLASS="western">ORACLE</TT>,
+<TT CLASS="western">POSTGRES</TT>, <TT CLASS="western">INTERBASE</TT>,
+<TT CLASS="western">MYSQL</TT> or <TT CLASS="western">SQLITE</TT>.
+Note, that <TT CLASS="western">INTERBASE</TT> dialect name represents
+both InterBase and Firebird RDBMS. 
+</P>
+<P>Look at some examples of how to specify a connection using ODBC: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&quot;interbase+odbc://test1_usr:test1_pwd@test1_dsn&quot;</TT>
+		</P>
+	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&quot;postgres+qodbc3://test1_usr:test1_pwd@test1_dsn&quot;</TT>
+		</P>
+	<LI><P><TT CLASS="western">&quot;mysql+soci_odbc://DSN=test1_dsn;UID=test1_usr;PWS=test1_pwd&quot;</TT>
+		</P>
+</UL>
+<P>and native drivers: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&quot;mysql+qtsql://test1_usr:test1_pwd@127.0.0.1:3306/test1_db&quot;</TT>
+		</P>
+	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&quot;mysql+soci://user=test1_usr
+	pass=test1_pwd host=localhost service=test1_db&quot;</TT> 
+	</P>
+	<LI><P><TT CLASS="western">&quot;sqlite+sqlite://c:/yborm/examples/test1_db&quot;</TT>
+		</P>
+</UL>
+<P>As you can see, drivers <TT CLASS="western">ODBC</TT>, <TT CLASS="western">QTSQL</TT>,
+<TT CLASS="western">QODBC3</TT>, <TT CLASS="western">SQLITE</TT> all
+employ common HTTP-like style for their connection strings: 
+</P>
+<UL>
+	<LI><P><TT CLASS="western">&quot;dialect+driver://[user[:password]@]host[:port]/database[?property1=value1...]&quot;</TT>
+		</P>
+</UL>
+<P>or, in case of connection string for ODBC, the shorter form is
+used: 
+</P>
+<UL>
+	<LI><P><TT CLASS="western">&quot;dialect+driver://[user[:password]@]dsn[?property1=value1...]&quot;</TT>
+		</P>
+</UL>
+<P>Whereas <TT CLASS="western">SOCI</TT> and <TT CLASS="western">SOCI_ODBC</TT>
+drivers just pass the rest of the connection string directly to the
+SOCI backend. 
+</P>
+<P><STRONG>ORACLE</STRONG> and <STRONG>ODBC</STRONG>: to get Oracle
+ODBC driver working under GNU/Linux x86_64 I have used
+unixODBC=2.3.0. Also note, that beside of the connection string,
+properly set up ODBC DSN record, and the usual Oracle environment
+variables (<TT CLASS="western">ORACLE_HOME</TT>, <TT CLASS="western">TNS_ADMIN</TT>),
+you may have to set special environment variable <TT CLASS="western">TWO_TASK</TT>
+to your database name from <TT CLASS="western">tnsnames.ora</TT>
+file, in order to get it working. 
+</P>
+<H2 CLASS="western"><A NAME="Environment_variable_YBORM_URL"></A>Environment
+variable YBORM_URL</H2>
+<P>The database connection string to run examples and tests is passed
+through the environment variable <TT CLASS="western">YBORM_URL</TT>,
+except for those apps in &quot;tutorial&quot; directory: they have
+connection strings hard-coded directly in their source code. In fact
+this environment variable is used if you construct <TT CLASS="western">Yb::Engine</TT>
+instance with no parameters, also you can give a connection object or
+a connection pool object to your engine, explicitly. 
+</P>
+<P><STRONG>POSIX</STRONG>: You can set this variable for the whole
+build when you run &quot;configure&quot; script, just pass a
+parameter like this: 
+</P>
+<UL>
+	<LI><P><TT CLASS="western">--with-test-db-url=&quot;mysql+odbc://test1_usr:test1_pwd@test1_dsn&quot;</TT>
+		</P>
+</UL>
+<P><STRONG>WINDOWS</STRONG>: In a pre-built package for Windows look
+inside <TT CLASS="western">\bin\yborm_env.bat</TT> file for this
+variable. 
+</P>
+<P STYLE="margin-bottom: 0cm"><BR>
+</P>
+</BODY>
+</HTML>

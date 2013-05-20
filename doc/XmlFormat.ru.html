@@ -1,0 +1,259 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
+	<META NAME="CREATED" CONTENT="20130519;18092500">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20130519;18102000">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 21cm 29.7cm; margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
+		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
+		BLOCKQUOTE { margin-left: 1cm; margin-right: 1cm }
+		TT.western { font-family: "Droid Sans Mono", monospace }
+		TT.cjk { font-family: "Droid Sans Fallback", monospace }
+		TT.ctl { font-family: "Lohit Hindi", monospace }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="ru-RU" LINK="#000080" VLINK="#800000" DIR="LTR">
+<H2 CLASS="western">Далее кратко описан формат
+XML метаданных</H2>
+<P>Смотри также примеры в папке <TT CLASS="western">examples</TT>.
+</P>
+<P><TT CLASS="western">&lt;schema&gt;</TT> - корневой
+элемент, может содержать элементы
+<TT CLASS="western">&lt;table&gt;</TT> и <TT CLASS="western">&lt;relation&gt;</TT>.
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;table&gt;</TT>
+	- элемент описывает структуру таблицы,
+	ее колонки, связь с классом. Имеет
+	следующие атрибуты: 
+	</P>
+	<UL>
+		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">name</TT> -
+		(обязательный) имя таблицы, как в SQL; 
+		</P>
+		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">sequence</TT>
+		- (опциональный) имя генератора
+		последовательности, который задает
+		значения для первичного ключа. Первичный
+		ключ должен быть суррогатным ID. Если
+		этот атрибут не пустой при использовании
+		с БД, не имеющей генераторов (напр.
+		MySQL), то это означает, что значения ключа
+		генерируются автоматически; 
+		</P>
+		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">class</TT> -
+		(опциональный) имя класса, в который
+		нужно отобразить данную таблицу; 
+		</P>
+		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">xml-name</TT>
+		- (опциональный) имя элемента XML,
+		используется механизмом <TT CLASS="western">AutoXMLizer</TT>,
+		если не задан используется имя таблицы,
+		приведенное к нижнему регистру, <TT CLASS="western">'_'</TT>
+		заменяются на <TT CLASS="western">'-'</TT>. 
+		</P>
+		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;column&gt;</TT>
+		- элемент <TT CLASS="western">&lt;table&gt;</TT> содержит
+		один или более элементов <TT CLASS="western">&lt;column&gt;</TT>,
+		каждый из которых описывает одну
+		колонку. Он имеет следующие атрибуты:
+				</P>
+		<UL>
+			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">name</TT> -
+			(обязательный) имя колонки, как в SQL; 
+			</P>
+			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">type</TT> -
+			(обязательный) тип данных колонки,
+			сейчас поддерживаются следующие типы
+			данных: 
+			</P>
+			<UL>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">integer</TT>
+				- 32-битное целое число (как минимум) 
+				</P>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">longint</TT>
+				- (как минимум) 64-битное целое число,
+				подходит для разных ID 
+				</P>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">decimal</TT>
+				- десятичное число с точкой, подходит
+				для хранения денежных величин и т.д.
+								</P>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">datetime</TT>
+				- временная метка, включает дату и
+				время 
+				</P>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">string</TT>
+				- строка символов; 
+				</P>
+			</UL>
+			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">size</TT> -
+			(обязательный для типа string, иначе не
+			используется) - максимальная длина
+			значения; 
+			</P>
+			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">null</TT> -
+			(опциональный) если колонке можно
+			присвоить значение <TT CLASS="western">NULL</TT>,
+			возможные значения - <TT CLASS="western">&quot;true&quot;</TT>
+			и <TT CLASS="western">&quot;false&quot;</TT>. По умолчанию
+			- <TT CLASS="western">&quot;true&quot;</TT>, если не
+			сказано, что колонка входит в состав
+			первичного ключа; 
+			</P>
+			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">default</TT>
+			- (опциональный) значение по умолчанию,
+			присваиваемое колонке. Этот атрибут
+			может содержать константу того типа,
+			который задан в атрибуте <TT CLASS="western">&quot;type&quot;</TT>,
+			для типа <TT CLASS="western">&quot;datetime&quot;</TT>
+			предусмотрено специальное значение
+			<TT CLASS="western">&quot;sysdate&quot;</TT>, обозначающее
+			текущие время и дату; 
+			</P>
+			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">property</TT>
+			- (опциональный) имя атрибута объекта,
+			если оличается от имени колонки; 
+			</P>
+			<LI><P><TT CLASS="western">xml-name</TT> - (опциональный)
+			имя элемента XML, используется механизмом
+			<TT CLASS="western">AutoXMLizer</TT>, если не задан
+			используется имя колонки, приведенное
+			к нижнему регистру, <TT CLASS="western">'_'</TT>
+			заменяются на <TT CLASS="western">'-'</TT>. Чтобы
+			колонка не выводилась в XML установите
+			это поле в специальное значение <TT CLASS="western">'!'</TT>.
+						</P>
+		</UL>
+		<BLOCKQUOTE>Элемент <TT CLASS="western">&lt;column&gt;</TT>
+		может содержать вложенные элементы,
+		которые описывают дополнительные
+		ограничения для данной колонки: 
+		</BLOCKQUOTE>
+		<UL>
+			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;read-only&gt;</TT>
+			- колонке значение может быть присвоено
+			лишь при создании, последующие попытки
+			обновления приведут к ошибке. 
+			</P>
+			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;primary-key&gt;</TT>
+			- колонка является первичным ключом
+			или входит в состав сложного первичного
+			ключа. 
+			</P>
+			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;foreign-key&gt;</TT>
+			- колонка ссылается на другие таблицу
+			и колонку, это называется ограничением
+			внешнего ключа. Этот элемент имеет
+			следующие атрибуты: 
+			</P>
+			<UL>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">table</TT>
+				- (обязательный) имя таблицы, на которую
+				ведет ссылка; 
+				</P>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">key</TT> -
+				(опциональный) имя колонки (ключа) в
+				таблице, на которую ведет ссылка, этот
+				атрибут можно опустить, если ключ, на
+				который ссылаемся, является первичным.
+								</P>
+			</UL>
+		</UL>
+	</UL>
+	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;relation&gt;</TT>
+	- элемент описывает отношения между
+	доменными классами. Содержимое этого
+	элемента зависит от типа отношения
+	(определяется обязательным атрибутом
+	<TT CLASS="western">&quot;type&quot;</TT>), который может
+	принимать пока только значение
+	<TT CLASS="western">&quot;one-to-many&quot;</TT>. Прочие типы
+	связей (<TT CLASS="western">&quot;many-to-many&quot;</TT>,
+	<TT CLASS="western">&quot;parent-to-child&quot;</TT>) будут
+	реализованы в будущем. Опциональный
+	атрибут <TT CLASS="western">&quot;cascade&quot;</TT>
+	определяет поведение для подчиненных
+	записей при попытке удаления главной
+	записи. Возможные значения: <TT CLASS="western">&quot;restrict&quot;</TT>,
+	<TT CLASS="western">&quot;set-null&quot;</TT>, <TT CLASS="western">&quot;delete&quot;</TT>.
+	Чтобы работал способ <TT CLASS="western">&quot;set-null&quot;</TT>,
+	в подчинённой таблице поле внешнего
+	ключа должно быть обнуляемым: <TT CLASS="western">null=&quot;true&quot;</TT>.
+		</P>
+	<UL>
+		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&quot;one-to-many&quot;</TT>
+		- один-ко-многим, этот тип подразумевает
+		два вложенных элемента. 
+		</P>
+		<UL>
+			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;one&gt;</TT>
+			- класс главной таблицы, атрибуты: 
+			</P>
+			<UL>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">class</TT>
+				- (обязательный) имя класса, отображаемого
+				на главную таблицу; 
+				</P>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">property</TT>
+				- (опциональный) имя свойства, которое
+				ссылается типично на коллекцию
+				зависимых объектов; 
+				</P>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">use-list</TT>
+				- (опциональный) если у главного класса
+				присутствует ссылка на подчинённые,
+				то при значении <TT CLASS="western">false</TT> она
+				будет представлять собой ссылку на
+				отдельный объект, а не список объектов;
+				удобно использовать для моделирования
+				отношений один-к-одному. 
+				</P>
+			</UL>
+			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;many&gt;</TT>
+			- для зависимого класса, возможные
+			атрибуты: 
+			</P>
+			<UL>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">class</TT>
+				- (обязательный) имя класса, отображаемого
+				в зависимую таблицу; 
+				</P>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">property</TT>
+				- (опциональный) имя свойства, которое
+				ссылается на один главный объект; 
+				</P>
+				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">key</TT> -
+				(опциональный) определяет какую
+				колонку использовать как внешний
+				ключ, полезно когда между таблицами
+				более одного отношения. 
+				</P>
+				<LI><P><TT CLASS="western">order-by</TT> - (опциональный)
+				содержит выражение SQL для предложения
+				<TT CLASS="western">ORDER BY</TT>, служит для
+				определения порядка, в котором
+				подчинённые объекты будут появляться
+				при доступе к объекту-отношению,
+				например, при просмотре свойства-списка
+				у главного объекта. 
+				</P>
+			</UL>
+		</UL>
+	</UL>
+</UL>
+<P STYLE="margin-bottom: 0cm"><BR>
+</P>
+</BODY>
+</HTML>

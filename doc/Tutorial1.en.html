@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
+	<META NAME="CREATED" CONTENT="20130520;9295100">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20130520;9344400">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 21cm 29.7cm; margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
+		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
+		PRE.western { font-family: "Droid Sans Mono", monospace; font-size: 10pt }
+		PRE.cjk { font-family: "Droid Sans Fallback", monospace; font-size: 10pt }
+		PRE.ctl { font-family: "Lohit Hindi", monospace; font-size: 10pt }
+		TT.western { font-family: "Droid Sans Mono", monospace }
+		TT.cjk { font-family: "Droid Sans Fallback", monospace }
+		TT.ctl { font-family: "Lohit Hindi", monospace }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" LINK="#000080" VLINK="#800000" DIR="LTR">
+<H2 CLASS="western">Mapping single class to a table (tut1.cpp)</H2>
+<P>Describe table structure in schema XML file. 
+</P>
+<PRE CLASS="western">&lt;schema&gt;
+&nbsp; &nbsp; &lt;table name=&quot;client&quot; sequence=&quot;seq_client&quot; class=&quot;Client&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;primary-key /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;/column&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;dt&quot; type=&quot;datetime&quot; null=&quot;false&quot; default=&quot;sysdate&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;name&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;email&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;phone&quot; type=&quot;string&quot; size=&quot;50&quot; null=&quot;true&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;budget&quot; type=&quot;decimal&quot; /&gt;
+&nbsp; &nbsp; &lt;/table&gt;
+&lt;/schema&gt;</PRE><P>
+Then use domain class generator utility to create C++ classes. The
+first argument is the file name of schema, the second is the
+directory to put the generated files to, the third (optional) is
+directory prefix for the <TT CLASS="western">#include</TT> directive
+(by default: <TT CLASS="western">domain</TT>). 
+</P>
+<PRE CLASS="western" STYLE="margin-bottom: 0.5cm">&nbsp;$(YBORM_ROOT)/bin/yborm_gen --domain tutorial/tut1.xml domain/</PRE><P>
+If necessary, use script for SQL DDL generation, it will help create
+tables and sequences. When invoking that script specify the SQL
+dialect. As of now, the following are supported: MYSQL, POSTGRES,
+ORACLE, INTERBASE, SQLITE. 
+</P>
+<PRE CLASS="western" STYLE="margin-bottom: 0.5cm">&nbsp;$(YBORM_ROOT)/bin/yborm_gen --ddl tutorial/tut1.xml MYSQL</PRE><P>
+It will produce SQL code like this: 
+</P>
+<PRE CLASS="western">&nbsp; CREATE TABLE client ( 
+&nbsp; &nbsp; &nbsp; id BIGINT NOT NULL AUTO_INCREMENT, 
+&nbsp; &nbsp; &nbsp; dt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+&nbsp; &nbsp; &nbsp; name VARCHAR(100) NOT NULL, 
+&nbsp; &nbsp; &nbsp; email VARCHAR(100) NOT NULL, 
+&nbsp; &nbsp; &nbsp; phone VARCHAR(50), 
+&nbsp; &nbsp; &nbsp; budget DECIMAL(16, 6), 
+&nbsp; &nbsp; &nbsp; PRIMARY KEY (id) 
+&nbsp; ) ENGINE=INNODB DEFAULT CHARSET=utf8; 
+&nbsp;</PRE><P>
+Now its possible to use domain class <TT CLASS="western">Client</TT>.
+Let's look at the example. To synchronize objects to the DB an
+instance of <TT CLASS="western">Yb::Session</TT> class is used. As an
+abstraction layer for SQL there are classes <TT CLASS="western">Yb::Engine</TT>
+and <TT CLASS="western">Yb::SqlConnection</TT>. In the example below
+you see the session initialization, then a new instance of mapped
+class created and its properties are filled, then it's stored in
+session and pushed down to the DB. During the synchronization the
+object is assigned an ID. 
+</P>
+<PRE CLASS="western">#include &lt;memory&gt;
+#include &lt;iostream&gt;
+#include &quot;domain/Client.h&quot;
+using namespace std;
+int main()
+{
+&nbsp; &nbsp; auto_ptr&lt;Yb::SqlConnection&gt; conn(new Yb::SqlConnection( 
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &quot;mysql+odbc://test1_usr:test1_pwd@test1_db&quot;));
+&nbsp; &nbsp; Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
+&nbsp; &nbsp; Yb::Session session(Yb::init_schema(), &amp;engine);
+&nbsp; &nbsp; Domain::Client client;
+&nbsp; &nbsp; string name, email, budget;
+&nbsp; &nbsp; cout &lt;&lt; &quot;Enter name, email, budget:\n&quot;;
+&nbsp; &nbsp; cin &gt;&gt; name &gt;&gt; email &gt;&gt; budget;
+&nbsp; &nbsp; client.name = name;
+&nbsp; &nbsp; client.email = email;
+&nbsp; &nbsp; client.budget = Yb::Decimal(budget);
+&nbsp; &nbsp; client.dt = Yb::now();
+&nbsp; &nbsp; client.save(session);
+&nbsp; &nbsp; session.flush();
+&nbsp; &nbsp; cout &lt;&lt; &quot;New client: &quot; &lt;&lt; client.id.value() &lt;&lt; endl;
+&nbsp; &nbsp; engine.commit();
+&nbsp; &nbsp; return 0;
+}</PRE><P>
+When building the example you'll need to link against the following
+libraries <BR><TT CLASS="western">$(YBORM_ROOT)/lib/libyborm.so</TT>,
+<TT CLASS="western">$(YBORM_ROOT)/lib/libybutil.so</TT>, <BR>as well
+as its dependencies <TT CLASS="western">-lodbc</TT>, <TT CLASS="western">-lxml2</TT>,
+<TT CLASS="western">-lboost_thread</TT>, <TT CLASS="western">-lboost_date_time</TT>.
+If you are building example from <TT CLASS="western">tutorial</TT>
+folder you should look in <TT CLASS="western">Makefile.am</TT>. 
+</P>
+<P>In this example the ODBC backend is used. Therefore to make it
+work it's necessary to setup corresponding DSN in local (<TT CLASS="western">~/.odbc.ini</TT>)
+or in global (<TT CLASS="western">/etc/odbc.ini</TT>) configuration
+file. Also ensure, that the driver (<TT CLASS="western">MyODBC</TT>
+for this example) is installed and correctly registered in global
+configuration file (<TT CLASS="western">/etc/odbcinst.ini</TT>). 
+</P>
+<PRE CLASS="western">&nbsp;[test1_db]
+&nbsp;Description &nbsp; &nbsp; = Test database 1
+&nbsp;Driver &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;= MyODBC
+&nbsp;Server &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;= localhost
+&nbsp;Database &nbsp; &nbsp; &nbsp; &nbsp;= test1_db
+&nbsp;Port &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;= 
+&nbsp;Socket &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;= 
+&nbsp;Option &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;= 3
+&nbsp;Stmt &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;= 
+&nbsp;CharSet &nbsp; &nbsp; &nbsp; &nbsp; = UTF8</PRE><P>
+Should you trace the SQL statements being executed you'll see the
+following (given that you use MYSQL): 
+</P>
+<PRE CLASS="western">&nbsp;INSERT INTO client (dt, name, email, phone, budget) VALUES (?, ?, ?, ?, ?);
+&nbsp;SELECT LAST_INSERT_ID() LID;
+&nbsp;COMMIT;</PRE><P>
+If you connect to Oracle database then you'll see a different trace: 
+</P>
+<PRE CLASS="western">&nbsp;SELECT seq_client.NEXTVAL FROM DUAL;
+&nbsp;INSERT INTO client (id, dt, name, email, phone, budget) VALUES (?, ?, ?, ?, ?, ?);
+&nbsp;COMMIT;</PRE><P STYLE="margin-bottom: 0cm">
+<BR>
+</P>
+</BODY>
+</HTML>
