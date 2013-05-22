@@ -5,6 +5,7 @@ install (FILES
     Tutorial1.en.html Tutorial1.ru.html
     Tutorial2.en.html Tutorial2.ru.html
     Tutorial3.en.html Tutorial3.ru.html
+    ToDo.en.html
     msvc-settings.html
     DESTINATION doc)
 

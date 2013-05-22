@@ -166,7 +166,7 @@ endif ()
 
 install (FILES
     AUTHORS BUILD BUILD.win32 CHANGES COPYING 
-    README README.rus TODO
+    README README.rus
     DESTINATION doc)
 
 add_subdirectory (lib)
