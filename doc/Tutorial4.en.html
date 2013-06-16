@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Vaclav Naydionov">
+	<META NAME="CREATED" CONTENT="20130616;12345200">
+	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
+	<META NAME="CHANGED" CONTENT="20130616;12365800">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 21cm 29.7cm; margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
+		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
+		PRE.western { font-family: "Droid Sans Mono", monospace; font-size: 10pt }
+		PRE.cjk { font-family: "Droid Sans Fallback", monospace; font-size: 10pt }
+		PRE.ctl { font-family: "Lohit Hindi", monospace; font-size: 10pt }
+		TT.western { font-family: "Droid Sans Mono", monospace }
+		TT.cjk { font-family: "Droid Sans Fallback", monospace }
+		TT.ctl { font-family: "Lohit Hindi", monospace }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" LINK="#000080" VLINK="#800000" DIR="LTR">
+<H2 CLASS="western">Mapping tree-like hierarchy (tut4.cpp)</H2>
+<P>When it comes to representing tree-like structures in a relational
+database there are several ways possible. One of possible ways to do
+this is the following: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">all nodes of a tree are stored in
+	a single table; 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">each node has got a link column
+	referencing the parent node; 
+	</P>
+	<LI><P>you need to control the hierarchy to avoid cycles. 
+	</P>
+</UL>
+<P>In the data schema below there is an hierarchy of product groups
+and products. 
+</P>
+<PRE CLASS="western">&lt;schema&gt;
+&nbsp; &nbsp; &lt;table name=&quot;tbl_product_group&quot; sequence=&quot;seq_prod_group&quot;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;class=&quot;ProductGroup&quot; xml-name=&quot;product-group&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;primary-key /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;/column&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;parent_id&quot; type=&quot;longint&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;foreign-key table=&quot;tbl_product_group&quot;/&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;/column&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;name&quot; type=&quot;string&quot; size=&quot;100&quot;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; null=&quot;false&quot; /&gt;
+&nbsp; &nbsp; &lt;/table&gt;
+&nbsp; &nbsp; &lt;table name=&quot;tbl_product&quot; sequence=&quot;seq_prod_group&quot;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;class=&quot;Product&quot; xml-name=&quot;product&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;primary-key /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;/column&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;parent_id&quot; type=&quot;longint&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;foreign-key table=&quot;tbl_product_group&quot;/&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;/column&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;name&quot; type=&quot;string&quot; size=&quot;100&quot;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; null=&quot;false&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;price&quot; type=&quot;decimal&quot; null=&quot;false&quot; /&gt;
+&nbsp; &nbsp; &lt;/table&gt;
+&nbsp; &nbsp; &lt;relation type=&quot;one-to-many&quot; cascade=&quot;delete&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;one class=&quot;ProductGroup&quot; property=&quot;children&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;many class=&quot;ProductGroup&quot; property=&quot;parent&quot; /&gt;
+&nbsp; &nbsp; &lt;/relation&gt;
+&nbsp; &nbsp; &lt;relation type=&quot;one-to-many&quot; cascade=&quot;delete&quot;&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;one class=&quot;ProductGroup&quot; property=&quot;products&quot; /&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &lt;many class=&quot;Product&quot; property=&quot;parent&quot; /&gt;
+&nbsp; &nbsp; &lt;/relation&gt;
+&lt;/schema&gt;</PRE><P>
+Note, that table <TT CLASS="western">tbl_product_group</TT> is
+referenced by itself via a foreign key. Also, in relation description
+there is the same class name on both sides of the relation. 
+</P>
+<P>On a node deletion request, in case the nodes has got child nodes,
+there are several ways of how to keep the database consistent: 
+</P>
+<OL>
+	<LI><P STYLE="margin-bottom: 0cm">deny the deletion of the parent
+	node if there are any nodes referencing it; 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">delete child nodes too (cascade
+	deletion), so that there are no dangling references; 
+	</P>
+	<LI><P>keep child nodes, but nullify their referencing columns. 
+	</P>
+</OL>
+<P>As a rule, the default behaviour is the number 1. To allow the
+cascade deletion of referencing nodes we set the attribute <TT CLASS="western">cascade</TT>
+of corresponding relation to value <TT CLASS="western">delete</TT>. 
+</P>
+<P>The following code sample creates a tree consisting of four nodes:
+</P>
+<PRE CLASS="western">&nbsp; &nbsp; Session session(Yb::theSchema::instance(), &amp;engine);
+&nbsp; &nbsp; ProductGroup::Holder pg1(session);
+&nbsp; &nbsp; pg1-&gt;name = &quot;Group1&quot;;
+&nbsp; &nbsp; ProductGroup::Holder pg2(session);
+&nbsp; &nbsp; pg2-&gt;name = &quot;Group2&quot;;
+&nbsp; &nbsp; pg2-&gt;parent = pg1;
+&nbsp; &nbsp; ProductGroup::Holder pg3(session);
+&nbsp; &nbsp; pg3-&gt;name = &quot;Group3&quot;;
+&nbsp; &nbsp; pg3-&gt;parent = pg1;
+&nbsp; &nbsp; Product::Holder pr1(session);
+&nbsp; &nbsp; pr1-&gt;name = &quot;Product1&quot;;
+&nbsp; &nbsp; pr1-&gt;price = Decimal(&quot;1.00&quot;);
+&nbsp; &nbsp; pr1-&gt;parent = pg2;
+&nbsp; &nbsp; session.commit();
+&nbsp; &nbsp; root = pg1-&gt;id;</PRE><P>
+Session log, SQLITE dialect is in use: 
+</P>
+<PRE CLASS="western">orm: flush started
+sql: begin transaction
+sql: prepare: INSERT INTO tbl_product_group (parent_id, name) VALUES (?, ?)
+sql: bind: (LongInt, String)
+sql: exec prepared: p1=&quot;NULL&quot; p2=&quot;'Group1'&quot;
+sql: prepare: SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = 'tbl_product_group'
+sql: exec prepared:
+sql: fetch: LID='1' 
+sql: fetch: no more rows 
+sql: prepare: INSERT INTO tbl_product_group (parent_id, name) VALUES (?, ?)
+sql: bind: (LongInt, String)
+sql: exec prepared: p1=&quot;1&quot; p2=&quot;'Group2'&quot;
+sql: prepare: SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = 'tbl_product_group'
+sql: exec prepared:
+sql: fetch: LID='2' 
+sql: fetch: no more rows 
+sql: exec prepared: p1=&quot;1&quot; p2=&quot;'Group3'&quot;
+sql: prepare: SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = 'tbl_product_group'
+sql: exec prepared:
+sql: fetch: LID='3' 
+sql: fetch: no more rows 
+sql: prepare: INSERT INTO tbl_product (parent_id, name, price) VALUES (?, ?, ?)
+sql: bind: (LongInt, String, Decimal)
+sql: exec prepared: p1=&quot;2&quot; p2=&quot;'Product1'&quot; p3=&quot;1&quot;
+sql: prepare: SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = 'tbl_product'
+sql: exec prepared:
+sql: fetch: LID='1' 
+sql: fetch: no more rows 
+orm: flush finished OK
+sql: commit</PRE><P>
+After that there is a tree hierarchy like this: 
+</P>
+<P><IMG SRC="pics/tut4-tree.png" NAME="Pic1" ALIGN=BOTTOM WIDTH=592 HEIGHT=445 BORDER=0>
+</P>
+<P>The code fragment below triggers the cascade deletion of the tree
+hierarchy: 
+</P>
+<PRE CLASS="western">&nbsp; &nbsp; Session session(Yb::theSchema::instance(), &amp;engine);
+&nbsp; &nbsp; ProductGroup::Holder pg1(session, root);
+&nbsp; &nbsp; cout &lt;&lt; pg1-&gt;parent-&gt;id.is_null() &lt;&lt; endl;
+&nbsp; &nbsp; pg1-&gt;delete_object();
+&nbsp; &nbsp; session.commit();</PRE><P>
+Session log of the cascade deletion, SQLITE dialect is in use: 
+</P>
+<PRE CLASS="western">sql: prepare: SELECT tbl_product_group.id, tbl_product_group.parent_id, tbl_product_group.name FROM tbl_product_group WHERE tbl_product_group.id = ?
+sql: exec prepared: p1=&quot;1&quot;
+sql: fetch: ID='1' PARENT_ID=NULL NAME='Group1'
+sql: fetch: no more rows
+orm: delete_object mode=0 depth=0 status=3
+sql: prepare: SELECT tbl_product_group.id, tbl_product_group.parent_id, tbl_product_group.name FROM tbl_product_group WHERE tbl_product_group.parent_id = ?
+sql: exec prepared: p1=&quot;1&quot;
+sql: fetch: ID='2' PARENT_ID='1' NAME='Group2' 
+sql: fetch: ID='3' PARENT_ID='1' NAME='Group3' 
+sql: fetch: no more rows
+orm: delete_object mode=1 depth=1 status=3
+sql: prepare: SELECT tbl_product_group.id, tbl_product_group.parent_id, tbl_product_group.name FROM tbl_product_group WHERE tbl_product_group.parent_id = ?
+sql: exec prepared: p1=&quot;2&quot;
+sql: fetch: no more rows
+sql: prepare: SELECT tbl_product.id, tbl_product.parent_id, tbl_product.name, tbl_product.price FROM tbl_product WHERE tbl_product.parent_id = ?
+sql: exec prepared: p1=&quot;2&quot;
+sql: fetch: ID='1' PARENT_ID='2' NAME='Product1' PRICE='1' 
+sql: fetch: no more rows
+orm: delete_object mode=1 depth=2 status=3
+orm: delete_object mode=1 depth=1 status=3
+sql: prepare: SELECT tbl_product_group.id, tbl_product_group.parent_id, tbl_product_group.name FROM tbl_product_group WHERE tbl_product_group.parent_id = ?
+sql: exec prepared: p1=&quot;3&quot;
+sql: fetch: no more rows
+sql: prepare: SELECT tbl_product.id, tbl_product.parent_id, tbl_product.name, tbl_product.price FROM tbl_product WHERE tbl_product.parent_id = ?
+sql: exec prepared: p1=&quot;3&quot;
+sql: fetch: no more rows
+sql: prepare: SELECT tbl_product.id, tbl_product.parent_id, tbl_product.name, tbl_product.price FROM tbl_product WHERE tbl_product.parent_id = ?
+sql: exec prepared: p1=&quot;1&quot;
+sql: fetch: no more rows
+orm: delete_object mode=2 depth=1 status=3
+orm: delete_object mode=2 depth=2 status=3
+orm: flush started
+orm: flush_delete: depth: 3
+orm: flush_delete: table: tbl_product
+sql: begin transaction
+sql: prepare: DELETE FROM tbl_product WHERE tbl_product.id = ?
+sql: bind: (LongInt)
+sql: exec prepared: p1=&quot;1&quot;
+orm: flush_delete: depth: 2
+orm: flush_delete: table: tbl_product_group
+sql: prepare: DELETE FROM tbl_product_group WHERE tbl_product_group.id = ?
+sql: bind: (LongInt)
+sql: exec prepared: p1=&quot;2&quot;
+sql: exec prepared: p1=&quot;3&quot;
+orm: flush_delete: depth: 1
+orm: flush_delete: table: tbl_product_group
+sql: prepare: DELETE FROM tbl_product_group WHERE tbl_product_group.id = ?
+sql: bind: (LongInt)
+sql: exec prepared: p1=&quot;1&quot;
+orm: flush_delete: depth: 0
+orm: flush finished OK
+sql: commit</PRE><P>
+As you can see, YB.ORM keeps track of the relations in the tree, and
+it begins to delete the nodes starting from the leaves. 
+</P>
+<P STYLE="margin-bottom: 0cm"><BR>
+</P>
+</BODY>
+</HTML>
