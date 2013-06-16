@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Vaclav Naydionov">
+	<META NAME="CREATED" CONTENT="20130616;23233100">
+	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
+	<META NAME="CHANGED" CONTENT="20130616;23241300">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 21cm 29.7cm; margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H1 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H1.western { font-family: "Times New Roman", serif; font-size: 24pt; font-weight: bold }
+		H1.cjk { font-family: "Droid Sans Fallback"; font-size: 24pt; font-weight: bold }
+		H1.ctl { font-family: "Lohit Hindi"; font-size: 24pt; font-weight: bold }
+		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
+		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
+		A:link { color: #000080; so-language: zxx; text-decoration: underline }
+		TT.western { font-family: "Droid Sans Mono", monospace }
+		TT.cjk { font-family: "Droid Sans Fallback", monospace }
+		TT.ctl { font-family: "Lohit Hindi", monospace }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="ru-RU" LINK="#000080" VLINK="#800000" DIR="LTR">
+<H1 CLASS="western">О ПРОЕКТЕ</H1>
+<P>Инструмент YB.ORM разрабатывается чтобы
+упростить для программистов C++ создание
+приложений, оперирующих с реляционными
+базами данных. Объектно-реляционный
+маппер (Object-Relational Mapper, ORM) отображает
+таблицы базы данных в классы, а записи
+из таблиц - в объекты определенного
+языка программирования. Этот подход
+применим не во всех приложениях баз
+данных, но он хорошо зарекомендовал
+себя там, где требуется сложная логика
+и работа с транзакциями. Цели проекта
+YB.ORM: предоставить удобный объектно-реляционный
+маппер для программиста C++, сохранить
+высокую производительность языка C++,
+обеспечить максимальную переносимость
+кода между различными платформами, и
+обеспечить поддержку основных реляционных
+СУБД. 
+</P>
+<P>Типичный сценарий использования
+таков: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">Опишите схему базы
+	данных, т.е. таблицы и их колонки, а также
+	связи между таблицами в <A HREF="XmlFormat.ru.html">простом
+	XML формате</A>. 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">Используя инструмент
+	для генерации кода, создайте доменные
+	классы C++ для таблиц (см. <A HREF="Tutorial1.ru.html">Tutorial1</A>).
+		</P>
+	<LI><P STYLE="margin-bottom: 0cm">Добавьте в классы
+	бизнес-логику приложения. 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">При изменении
+	существующей схемы можно использовать
+	тот же инструмент для генерации кода
+	чтобы синхронизировать ранее созданные
+	доменные классы со схемой. 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">Можно сформировать
+	SQL скрипт чтобы наполнить пустую схему
+	БД таблицами. 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">Теперь вы можете
+	использовать доменные классы в связке
+	с объектом Session чтобы: 
+	</P>
+	<UL>
+		<LI><P STYLE="margin-bottom: 0cm">создавать новые и
+		удалять существующие объекты; 
+		</P>
+		<LI><P STYLE="margin-bottom: 0cm">запрашивать объекты
+		из базы данных с помощью объектного
+		языка запросов (см. <A HREF="Tutorial3.ru.html">Tutorial3</A>);
+				</P>
+		<LI><P STYLE="margin-bottom: 0cm">изменять существующие
+		объекты, используя присваивание полям;
+				</P>
+		<LI><P STYLE="margin-bottom: 0cm">связывать и объекты
+		друг с другом и разрывать связи,
+		используя отношения (см. <A HREF="Tutorial2.ru.html">Tutorial2</A>);
+				</P>
+		<LI><P>сериализовать объекты в виде XML и
+		JSON. 
+		</P>
+	</UL>
+</UL>
+<P>Этот инструмент применяет многие
+идеи, изложенные в книге Мартина Фоулера
+&quot;Шаблоны корпоративных приложений&quot;.
+Используются такие шаблоны проектирования
+как &quot;Ленивая Загрузка&quot; (&quot;Lazy
+Load&quot;), &quot;Карта присутствия&quot; (&quot;Identity
+Map&quot;), &quot;Единица Работы&quot; (&quot;Unit of
+Work&quot;) и другие. На проект оказали влияние
+такие мощные ORM-системы как <A HREF="http://www.hibernate.org/">Hibernate</A>
+для Java и особенно <A HREF="http://www.sqlalchemy.org/">SQLAlchemy</A>
+для Python. Некоторые детали внутреннего
+устройства тут: <A HREF="Internals.ru.html">Internals</A>.
+</P>
+<H2 CLASS="western"><A NAME="ТЕКУЩИЙ_СТАТУС"></A>ТЕКУЩИЙ
+СТАТУС</H2>
+<P>На данный момент, инструмент YB.ORM
+работает в средах Linux, Mac OS X и Windows. Сборка
+проверялась компиляторами <A HREF="http://gcc.gnu.org/">GCC</A>,
+<A HREF="http://clang.llvm.org/">CLang</A>, <A HREF="http://mingw.org/">MinGW</A>,
+<A HREF="http://www.microsoft.com/visualstudio/">MSVC 2008/2010</A>,
+а также Borland C++ Builder, см. <A HREF="Build.ru.html">Инструкции
+по сборке</A>. 
+</P>
+<P>Вы можете собрать YB.ORM с вашим любимым
+тулкитом: <A HREF="http://www.boost.org/">Boost</A>, <A HREF="http://qt-project.org/">Qt</A>,
+или <A HREF="http://www.wxwidgets.org/">wxWidgets</A>; при этом
+будут использоваться &quot;родные&quot; типы
+данных, такие как строки, дата и время,
+поддержка много-поточности, работа с
+XML и пр. 
+</P>
+<P>Тестировалась работа со следующими
+реляционными СУБД: <A HREF="http://www.mysql.com/">MySQL</A>,
+<A HREF="http://www.oracle.com/technetwork/products/express-edition/">Oracle</A>,
+<A HREF="http://www.sqlite.org/">SQLite</A>, <A HREF="http://www.firebirdsql.org/">Firebird</A>,
+<A HREF="http://www.postgresql.org/">Postgres</A>. Для подключения
+к БД есть несколько вариантов: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">драйверы <A HREF="http://www.unixodbc.org/">ODBC</A>
+		</P>
+	<LI><P STYLE="margin-bottom: 0cm">популярная библиотека
+	C++ для баз данных <A HREF="http://soci.sourceforge.net/">SOCI</A>
+		</P>
+	<LI><P STYLE="margin-bottom: 0cm">набор драйверов в
+	составе Qt: <A HREF="http://qt-project.org/doc/qt-4.8/qtsql.html">QtSql</A>
+		</P>
+	<LI><P>для SQLite доступен &quot;родной&quot;
+	драйвер 
+	</P>
+</UL>
+<P>Библиотека предоставляет возможность
+использовать пул подключений к БД.
+Подробности по этой ссылке: <A HREF="SqlDriver.ru.html">Подключение
+к БД</A>. 
+</P>
+<P>Основная функциональность YB.ORM была
+протестирована на нескольких небольших
+проектах, и работает стабильно. Имейте
+в виду, что данный инструмент находится
+в разработке, API библиотеки может меняться
+между релизами. Некоторые интересные
+возможности пока находятся в планах
+(см. <A HREF="ToDo.ru.html">Планы
+на будущее</A>). 
+</P>
+<H2 CLASS="western"><A NAME="ОБ_АВТОРАХ"></A>ОБ АВТОРАХ</H2>
+<P>Проект зародился в конце 2006 года как
+часть биллинговой системы для онлайновой
+рекламы в компании Яндекс
+(<A HREF="http://www.yandex.ru/">http://www.yandex.ru/</A>), в
+первоначальной разработке участвовали
+Найденов Вячеслав (я) и Чмелев Сергей.
+Аббревиатура &quot;YB&quot; означала
+Yandex.Balance, название биллинговой системы.
+Сейчас проект YB.ORM не связан напрямую с
+компанией Яндекс. Исходный код был
+опубликован под открытой лицензией в
+начале 2011 года, с тех пор он был существенно
+переработан. Спасибо автору проекта
+<A HREF="http://code.google.com/p/tiodbc/">tiny odbc wrapper</A>, на
+основе его кода был построен первый
+пригодный к использованию SQL драйвер
+(класс <TT CLASS="western">OdbcDriver</TT>). Также, я
+хотел бы отметить вклад нескольких
+студентов Московского Государственного
+Открытого Университета (МГОУ), где я
+иcпользовал этот программный код, как
+наглядный пример. Список авторов: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">Вячеслав Найденов,
+	vaclav at yandex dot ru - основной разработчик 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">Сергей Чмелев, halty
+	at yandex dash team dot ru - разработчик на ранней
+	стадии 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">SqUe, squarious at gmail dot com -
+	код tiodbc 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">Никита Буйвич, buyvich
+	at gmail dot com - МГОУ 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">Вячеслав Фёдоров,
+	funny dash story at yandex dot ru - МГОУ 
+	</P>
+	<LI><P>Андрей Скобенков, andrey dot skobenkov at
+	gmail dot com - МГОУ 
+	</P>
+</UL>
+<P>Любая конструктивная критика,
+исправления и комментарии приветствуются!
+</P>
+<P STYLE="margin-bottom: 0cm"><BR>
+</P>
+</BODY>
+</HTML>
