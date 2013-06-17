@@ -1,0 +1,637 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Vaclav Naydionov">
+	<META NAME="CREATED" CONTENT="20130617;12140800">
+	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
+	<META NAME="CHANGED" CONTENT="20130617;12150400">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 21cm 29.7cm; margin: 2cm }
+		P { margin-bottom: 0.21cm }
+		H1 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H1.western { font-family: "Times New Roman", serif; font-size: 24pt; font-weight: bold }
+		H1.cjk { font-family: "Droid Sans Fallback"; font-size: 24pt; font-weight: bold }
+		H1.ctl { font-family: "Lohit Hindi"; font-size: 24pt; font-weight: bold }
+		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
+		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
+		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
+		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
+		TH P { font-weight: bold; text-align: center }
+		PRE.western { font-family: "Droid Sans Mono", monospace; font-size: 10pt }
+		PRE.cjk { font-family: "Droid Sans Fallback", monospace; font-size: 10pt }
+		PRE.ctl { font-family: "Lohit Hindi", monospace; font-size: 10pt }
+		STRONG { font-weight: bold }
+		A:link { color: #000080; so-language: zxx; text-decoration: underline }
+		TT.western { font-family: "Droid Sans Mono", monospace }
+		TT.cjk { font-family: "Droid Sans Fallback", monospace }
+		TT.ctl { font-family: "Lohit Hindi", monospace }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" LINK="#000080" VLINK="#800000" DIR="LTR">
+<H1 CLASS="western">Getting started</H1>
+<P>To try YB.ORM tool in your environment, first you'll need to build
+the library and the command line code generation tool. There are
+several ways to achieve this. 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">For Windows users, the easier way
+	is to get a pre-built package compatible with your compiler. See
+	<STRONG>Pre-built packages</STRONG>. 
+	</P>
+	<LI><P>In any environment you can download one of released source
+	package tarballs, configure and build. There are two build system
+	available: <A HREF="http://www.gnu.org/software/automake/manual/html_node/Autotools-Introduction.html">Autotools</A>
+	and <A HREF="http://www.cmake.org/">CMake</A>, see <STRONG>Building
+	with Autotools</STRONG> and <STRONG>Building with CMake</STRONG>. 
+	</P>
+</UL>
+<P>Also note, that you can also use <A HREF="http://git-scm.com/">Git</A>
+to pull fresh code from repository, see <A HREF="http://code.google.com/p/yb-orm/source/checkout">YB.ORM
+Git repository</A>, and then use either Autotools or CMake. 
+</P>
+<P>Then you'll probably want to setup a test database to run provided
+tests and samples, see <STRONG>Setting up test database</STRONG>. 
+</P>
+<H1 CLASS="western"><A NAME="Pre-built_packages"></A>Pre-built
+packages</H1>
+<P>There are pre-built packages released for Microsoft Windows
+developers in form of .zip-files, to make it easier to play with the
+library and tools. These packages are built against a specific
+version of <A HREF="http://www.boost.org/">Boost</A> or <A HREF="http://qt-project.org/">Qt</A>
+toolkit, compiled using a specific version of C++ compiler (e.g.
+MinGW 4.4, MSVC 2010, MSVC 2008, etc.). A Boost-enabled package
+includes all required components of Boost libraries within itself,
+whereas Qt-enabled one requires you to install proper version of Qt
+SDK beforehand. By default, Boost-enabled version has ODBC as
+database backend API plus SQLite native driver, and Qt-enabled
+version relies on <A HREF="http://qt-project.org/doc/qt-4.8/qtsql.html">QtSql</A>.
+Of course, you can still rebuild YB.ORM library to use your
+toolkit/compiler/database backend of choice, source code is included.
+</P>
+<P><STRONG>Note for Qt4 and MinGW</STRONG>: the Qt4 SDK was built
+using MinGW 4.4.0, that is not available from the official site
+anymore, but you can grab it from <A HREF="http://nosymbolfound.blogspot.ru/2012/12/since-until-now-qt-under-windows-is.html">here</A>.
+</P>
+<H2 CLASS="western"><A NAME="Pre-built_package_contents"></A>Pre-built
+package contents</H2>
+<P>A .zip-file containing YB.ORM library pre-built for Microsoft
+Windows is extracted at location <TT CLASS="western">c:\yborm-&lt;version&gt;-&lt;compiler
+name&gt;</TT> by default. The description below assumes path <TT CLASS="western">c:\yborm</TT>
+as a root folder. Upon extraction there is the following folder
+layout: 
+</P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TH STYLE="border-top: 1px double #808080; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0.05cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P>Path</P>
+		</TH>
+		<TH STYLE="border: 1px double #808080; padding: 0.05cm">
+			<P>Description</P>
+		</TH>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>the root of YB.ORM installation</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\bin</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<UL>
+				<LI><P>.dll-files that this build may depend on: <TT CLASS="western">boost_date_time</TT>,
+				<TT CLASS="western">boost_thread</TT>, <TT CLASS="western">cppunit</TT>,
+				<TT CLASS="western">libxml2</TT>, <TT CLASS="western">sqlite3</TT>,
+				misc. runtime 
+				</P>
+				<LI><P>some utilities: <TT CLASS="western">iconv.exe</TT>,
+				<TT CLASS="western">xmllint.exe</TT>, <TT CLASS="western">xsltproc.exe</TT>,
+				<TT CLASS="western">sqlite3.exe</TT> 
+				</P>
+				<LI><P>code-generation utility: <STRONG><TT CLASS="western">yborm_gen.exe</TT></STRONG>
+								</P>
+				<LI><P>environment configuration: <STRONG><TT CLASS="western">yborm_env.bat</TT></STRONG></P>
+			</UL>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\build</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>build folder for the library itself</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\build-auth</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>build folder for the Auth demo</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\build-tut</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>build folder for examples from the Tutorial</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\doc</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>bits of documentation</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\examples</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>compiled examples and tests, schema files, test <A HREF="http://www.sqlite.org/">SQLite3</A>
+			database, convenience <TT CLASS="western">.bat</TT>-files</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\include</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>header files for <A HREF="http://www.sqlite.org/">SQLite3</A>
+			and also:</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\include\boost</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>- for <A HREF="http://www.boost.org/">Boost</A> version bundled</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\include\cppunit</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>- for <A HREF="http://sourceforge.net/apps/mediawiki/cppunit/">CppUnit</A>
+			version bundled</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\include\libxml</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>- for <A HREF="http://www.xmlsoft.org/">LibXml2</A> version
+			bundled</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\include\yb</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>- <STRONG>YB.ORM header files</STRONG></P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\lib</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>YB.ORM in form of static libraries: <STRONG><TT CLASS="western">ybutil.lib</TT></STRONG>,
+			<STRONG><TT CLASS="western">yborm.lib</TT></STRONG> (or <TT CLASS="western">.a</TT>-files
+			for MinGW); as well as import libraries for YB.ORM dependencies</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+			<P><TT CLASS="western">c:\yborm\src</TT></P>
+		</TD>
+		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+			<P>source code of that released version 
+			</P>
+		</TD>
+	</TR>
+</TABLE>
+<P>After unpacking you can run tests and examples from <TT CLASS="western">examples</TT>
+folder with no additional configuration. 
+</P>
+<H2 CLASS="western"><A NAME="Rebuilding_YB.ORM_package"></A>Rebuilding
+YB.ORM package</H2>
+<P>The most simple way to build YB.ORM under MS Windows is to rebuild
+one of pre-built packages. This may be useful if you already have
+YB.ORM installed and just want to update your installation with fresh
+sources from Git. It this case put updated sources under <TT CLASS="western">src</TT>
+folder, then use command line window to <TT CLASS="western">cd</TT>
+into <TT CLASS="western">build</TT> folder and start corresponding
+<TT CLASS="western">build-*.bat</TT>-file from there. If you're using
+MS Visual C++ you'll need to launch that <TT CLASS="western">.bat</TT>-file
+from within Visual Studio command line prompt. All those <TT CLASS="western">.bat</TT>-files
+do is just calling CMake script with predefined configuration
+parameters and then run <TT CLASS="western">make</TT> command. After
+build is successfully completed the new libraries, headers, examples
+and code generation utility replace old ones in corresponding
+folders. Below are the prerequisites for the rebuild process. 
+</P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>Build system: 
+			</P>
+		</TD>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>CMake 2.8 installed, accessible via environment variable <TT CLASS="western">PATH</TT>
+						</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>Compiler: 
+			</P>
+		</TD>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>MinGW GCC 4.4.0, MS Visual C++ 2008 or 2010, Borland C++
+			Builder 6, or whatever the package was built with 
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>Qt SDK: 
+			</P>
+		</TD>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>tested with Qt4.8, required only for Qt-enabled build, see the
+			note above, where to get the &quot;right&quot; version of MinGW. 
+			</P>
+		</TD>
+	</TR>
+</TABLE>
+<P>Make sure you specified proper toolkit mode (with or without Qt)
+and also set <TT CLASS="western">PATH</TT> to your compiler and Qt
+SDK in file <STRONG><TT CLASS="western">\bin\yborm_env.bat</TT></STRONG>.
+</P>
+<P>In same way you can build Auth example and Tutorial examples in
+folders <TT CLASS="western">build-auth</TT> and <TT CLASS="western">build-tut</TT>.
+</P>
+<H1 CLASS="western"><A NAME="Building_with_Autotools"></A>Building
+with Autotools</H1>
+<P>This piece of software is developed primarily under Ubuntu Linux,
+using GNU tool chain, including GNU Autotools. You can build YB.ORM
+in a POSIX-compatible environment, such as Linux, FreeBSD or Mac OS
+X. Typical steps are: 
+</P>
+<PRE CLASS="western">$ sh autogen.sh # create configure script; only needed after &quot;git clone&quot;, not for sources from tarball
+$ ./configure --prefix=/home/user1/yb-orm --with-test-db-url=sqlite+sqlite:///home/user1/test1_db.sqlite --disable-static
+$ make
+$ make check # to run tests you need to create /home/user1/test1_db.sqlite first
+$ make install # will be installed under /home/user1/yb-orm</PRE><P>
+The <TT CLASS="western">configure</TT> script tries to guess
+automatically which libraries are available and where are their
+header files. There are number of options you can give to the
+<TT CLASS="western">configure</TT> script, to affect the process.
+Also you can specify parameters for the test database connection. To
+trigger build with Qt use <TT CLASS="western">--with-qt-includes,--with-qt-libs</TT>,
+for wxWidgets-enabled build use <TT CLASS="western">--with-wx-config</TT>.
+</P>
+<PRE CLASS="western">$ ./configure --help
+&nbsp; --with-qt-includes=DIR &nbsp;Directory where the QT4 C++ includes reside
+&nbsp; --with-qt-libs=DIR &nbsp; &nbsp; &nbsp;Directory where the QT4 C++ libraries reside
+&nbsp; --with-wx-config=BIN &nbsp; &nbsp;Configuration script for the wxWidgets C++ library
+&nbsp; --with-boost-includes=DIR
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Directory where the Boost C++ includes reside
+&nbsp; --with-boost-libs=DIR &nbsp; Directory where the Boost C++ libraries reside
+&nbsp; --with-soci-includes=DIR
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Place where SOCI includes are
+&nbsp; --with-soci-libs=DIR &nbsp; &nbsp;Place where SOCI library is
+&nbsp; --with-test-db-url=dialect+driver://user:password@database or like
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Specify the URL to connect to the test database
+...</PRE><P>
+The custom macros that <TT CLASS="western">configure</TT> uses are
+placed in <TT CLASS="western">acinclude.m4</TT> file. When you build
+your own application with Autotools and YB.ORM you can take
+<TT CLASS="western">YB_CHECK_YBORM()</TT> macro to your <TT CLASS="western">configure.ac</TT>
+file. This will add option <TT CLASS="western">--with-yborm-root</TT>
+to your <TT CLASS="western">configure</TT> script. See the <A HREF="../examples/auth/README.auth">Auth
+example</A>. 
+</P>
+<H2 CLASS="western"><A NAME="Minimal_requirements"></A>Minimal
+requirements</H2>
+<P>YB.ORM is known to build without problems on Ubuntu Linux,
+starting from Ubuntu 8.04. The following versions of packages should
+be fine: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">libboost-thread-dev &gt;= 1.34.1 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">libboost-date-time-dev &gt;=
+	1.34.1 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">libxml2-dev &gt;= 2.6.31 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">libcppunit-dev &gt;= 1.12.0 (if
+	you're going to run the test suite) 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">autoconf &gt;= 2.61 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">automake &gt;= 1.10.1 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">libqt4-dev &gt;= 4.5 (tested on
+	Ubuntu 9.04) 
+	</P>
+	<LI><P>libwxgtk2.8-dev &gt;= 2.8.12 
+	</P>
+</UL>
+<P>To access some database you will need one of the following: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">libsqlite3-dev &gt;= 3.7.9 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">soci &gt;= 3.2.0 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">unixodbc-dev &gt;= 2.2.14 (to make
+	Oracle ODBC driver work under Ubuntu 8.04 64bit I had to use
+	unixODBC = 2.3.0) 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">instantclient &gt;= 10.2 (client
+	and ODBC driver for Oracle) 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">libmyodbc &gt;= 5.1.10 
+	</P>
+	<LI><P>odbc-postgresql &gt;= 09.00.0310 
+	</P>
+</UL>
+<H1 CLASS="western"><A NAME="Building_with_CMake"></A>Building with
+CMake</H1>
+<P>GNU Autotools are useless when it comes to Microsoft Visual C++ or
+any other Windows compiler beside of MinGW GCC. So there are CMake
+scripts for building YB.ORM on Windows, although they will do the job
+in POSIX environment too. This method was tested for the following
+versions: 
+</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0cm">MinGW GCC 4.4.0, Boost 1.46.1, Qt
+	4.8.1 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">MS Visual C++ 2010 Express
+	Edition, Boost 1.46.1, Qt 4.8.1 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">MS Visual C++ 2008 Express
+	Edition, Boost 1.38.0, Qt 4.8.1 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">Borland C++ Builder 6, Boost
+	1.33.1 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">Borland C++ 5.5 Free Command Line
+	Compiler, Boost 1.33.1 
+	</P>
+	<LI><P>Ubuntu GCC 4.6.3, Boost 1.46.1, Qt 4.8.1 
+	</P>
+</UL>
+<P>Download CMake 2.8 from here:
+<A HREF="http://www.cmake.org/cmake/resources/software.html">http://www.cmake.org/cmake/resources/software.html</A>
+Make sure you have <TT CLASS="western">cmake</TT> command accessible
+on your <TT CLASS="western">PATH</TT> environment variable. 
+</P>
+<P>You can pass parameters to CMake, here are some examples: 
+</P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>-G &quot;NMake Makefiles&quot; 
+			</P>
+		</TD>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>what kind of Makefiles to generate 
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>-D USE_QT4:BOOL=ON 
+			</P>
+		</TD>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>build with Qt 
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>-D CMAKE_INSTALL_PREFIX=c:/yborm 
+			</P>
+		</TD>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>set installation prefix 
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>-D SOCI_INCLUDEDIR:PATH=c:/work/soci-3.2.1/include/soci 
+			</P>
+		</TD>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>SOCI include directory 
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>-D SOCI_LIBS:FILEPATH=c:/work/soci-3.2.1/lib/libsoci_core.lib 
+			</P>
+		</TD>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>SOCI library file 
+			</P>
+		</TD>
+	</TR>
+</TABLE>
+<H1 CLASS="western"><A NAME="Setting_up_test_database"></A>Setting up
+test database</H1>
+<P>To run tests and examples you'll need a test database. If you have
+downloaded a pre-built package for Windows, then there is already an
+SQLite3 test database residing at <TT CLASS="western">c:\yborm\examples\test1_db</TT>,
+assuming you unpacked the package to <TT CLASS="western">c:\yborm</TT>.
+In other cases you'll have to create the test database (or schema),
+then create test tables within it. 
+</P>
+<P>In case you are using ODBC, you'll also have to set up ODBC
+datasource (DSN) for your database via <TT CLASS="western">odbcad32.exe</TT>.
+In POSIX environment edit configuraion files: <TT CLASS="western">/etc/odbcinst.ini</TT>
+- for driver setup and <TT CLASS="western">~/.odbc.ini</TT> - for
+user's DSN entries. 
+</P>
+<P>Note for Windows 64-bit users: since this library comes with
+pre-built packages compiled in 32-bit mode, unless you've managed to
+rebuild it with a 64-bit compiler, use 32-bit version of
+<TT CLASS="western">odbcad32.exe</TT>:
+<TT CLASS="western">c:\windows\syswow64\odbcad32.exe</TT>. 
+</P>
+<P>Below are steps to follow in order to create an empty test
+database with a test user account (using SQLite3, MySQL, Postgres or
+Firebird), and then create test tables in there. 
+</P>
+<H2 CLASS="western"><A NAME="SQLite3"></A>SQLite3</H2>
+<P>Sample connection strings for SQLite3: 
+</P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>sqlite+sqlite://c:/yborm/examples/test1_db 
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>sqlite+qtsql://c:/yborm/examples/test1_db 
+			</P>
+		</TD>
+	</TR>
+</TABLE>
+<P>This driver is the default for pre-build packages. The <TT CLASS="western">sqlite3.exe</TT>
+shell is bundled with pre-built YB.ORM packages, see folder <TT CLASS="western">bin</TT>.
+</P>
+<P>Apply generated SQL scripts like this: 
+</P>
+<PRE CLASS="western">C:\yborm\bin&gt;sqlite3 c:\yborm\examples\test1_db &lt; c:\yborm\examples\test_schema.sql
+C:\yborm\bin&gt;sqlite3 c:\yborm\examples\test1_db &lt; c:\yborm\examples\ex2_schema.sql
+C:\yborm\bin&gt;sqlite3 c:\yborm\examples\test1_db &lt; c:\yborm\examples\auth_schema.sql</PRE><H2 CLASS="western">
+<A NAME="MySQL"></A>MySQL</H2>
+<P>Sample connection strings for MySQL: 
+</P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>mysql+odbc://test1_usr:test1_pwd@test1_dsn 
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>mysql+qodbc3://test1_usr:test1_pwd@test1_dsn 
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>mysql+qtsql://test1_usr:test1_pwd@127.0.0.1:3306/test1_db 
+			</P>
+		</TD>
+	</TR>
+</TABLE>
+<P>You must know the <TT CLASS="western">root</TT> password for your
+MySQL database to be able to manage databases and users. 
+</P>
+<PRE CLASS="western">C:\MySQL\bin&gt;mysql.exe -u root -p mysql
+Enter password: ******** &lt;-- type in here your root password for MySQL
+Welcome to the MySQL monitor. &nbsp;Commands end with ; or \g.
+Your MySQL connection id is 361
+Server version: 5.0.51b-community-nt-log MySQL Community Edition (GPL)
+Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
+mysql&gt; create database test1_db default charset utf8;
+Query OK, 1 row affected (0.00 sec)
+mysql&gt; create user 'test1_usr'@'localhost' identified by 'test1_pwd';
+Query OK, 0 rows affected (0.00 sec)
+mysql&gt; grant all on test1_db.* to 'test1_usr'@'localhost';
+Query OK, 0 rows affected (0.00 sec)
+mysql&gt; exit
+Bye</PRE><P>
+Apply generated SQL scripts like this: 
+</P>
+<PRE CLASS="western">C:\MySQL\bin&gt;mysql.exe -u test1_usr -ptest1_pwd test1_db &lt; c:\yborm\examples\test_schema.sql
+C:\MySQL\bin&gt;mysql.exe -u test1_usr -ptest1_pwd test1_db &lt; c:\yborm\examples\ex2_schema.sql
+C:\MySQL\bin&gt;mysql.exe -u test1_usr -ptest1_pwd test1_db &lt; c:\yborm\examples\auth_schema.sql</PRE><H2 CLASS="western">
+<A NAME="Postgres"></A>Postgres</H2>
+<P>Sample connection strings for Postgres: 
+</P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>postgres+odbc://test1_usr:test1_pwd@test1_dsn 
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>postgres+qodbc3://test1_usr:test1_pwd@test1_dsn 
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>postgres+qtsql://test1_usr:test1_pwd@127.0.0.1:5432/test1_db 
+			</P>
+		</TD>
+	</TR>
+</TABLE>
+<PRE CLASS="western">C:\Program Files\PostgreSQL\9.1\bin&gt;createuser -U postgres -h 127.0.0.1 -p 5432 -D -A -P test1_usr
+Enter password for new role: test1_pwd
+Enter it again: test1_pwd
+Shall the new role be allowed to create more new roles? (y/n) n
+Password: &lt;your master password&gt;
+C:\Program Files\PostgreSQL\9.1\bin&gt;createdb -U postgres -h 127.0.0.1 -p 5432 -O test1_usr test1_db
+Password: &lt;your master password&gt;</PRE><P>
+Apply generated SQL scripts like this: 
+</P>
+<PRE CLASS="western">C:\Program Files\PostgreSQL\9.1\bin&gt;psql -h 127.0.0.1 -p 5432 -d test1_db -U test1_usr &lt; c:\yborm\examples\test_schema.sql
+Password for user test1_usr: test1_pwd
+NOTICE: &nbsp;CREATE TABLE / PRIMARY KEY will create implicit index &quot;t_orm_test_pkey&quot; for table &quot;t_orm_test&quot;
+CREATE TABLE
+NOTICE: &nbsp;CREATE TABLE / PRIMARY KEY will create implicit index &quot;t_orm_xml_pkey&quot; for table &quot;t_orm_xml&quot;
+CREATE TABLE
+ALTER TABLE
+CREATE SEQUENCE
+CREATE SEQUENCE
+C:\Program Files\PostgreSQL\9.1\bin&gt;psql -h 127.0.0.1 -p 5432 -d test1_db -U test1_usr &lt; c:\yborm\examples\ex2_schema.sql
+Password for user test1_usr: test1_pwd
+...
+C:\Program Files\PostgreSQL\9.1\bin&gt;psql -h 127.0.0.1 -p 5432 -d test1_db -U test1_usr &lt; c:\yborm\examples\auth_schema.sql
+Password for user test1_usr: test1_pwd
+...</PRE><H2 CLASS="western">
+<A NAME="Firebird"></A>Firebird</H2>
+<P>Sample connection strings for Firebird (Interbase may also apply):
+</P>
+<TABLE CELLPADDING=2 CELLSPACING=2>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>interbase+odbc://test1_usr:test1_pwd@test1_dsn 
+			</P>
+		</TD>
+	</TR>
+</TABLE>
+<P>The default password for admin user <TT CLASS="western">SYSDBA</TT>
+is <TT CLASS="western">masterkey</TT>. 
+</P>
+<PRE CLASS="western">C:\Program Files\Firebird\Firebird_2_5\bin&gt;gsec -user SYSDBA -password masterkey
+GSEC&gt; add test1_usr -pw test1_pwd
+Warning - maximum 8 significant bytes of password used
+GSEC&gt; quit
+C:\Program Files\Firebird\Firebird_2_5\bin&gt;isql
+Use CONNECT or CREATE DATABASE to specify a database
+SQL&gt; CREATE DATABASE 'localhost:c:/yborm/examples/test1_db.fdb'
+CON&gt; page_size 8192 user 'test1_usr' password 'test1_pwd';
+SQL&gt; quit;</PRE><P>
+Apply generated SQL scripts like this: 
+</P>
+<PRE CLASS="western">C:\Program Files\Firebird\Firebird_2_5\bin&gt;isql -u test1_usr -p test1_pwd localhost:c:/yborm/examples/test1_db.fdb &lt; c:\yborm\examples\test_schema.sql
+C:\Program Files\Firebird\Firebird_2_5\bin&gt;isql -u test1_usr -p test1_pwd localhost:c:/yborm/examples/test1_db.fdb &lt; c:\yborm\examples\ex2_schema.sql
+C:\Program Files\Firebird\Firebird_2_5\bin&gt;isql -u test1_usr -p test1_pwd localhost:c:/yborm/examples/test1_db.fdb &lt; c:\yborm\examples\auth_schema.sql</PRE><P STYLE="margin-bottom: 0cm">
+<BR>
+</P>
+</BODY>
+</HTML>

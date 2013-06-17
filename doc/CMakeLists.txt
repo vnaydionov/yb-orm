@@ -8,7 +8,8 @@ install (FILES
     Tutorial4.en.html Tutorial4.ru.html
     ToDo.en.html ToDo.ru.html
     About.en.html About.ru.html
-    msvc-settings.html
+    Build.en.html Build.ru.html
+    MSVC_Settings.en.html
     DESTINATION doc)
 
 add_subdirectory (pics)
