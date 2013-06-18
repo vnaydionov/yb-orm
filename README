@@ -1,95 +1,95 @@
 
 ABOUT
 
-YB.ORM tool is developed to simplify writing C++ code dealing with SQL
-databases.  The goal is to provide a convenient interface like SQLAlchemy
-(Python) or Hibernate (Java).  Available ports to Linux and Windows (MinGW, VC).
-SQL dialects supported: SQLite, MySQL, Postgres, Oracle, Firebird.
-You can use YB.ORM with your favorite toolkit: Boost, Qt4, or wxWidgets.
-This library also provides basic means for logging, database connection
-pooling, serialization of domain objects into XML and JSON.
-
-Warning!  The software is under development, so it may behave unstable.
-Many interesting features are still to be implemented.
+YB.ORM tool is developed to simplify for C++ developers creation of
+applications that work with relational databases. An Object-Relational Mapper
+(ORM) works by mapping database tables to classes and table records to objects
+in some programming language. This approach may be not optimal for each and
+every database application, but it proved to be reasonable in applications
+that require complex logic and transaction handling. The goals of YB.ORM
+project are: provide a convenient API for C++ developers, retain high
+performance of C++, keep the source code easily portable across different
+platforms, support most major relational DataBase Management Systems (DBMS).
 
 Typical usage scenario is the following:
-- Describe your database schema i.e. the tables with their columns and
-  the relationships between tables in a simple XML-based format.
-- Optionally, use the SQL DDL generator for initial DDL statements.
-  Perform this step to populate your empty database schema with tables.
-- Use the code generation tool provided to produce C++ classes for each table.
-  This code hides the details of how objects are being loaded and stored
-  from/to the corresponding database tables, as well it represents
-  the relationships between objects in a convenient way.
-- Add your application-specific logic to the classes, etc.
-- Should you make changes to the database schema, you then use 
-  the code generation tool to synchronize the schema description
-  with the previously generated C++ classes.
-- Now you can use these generated classes in cooperation with Session object
-  to automate the following tasks:
-    - query objects from database, 
-    - create new objects or 
-    - load and modify existing objects and save them to the database, 
-    - link and unlink objects to/from each other using relations, 
-    - delete objects from the database.
+  * Describe your database schema i.e. tables with their columns and
+    relationships between tables in simple XML-based format
+    (see doc/XmlFormat.en.html).
+  * Use the code generation tool provided to produce C++ domain classes for
+    your tables (see doc/Tutorial1.en.html).
+  * Add your application-specific logic to the classes.
+  * Should you make changes to the database schema, you then use the code
+    generation tool to synchronize previously generated C++ classes with the
+    schema.
+  * Optionally, use the code generation tool to issue SQL statements to
+    populate your empty database schema with tables.
+  * Now you can use the domain classes in cooperation with Session object to
+    automate the following tasks:
+      + create new objects or delete existing objects;
+      + query objects from database, using object-based queries
+        (see doc/Tutorial3.en.html);
+      + modify existing objects by just assignment to objects' fields;
+      + link and unlink objects to/from each other using relations
+        (see doc/Tutorial2.en.html);
+      + serialize your objects into XML and JSON.
 
-This tool employs many ideas explained in the book
-"Patterns of Enterprise Application Architecture" by Martin Fawler.
-Such patterns as "Identity Map", "Unit of Work" etc.
-Also I was inspired by the power of frameworks like
-Hibernate (http://www.hibernate.org/) for Java programming language and
-SQLAlchemy (http://www.sqlalchemy.org/) for Python.
+This tool employs many ideas explained in the book "Patterns of Enterprise
+Application Architecture" by Martin Fawler. Such patterns as "Lazy Load",
+"Identity Map", "Unit of Work", etc. Also, the project development was
+inspired by the power of Hibernate framework (http://www.hibernate.org/)
+for Java, and especially by the design of SQLAlchemy
+(http://www.sqlalchemy.org/) for Python.
+Some details of how it works are here: doc/Internals.en.html.
 
-Project was once started as part of a billing system for on-line ads
-at Yandex company (http://www.yandex.com/).
-YB stands for Yandex.Balance, that was the name for the billing system.
-Today YB.ORM project is not affiliated with Yandex company.
+STATUS
 
-REQUIREMENTS
+At the moment, YB.ORM tool works in Linux, Mac OS X and Windows. It can be
+built using the following compilers: GCC, CLang, MinGW, MSVC 2008/2010, also
+Borland C++ Builder, see Building Instructions (doc/Build.en.html).
 
-This piece of software is developed entirely in C++ and should be easily
-portable across different platforms, although the development is done
-primarily on GNU/Linux, using GNU C++.  GNU Autotools are used as building
-system in Linux, CMake is used in Windows.
+You can build YB.ORM library against your toolkit of choice: Boost, Qt, or
+wxWidgets; their native data types will be used for strings, date and time,
+threads, XML parsing, etc.
 
-You can build YB.ORM library against Boost, Qt4, or wxWidgets toolkits,
-to use their native datatypes, such as strings, datetime, etc.
-For example, to build it with Boost in Linux, the following prerequisites
-should be met:
-- boost-thread >= 1.31.0
-- boost-date-time >= 1.31.0
-- libxml2 >= 2.6.16
-- cppunit >= 1.10.2 (if you're going to run the test suite)
-- autotools >= 2.61, automake >= 1.10.1
-- unixODBC >= 2.2.11 (to make Oracle ODBC driver work
-    under GNU/Linux x86_64 I have used unixODBC = 2.3.0)
+The tool was tested to work with the following SQL databases: MySQL, Oracle,
+SQLite, Firebird, Postgres. To connect to a database you have these options:
+  * ODBC drivers
+  * popular database connectivity C++ library SOCI
+    (http://soci.sourceforge.net/)
+  * database drivers for Qt library: QtSql
+  * there is native driver for SQLite.
 
-The library aims to be database independent.  At the time of this writing 
-it is tested to work with SQLite, Oracle, Postgres, MySQL and Firebird.
-To connect to database there are several SQL backends present: ODBC, through
-native library (SQLite), through SOCI library (http://soci.sourceforge.net/),
-through QtSql library, in case of Qt-enabled build.
+Optionally, use connection pooling the library provides. Look here for
+details: Connecting to database (doc/SqlDriver.en.html).
 
-If you use ODBC, then to access database you will need one of the following:
-- myodbc >= 3.51.15 (MySQL ODBC driver)
-- instantclient >= 10.2 (ODBC driver for Oracle)
-- odbc-postgresql (ODBC driver for Postgres)
-- OdbcFb >= 2.0 (ODBC driver for Firebird)
+The basic functionality of YB.ORM was tested on several little projects, and
+proved to be usable. Keep in mind, that the tool is under development and its
+API may change between releases. Some interesting features are still to be
+implemented (see ToDo list: doc/ToDo.en.html).
 
 AUTHORS
 
-- Viacheslav Naydenov, vaclav at yandex dot ru - main developer.
-- Sergey Chmelev, halty at yandex dash team dot ru - early contributor.
-- SqUe, squarious at gmail dot com - tiodbc code.
+Project has started in late 2006 as a part of billing system for on-line ads
+at Yandex company (http://www.yandex.com/) by Viacheslav Naydenov (me) and
+Sergey Chmelev. "YB" used to stand for Yandex.Balance, the name for the
+billing system. Today YB.ORM project is not affiliated with Yandex company.
+The source code was released in early 2011 under open source license, since
+then the code has been mostly rewritten. Thanks to the author of tiny odbc
+wrapper (http://code.google.com/p/tiodbc/), whose code is used as a base for
+the first usable SQL driver (OdbcDriver class). Also, I would like to mention
+the feedback and contribution from several students of Moscow State Open
+University (MSOU), where I was using this piece of software as a case study.
+The list of contributors:
 
-Also, I would like to appreciate feedback from several students
-of Moscow State Open University (MSOU):
-- Nikita Buyvich, buyvich at gmail dot com.
-- Viacheslav Fedorov, funny dash story at yandex dot ru.
-- Andrey Skobenkov, andrey dot skobenkov at gmail dot com.
+    Viacheslav Naydenov, vaclav at yandex dot ru - main developer
+    Sergey Chmelev, halty at yandex dash team dot ru - early contributor
+    SqUe, squarious at gmail dot com - tiodbc code
+    Nikita Buyvich, buyvich at gmail dot com - MSOU
+    Viacheslav Fedorov, funny dash story at yandex dot ru - MSOU
+    Andrey Skobenkov, andrey dot skobenkov at gmail dot com - MSOU
 
 Any feedback, patches or comments are welcome!
 
 -- 
 Viacheslav Naydenov
-13 may 2013
+18 june 2013

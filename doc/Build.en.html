@@ -5,9 +5,9 @@
 	<TITLE></TITLE>
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="AUTHOR" CONTENT="Vaclav Naydionov">
-	<META NAME="CREATED" CONTENT="20130617;12140800">
+	<META NAME="CREATED" CONTENT="20130618;22411100">
 	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
-	<META NAME="CHANGED" CONTENT="20130617;12150400">
+	<META NAME="CHANGED" CONTENT="20130618;22415200">
 	<STYLE TYPE="text/css">
 	<!--
 		@page { size: 21cm 29.7cm; margin: 2cm }
@@ -326,7 +326,7 @@ placed in <TT CLASS="western">acinclude.m4</TT> file. When you build
 your own application with Autotools and YB.ORM you can take
 <TT CLASS="western">YB_CHECK_YBORM()</TT> macro to your <TT CLASS="western">configure.ac</TT>
 file. This will add option <TT CLASS="western">--with-yborm-root</TT>
-to your <TT CLASS="western">configure</TT> script. See the <A HREF="../examples/auth/README.auth">Auth
+to your <TT CLASS="western">configure</TT> script. See the <A HREF="http://code.google.com/p/yb-orm/source/browse/examples/auth/README.auth">Auth
 example</A>. 
 </P>
 <H2 CLASS="western"><A NAME="Minimal_requirements"></A>Minimal
@@ -609,7 +609,14 @@ Password for user test1_usr: test1_pwd
 <TABLE CELLPADDING=2 CELLSPACING=2>
 	<TR>
 		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
-			<P>interbase+odbc://test1_usr:test1_pwd@test1_dsn 
+			<P><TT CLASS="western">&quot;interbase+odbc://test1_usr:test1_pwd@test1_dsn&quot;</TT>
+						</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P><TT CLASS="western">&quot;interbase+soci://service=localhost:/var/lib/firebird/2.5/data/test1_db.fdb
+			user=test1_usr password=test1_pwd charset=UTF8&quot;</TT> 
 			</P>
 		</TD>
 	</TR>
@@ -630,7 +637,22 @@ Apply generated SQL scripts like this:
 </P>
 <PRE CLASS="western">C:\Program Files\Firebird\Firebird_2_5\bin&gt;isql -u test1_usr -p test1_pwd localhost:c:/yborm/examples/test1_db.fdb &lt; c:\yborm\examples\test_schema.sql
 C:\Program Files\Firebird\Firebird_2_5\bin&gt;isql -u test1_usr -p test1_pwd localhost:c:/yborm/examples/test1_db.fdb &lt; c:\yborm\examples\ex2_schema.sql
-C:\Program Files\Firebird\Firebird_2_5\bin&gt;isql -u test1_usr -p test1_pwd localhost:c:/yborm/examples/test1_db.fdb &lt; c:\yborm\examples\auth_schema.sql</PRE><P STYLE="margin-bottom: 0cm">
+C:\Program Files\Firebird\Firebird_2_5\bin&gt;isql -u test1_usr -p test1_pwd localhost:c:/yborm/examples/test1_db.fdb &lt; c:\yborm\examples\auth_schema.sql</PRE><P>
+In Ubuntu Linux, the usage of <TT CLASS="western">gsec</TT> is the
+same, but you may have to use <TT CLASS="western">isql-fb</TT>
+command instead of <TT CLASS="western">isql</TT>: 
+</P>
+<PRE CLASS="western">$ isql-fb
+Use CONNECT or CREATE DATABASE to specify a database
+SQL&gt; CREATE DATABASE '/var/lib/firebird/2.5/data/test1_db.fdb'
+CON&gt; page_size 8192 user 'test1_usr' password 'test1_pwd';
+SQL&gt; quit;
+$ isql-fb -u test1_usr -p test1_pwd \
+&nbsp; localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; lib/orm/test/mk_tables.sql
+$ isql-fb -u test1_usr -p test1_pwd \
+&nbsp; localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; examples/domain/mk_tables.sql
+$ isql-fb -u test1_usr -p test1_pwd \
+&nbsp; localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; examples/auth/src/domain/auth_schema.sql</PRE><P STYLE="margin-bottom: 0cm">
 <BR>
 </P>
 </BODY>
