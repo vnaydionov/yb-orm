@@ -165,6 +165,9 @@ public:
     ManagedListIter &operator--() { --it_; d_.reset(NULL); return *this; }
     ManagedListIter operator++(int) { ManagedListIter t(*this); ++it_; d_.reset(NULL); return t; }
     ManagedListIter operator--(int) { ManagedListIter t(*this); --it_; d_.reset(NULL); return t; }
+    void delete_object() {
+        (*it_)->delete_object();
+    }
 };
 
 template <class T>
@@ -269,7 +272,8 @@ public:
     void erase(iterator it) {
         RelationObject *ro = relation_object();
         load_if_needed(ro); // ??
-        (*it.it_)->delete_object();
+        //(*it.it_)->delete_object();
+        it.delete_object();
     }
 };
 
