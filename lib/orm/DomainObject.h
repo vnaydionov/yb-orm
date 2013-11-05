@@ -514,13 +514,13 @@ struct QueryFunc {
 template <class R>
 class QueryObj {
     typedef QueryFunc<R> QF;
-    Session &session_;
+    Session *session_;
     Expression filter_, order_;
     bool for_update_;
 public:
     QueryObj(Session &session, const Expression &filter = Expression(),
             const Expression &order = Expression(), bool for_update = false)
-        : session_(session)
+        : session_(&session)
         , filter_(filter)
         , order_(order)
         , for_update_(for_update)
@@ -546,22 +546,22 @@ public:
     SelectExpr get_select() {
         Strings tables;
         QF::list_tables(tables);
-        return make_select(session_.schema(),
-                session_.schema().join_expr(tables),
+        return make_select(session_->schema(),
+                session_->schema().join_expr(tables),
                 filter_, order_, for_update_);
     }
     DomainResultSet<R> all() {
         Strings tables;
         QF::list_tables(tables);
-        return DomainResultSet<R>(session_.load_collection(
-                    session_.schema().join_expr(tables),
+        return DomainResultSet<R>(session_->load_collection(
+                    session_->schema().join_expr(tables),
                     filter_, order_, for_update_));
     }
     R one() {
         Strings tables;
         QF::list_tables(tables);
-        DomainResultSet<R> r = session_.load_collection(
-                    session_.schema().join_expr(tables),
+        DomainResultSet<R> r = session_->load_collection(
+                    session_->schema().join_expr(tables),
                     filter_, order_, for_update_);
         typename DomainResultSet<R>::iterator it = r.begin();
         if (it == r.end())
@@ -574,7 +574,7 @@ public:
     LongInt count() {
         SelectExpr select(Expression(_T("COUNT(*) CNT")));
         select.from_(ColumnExpr(get_select(), _T("X")));
-        SqlResultSet rs = session_.engine()->select_iter(select);
+        SqlResultSet rs = session_->engine()->select_iter(select);
         Row r = *rs.begin(); 
         return r[0].second.as_longint();
     }
