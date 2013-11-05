@@ -67,6 +67,12 @@ public:
     {
         return mark_json(sub_element(name, s), _T("raw"));
     }
+    template<class V__>
+    ElementPtr add_json(const Yb::String &name = _T("value"),
+            const V__ &v = V__())
+    {
+        return mark_json(sub_element(name, to_string(v)), _T("raw"));
+    }
 };
 
 ElementPtr new_element(const Yb::String &name, const Yb::String &s = _T(""));

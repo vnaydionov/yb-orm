@@ -350,6 +350,8 @@ public:
         : p_(new DObj(session)), owner_(NULL), one2one_(false) {}
     explicit DomainObjHolder(Yb::DataObject::Ptr d)
         : p_(new DObj(d)), owner_(NULL), one2one_(false) {}
+    explicit DomainObjHolder(DObj &d)
+        : p_(new DObj(d.get_data_object())), owner_(NULL), one2one_(false) {}
     DomainObjHolder(Yb::Session &session, const Yb::Key &key)
         : p_(new DObj(session, key)), owner_(NULL), one2one_(false) {}
     DomainObjHolder(Yb::Session &session, Yb::LongInt id)
@@ -514,12 +516,14 @@ class QueryObj {
     typedef QueryFunc<R> QF;
     Session &session_;
     Expression filter_, order_;
+    bool for_update_;
 public:
     QueryObj(Session &session, const Expression &filter = Expression(),
-            const Expression &order = Expression())
+            const Expression &order = Expression(), bool for_update = false)
         : session_(session)
         , filter_(filter)
         , order_(order)
+        , for_update_(for_update)
     {}
     QueryObj filter_by(const Expression &filter) {
         QueryObj q(*this);
@@ -534,26 +538,31 @@ public:
         q.order_ = order;
         return q;
     }
+    QueryObj for_update() {
+        QueryObj q(*this);
+        q.for_update_ = true;
+        return q;
+    }
     SelectExpr get_select() {
         Strings tables;
         QF::list_tables(tables);
         return make_select(session_.schema(),
                 session_.schema().join_expr(tables),
-                filter_, order_);
+                filter_, order_, for_update_);
     }
     DomainResultSet<R> all() {
         Strings tables;
         QF::list_tables(tables);
         return DomainResultSet<R>(session_.load_collection(
                     session_.schema().join_expr(tables),
-                    filter_, order_));
+                    filter_, order_, for_update_));
     }
     R one() {
         Strings tables;
         QF::list_tables(tables);
         DomainResultSet<R> r = session_.load_collection(
                     session_.schema().join_expr(tables),
-                    filter_, order_);
+                    filter_, order_, for_update_);
         typename DomainResultSet<R>::iterator it = r.begin();
         if (it == r.end())
             throw NoDataFound("No data");

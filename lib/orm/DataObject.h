@@ -101,10 +101,12 @@ public:
     void load_collection(ObjectList &out,
                          const Expression &tables,
                          const Expression &filter, 
-                         const Expression &order_by = Expression());
+                         const Expression &order_by = Expression(),
+                         bool for_update_flag = false);
     DataObjectResultSet load_collection(
             const Expression &tables, const Expression &filter,
-            const Expression &order_by = Expression());
+            const Expression &order_by = Expression(),
+            bool for_update_flag = false);
 };
 
 class NullPK: public BaseError {

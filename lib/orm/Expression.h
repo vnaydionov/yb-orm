@@ -208,12 +208,12 @@ class SelectExprBackend: public ExpressionBackend
 {
     Expression select_expr_, from_expr_, where_expr_,
                group_by_expr_, having_expr_, order_by_expr_;
-    bool distinct_flag_, for_update_flag_;
+    bool distinct_flag_;
+    String lock_mode_;
 public:
     SelectExprBackend(const Expression &select_expr)
         : select_expr_(select_expr)
         , distinct_flag_(false)
-        , for_update_flag_(false)
     {}
     void from_(const Expression &from_expr) { from_expr_ = from_expr; }
     void where_(const Expression &where_expr) { where_expr_ = where_expr; }
@@ -221,7 +221,7 @@ public:
     void having_(const Expression &having_expr) { having_expr_ = having_expr; }
     void order_by_(const Expression &order_by_expr) { order_by_expr_ = order_by_expr; }
     void distinct(bool flag) { distinct_flag_ = flag; }
-    void for_update(bool flag) { for_update_flag_ = flag; }
+    void with_lockmode(const String &lock_mode) { lock_mode_ = lock_mode; }
     const Expression &select_expr() const { return select_expr_; }
     const Expression &from_expr() const { return from_expr_; }
     const Expression &where_expr() const { return where_expr_; }
@@ -229,7 +229,7 @@ public:
     const Expression &having_expr() const { return having_expr_; }
     const Expression &order_by_expr() const { return order_by_expr_; }
     bool distinct_flag() const { return distinct_flag_; }
-    bool for_update_flag() const { return for_update_flag_; }
+    const String &lock_mode() const { return lock_mode_; }
     const String generate_sql(Values *params, int *count) const;
 };
 
@@ -243,6 +243,7 @@ public:
     SelectExpr &having_(const Expression &having_expr);
     SelectExpr &order_by_(const Expression &order_by_expr);
     SelectExpr &distinct(bool flag = true);
+    SelectExpr &with_lockmode(const String &lock_mode);
     SelectExpr &for_update(bool flag = true);
     const Expression &select_expr() const;
     const Expression &from_expr() const;
@@ -251,6 +252,7 @@ public:
     const Expression &having_expr() const;
     const Expression &order_by_expr() const;
     bool distinct_flag() const;
+    const String &lock_mode() const;
     bool for_update_flag() const;
 };
 
@@ -362,7 +364,8 @@ class Schema;
 
 void find_all_tables(const Expression &expr, Strings &tables);
 SelectExpr make_select(const Schema &schema, const Expression &from_where,
-        const Expression &filter, const Expression &order_by);
+        const Expression &filter, const Expression &order_by,
+        bool for_update_flag = false);
 
 } // namespace Yb
 
