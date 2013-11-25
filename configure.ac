@@ -43,6 +43,7 @@ YB_PATH_CPPUNIT([1.10.0],[],
 AM_CONDITIONAL([CPPUNIT_PRESENT], [test x$no_cppunit != xyes])
 
 YB_TEST_DB
+AM_CONDITIONAL([DIALECT_SET], [test x$YBORM_DBTYPE != x])
 
 AC_OUTPUT(Makefile
     lib/Makefile

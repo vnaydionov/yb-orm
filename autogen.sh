@@ -5,5 +5,5 @@ autoheader &&
 rm -rf aclocal.m4 &&
 aclocal &&
 autoconf &&
-automake --foreign --add-missing
+automake --foreign --add-missing --copy
 
