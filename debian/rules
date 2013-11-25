@@ -1,11 +1,6 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
 
-# Build a debian package out of typical python package.
-# Python package is installed using setup.py install,
-# then dh_python2 helper is used to move files to proper places
-# and create necessary symlinks.
-
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
@@ -74,7 +69,6 @@ binary-arch: build install
 	dh_strip
 	dh_compress
 	dh_fixperms
-	dh_python2
 #	dh_perl
 	dh_makeshlibs
 	dh_installdeb
