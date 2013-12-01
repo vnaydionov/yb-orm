@@ -3,8 +3,8 @@
 
 #include <memory>
 #include <vector>
-#include <util/Thread.h>
-#include <orm/SqlDriver.h>
+#include "util/thread.h"
+#include "orm/sql_driver.h"
 #include <QtSql>
 
 namespace Yb {

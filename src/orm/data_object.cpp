@@ -1,12 +1,12 @@
 // -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
-#include <orm/DataObject.h>
+#include "util/string_utils.h"
+#include "orm/data_object.h"
 #include <algorithm>
 #include <iostream>
 #if 0
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #endif
-#include <util/str_utils.hpp>
 
 using namespace std;
 

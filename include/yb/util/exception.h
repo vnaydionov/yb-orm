@@ -2,7 +2,7 @@
 #ifndef YB__UTIL__EXCEPTION__INCLUDED
 #define YB__UTIL__EXCEPTION__INCLUDED
 
-#include <util/String.h>
+#include "string_type.h"
 #include <stdexcept>
 
 namespace Yb {

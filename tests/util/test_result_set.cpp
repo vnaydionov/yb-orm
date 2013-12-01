@@ -1,6 +1,6 @@
 #include <vector>
 #include <cppunit/extensions/HelperMacros.h>
-#include <util/ResultSet.h>
+#include "util/result_set.h"
 
 using namespace std;
 

@@ -1,9 +1,9 @@
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <iostream>
-#include <orm/MetaData.h>
-#include <orm/MetaDataConfig.h>
-#include <orm/CodeGen.h>
+#include "orm/schema.h"
+#include "orm/schema_config.h"
+#include "orm/code_gen.h"
 
 using namespace std;
 using namespace Yb;

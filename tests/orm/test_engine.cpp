@@ -1,7 +1,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-#include <util/str_utils.hpp>
-#include <orm/Engine.h>
+#include "util/string_utils.h"
+#include "orm/engine.h"
 
 using namespace std;
 using namespace Yb;

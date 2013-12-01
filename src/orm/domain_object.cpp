@@ -1,5 +1,5 @@
 // -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
-#include <orm/DomainObject.h>
+#include "orm/domain_object.h"
 
 using namespace std;
 

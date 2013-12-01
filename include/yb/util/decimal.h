@@ -1,11 +1,9 @@
 #ifndef YB__UTIL__DECIMAL__INCLUDED
 #define YB__UTIL__DECIMAL__INCLUDED
 
-#include <exception>
-#include <string>
+#include "string_type.h"
+#include "exception.h"
 #include <iosfwd>
-#include <util/String.h>
-#include <util/Exception.h>
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef __int64 decimal_numerator;

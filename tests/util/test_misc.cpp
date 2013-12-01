@@ -3,8 +3,8 @@
 #include <sstream>
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <util/str_utils.hpp>
-#include <util/ElementTree.h>
+#include "util/string_utils.h"
+#include "util/element_tree.h"
 
 using namespace std;
 using namespace Yb;

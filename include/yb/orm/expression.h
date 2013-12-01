@@ -5,9 +5,9 @@
 #include <string>
 #include <set>
 #include <map>
-#include <util/Utility.h>
-#include <util/Exception.h>
-#include <util/Value.h>
+#include "util/utility.h"
+#include "util/exception.h"
+#include "util/value_type.h"
 
 namespace Yb {
 

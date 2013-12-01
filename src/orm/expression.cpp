@@ -1,6 +1,6 @@
-#include <orm/Expression.h>
-#include <orm/MetaData.h>
-#include <orm/SqlDriver.h>
+#include "orm/expression.h"
+#include "orm/schema.h"
+#include "orm/sql_driver.h"
 
 using namespace std;
 

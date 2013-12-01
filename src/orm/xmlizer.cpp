@@ -1,5 +1,5 @@
-#include <orm/XMLizer.h>
-#include <orm/DomainFactory.h>
+#include "orm/xmlizer.h"
+#include "orm/domain_factory.h"
 
 using namespace std;
 

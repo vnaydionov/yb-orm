@@ -1,6 +1,6 @@
 #include <stdexcept>
 #include <cppunit/extensions/HelperMacros.h>
-#include <util/Singleton.h>
+#include "util/singleton.h"
 
 using namespace std;
 

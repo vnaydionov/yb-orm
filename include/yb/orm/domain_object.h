@@ -4,8 +4,8 @@
 
 #include <iterator>
 #include <stdexcept>
-#include <orm/XMLizer.h>
-#include <orm/DataObject.h>
+#include "xmlizer.h"
+#include "data_object.h"
 #if defined(YB_USE_TUPLE)
 #include <boost/tuple/tuple.hpp>
 #endif

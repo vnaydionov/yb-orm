@@ -6,7 +6,7 @@
 #endif
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <util/DataTypes.h>
+#include "util/data_types.h"
 
 using namespace std;
 

@@ -1,8 +1,8 @@
 #include <sstream>
 #include <algorithm>
-#include <util/str_utils.hpp>
-#include <orm/Engine.h>
-#include <orm/CodeGen.h>
+#include "util/string_utils.h"
+#include "orm/engine.h"
+#include "orm/code_gen.h"
 
 using namespace std;
 using namespace Yb::StrUtils;

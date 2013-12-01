@@ -2,8 +2,8 @@
 #define YB__UTIL__XML_WRITER__INCLUDED
 
 #include <sstream>
-#include <util/String.h>
-#include <util/Utility.h>
+#include "string_type.h"
+#include "utility.h"
 
 namespace Yb {
 

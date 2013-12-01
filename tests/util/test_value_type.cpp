@@ -1,9 +1,9 @@
 #include <time.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-#include <util/nlogger.h>
-#include <util/str_utils.hpp>
-#include <util/Value.h>
+#include "util/nlogger.h"
+#include "util/string_utils.h"
+#include "util/value_type.h"
 
 using namespace std;
 using namespace Yb;

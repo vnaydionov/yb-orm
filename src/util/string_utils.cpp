@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <util/str_utils.hpp>
+#include "util/string_utils.h"
 
 namespace Yb {
 

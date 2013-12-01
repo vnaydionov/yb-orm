@@ -2,7 +2,7 @@
 #define YB__UTIL__SINGLETON___INCLUDED
 
 #include <memory>
-#include <util/Thread.h>
+#include "thread.h"
 
 class TestSingleton;
 

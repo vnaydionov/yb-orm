@@ -1,5 +1,5 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
-#include <util/Thread.h>
+#include "util/thread.h"
 
 namespace Yb {
 

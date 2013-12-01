@@ -2,9 +2,9 @@
 #ifndef YB__UTIL__THREAD__INCLUDED
 #define YB__UTIL__THREAD__INCLUDED
 
-#include <util/Utility.h>
-#include <util/String.h>
-#include <util/Exception.h>
+#include "utility.h"
+#include "string_type.h"
+#include "exception.h"
 
 #if defined(YB_USE_WX)
 #include <wx/thread.h>

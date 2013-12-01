@@ -1,10 +1,10 @@
 // -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-#include <util/str_utils.hpp>
-#include <orm/DataObject.h>
-#include <orm/DomainObject.h>
-#include <orm/MetaDataConfig.h>
+#include "util/string_utils.h"
+#include "orm/data_object.h"
+#include "orm/domain_object.h"
+#include "orm/schema_config.h"
 
 using namespace std;
 using namespace Yb;

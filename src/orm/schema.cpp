@@ -1,10 +1,10 @@
 #include <sstream>
 #include <algorithm>
-#include <util/str_utils.hpp>
-#include <util/Exception.h>
-#include <util/Value.h>
-#include <orm/MetaData.h>
-#include <orm/DomainFactory.h>
+#include "util/string_utils.h"
+#include "util/exception.h"
+#include "util/value_type.h"
+#include "orm/schema.h"
+#include "orm/domain_factory.h"
 
 using namespace std;
 using namespace Yb::StrUtils;

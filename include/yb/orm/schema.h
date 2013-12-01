@@ -8,12 +8,12 @@
 #include <set>
 #include <stdexcept>
 #include <list>
-#include <util/Utility.h>
-#include <util/Exception.h>
-#include <util/Singleton.h>
-#include <util/Value.h>
-#include <orm/Expression.h>
-#include <orm/SqlDriver.h>
+#include "util/utility.h"
+#include "util/exception.h"
+#include "util/singleton.h"
+#include "util/value_type.h"
+#include "expression.h"
+#include "sql_driver.h"
 
 class TestMetaData;
 

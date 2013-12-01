@@ -1,10 +1,10 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-#include <util/str_utils.hpp>
-#include <orm/XMLizer.h>
-#include <orm/DomainObject.h>
-#include <orm/DomainFactory.h>
-#include <orm/Engine.h>
+#include "util/string_utils.h"
+#include "orm/xmlizer.h"
+#include "orm/domain_object.h"
+#include "orm/domain_factory.h"
+#include "orm/engine.h"
 
 #define NUM_STMT 6
 

@@ -13,7 +13,6 @@ ybutilinclude_HEADERS = \
 	element_tree.h \
 	value_type.h \
 	nlogger.h \
-	stack_trace.h \
 	result_set.h \
 	singleton.h
 

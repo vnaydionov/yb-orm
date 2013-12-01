@@ -8,12 +8,12 @@
 #include <map>
 #include <set>
 #include <stdexcept>
-#include <util/nlogger.h>
-#include <util/Value.h>
-#include <orm/Expression.h>
-#include <orm/SqlDriver.h>
-#include <orm/SqlPool.h>
-#include <orm/MetaData.h>
+#include "util/nlogger.h"
+#include "util/value_type.h"
+#include "expression.h"
+#include "sql_driver.h"
+#include "sql_pool.h"
+#include "schema.h"
 
 class TestEngine;
 

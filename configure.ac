@@ -46,19 +46,24 @@ YB_TEST_DB
 AM_CONDITIONAL([DIALECT_SET], [test x$YBORM_DBTYPE != x])
 
 AC_OUTPUT(Makefile
-    lib/Makefile
-    lib/test/Makefile
-    lib/util/Makefile
-    lib/util/test/Makefile
-    lib/orm/Makefile
-    lib/orm/test/Makefile
+    include/Makefile
+    include/yb/Makefile
+    include/yb/util/Makefile
+    include/yb/orm/Makefile
     src/Makefile
+    src/util/Makefile
+    src/orm/Makefile
+    src/yborm_gen/Makefile
+    tests/Makefile
+    tests/test_main/Makefile
+    tests/util/Makefile
+    tests/orm/Makefile
     examples/Makefile
     examples/example1.sh
     examples/example2.sh
     examples/domain/Makefile
-    tutorial/Makefile
-    tutorial/domain/Makefile
+    examples/tutorial/Makefile
+    examples/tutorial/domain/Makefile
     )
 
 # vim:ts=4:sts=4:sw=4:et:

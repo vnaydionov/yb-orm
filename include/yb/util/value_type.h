@@ -7,8 +7,8 @@
 #include <vector>
 #include <stdexcept>
 #include <utility>
-#include <util/DataTypes.h>
-#include <util/nlogger.h>
+#include "data_types.h"
+#include "nlogger.h"
 
 namespace Yb {
 

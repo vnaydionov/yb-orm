@@ -30,8 +30,8 @@
 #ifndef _TIODBC_HPP_DEFINED_
 #define _TIODBC_HPP_DEFINED_
 
-#include <util/String.h>
-#include <util/Utility.h>
+#include "util/string_type.h"
+#include "util/utility.h"
 
 // System headers
 #if defined(__WIN32__) || defined(_WIN32)

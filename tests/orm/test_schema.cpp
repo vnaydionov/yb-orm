@@ -1,7 +1,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
-#include <orm/MetaData.h>
-#include <util/Value.h>
+#include "orm/schema.h"
+#include "util/value_type.h"
 
 using namespace std;
 using namespace Yb;

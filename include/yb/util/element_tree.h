@@ -6,10 +6,8 @@
 #include <vector>
 #include <map>
 #include <iostream>
-#include <util/Utility.h>
-#include <util/String.h>
-#include <util/DataTypes.h>
-#include <util/XmlWriter.h>
+#include "data_types.h"
+#include "xml_writer.h"
 
 namespace Yb {
 

@@ -7,11 +7,11 @@
 #include <vector>
 #include <set>
 #include <map>
-#include <util/Utility.h>
-#include <util/String.h>
-#include <util/Exception.h>
-#include <util/decimal.h>
 #include <sstream>
+#include "utility.h"
+#include "string_type.h"
+#include "exception.h"
+#include "decimal.h"
 
 #if defined(YB_USE_WX)
 #include <wx/datetime.h>

@@ -1,14 +1,7 @@
 
-ybutilincludedir=$(includedir)/yb/util
-
-if CPPUNIT_PRESENT
-SUBDIRS = . test
-else
-SUBDIRS =
-endif
-
 AM_CXXFLAGS = \
-	-I $(top_srcdir)/lib \
+	-I $(top_srcdir)/include/yb \
+	-I $(top_srcdir)/include/private \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(WX_CFLAGS) \
@@ -16,33 +9,16 @@ AM_CXXFLAGS = \
 
 lib_LTLIBRARIES = libybutil.la
 
-ybutilinclude_HEADERS = \
-	Utility.h \
-	String.h \
-	Exception.h \
-	Thread.h \
-	decimal.h \
-	DataTypes.h \
-	str_utils.hpp \
-	XmlWriter.h \
-	ElementTree.h \
-	Value.h \
-	nlogger.h \
-	stacktrace.h \
-	ResultSet.h \
-	Singleton.h
-
 libybutil_la_SOURCES = \
-	$(ybutilinclude_HEADERS) \
-	String.cpp \
-	Exception.cpp \
-	Thread.cpp \
+	string_type.cpp \
+	exception.cpp \
+	thread.cpp \
 	decimal.cpp \
-	DataTypes.cpp \
-	str_utils.cpp \
-	XmlWriter.cpp \
-	ElementTree.cpp \
-	Value.cpp \
+	data_types.cpp \
+	string_utils.cpp \
+	xml_writer.cpp \
+	element_tree.cpp \
+	value_type.cpp \
 	nlogger.cpp
 
 libybutil_la_LDFLAGS = -version-info 0:0:0

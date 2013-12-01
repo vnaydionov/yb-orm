@@ -8,7 +8,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <time.h>
-#include <util/Thread.h>
+#include "thread.h"
 
 namespace Yb {
 

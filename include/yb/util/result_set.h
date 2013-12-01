@@ -6,7 +6,7 @@
 #include <iterator>
 #include <algorithm>
 #include <cstddef>
-#include <util/Exception.h>
+#include "exception.h"
 
 namespace Yb {
 

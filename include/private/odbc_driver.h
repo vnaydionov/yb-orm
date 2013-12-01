@@ -2,9 +2,9 @@
 #define YB__ORM__ODBC_DRIVER__INCLUDED
 
 #include <memory>
-#include <util/Thread.h>
-#include <orm/SqlDriver.h>
-#include <orm/tiodbc.hpp>
+#include "util/thread.h"
+#include "orm/sql_driver.h"
+#include "tiodbc.h"
 
 namespace Yb {
 

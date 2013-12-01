@@ -4,7 +4,7 @@
 
 #include <string>
 #include <vector>
-#include <util/DataTypes.h>
+#include "data_types.h"
 
 namespace Yb {
 

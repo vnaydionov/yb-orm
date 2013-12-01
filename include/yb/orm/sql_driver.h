@@ -6,11 +6,11 @@
 #include <vector>
 #include <map>
 #include <iterator>
-#include <util/Utility.h>
-#include <util/Thread.h>
-#include <util/ResultSet.h>
-#include <util/nlogger.h>
-#include <util/Value.h>
+#include "util/utility.h"
+#include "util/thread.h"
+#include "util/result_set.h"
+#include "util/nlogger.h"
+#include "util/value_type.h"
 
 namespace Yb {
 

@@ -3,9 +3,9 @@
 
 #include <map>
 #include <stdexcept>
-#include <util/Utility.h>
-#include <util/Singleton.h>
-#include <orm/DomainObject.h>
+#include "util/utility.h"
+#include "util/singleton.h"
+#include "domain_object.h"
 
 namespace Yb {
 

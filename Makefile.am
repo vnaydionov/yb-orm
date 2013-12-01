@@ -1,8 +1,7 @@
-# not a GNU package. You can remove this line, if
-# have all needed files, that a GNU package needs
+
 AUTOMAKE_OPTIONS = foreign 1.4
 
-DIRS = lib src
+DIRS = include src
 
 if DIALECT_SET
 EXAMPLES_DIRS = examples
@@ -10,16 +9,11 @@ else
 EXAMPLES_DIRS =
 endif
 
-if DIALECT_SET
-if TUTORIAL_PRESENT
-TUTORIAL_DIRS = tutorial
+if CPPUNIT_PRESENT
+TESTS_DIRS = tests
 else
-TUTORIAL_DIRS =
-endif
-else
-TUTORIAL_DIRS =
+TESTS_DIRS =
 endif
 
-
-SUBDIRS = $(DIRS) $(EXAMPLES_DIRS) $(TUTORIAL_DIRS)
+SUBDIRS = $(DIRS) $(EXAMPLES_DIRS) $(TESTS_DIRS)
 

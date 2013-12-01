@@ -1,5 +1,5 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
-#include <util/DataTypes.h>
+#include "util/data_types.h"
 #if !defined(YB_USE_QT) && !defined(YB_USE_WX)
 #include <iomanip>
 #endif

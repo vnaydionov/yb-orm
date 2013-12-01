@@ -14,11 +14,11 @@
 #include <vector>
 #include <set>
 #include <map>
-#include <util/Utility.h>
-#include <util/Exception.h>
-#include <util/Value.h>
-#include <orm/MetaData.h>
-#include <orm/Engine.h>
+#include "util/utility.h"
+#include "util/exception.h"
+#include "util/value_type.h"
+#include "schema.h"
+#include "engine.h"
 
 class TestDataObject;
 class TestDataObjectSaveLoad;

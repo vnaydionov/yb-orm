@@ -3,7 +3,7 @@ bin_PROGRAMS = yborm_gen
 yborm_gen_SOURCES = yborm_gen.cpp
 
 AM_CXXFLAGS = \
-	-I $(top_srcdir)/lib \
+	-I $(top_srcdir)/include/yb \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(SQLITE3_CFLAGS) \
@@ -12,8 +12,8 @@ AM_CXXFLAGS = \
 	$(QT_CFLAGS)
 
 yborm_gen_LDFLAGS = \
-	$(top_builddir)/lib/orm/libyborm.la \
-	$(top_builddir)/lib/util/libybutil.la \
+	$(top_builddir)/src/orm/libyborm.la \
+	$(top_builddir)/src/util/libybutil.la \
 	$(XML_LIBS) \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_LIBS_R) \

@@ -1,5 +1,5 @@
-#include <orm/SQLiteDriver.h>
-#include <util/str_utils.hpp>
+#include "sqlite_driver.h"
+#include "util/string_utils.h"
 
 using namespace std;
 using Yb::StrUtils::str_to_upper;

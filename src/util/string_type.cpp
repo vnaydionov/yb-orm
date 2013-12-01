@@ -1,5 +1,5 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
-#include <util/String.h>
+#include "util/string_type.h"
 #if defined(YB_USE_WX)
 #include <wx/strconv.h>
 #elif defined(YB_USE_QT)

@@ -1,7 +1,7 @@
 #include <sstream>
 #include <fstream>
-#include <util/str_utils.hpp>
-#include <orm/CodeGen.h>
+#include "util/string_utils.h"
+#include "orm/code_gen.h"
 
 using namespace std;
 using namespace Yb::StrUtils;
@@ -505,7 +505,7 @@ void CppCodeGenerator::write_h_file_header(ostream &out)
         NARROW(str_to_upper(table_.class_name())) + "__INCLUDED";
     out << "#ifndef " << def_name << "\n"
         << "#define " << def_name << "\n\n"
-        << "#include <orm/DomainObject.h>\n";
+        << "#include <orm/domain_object.h>\n";
     write_autogen(out, 1); // include_dependencies
     out << "\n"
         << "namespace Domain {\n\n";
@@ -749,7 +749,7 @@ void CppCodeGenerator::write_cpp_ctor_body(ostream &out, bool save_to_session)
 void CppCodeGenerator::write_cpp_file(ostream &out)
 {
     out << "#include \"" << inc_prefix_ << class_name_ << ".h\"\n"
-        << "#include <orm/DomainFactory.h>\n"
+        << "#include <orm/domain_factory.h>\n"
         << "namespace Domain {\n\n"
         << class_name_ << "::Columns " << class_name_ << "::c;\n\n";
 

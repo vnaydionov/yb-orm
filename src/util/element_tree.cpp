@@ -1,6 +1,6 @@
 
-#include <util/ElementTree.h>
-#include <util/str_utils.hpp>
+#include "util/element_tree.h"
+#include "util/string_utils.h"
 #if defined(YB_USE_WX)
 #include <wx/mstream.h>
 #include <wx/xml/xml.h>

@@ -2,20 +2,20 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
-#include <util/str_utils.hpp>
-#include <util/Singleton.h>
-#include <orm/SqlDriver.h>
+#include "util/string_utils.h"
+#include "util/singleton.h"
+#include "orm/sql_driver.h"
 #if defined(YB_USE_QT)
-#include <orm/QtSqlDriver.h>
+#include "qtsql_driver.h"
 #endif
 #if defined(YB_USE_ODBC)
-#include <orm/OdbcDriver.h>
+#include "odbc_driver.h"
 #endif
 #if defined(YB_USE_SQLITE3)
-#include <orm/SQLiteDriver.h>
+#include "sqlite_driver.h"
 #endif
 #if defined(YB_USE_SOCI)
-#include <orm/SOCIDriver.h>
+#include "soci_driver.h"
 #endif
 
 #if defined(YB_USE_QT)
@@ -36,7 +36,8 @@ using namespace std;
 using namespace Yb::StrUtils;
 
 #if 0
-#define DBG(x) do { char __s[40]; std::ostringstream __log; time_t __t = time(NULL); \
+#define DBG(x) do { char __s[40]; std::ostringstream __log; \
+    time_t __t = time(NULL); \
     strcpy(__s, ctime(&__t)); __s[strlen(__s) - 1] = 0; \
     __log << __s << ": " << NARROW(x) << '\n'; \
     std::cerr << __log.str(); } while(0)

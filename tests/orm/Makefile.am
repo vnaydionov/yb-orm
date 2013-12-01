@@ -1,6 +1,6 @@
 
 AM_CXXFLAGS = \
-	-I $(top_srcdir)/lib \
+	-I $(top_srcdir)/include/yb \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(SQLITE3_CFLAGS) \
@@ -14,17 +14,17 @@ check_SCRIPTS = mk_tables.sql
 check_PROGRAMS = unit_tests
 
 unit_tests_SOURCES = \
-	TestExpression.cpp \
-	TestMetaData.cpp \
-	TestEngine.cpp \
-	TestXMLConfig.cpp \
-	TestXMLizer.cpp \
-	TestDataObject.cpp
+	test_expression.cpp \
+	test_schema.cpp \
+	test_engine.cpp \
+	test_schema_config.cpp \
+	test_xmlizer.cpp \
+	test_data_object.cpp
 
 unit_tests_LDFLAGS = \
-	$(top_builddir)/lib/test/libtestmain.la \
-	$(top_builddir)/lib/orm/libyborm.la \
-	$(top_builddir)/lib/util/libybutil.la \
+	$(top_builddir)/tests/test_main/libtestmain.la \
+	$(top_builddir)/src/orm/libyborm.la \
+	$(top_builddir)/src/util/libybutil.la \
 	$(XML_LIBS) \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_LIBS_R) \
@@ -52,8 +52,8 @@ export NLS_NUMERIC_CHARACTERS=.
 export NLS_SORT=RUSSIAN
 export NLS_LANG=AMERICAN_CIS.UTF8
 
-mk_tables.sql: $(srcdir)/test_schema.xml
-	$(top_builddir)/src/yborm_gen --ddl $^ ${YBORM_DBTYPE} $@
+mk_tables.sql: $(srcdir)/testdb_schema.xml
+	$(top_builddir)/src/yborm_gen/yborm_gen --ddl $^ ${YBORM_DBTYPE} $@
 
 clean-local:
 	-rm -f mk_tables.sql

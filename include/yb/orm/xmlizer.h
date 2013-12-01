@@ -3,10 +3,10 @@
 #define YB__ORM__XMLIZER__INCLUDED
 
 #include <vector>
-#include <util/ElementTree.h>
-#include <util/Utility.h>
-#include <orm/DataObject.h>
-#include <orm/SqlDriver.h>
+#include "util/element_tree.h"
+#include "util/utility.h"
+#include "data_object.h"
+#include "sql_driver.h"
 
 namespace Yb {
 

@@ -2,7 +2,7 @@
 #include <signal.h>
 #endif
 #include <time.h>
-#include <orm/SqlPool.h>
+#include "orm/sql_pool.h"
 
 using namespace std;
 

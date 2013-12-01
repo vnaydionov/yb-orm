@@ -26,9 +26,9 @@
     THE SOFTWARE.
 *****************************************************************************/
 
-#include <orm/tiodbc.hpp>
+#include "util/string_type.h"
+#include "tiodbc.h"
 #include <memory>
-#include <util/String.h>
 
 namespace {
 

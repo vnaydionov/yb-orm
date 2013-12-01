@@ -4,8 +4,8 @@
 
 #include <map>
 #include <deque>
-#include <util/Thread.h>
-#include <orm/SqlDriver.h>
+#include "util/thread.h"
+#include "sql_driver.h"
 
 namespace Yb {
 

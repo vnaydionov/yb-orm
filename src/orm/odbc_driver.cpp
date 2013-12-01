@@ -1,5 +1,5 @@
-#include <orm/OdbcDriver.h>
-#include <util/str_utils.hpp>
+#include "odbc_driver.h"
+#include "util/string_utils.h"
 
 using namespace std;
 using Yb::StrUtils::str_to_upper;

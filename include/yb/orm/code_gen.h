@@ -7,9 +7,9 @@
 #include <map>
 #include <string>
 #include <iostream>
-#include <util/Exception.h>
-#include <orm/MetaData.h>
-#include <orm/SqlDriver.h>
+#include "util/exception.h"
+#include "schema.h"
+#include "sql_driver.h"
 
 namespace Yb {
 

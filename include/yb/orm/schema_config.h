@@ -3,9 +3,9 @@
 
 #include <stdexcept>
 #include <algorithm>
-#include <util/ElementTree.h>
-#include <util/str_utils.hpp>
-#include <orm/MetaData.h>
+#include "util/element_tree.h"
+#include "util/string_utils.h"
+#include "schema.h"
 
 class TestXMLConfig;
 
