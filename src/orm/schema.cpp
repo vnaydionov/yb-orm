@@ -93,7 +93,8 @@ Column::Column(const String &name, int type, size_t size, int flags)
 Column::Column(const String &name, int type, size_t size, int flags,
         const Value &default_value,
         const String &fk_table, const String &fk,
-        const String &xml_name, const String &prop_name)
+        const String &xml_name, const String &prop_name,
+        const String &index_name)
     : table_(NULL)
     , type_(type)
     , flags_(flags)
@@ -101,8 +102,9 @@ Column::Column(const String &name, int type, size_t size, int flags,
     , name_(name)
     , xml_name_(mk_xml_name(name, xml_name))
     , prop_name_(str_empty(prop_name)? str_to_lower(name): prop_name)
-    , fk_name_(fk)
+    , index_name_(index_name)
     , fk_table_name_(fk_table)
+    , fk_name_(fk)
     , default_value_(default_value)
 {}
 
