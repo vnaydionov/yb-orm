@@ -122,7 +122,8 @@ public:
             const Value &default_value,
             const String &fk_table = _T(""), const String &fk = _T(""),
             const String &xml_name = _T(""),
-            const String &prop_name = _T(""));
+            const String &prop_name = _T(""),
+            const String &index_name = _T(""));
     const String &name() const { return name_; }
     int type() const { return type_; }
     size_t size() const { return size_; }
@@ -130,6 +131,7 @@ public:
     const Value &default_value() const { return default_value_; }
     const String &xml_name() const { return xml_name_; }
     const String &prop_name() const { return prop_name_; }
+    const String &index_name() const { return index_name_; }
     const String &fk_table_name() const { return fk_table_name_; }
     const String &fk_name() const { return fk_name_; }
     bool is_pk() const { return (flags_ & PK) != 0; }
@@ -147,7 +149,7 @@ private:
     const Table *table_;
     int type_, flags_;
     size_t size_;
-    String name_, xml_name_, prop_name_, fk_name_, fk_table_name_;
+    String name_, xml_name_, prop_name_, index_name_, fk_table_name_, fk_name_;
     Value default_value_;
 };
 

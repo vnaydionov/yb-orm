@@ -32,6 +32,7 @@ public:
     void gen_typed_column(std::ostream &out, const Column &column);
     void gen_create_table(std::ostream &out);
     void gen_fk_constraints(std::ostream &out);
+    void gen_create_indexes(std::ostream &out);
 };
 
 class SqlSchemaGenerator
@@ -40,7 +41,7 @@ class SqlSchemaGenerator
     SqlDialect *dialect_;
     std::set<String> sequences_;
     bool need_commit_, new_table_;
-    Schema::TblMap::const_iterator tbl_it_, tbl_constr_it_;
+    Schema::TblMap::const_iterator tbl_it_, tbl_constr_it_, tbl_idx_it_;
     Columns::const_iterator col_it_, col_end_;
     std::set<String>::const_iterator seq_it_;
 public:

@@ -33,6 +33,7 @@
             <foreign-key table="T_CLIENT" key="ID"/>
                 <!-- attribute /key="ID"/ may be omitted if it refers
                      the primary key -->
+            <index>IDX_ORDER_CLIENT_ID</index>
         </column>
         <column name="TOTAL_SUM" type="decimal" null="false" />
     </table>
@@ -43,6 +44,7 @@
         </column>
         <column name="ORDER_ID" type="longint" null="false">
             <foreign-key table="T_ORDER" />
+            <index>IDX_ORDER_ITEM_ORDER_ID</index>
         </column>
         <column name="PRODUCT_ID" type="longint" null="false">
             <foreign-key table="T_PRODUCT" />

@@ -285,6 +285,17 @@ void SqlTableGenerator::gen_fk_constraints(ostream &out)
     }
 }
 
+void SqlTableGenerator::gen_create_indexes(ostream &out)
+{
+    Columns::const_iterator it = table_.begin(), end = table_.end();
+    for (; it != end; ++it) {
+        if (!it->index_name().empty())
+            out << "CREATE INDEX " << NARROW(it->index_name())
+                << " ON " << NARROW(table_.name()) << "("
+                << NARROW(it->name()) << ");\n";
+    }
+}
+
 SqlSchemaGenerator::SqlSchemaGenerator(
         const Schema &schema, SqlDialect *dialect)
     : schema_(schema)
@@ -293,6 +304,7 @@ SqlSchemaGenerator::SqlSchemaGenerator(
     , new_table_(true)
     , tbl_it_(schema_.tbl_begin())
     , tbl_constr_it_(schema_.tbl_begin())
+    , tbl_idx_it_(schema_.tbl_begin())
 {
     if (dialect_->has_sequences()) {
         Schema::TblMap::const_iterator it = schema_.tbl_begin(),
@@ -351,6 +363,28 @@ bool SqlSchemaGenerator::generate_next_statement(String &out_str)
                 ++tbl_constr_it_;
                 new_table_ = true;
             }
+        }
+    }
+    while (tbl_idx_it_ != schema_.tbl_end()) {
+        if (new_table_) {
+            new_table_ = false;
+            col_it_ = tbl_idx_it_->second->begin();
+            col_end_ = tbl_idx_it_->second->end();
+        }
+        if (col_it_ != col_end_) {
+            if (!col_it_->index_name().empty()) {
+                out_str = _T("CREATE INDEX ") + col_it_->index_name() + 
+                    _T(" ON ") + tbl_idx_it_->second->name() + _T("(") +
+                    col_it_->name() + _T(")");
+                ++col_it_;
+                need_commit_ = true;
+                return true;
+            }
+            ++col_it_;
+        }
+        else {
+            ++tbl_idx_it_;
+            new_table_ = true;
         }
     }
     if (seq_it_ != sequences_.end()) {

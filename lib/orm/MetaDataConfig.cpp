@@ -187,7 +187,7 @@ void MetaDataConfig::parse_column(ElementTree::ElementPtr node, Table &table_met
 
 Column MetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
 {
-    String name, type, fk_table, fk_field, prop_name, xml_name;
+    String name, type, fk_table, fk_field, prop_name, xml_name, index;
     int flags = 0, size = 0, col_type = 0;
     Yb::Value default_val;
     if (!node->has_attr(_T("name")))
@@ -261,6 +261,9 @@ Column MetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
         if (!(*child)->name_.compare(_T("foreign-key"))) {
             get_foreign_key_data(*child, fk_table, fk_field);
         }
+        if (!(*child)->name_.compare(_T("index"))) {
+            index = (*child)->get_text();
+        }
     }
 
     bool nullable = !(flags & Column::PK);
@@ -276,7 +279,7 @@ Column MetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
     if((size > 0) && (col_type != Value::STRING))
         throw InvalidCombination(_T("Size musn't me used for not a String type"));
     Column result(name, col_type, size, flags, default_val,
-            fk_table, fk_field, xml_name, prop_name);
+            fk_table, fk_field, xml_name, prop_name, index);
     return result;
 }
 
