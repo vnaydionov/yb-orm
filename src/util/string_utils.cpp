@@ -509,6 +509,20 @@ const Yb::String xgetenv(const Yb::String &var_name)
     return s;
 }
 
+const Yb::String dict2str(const Yb::StringDict &params) {
+    ostringstream out;
+    out << "{";
+    StringDict::const_iterator it = params.begin(), end = params.end();
+    for (bool first = true; it != end; ++it, first = false) {
+        if (!first)
+            out << ", ";
+        out << NARROW(it->first) << ": "
+            << NARROW(dquote(c_string_escape(it->second)));
+    }
+    out << "}";
+    return WIDEN(out.str());
+}
+
 } // end of namespace StrUtils
 
 } // end of namespace Yb

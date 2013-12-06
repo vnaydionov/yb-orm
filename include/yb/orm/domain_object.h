@@ -587,6 +587,12 @@ QueryObj<R> query(Session &session, const Expression &filter = Expression(),
     return QueryObj<R>(session, filter, order);
 }
 
+template <class DObj__>
+DObj__ lock_and_refresh(Session &session, DObj__ &obj) {
+    return query<DObj__>(session).for_update()
+        .filter_by(KeyFilter(obj.get_data_object()->key())).one();
+}
+
 template <class Obj>
 class DomainMetaDataCreator {
 public:

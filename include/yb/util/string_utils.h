@@ -99,6 +99,8 @@ const Yb::String comma(const Yb::String &item1, const Yb::String &item2);
 
 const Yb::String xgetenv(const Yb::String &var_name);
 
+const Yb::String dict2str(const Yb::StringDict &params);
+
 } // end of namespace StrUtils
 
 } // end of namespace Yb

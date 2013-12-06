@@ -25,6 +25,8 @@ class TestDataObjectSaveLoad;
 
 namespace Yb {
 
+#define EMPTY_DATAOBJ (::Yb::DataObject::Ptr(NULL))
+
 class DataObject;
 class RelationObject;
 
