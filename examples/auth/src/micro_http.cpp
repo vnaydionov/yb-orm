@@ -43,7 +43,7 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
     TcpSocket cl_sock(cl_s);
     ILogger::Ptr logger = server->log_->new_logger("worker");
     string bad_resp = NARROW(server->bad_resp_);
-    string cont_type = NARROW(server->content_type_);
+    String cont_type0 = server->content_type_;
     // read and process request
     try {
         // read request header
@@ -115,7 +115,7 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
         logger->error(string("socket error: ") + ex.what());
         try {
             send_response(cl_sock, *logger,
-                    400, "Short read", bad_resp, cont_type);
+                    400, "Short read", bad_resp, cont_type0);
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());
@@ -125,7 +125,7 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
         logger->error(string("parser error: ") + ex.what());
         try {
             send_response(cl_sock, *logger,
-                    400, "Bad request", bad_resp, cont_type);
+                    400, "Bad request", bad_resp, cont_type0);
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());
@@ -135,7 +135,7 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
         logger->error(string("exception: ") + ex.what());
         try {
             send_response(cl_sock, *logger,
-                    500, "Internal server error", bad_resp, cont_type);
+                    500, "Internal server error", bad_resp, cont_type0);
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());

@@ -217,7 +217,7 @@ public:
         handlers[_T("/logout")] = logout;
         AuthHttpServer server(
                 port, handlers, &theApp::instance(),
-                "text/xml", "<status>NOT</status>");
+                _T("text/xml"), _T("<status>NOT</status>"));
         server.serve();
     }
     catch (const std::exception &ex) {
