@@ -21,6 +21,9 @@
 using namespace std;
 using namespace Domain;
 
+#define BAD_RESP "<status>NOT</status>"
+#define OK_RESP "<status>OK</status>"
+
 Yb::LongInt
 get_random()
 {
@@ -204,13 +207,17 @@ public:
     }
     try {
         int port = 9090; // TODO: read from config
-        HttpHandlerMap handlers;
+        typedef std::string (*Handler)(const Yb::StringDict &);
+        typedef HttpServer<Handler> AuthHttpServer;
+        AuthHttpServer::HandlerMap handlers;
         handlers[_T("/session_info")] = session_info;
         handlers[_T("/registration")] = registration;
         handlers[_T("/check")] = check;
         handlers[_T("/login")] = login;
         handlers[_T("/logout")] = logout;
-        HttpServer server(port, handlers, &theApp::instance());
+        AuthHttpServer server(
+                port, handlers, &theApp::instance(),
+                "text/xml", "<status>NOT</status>");
         server.serve();
     }
     catch (const std::exception &ex) {
