@@ -1,9 +1,9 @@
 #include "micro_http.h"
 #include <sstream>
-#include <util/Thread.h>
-#include <util/Utility.h>
-#include <util/DataTypes.h>
-#include <util/str_utils.hpp>
+#include <util/thread.h>
+#include <util/utility.h>
+#include <util/data_types.h>
+#include <util/string_utils.h>
 
 using namespace std;
 using namespace Yb::StrUtils;

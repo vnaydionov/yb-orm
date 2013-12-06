@@ -1,48 +1,41 @@
 
-add_subdirectory (test)
-
-include_directories (${ICONV_INCLUDES}
+include_directories (
+    ${ICONV_INCLUDES}
     ${LIBXML2_INCLUDES}
     ${SQLITE3_INCLUDEDIR}
     ${SOCI_INCLUDEDIR}
     ${BOOST_INCLUDEDIR}
-    ${PROJECT_SOURCE_DIR}/lib)
+    ${PROJECT_SOURCE_DIR}/include/yb
+    ${PROJECT_SOURCE_DIR}/include/private)
 
-set (SOURCES_CPP Engine.cpp Expression.cpp MetaData.cpp
-    MetaDataConfig.cpp XMLizer.cpp SqlDriver.cpp
-    SqlPool.cpp DataObject.cpp DomainObject.cpp DomainFactory.cpp
-    CodeGen.cpp)
-
-set (SOURCES_H Expression.h
-    SqlDriver.h SqlPool.h XMLizer.h
-    DomainObject.h DomainFactory.h Engine.h MetaData.h
-    MetaDataConfig.h DataObject.h CodeGen.h)
+set (SOURCES_CPP
+    engine.cpp expression.cpp schema.cpp
+    schema_config.cpp xmlizer.cpp sql_driver.cpp
+    sql_pool.cpp data_object.cpp domain_object.cpp
+    domain_factory.cpp code_gen.cpp)
 
 if (USE_QT4)
-    set(SOURCES_CPP ${SOURCES_CPP} QtSqlDriver.cpp)
-    set(SOURCES_H ${SOURCES_H} QtSqlDriver.h)
+    set(SOURCES_CPP ${SOURCES_CPP} qtsql_driver.cpp)
 endif ()
 
 if (USE_ODBC)
-    set(SOURCES_CPP ${SOURCES_CPP} tiodbc.cpp OdbcDriver.cpp)
-    set(SOURCES_H ${SOURCES_H} tiodbc.hpp OdbcDriver.h)
+    set(SOURCES_CPP ${SOURCES_CPP} tiodbc.cpp odbc_driver.cpp)
 endif ()
 
 if (USE_SQLITE3)
-    set(SOURCES_CPP ${SOURCES_CPP} SQLiteDriver.cpp)
-    set(SOURCES_H ${SOURCES_H} SQLiteDriver.h)
+    set(SOURCES_CPP ${SOURCES_CPP} sqlite_driver.cpp)
 endif ()
 
 if (USE_SOCI)
-    set(SOURCES_CPP ${SOURCES_CPP} SOCIDriver.cpp)
-    set(SOURCES_H ${SOURCES_H} SOCIDriver.h)
+    set(SOURCES_CPP ${SOURCES_CPP} soci_driver.cpp)
 endif ()
 
 add_library (yborm ${SOURCES_CPP})
 
-target_link_libraries (yborm ybutil ${LIBXML2_LIBS}
-    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS} ${QT_LIBRARIES})
+target_link_libraries (
+    yborm ybutil
+    ${LIBXML2_LIBS} ${YB_BOOST_LIBS} ${ODBC_LIBS}
+    ${SQLITE3_LIBS} ${SOCI_LIBS} ${QT_LIBRARIES})
 
 install (TARGETS yborm DESTINATION lib)
-install (FILES ${SOURCES_H} DESTINATION include/yb/orm)
 

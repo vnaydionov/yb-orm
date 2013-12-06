@@ -5,8 +5,8 @@
 #include <string>
 #include <fstream>
 #include <util/nlogger.h>
-#include <util/Singleton.h>
-#include <orm/DataObject.h>
+#include <util/singleton.h>
+#include <orm/data_object.h>
 
 class App: public Yb::ILogger
 {

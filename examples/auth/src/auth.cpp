@@ -10,10 +10,10 @@
 #include <QCoreApplication>
 #endif
 #include <iostream>
-#include <util/str_utils.hpp>
-#include <util/ElementTree.h>
+#include <util/string_utils.h>
+#include <util/element_tree.h>
 #include "md5.h"
-#include "App.h"
+#include "app_class.h"
 #include "micro_http.h"
 #include "domain/User.h"
 #include "domain/LoginSession.h"

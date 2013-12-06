@@ -150,7 +150,7 @@ endif()
 
 function (check_yborm_root YBORM_ROOT)
     if (EXISTS ${YBORM_ROOT})
-        find_path (YBORM_INCLUDES orm/SqlDriver.h ${YBORM_ROOT}/include/yb)
+        find_path (YBORM_INCLUDES orm/sql_driver.h ${YBORM_ROOT}/include/yb)
         find_library (YBUTIL_LIB ybutil ${YBORM_ROOT}/lib)
         find_library (YBORM_LIB yborm ${YBORM_ROOT}/lib)
         if (YBORM_INCLUDES AND YBUTIL_LIB AND YBORM_LIB)

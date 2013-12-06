@@ -1,6 +1,6 @@
-#include "App.h"
+#include "app_class.h"
 #include <stdexcept>
-#include <orm/DomainObject.h>
+#include <orm/domain_object.h>
 
 using namespace std;
 

@@ -1,19 +1,16 @@
 
-add_subdirectory (test)
+include_directories (
+    ${ICONV_INCLUDES} ${LIBXML2_INCLUDES} ${BOOST_INCLUDEDIR}
+    ${PROJECT_SOURCE_DIR}/include/yb
+    ${PROJECT_SOURCE_DIR}/include/private)
 
-include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES}
-    ${BOOST_INCLUDEDIR} ${PROJECT_SOURCE_DIR}/lib)
+add_library (ybutil
+    string_type.cpp exception.cpp thread.cpp decimal.cpp
+    data_types.cpp string_utils.cpp xml_writer.cpp
+    element_tree.cpp value_type.cpp nlogger.cpp)
 
-add_library (ybutil String.cpp Exception.cpp Thread.cpp decimal.cpp
-    DataTypes.cpp str_utils.cpp XmlWriter.cpp ElementTree.cpp
-    Value.cpp nlogger.cpp)
-
-target_link_libraries (ybutil ${LIBXML2_LIBS}
-    ${YB_BOOST_LIBS} ${QT_LIBRARIES})
+target_link_libraries (ybutil
+    ${LIBXML2_LIBS} ${YB_BOOST_LIBS} ${QT_LIBRARIES})
 
 install (TARGETS ybutil DESTINATION lib)
-install (FILES Utility.h String.h Exception.h Thread.h decimal.h
-    DataTypes.h str_utils.hpp XmlWriter.h ElementTree.h Value.h
-    nlogger.h stacktrace.h ResultSet.h Singleton.h
-    DESTINATION include/yb/util)
 
