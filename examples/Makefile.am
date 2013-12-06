@@ -1,5 +1,5 @@
 
-SUBDIRS=domain
+SUBDIRS=tutorial domain 
 
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/include/yb \
