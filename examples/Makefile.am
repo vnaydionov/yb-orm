@@ -1,5 +1,11 @@
 
-SUBDIRS=tutorial domain 
+if USING_WIDE_UNICODE
+TUTORIAL_DIR=
+else
+TUTORIAL_DIR=tutorial
+endif
+
+SUBDIRS=domain . $(TUTORIAL_DIR)
 
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/include/yb \
