@@ -168,9 +168,11 @@ void Session::detach(DataObjectPtr obj)
 void Session::load_collection(ObjectList &out,
                               const Expression &from,
                               const Filter &filter, 
-                              const Expression &order_by)
+                              const Expression &order_by,
+                              bool for_update_flag)
 {
-    DataObjectResultSet rs = load_collection(from, filter, order_by);
+    DataObjectResultSet rs = load_collection(
+            from, filter, order_by, for_update_flag);
     DataObjectResultSet::iterator i = rs.begin(), iend = rs.end();
     for (; i != iend; ++i)
         out.push_back((*i)[0]);
@@ -179,7 +181,8 @@ void Session::load_collection(ObjectList &out,
 DataObjectResultSet Session::load_collection(
         const Expression &from,
         const Filter &filter,
-        const Expression &order_by)
+        const Expression &order_by,
+        bool for_update_flag)
 {
     Strings tables;
     find_all_tables(from, tables);
@@ -193,7 +196,7 @@ DataObjectResultSet Session::load_collection(
     }
     SqlResultSet rs = engine_->select_iter(
             SelectExpr(cols).from_(from).where_(filter)
-                .order_by_(order_by));
+                .order_by_(order_by).for_update(for_update_flag));
     return DataObjectResultSet(rs, *this, tables);
 }
 

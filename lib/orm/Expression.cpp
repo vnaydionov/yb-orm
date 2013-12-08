@@ -366,8 +366,8 @@ SelectExprBackend::generate_sql(Values *params, int *count) const
     if (!order_by_expr_.is_empty())
         sql += _T(" ORDER BY ")
             + order_by_expr_.generate_sql(params, count);
-    if (for_update_flag_)
-        sql += _T(" FOR UPDATE");
+    if (!lock_mode_.empty())
+        sql += _T(" FOR ") + lock_mode_;
     return sql;
 }
 
@@ -412,9 +412,14 @@ SelectExpr::distinct(bool flag) {
 }
 
 SelectExpr &
-SelectExpr::for_update(bool flag) {
-    dynamic_cast<SelectExprBackend *>(backend_.get())->for_update(flag);
+SelectExpr::with_lockmode(const String &lock_mode) {
+    dynamic_cast<SelectExprBackend *>(backend_.get())->with_lockmode(lock_mode);
     return *this;
+}
+
+SelectExpr &
+SelectExpr::for_update(bool flag) {
+    return with_lockmode(flag? _T("UPDATE"): _T(""));
 }
 
 const Expression &
@@ -452,9 +457,14 @@ SelectExpr::distinct_flag() const {
     return dynamic_cast<SelectExprBackend *>(backend_.get())->distinct_flag();
 }
 
+const String &
+SelectExpr::lock_mode() const {
+    return dynamic_cast<SelectExprBackend *>(backend_.get())->lock_mode();
+}
+
 bool
 SelectExpr::for_update_flag() const {
-    return dynamic_cast<SelectExprBackend *>(backend_.get())->for_update_flag();
+    return lock_mode() == _T("UPDATE");
 }
 
 const Expression operator ! (const Expression &a) {
@@ -773,7 +783,8 @@ void find_all_tables(const Expression &expr, Strings &tables)
 }
 
 SelectExpr make_select(const Schema &schema, const Expression &from_where,
-        const Expression &filter, const Expression &order_by)
+        const Expression &filter, const Expression &order_by,
+        bool for_update_flag)
 {
     Strings tables;
     find_all_tables(from_where, tables);
@@ -785,7 +796,8 @@ SelectExpr make_select(const Schema &schema, const Expression &from_where,
             cols << ColumnExpr(table.name(), table[j].name());
     }
     SelectExpr q(cols);
-    q.from_(from_where).where_(filter).order_by_(order_by);
+    q.from_(from_where).where_(filter).order_by_(order_by)
+        .for_update(for_update_flag);
     return q;
 }
 
