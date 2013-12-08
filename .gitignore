@@ -37,3 +37,11 @@ examples/auth/src/domain/*.sql
 lib/orm/test/mk_tables.sql
 src/yborm_gen_domain
 
+build-stamp
+configure-stamp
+debian/files
+debian/*.log
+debian/*.substvars
+debian/*.debhelper
+debian/libyborm-dev/
+debian/libyborm/

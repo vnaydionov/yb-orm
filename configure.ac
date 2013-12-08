@@ -36,28 +36,35 @@ AM_CONDITIONAL([QT4_PRESENT], [test x$have_qt = xyes])
 AM_CONDITIONAL([ODBC_PRESENT], [test x$have_odbc = xyes])
 AM_CONDITIONAL([SQLITE3_PRESENT], [test x$have_sqlite3 = xyes])
 AM_CONDITIONAL([SOCI_PRESENT], [test x$have_soci = xyes])
-AM_CONDITIONAL([TUTORIAL_PRESENT], [test x$have_qt != xyes && test x$have_wx != xyes])
+YB_CHECK_UNICODE([], [])
+AM_CONDITIONAL([USING_WIDE_UNICODE], [test x$have_unicode = xyes])
 
 YB_PATH_CPPUNIT([1.10.0],[],
                 [echo "WARNING!! You will not be able to run tests!!"])
 AM_CONDITIONAL([CPPUNIT_PRESENT], [test x$no_cppunit != xyes])
 
 YB_TEST_DB
+AM_CONDITIONAL([DIALECT_SET], [test x$YBORM_DBTYPE != x])
 
 AC_OUTPUT(Makefile
-    lib/Makefile
-    lib/test/Makefile
-    lib/util/Makefile
-    lib/util/test/Makefile
-    lib/orm/Makefile
-    lib/orm/test/Makefile
+    include/Makefile
+    include/yb/Makefile
+    include/yb/util/Makefile
+    include/yb/orm/Makefile
     src/Makefile
+    src/util/Makefile
+    src/orm/Makefile
+    src/yborm_gen/Makefile
+    tests/Makefile
+    tests/test_main/Makefile
+    tests/util/Makefile
+    tests/orm/Makefile
     examples/Makefile
     examples/example1.sh
     examples/example2.sh
     examples/domain/Makefile
-    tutorial/Makefile
-    tutorial/domain/Makefile
+    examples/tutorial/Makefile
+    examples/tutorial/domain/Makefile
     )
 
 # vim:ts=4:sts=4:sw=4:et:

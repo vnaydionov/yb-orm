@@ -10,16 +10,19 @@
 #include <QCoreApplication>
 #endif
 #include <iostream>
-#include <util/str_utils.hpp>
-#include <util/ElementTree.h>
+#include <util/string_utils.h>
+#include <util/element_tree.h>
 #include "md5.h"
-#include "App.h"
+#include "app_class.h"
 #include "micro_http.h"
 #include "domain/User.h"
 #include "domain/LoginSession.h"
 
 using namespace std;
 using namespace Domain;
+
+#define BAD_RESP "<status>NOT</status>"
+#define OK_RESP "<status>OK</status>"
 
 Yb::LongInt
 get_random()
@@ -204,13 +207,17 @@ public:
     }
     try {
         int port = 9090; // TODO: read from config
-        HttpHandlerMap handlers;
+        typedef std::string (*Handler)(const Yb::StringDict &);
+        typedef HttpServer<Handler> AuthHttpServer;
+        AuthHttpServer::HandlerMap handlers;
         handlers[_T("/session_info")] = session_info;
         handlers[_T("/registration")] = registration;
         handlers[_T("/check")] = check;
         handlers[_T("/login")] = login;
         handlers[_T("/logout")] = logout;
-        HttpServer server(port, handlers, &theApp::instance());
+        AuthHttpServer server(
+                port, handlers, &theApp::instance(),
+                _T("text/xml"), _T("<status>NOT</status>"));
         server.serve();
     }
     catch (const std::exception &ex) {

@@ -1,7 +1,7 @@
 #include <memory>
 #include <iostream>
-#include <util/str_utils.hpp>
-#include <orm/MetaDataConfig.h>
+#include <util/string_utils.h>
+#include <orm/schema_config.h>
 #include "domain/Client.h"
 #include "domain/Order.h"
 #include "domain/Payment.h"

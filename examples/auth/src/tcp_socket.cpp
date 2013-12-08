@@ -3,7 +3,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
-#include <util/String.h>
+#include <util/string_type.h>
 
 using namespace std;
 

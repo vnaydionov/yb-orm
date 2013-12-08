@@ -1,8 +1,9 @@
 
 add_subdirectory (domain)
 
-include_directories (${ICONV_INCLUDES} ${LIBXML2_INCLUDES}
-    ${BOOST_INCLUDEDIR} ${PROJECT_SOURCE_DIR}/lib
+include_directories (
+    ${ICONV_INCLUDES} ${LIBXML2_INCLUDES} ${BOOST_INCLUDEDIR}
+    ${PROJECT_SOURCE_DIR}/include/yb
     ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable (example1 example1.cpp

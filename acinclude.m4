@@ -747,4 +747,31 @@ AC_DEFUN([YB_CHECK_YBORM],
     LIBS="$ac_save_libs"
 ])
 
+dnl YB_CHECK_UNICODE([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
+dnl Test for using of wide Unicode strings by default
+AC_DEFUN([YB_CHECK_UNICODE],
+[
+    AC_MSG_CHECKING([whether we are using Unicode strings])
+    AC_TRY_COMPILE([],
+        [
+#if defined(YB_USE_WX)
+#if wxUSE_UNICODE
+#error Unicode detected
+#endif
+#elif defined(YB_USE_QT)
+#error Unicode detected
+#elif defined(YB_USE_UNICODE)
+#error Unicode detected
+#endif
+],
+        [have_unicode=no],[have_unicode=yes])
+    if test "x$have_unicode" = "xyes" ; then
+        AC_MSG_RESULT([yes])
+        ifelse([$1], , :, [$1])
+    else
+        AC_MSG_RESULT([no])
+        ifelse([$2], , :, [$2])
+    fi
+])
+
 dnl vim:ts=4:sts=4:sw=4:et:

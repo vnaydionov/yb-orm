@@ -1,0 +1,38 @@
+Source: libyborm
+Priority: extra
+Maintainer: Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>
+Build-Depends: debhelper (>= 7.0.0), autotools-dev
+Standards-Version: 3.9.2
+Section: libs
+Homepage: http://code.google.com/p/yb-orm/
+
+Package: libyborm-dev
+Section: libdevel
+Architecture: any
+Depends: libyborm (= ${binary:Version})
+Description: YB.ORM is an Object-Relational Mapper library for C++
+ YB.ORM tool is developed to simplify for C++ developers creation of
+ applications that work with relational databases. An Object-Relational
+ Mapper (ORM) works by mapping database tables to classes and table records
+ to objects in some programming language. The goals of YB.ORM project are:
+ provide a convenient API for C++ developers,
+ retain high performance of C++,
+ keep the source code easily portable across different platforms,
+ support most major relational Data Base Management Systems (DBMS).
+
+Package: libyborm
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: YB.ORM is an Object-Relational Mapper library for C++
+ YB.ORM tool is developed to simplify for C++ developers creation of
+ applications that work with relational databases. An Object-Relational
+ Mapper (ORM) works by mapping database tables to classes and table records
+ to objects in some programming language. The goals of YB.ORM project are:
+ provide a convenient API for C++ developers,
+ retain high performance of C++,
+ keep the source code easily portable across different platforms,
+ support most major relational Data Base Management Systems (DBMS).
+ .
+ This package contains the shared libraries necessary to run programs
+ compiled with yborm.

@@ -1,0 +1,11 @@
+libyborm (0.4.0-2) unstable; urgency=low
+
+  * Initial build
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Fri, 22 Nov 2013 23:22:08 +0400
+
+libyborm (0.4.0-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Fri, 22 Nov 2013 23:21:02 +0400

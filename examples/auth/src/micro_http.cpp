@@ -1,24 +1,25 @@
 #include "micro_http.h"
 #include <sstream>
-#include <util/Thread.h>
-#include <util/Utility.h>
-#include <util/DataTypes.h>
-#include <util/str_utils.hpp>
+#include <util/thread.h>
+#include <util/utility.h>
+#include <util/string_utils.h>
 
 using namespace std;
+using namespace Yb;
 using namespace Yb::StrUtils;
 
-HttpServer::HttpServer(int port, const HttpHandlerMap &handlers,
-            Yb::ILogger *root_logger)
+HttpServerBase::HttpServerBase(int port, ILogger *root_logger,
+        const String &content_type, const String &bad_resp)
     : port_(port)
-    , handlers_(handlers)
+    , content_type_(content_type)
+    , bad_resp_(bad_resp)
     , log_(root_logger->new_logger("http_serv").release())
 {}
 
 bool
-HttpServer::send_response(TcpSocket &cl_sock, Yb::ILogger &logger,
+HttpServerBase::send_response(TcpSocket &cl_sock, ILogger &logger,
         int code, const string &desc, const string &body,
-        const Yb::String &cont_type)
+        const String &cont_type)
 {
     try {
         ostringstream out;
@@ -37,28 +38,30 @@ HttpServer::send_response(TcpSocket &cl_sock, Yb::ILogger &logger,
 }
 
 void
-HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *handlers)
+HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
 {
     TcpSocket cl_sock(cl_s);
-    Yb::ILogger::Ptr logger = log_ptr->new_logger("worker");
+    ILogger::Ptr logger = server->log_->new_logger("worker");
+    string bad_resp = NARROW(server->bad_resp_);
+    String cont_type0 = server->content_type_;
     // read and process request
     try {
         // read request header
         string buf = cl_sock.readline();
         logger->debug(buf);
         int cont_len = -1;
-        Yb::String cont_type;
+        String cont_type;
         while (1) { // skip to request's body
             string s = cl_sock.readline();
             if (s == "\r\n" || s == "\n")
                 break;
             logger->debug(s);
-            Yb::String s2 = WIDEN(s);
+            String s2 = WIDEN(s);
             if (starts_with(str_to_upper(s2), _T("CONTENT-LENGTH: "))) {
                 try {
-                    Yb::Strings parts;
+                    Strings parts;
                     split_str_by_chars(s2, _T(" "), parts, 2);
-                    Yb::from_string(parts[1], cont_len);
+                    from_string(parts[1], cont_len);
                 }
                 catch (const std::exception &ex) {
                     logger->warning(
@@ -67,7 +70,7 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
             }
             if (starts_with(str_to_upper(s2), _T("CONTENT-TYPE: "))) {
                 try {
-                    Yb::Strings parts;
+                    Strings parts;
                     split_str_by_chars(s2, _T(": "), parts, 2);
                     cont_type = trim_trailing_space(parts[1]);
                 }
@@ -78,47 +81,51 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
             }
         }
         // parse request
-        Yb::StringDict rez = parse_http(WIDEN(buf));
+        StringDict rez = parse_http(WIDEN(buf));
         rez[_T("&content-type")] = cont_type;
-        Yb::String method = rez.get(_T("&method"));
+        String method = rez.get(_T("&method"));
         if (method != _T("GET") && method != _T("POST")) {
             logger->error("unsupported method \""
                     + NARROW(method) + "\"");
-            send_response(cl_sock, *logger, 400, "Bad request", BAD_RESP);
+            send_response(cl_sock, *logger,
+                    400, "Bad request", bad_resp, cont_type);
         }
         else {
             if (method == _T("POST") && cont_len > 0) {
-                Yb::String post_data = WIDEN(cl_sock.read(cont_len));
+                String post_data = WIDEN(cl_sock.read(cont_len));
                 if (cont_type == _T("application/x-www-form-urlencoded"))
                     rez.update(parse_params(post_data));
                 else
                     rez[_T("&post-data")] = post_data;
             }
-            Yb::String uri = rez.get(_T("&uri"));
-            if (!handlers->has(uri)) {
+            String uri = rez.get(_T("&uri"));
+            if (!server->has_uri(uri)) {
                 logger->error("URI " + NARROW(uri) + " not found!");
-                send_response(cl_sock, *logger, 404, "Not found", BAD_RESP);
+                send_response(cl_sock, *logger,
+                        404, "Not found", bad_resp, cont_type);
             }
             else {
                 // handle the request
-                HttpHandler func_ptr = handlers->get(uri);
-                send_response(cl_sock, *logger, 200, "OK", func_ptr(rez));
+                send_response(cl_sock, *logger, 200, "OK",
+                        server->call_uri(uri, rez), cont_type);
             }
         }
     }
     catch (const SocketEx &ex) {
         logger->error(string("socket error: ") + ex.what());
         try {
-            send_response(cl_sock, *logger, 400, "Short read", BAD_RESP);
+            send_response(cl_sock, *logger,
+                    400, "Short read", bad_resp, cont_type0);
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());
         }
     }
-    catch (const ParserEx &ex) {
+    catch (const HttpParserError &ex) {
         logger->error(string("parser error: ") + ex.what());
         try {
-            send_response(cl_sock, *logger, 400, "Bad request", BAD_RESP);
+            send_response(cl_sock, *logger,
+                    400, "Bad request", bad_resp, cont_type0);
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());
@@ -127,7 +134,8 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
     catch (const std::exception &ex) {
         logger->error(string("exception: ") + ex.what());
         try {
-            send_response(cl_sock, *logger, 500, "Internal server error", BAD_RESP);
+            send_response(cl_sock, *logger,
+                    500, "Internal server error", bad_resp, cont_type0);
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());
@@ -136,30 +144,28 @@ HttpServer::process(SOCKET cl_s, Yb::ILogger *log_ptr, const HttpHandlerMap *han
     cl_sock.close(true);
 }
 
-typedef void (*WorkerFunc)(SOCKET, Yb::ILogger *, const HttpHandlerMap *);
+typedef void (*WorkerFunc)(HttpServerBase *, SOCKET);
 
-class WorkerThread: public Yb::Thread {
+class WorkerThread: public Thread {
+    HttpServerBase *serv_;
     SOCKET s_;
-    Yb::ILogger *log_;
-    const HttpHandlerMap *handlers_;
     WorkerFunc worker_;
-    void on_run() { worker_(s_, log_, handlers_); }
+    void on_run() { worker_(serv_, s_); }
 public:
-    WorkerThread(SOCKET s, Yb::ILogger *log, const HttpHandlerMap *handlers,
-            WorkerFunc worker)
-        : s_(s), log_(log), handlers_(handlers), worker_(worker)
+    WorkerThread(HttpServerBase *serv, SOCKET s, WorkerFunc worker)
+        : serv_(serv), s_(s), worker_(worker)
     {}
 };
 
 void
-HttpServer::serve()
+HttpServerBase::serve()
 {
     TcpSocket::init_socket_lib();
-    log_->info("start server on port " + Yb::to_stdstring(port_));
+    log_->info("start server on port " + to_stdstring(port_));
     sock_ = TcpSocket(TcpSocket::create());
     sock_.bind(port_);
     sock_.listen();
-    typedef Yb::SharedPtr<WorkerThread>::Type WorkerThreadPtr;
+    typedef SharedPtr<WorkerThread>::Type WorkerThreadPtr;
     typedef std::vector<WorkerThreadPtr> Workers;
     Workers workers;
     while (1) {
@@ -168,9 +174,9 @@ HttpServer::serve()
             string ip_addr;
             int ip_port;
             SOCKET cl_sock = sock_.accept(&ip_addr, &ip_port);
-            log_->info("accepted from " + ip_addr + ":" + Yb::to_stdstring(ip_port));
+            log_->info("accepted from " + ip_addr + ":" + to_stdstring(ip_port));
             WorkerThreadPtr worker(new WorkerThread(
-                    cl_sock, log_.get(), &handlers_, HttpServer::process));
+                        this, cl_sock, HttpServerBase::process));
             workers.push_back(worker);
             worker->start();
             Workers workers_dead, workers_alive;
@@ -191,21 +197,21 @@ HttpServer::serve()
     }
 }
 
-Yb::StringDict parse_params(const Yb::String &msg)
+StringDict parse_params(const String &msg)
 {
-    Yb::StringDict params;
-    Yb::Strings param_parts;
+    StringDict params;
+    Strings param_parts;
     split_str_by_chars(msg, _T("&"), param_parts);
     for (size_t i = 0; i < param_parts.size(); ++i) {
-        Yb::Strings value_parts;
+        Strings value_parts;
         split_str_by_chars(param_parts[i], _T("="), value_parts, 2);
         if (value_parts.size() < 1)
-            throw ParserEx("parse_params", "value_parts.size() < 1");
-        Yb::String n = value_parts[0];
-        Yb::String v;
+            throw HttpParserError("parse_params", "value_parts.size() < 1");
+        String n = value_parts[0];
+        String v;
         if (value_parts.size() == 2)
             v = WIDEN(url_decode(value_parts[1]));
-        Yb::StringDict::iterator it = params.find(n);
+        StringDict::iterator it = params.find(n);
         if (it == params.end())
             params[n] = v;
         else
@@ -214,17 +220,17 @@ Yb::StringDict parse_params(const Yb::String &msg)
     return params;
 }
 
-Yb::StringDict parse_http(const Yb::String &msg)
+StringDict parse_http(const String &msg)
 {
-    Yb::Strings head_parts;
+    Strings head_parts;
     split_str_by_chars(msg, _T(" \t\r\n"), head_parts);
     if (head_parts.size() != 3)
-        throw ParserEx("parse_http", "head_parts.size() != 3");
-    Yb::Strings uri_parts;
+        throw HttpParserError("parse_http", "head_parts.size() != 3");
+    Strings uri_parts;
     split_str_by_chars(head_parts[1], _T("?"), uri_parts, 2);
     if (uri_parts.size() < 1)
-        throw ParserEx("parse_http", "uri_parts.size() < 1");
-    Yb::StringDict params;
+        throw HttpParserError("parse_http", "uri_parts.size() < 1");
+    StringDict params;
     if (uri_parts.size() == 2)
         params = parse_params(uri_parts[1]);
     params[_T("&method")] = head_parts[0];
@@ -232,5 +238,5 @@ Yb::StringDict parse_http(const Yb::String &msg)
     params[_T("&uri")] = uri_parts[0];
     return params;
 }
-    
+
 // vim:ts=4:sts=4:sw=4:et:

@@ -1,8 +1,14 @@
 
-SUBDIRS=domain
+if USING_WIDE_UNICODE
+TUTORIAL_DIR=
+else
+TUTORIAL_DIR=tutorial
+endif
+
+SUBDIRS=domain . $(TUTORIAL_DIR)
 
 AM_CXXFLAGS = \
-	-I $(top_srcdir)/lib \
+	-I $(top_srcdir)/include/yb \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(SQLITE3_CFLAGS) \
@@ -17,8 +23,8 @@ example1_SOURCES=example1.cpp domain/Client.cpp domain/Order.cpp \
 	domain/OrderItem.cpp
 
 example1_LDFLAGS = \
-	$(top_builddir)/lib/orm/libyborm.la \
-	$(top_builddir)/lib/util/libybutil.la \
+	$(top_builddir)/src/orm/libyborm.la \
+	$(top_builddir)/src/util/libybutil.la \
 	$(XML_LIBS) \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_LIBS_R) \
@@ -34,8 +40,8 @@ example2_SOURCES=example2.cpp domain/Client.cpp domain/Order.cpp \
 	domain/OrderItem.cpp domain/Payment.cpp domain/CCardPayment.cpp
 
 example2_LDFLAGS = \
-	$(top_builddir)/lib/orm/libyborm.la \
-	$(top_builddir)/lib/util/libybutil.la \
+	$(top_builddir)/src/orm/libyborm.la \
+	$(top_builddir)/src/util/libybutil.la \
 	$(XML_LIBS) \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_LIBS_R) \

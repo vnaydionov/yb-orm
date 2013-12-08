@@ -168,8 +168,9 @@ install (FILES
     CHANGES COPYING 
     DESTINATION doc)
 
-add_subdirectory (lib)
+add_subdirectory (include)
 add_subdirectory (src)
+add_subdirectory (tests)
 add_subdirectory (examples)
 add_subdirectory (doc)
 
