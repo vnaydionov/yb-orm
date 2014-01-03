@@ -1,11 +1,20 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Autotools stuff
 .deps
 .libs
-*.o
-*.a
-*.lo
-*.la
-*.swp
-*~
 Makefile
 Makefile.in
 aclocal.m4
@@ -19,24 +28,17 @@ config.sub
 configure
 depcomp
 install-sh
-unit_tests
 libtool
 ltmain.sh
 missing
 stamp-h1
 
-examples/example1
-examples/example1.sh
-examples/example2
-examples/example2.sh
-examples/auth/src/auth
-examples/auth/src/auth.sh
-examples/auth/src/domain/*.cpp
-examples/auth/src/domain/*.h
-examples/auth/src/domain/*.sql
-lib/orm/test/mk_tables.sql
-src/yborm_gen_domain
+# Editors' temporary and backup files
+*.swp
+*.bak
+*~
 
+# Debian packaging stuff
 build-stamp
 configure-stamp
 debian/files
@@ -45,3 +47,21 @@ debian/*.substvars
 debian/*.debhelper
 debian/libyborm-dev/
 debian/libyborm/
+
+# Project specific executables, etc.
+unit_tests
+src/yborm_gen/yborm_gen
+tests/orm/mk_tables.sql
+examples/example1
+examples/example1.sh
+examples/example2
+examples/example2.sh
+examples/domain/*.cpp
+examples/domain/*.h
+examples/domain/*.sql
+examples/auth/src/auth
+examples/auth/src/auth.sh
+examples/auth/src/domain/*.cpp
+examples/auth/src/domain/*.h
+examples/auth/src/domain/*.sql
+
