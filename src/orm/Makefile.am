@@ -57,8 +57,8 @@ libyborm_la_LDFLAGS = -version-info 0:0:0
 libyborm_la_LIBADD = \
 	$(top_builddir)/src/util/libybutil.la \
 	$(XML_LIBS) \
-	$(BOOST_LDFLAGS) \
-	$(BOOST_LIBS_R) \
+	$(BOOST_THREAD_LDFLAGS) \
+	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
 	$(SOCI_LIBS) \
