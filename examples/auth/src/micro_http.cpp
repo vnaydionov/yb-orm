@@ -43,7 +43,7 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
     TcpSocket cl_sock(cl_s);
     ILogger::Ptr logger = server->log_->new_logger("worker");
     string bad_resp = NARROW(server->bad_resp_);
-    String cont_type0 = server->content_type_;
+    String cont_type_resp = server->content_type_;
     // read and process request
     try {
         // read request header
@@ -81,33 +81,33 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
             }
         }
         // parse request
-        StringDict rez = parse_http(WIDEN(buf));
-        rez[_T("&content-type")] = cont_type;
-        String method = rez.get(_T("&method"));
+        StringDict req = parse_http(WIDEN(buf));
+        req[_T("&content-type")] = cont_type;
+        String method = req.get(_T("&method"));
         if (method != _T("GET") && method != _T("POST")) {
             logger->error("unsupported method \""
                     + NARROW(method) + "\"");
             send_response(cl_sock, *logger,
-                    400, "Bad request", bad_resp, cont_type);
+                    400, "Bad request", bad_resp, cont_type_resp);
         }
         else {
             if (method == _T("POST") && cont_len > 0) {
                 String post_data = WIDEN(cl_sock.read(cont_len));
                 if (cont_type == _T("application/x-www-form-urlencoded"))
-                    rez.update(parse_params(post_data));
+                    req.update(parse_params(post_data));
                 else
-                    rez[_T("&post-data")] = post_data;
+                    req[_T("&post-data")] = post_data;
             }
-            String uri = rez.get(_T("&uri"));
+            String uri = req.get(_T("&uri"));
             if (!server->has_uri(uri)) {
                 logger->error("URI " + NARROW(uri) + " not found!");
                 send_response(cl_sock, *logger,
-                        404, "Not found", bad_resp, cont_type);
+                        404, "Not found", bad_resp, cont_type_resp);
             }
             else {
                 // handle the request
                 send_response(cl_sock, *logger, 200, "OK",
-                        server->call_uri(uri, rez), cont_type);
+                        server->call_uri(uri, req), cont_type_resp);
             }
         }
     }
@@ -115,7 +115,7 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
         logger->error(string("socket error: ") + ex.what());
         try {
             send_response(cl_sock, *logger,
-                    400, "Short read", bad_resp, cont_type0);
+                    400, "Short read", bad_resp, cont_type_resp);
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());
@@ -125,7 +125,7 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
         logger->error(string("parser error: ") + ex.what());
         try {
             send_response(cl_sock, *logger,
-                    400, "Bad request", bad_resp, cont_type0);
+                    400, "Bad request", bad_resp, cont_type_resp);
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());
@@ -135,7 +135,7 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
         logger->error(string("exception: ") + ex.what());
         try {
             send_response(cl_sock, *logger,
-                    500, "Internal server error", bad_resp, cont_type0);
+                    500, "Internal server error", bad_resp, cont_type_resp);
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());

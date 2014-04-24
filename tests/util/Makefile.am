@@ -20,8 +20,8 @@ unit_tests_LDFLAGS = \
 	$(top_builddir)/tests/test_main/libtestmain.la \
 	$(top_builddir)/src/util/libybutil.la \
 	$(XML_LIBS) \
-	$(BOOST_LDFLAGS) \
-	$(BOOST_LIBS_R) \
+	$(BOOST_THREAD_LDFLAGS) \
+	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(CPPUNIT_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \

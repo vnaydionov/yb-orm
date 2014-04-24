@@ -25,8 +25,8 @@ libybutil_la_LDFLAGS = -version-info 0:0:0
 
 libybutil_la_LIBADD = \
 	$(XML_LIBS) \
-	$(BOOST_LDFLAGS) \
-	$(BOOST_LIBS_R) \
+	$(BOOST_THREAD_LDFLAGS) \
+	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
 	$(QT_LIBS)

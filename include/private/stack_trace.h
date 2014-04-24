@@ -6,7 +6,7 @@
 // published under the WTFPL v2.0
 
 #include <iostream>
-#if defined(__WIN32__) || defined(_WIN32)
+#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
 // TODO: implement
 #else
 #include <execinfo.h>
@@ -18,7 +18,7 @@
 static inline void print_stacktrace(std::ostream &out,
 	int max_frames = 100, int ignore_frames = 1)
 {
-#if defined(__WIN32__) || defined(_WIN32)
+#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
     out << "<stack trace not implemented>\n";
 #else
     // storage array for stack trace address data
