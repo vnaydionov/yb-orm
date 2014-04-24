@@ -155,8 +155,6 @@ inline DateTime &from_string(const String &s, DateTime &x)
 }
 #endif
 
-typedef ::decimal Decimal;
-
 inline const String to_string(const Decimal &d) { return d.str(); }
 inline const std::string to_stdstring(const Decimal &d)
 {

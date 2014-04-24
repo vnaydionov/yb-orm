@@ -12,42 +12,42 @@ namespace StrUtils {
 
 using namespace std;
 
-bool is_lower(Yb::Char c)
+YBUTIL_DECL bool is_lower(Yb::Char c)
 {
     return c >= _T('a') && c <= _T('z');
 }
 
-bool is_upper(Yb::Char c)
+YBUTIL_DECL bool is_upper(Yb::Char c)
 {
     return c >= _T('A') && c <= _T('Z');
 }
 
-bool is_alpha(Yb::Char c)
+YBUTIL_DECL bool is_alpha(Yb::Char c)
 {
     return is_upper(c) || is_lower(c);
 }
 
-bool is_digit(Yb::Char c)
+YBUTIL_DECL bool is_digit(Yb::Char c)
 {
     return c >= _T('0') && c <= _T('9');
 }
 
-bool is_space(Yb::Char c)
+YBUTIL_DECL bool is_space(Yb::Char c)
 {
     return c == _T(' ') || c == _T('\t') || c == _T('\n') || c == _T('\r');
 }
 
-bool is_start_symbol_of_id(Yb::Char c)
+YBUTIL_DECL bool is_start_symbol_of_id(Yb::Char c)
 {
     return is_alpha(c) || c == _T('_');
 }
 
-bool is_symbol_of_id(Yb::Char c)
+YBUTIL_DECL bool is_symbol_of_id(Yb::Char c)
 {
     return is_start_symbol_of_id(c) || is_digit(c);
 }
 
-bool is_id(const Yb::String &s)
+YBUTIL_DECL bool is_id(const Yb::String &s)
 {
     if (str_empty(s))
         return false;
@@ -60,28 +60,28 @@ bool is_id(const Yb::String &s)
     return true;
 }
 
-bool look_like_absolute_path(const Yb::String &s)
+YBUTIL_DECL bool look_like_absolute_path(const Yb::String &s)
 {
     return !str_empty(s) && (
             char_code(s[0]) == '/' || (str_length(s) > 2 && is_alpha(s[0])
                 && char_code(s[1]) == ':' && char_code(s[2]) == '/'));
 }
 
-bool starts_with(const Yb::String &s, const Yb::String &subs)
+YBUTIL_DECL bool starts_with(const Yb::String &s, const Yb::String &subs)
 {
     if (s.size() < subs.size())
         return false;
     return str_substr(s, 0, subs.size()) == subs;
 }
 
-bool ends_with(const Yb::String &s, const Yb::String &subs)
+YBUTIL_DECL bool ends_with(const Yb::String &s, const Yb::String &subs)
 {
     if (s.size() < subs.size())
         return false;
     return str_substr(s, s.size() - subs.size()) == subs;
 }
 
-const Yb::String substr_after(const Yb::String &s, const Yb::String &subs)
+YBUTIL_DECL const Yb::String substr_after(const Yb::String &s, const Yb::String &subs)
 {
     int pos = str_find(s, subs);
     if (pos == -1)
@@ -89,21 +89,21 @@ const Yb::String substr_after(const Yb::String &s, const Yb::String &subs)
     return str_substr(s, pos + subs.size());
 }
 
-Yb::Char to_lower(Yb::Char c)
+YBUTIL_DECL Yb::Char to_lower(Yb::Char c)
 {
     if (!is_upper(c))
         return c;
     return Yb::Char(char_code(c) + (_T('a') - _T('A')));
 }
 
-Yb::Char to_upper(Yb::Char c)
+YBUTIL_DECL Yb::Char to_upper(Yb::Char c)
 {
     if (!is_lower(c))
         return c;
     return Yb::Char(char_code(c) + (_T('A') - _T('a')));
 }
 
-const Yb::String translate(const Yb::String &s, Yb::Char (*f)(Yb::Char))
+YBUTIL_DECL const Yb::String translate(const Yb::String &s, Yb::Char (*f)(Yb::Char))
 {
     Yb::String r;
     r.reserve(s.size());
@@ -113,17 +113,17 @@ const Yb::String translate(const Yb::String &s, Yb::Char (*f)(Yb::Char))
     return r;
 }
 
-const Yb::String str_to_lower(const Yb::String &s)
+YBUTIL_DECL const Yb::String str_to_lower(const Yb::String &s)
 {
     return translate(s, to_lower);
 }
 
-const Yb::String str_to_upper(const Yb::String &s)
+YBUTIL_DECL const Yb::String str_to_upper(const Yb::String &s)
 {
     return translate(s, to_upper);
 }
 
-const Yb::String trim_trailing_space(const Yb::String &s)
+YBUTIL_DECL const Yb::String trim_trailing_space(const Yb::String &s)
 {
     int i = 0, sz = (int)s.size();
     while (i < sz && is_space(s[i])) ++i;
@@ -134,7 +134,7 @@ const Yb::String trim_trailing_space(const Yb::String &s)
     return str_substr(s, i, j - i + 1);
 }
 
-const Yb::String sql_string_escape(const Yb::String &s)
+YBUTIL_DECL const Yb::String sql_string_escape(const Yb::String &s)
 {
     Yb::String r;
     r.reserve(s.size() * 2);
@@ -146,7 +146,7 @@ const Yb::String sql_string_escape(const Yb::String &s)
     return r;
 }
 
-const Yb::String c_string_escape(const Yb::String &s)
+YBUTIL_DECL const Yb::String c_string_escape(const Yb::String &s)
 {
     Yb::String r;
     r.reserve(s.size() * 2);
@@ -186,7 +186,7 @@ const Yb::String c_string_escape(const Yb::String &s)
     return r;
 }
 
-const Yb::String html_escape(const Yb::String &s)
+YBUTIL_DECL const Yb::String html_escape(const Yb::String &s)
 {
     Yb::String r;
     r.reserve(s.size() * 2);
@@ -214,13 +214,13 @@ const Yb::String html_escape(const Yb::String &s)
     return r;
 }
 
-void
+YBUTIL_DECL void
 split_path(const Yb::String &path, vector<Yb::String> &items)
 {
     split_str_by_chars(path, _T("/"), items);
 }
 
-vector<Yb::String> &split_str(const Yb::String &s,
+YBUTIL_DECL vector<Yb::String> &split_str(const Yb::String &s,
         const Yb::String &delim, vector<Yb::String> &parts)
 {
     int start = 0;
@@ -236,7 +236,7 @@ vector<Yb::String> &split_str(const Yb::String &s,
     return parts;
 }
 
-void split_str_by_chars(const Yb::String &s, const Yb::String &delim,
+YBUTIL_DECL void split_str_by_chars(const Yb::String &s, const Yb::String &delim,
         vector<Yb::String> &parts, int limit)
 {
     const size_t sz0 = parts.size();
@@ -258,7 +258,8 @@ void split_str_by_chars(const Yb::String &s, const Yb::String &delim,
         parts.push_back(p);
 }
 
-const Yb::String join_str(const Yb::String &delim, const vector<Yb::String> &parts)
+YBUTIL_DECL const Yb::String join_str(const Yb::String &delim,
+        const vector<Yb::String> &parts)
 {
     Yb::String result;
     if (parts.size()) {
@@ -271,7 +272,7 @@ const Yb::String join_str(const Yb::String &delim, const vector<Yb::String> &par
     return result;
 }
 
-int hex_digit(Char ch)
+YBUTIL_DECL int hex_digit(Char ch)
 {
     int c = char_code(ch);
     if (c >= '0' && c <= '9')
@@ -283,7 +284,7 @@ int hex_digit(Char ch)
     throw ValueError(_T("invalid hex digit"));
 }
 
-const string url_decode(const String &s)
+YBUTIL_DECL const string url_decode(const String &s)
 {
     string result;
     for (int i = 0; i < str_length(s); ++i) {
@@ -304,7 +305,7 @@ const string url_decode(const String &s)
     return result;
 }
 
-const String url_encode(const string &s, bool path_mode)
+YBUTIL_DECL const String url_encode(const string &s, bool path_mode)
 {
     String result;
     const char *replace;
@@ -325,7 +326,7 @@ const String url_encode(const string &s, bool path_mode)
     return result;
 }
 
-void parse_url_proto(const String &url,
+YBUTIL_DECL void parse_url_proto(const String &url,
         String &proto, String &proto_ext, String &url_tail)
 {
     Strings url_parts, proto_parts;
@@ -346,7 +347,7 @@ void parse_url_proto(const String &url,
         throw ValueError(_T("url parse error"));
 }
 
-void parse_url_tail(const String &url_tail, StringDict &params)
+YBUTIL_DECL void parse_url_tail(const String &url_tail, StringDict &params)
 {
     String host_etc;
     Strings user_host_parts;
@@ -425,7 +426,7 @@ void parse_url_tail(const String &url_tail, StringDict &params)
     }
 }
 
-const StringDict parse_url(const String &url)
+YBUTIL_DECL const StringDict parse_url(const String &url)
 {
     String proto, proto_ext, url_tail;
     parse_url_proto(url, proto, proto_ext, url_tail);
@@ -437,7 +438,7 @@ const StringDict parse_url(const String &url)
     return params;
 }
 
-const String format_url(const StringDict &params, bool hide_passwd)
+YBUTIL_DECL const String format_url(const StringDict &params, bool hide_passwd)
 {
     String r = params[_T("&proto")];
     if (!params.empty_key(_T("&proto_ext")))
@@ -472,27 +473,27 @@ const String format_url(const StringDict &params, bool hide_passwd)
     return r;
 }
 
-const Yb::String quote(const Yb::String &s)
+YBUTIL_DECL const Yb::String quote(const Yb::String &s)
 {
     return _T("'") + s + _T("'");
 }
 
-const Yb::String dquote(const Yb::String &s)
+YBUTIL_DECL const Yb::String dquote(const Yb::String &s)
 {
     return _T("\"") + s + _T("\"");
 }
 
-const Yb::String brackets(const Yb::String &s)
+YBUTIL_DECL const Yb::String brackets(const Yb::String &s)
 {
     return _T("(") + s + _T(")");
 }
 
-const Yb::String comma(const Yb::String &item1, const Yb::String &item2)
+YBUTIL_DECL const Yb::String comma(const Yb::String &item1, const Yb::String &item2)
 {
     return item1 + _T(", ") + item2;
 }
 
-const Yb::String xgetenv(const Yb::String &var_name)
+YBUTIL_DECL const Yb::String xgetenv(const Yb::String &var_name)
 {
     char *x = NULL;
     Yb::String s;
@@ -511,7 +512,7 @@ const Yb::String xgetenv(const Yb::String &var_name)
     return s;
 }
 
-const Yb::String dict2str(const Yb::StringDict &params) {
+YBUTIL_DECL const Yb::String dict2str(const Yb::StringDict &params) {
     ostringstream out;
     out << "{";
     StringDict::const_iterator it = params.begin(), end = params.end();

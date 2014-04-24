@@ -11,6 +11,7 @@ lib_LTLIBRARIES = libybutil.la
 
 libybutil_la_SOURCES = \
 	string_type.cpp \
+	utility.cpp \
 	exception.cpp \
 	thread.cpp \
 	decimal.cpp \

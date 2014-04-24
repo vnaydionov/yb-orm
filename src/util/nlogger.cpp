@@ -16,7 +16,7 @@
 
 namespace Yb {
 
-unsigned long get_process_id()
+YBUTIL_DECL unsigned long get_process_id()
 {
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
     return GetCurrentProcessId();
@@ -27,7 +27,7 @@ unsigned long get_process_id()
 #endif
 }
 
-unsigned long get_thread_id()
+YBUTIL_DECL unsigned long get_thread_id()
 {
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
     return GetCurrentThreadId();
@@ -38,7 +38,7 @@ unsigned long get_thread_id()
 #endif
 }
 
-MilliSec get_cur_time_millisec()
+YBUTIL_DECL MilliSec get_cur_time_millisec()
 {
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
     // quick & dirty
@@ -65,7 +65,7 @@ MilliSec get_cur_time_millisec()
 #endif
 }
 
-struct tm *localtime_safe(const time_t *clock, struct tm *result)
+YBUTIL_DECL struct tm *localtime_safe(const time_t *clock, struct tm *result)
 {
     if (!clock || !result)
         return NULL;
@@ -113,10 +113,10 @@ LogRecord::LogRecord(int level, const std::string &component, const std::string 
 
 const char *LogRecord::get_level_name() const
 {
-    static const char *ll_name[] = {
+    static const char *log_level_name[] = {
         "CRIT", "ERRO", "WARN", "INFO", "DEBG"
     };
-    return ll_name[check_level(level_) - 1];
+    return log_level_name[check_level(level_) - 1];
 }
 
 ILogAppender::~ILogAppender()

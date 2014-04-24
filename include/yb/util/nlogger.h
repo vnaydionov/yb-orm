@@ -1,5 +1,6 @@
-#ifndef NLOGGER__INCLUDED
-#define NLOGGER__INCLUDED
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#ifndef YB__UTIL__NLOGGER__INCLUDED
+#define YB__UTIL__NLOGGER__INCLUDED
 
 #include <memory>
 #include <string>
@@ -8,19 +9,18 @@
 #include <iostream>
 #include <stdexcept>
 #include <time.h>
+#include "util_config.h"
 #include "thread.h"
 
 namespace Yb {
 
-enum LogLevel { ll_NONE = 0, ll_CRITICAL, ll_ERROR, ll_WARNING, ll_INFO, ll_DEBUG };
-
-class InvalidLogLevel : public std::logic_error
+class YBUTIL_DECL InvalidLogLevel: public std::logic_error
 {
 public:
     InvalidLogLevel();
 };
 
-class InvalidLoggerName : public std::logic_error
+class YBUTIL_DECL InvalidLoggerName: public std::logic_error
 {
 public:
     InvalidLoggerName();
@@ -28,12 +28,21 @@ public:
 
 typedef LongInt MilliSec;
 
-unsigned long get_process_id();
-unsigned long get_thread_id();
-MilliSec get_cur_time_millisec();
-struct tm *localtime_safe(const time_t *clock, struct tm *result);
+enum {
+    ll_NONE = 0,
+    ll_CRITICAL,
+    ll_ERROR,
+    ll_WARNING,
+    ll_INFO,
+    ll_DEBUG
+};
 
-class LogRecord
+YBUTIL_DECL unsigned long get_process_id();
+YBUTIL_DECL unsigned long get_thread_id();
+YBUTIL_DECL MilliSec get_cur_time_millisec();
+YBUTIL_DECL struct tm *localtime_safe(const time_t *clock, struct tm *result);
+
+class YBUTIL_DECL LogRecord
 {
     MilliSec t_;
     unsigned long pid_;
@@ -57,14 +66,14 @@ public:
     const char *get_level_name() const;
 };
 
-class ILogAppender
+class YBUTIL_DECL ILogAppender
 {
 public:
     virtual void append(const LogRecord &rec) = 0;
     virtual ~ILogAppender();
 };
 
-class ILogger
+class YBUTIL_DECL ILogger
 {
 public:
     typedef std::auto_ptr<ILogger> Ptr;
@@ -101,7 +110,7 @@ public:
  *    'dblog(dbpool.*:INFO mycomp.sql:) syslog(*:<=INFO)'
  *    or something equivalent in e.g. XML..
  */
-struct LogTargetRule
+struct YBUTIL_DECL LogTargetRule
 {
     std::string component;
     bool include_children;
@@ -115,7 +124,7 @@ struct LogTargetRule
     bool match(const LogRecord &rec) const;
 };
 
-struct LogTargetRules
+struct YBUTIL_DECL LogTargetRules
 {
     typedef std::vector<LogTargetRule> Rules;
     Rules target_rules;
@@ -125,7 +134,7 @@ struct LogTargetRules
 
 typedef std::map<std::string, LogTargetRules> LogRules;
 
-class ILogRulesConfig
+class YBUTIL_DECL ILogRulesConfig
 {
 public:
     virtual LogRules &get(LogRules &rules) = 0;
@@ -133,7 +142,7 @@ public:
 };
 
 
-class Logger : public ILogger
+class YBUTIL_DECL Logger: public ILogger
 {
     ILogAppender *appender_;
     const std::string name_;
@@ -145,7 +154,7 @@ public:
     static bool valid_name(const std::string &name);
 };
 
-class LogAppender : public ILogAppender
+class YBUTIL_DECL LogAppender: public ILogAppender
 {
     std::ostream &s_;
     typedef std::vector<LogRecord> Queue;
@@ -164,6 +173,7 @@ public:
     void flush();
 };
 
-} // namespace Yb
-#endif /*NLOGGER__INCLUDED*/
-// vim:ts=4:sts=4:sw=4:et
+} // end of namespace Yb
+
+// vim:ts=4:sts=4:sw=4:et:
+#endif // YB__UTIL__NLOGGER__INCLUDED

@@ -1,3 +1,4 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__UTIL__ELEMENT_TREE__INCLUDED
 #define YB__UTIL__ELEMENT_TREE__INCLUDED
 
@@ -28,7 +29,7 @@ class ParseError: public std::runtime_error {
 public: ParseError(const std::string &t): std::runtime_error(t) {}
 };
 
-inline ElementPtr mark_json(ElementPtr node, const Yb::String &json_type);
+YBUTIL_DECL ElementPtr mark_json(ElementPtr node, const Yb::String &json_type);
 
 class YBUTIL_DECL Element: public RefCountBase
 {
@@ -85,8 +86,6 @@ YBUTIL_DECL ElementPtr new_element(const Yb::String &name, const Yb::String &s =
 YBUTIL_DECL ElementPtr parse(const std::string &content);
 
 YBUTIL_DECL ElementPtr parse(std::istream &inp);
-
-YBUTIL_DECL ElementPtr mark_json(ElementPtr node, const Yb::String &json_type);
 
 YBUTIL_DECL ElementPtr new_json_array(const Yb::String &name = _T("array"));
 
