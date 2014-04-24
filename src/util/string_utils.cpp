@@ -1,3 +1,5 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBUTIL_SOURCE
 
 #include <string.h>
 #include <stdlib.h>
@@ -527,5 +529,4 @@ const Yb::String dict2str(const Yb::StringDict &params) {
 
 } // end of namespace Yb
 
-// vim:ts=4:sts=4:sw=4:et
-
+// vim:ts=4:sts=4:sw=4:et:

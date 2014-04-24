@@ -2,6 +2,7 @@
 ybutilincludedir=$(includedir)/yb/util
 
 ybutilinclude_HEADERS = \
+	util_config.h \
 	utility.h \
 	string_type.h \
 	exception.h \

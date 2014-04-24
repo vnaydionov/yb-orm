@@ -1,7 +1,10 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBUTIL_SOURCE
+
+#include "util/string_utils.h"
 #include "util/decimal.h"
 #include <sstream>
 #include <stdexcept>
-#include "util/string_utils.h"
 
 using namespace std;
 using namespace Yb::StrUtils;
@@ -385,35 +388,35 @@ const Yb::String decimal::str() const
     return s;
 }
 
-const decimal operator + (const decimal &x, const decimal &y)
+YBUTIL_DECL const decimal operator + (const decimal &x, const decimal &y)
 {
     decimal t(x);
     t += y;
     return t;
 }
 
-const decimal operator - (const decimal &x, const decimal &y)
+YBUTIL_DECL const decimal operator - (const decimal &x, const decimal &y)
 {
     decimal t(x);
     t -= y;
     return t;
 }
 
-const decimal operator * (const decimal &x, const decimal &y)
+YBUTIL_DECL const decimal operator * (const decimal &x, const decimal &y)
 {
     decimal t(x);
     t *= y;
     return t;
 }
 
-const decimal operator / (const decimal &x, const decimal &y)
+YBUTIL_DECL const decimal operator / (const decimal &x, const decimal &y)
 {
     decimal t(x);
     t /= y;
     return t;
 }
 
-std::ostream &operator << (std::ostream &o, const decimal &x)
+YBUTIL_DECL std::ostream &operator << (std::ostream &o, const decimal &x)
 {
     int prec = o.precision();
     if (prec < 0)
@@ -445,7 +448,7 @@ std::ostream &operator << (std::ostream &o, const decimal &x)
     return o;
 }
 
-std::istream &operator >> (std::istream &i, decimal &x)
+YBUTIL_DECL std::istream &operator >> (std::istream &i, decimal &x)
 {
     std::string buf;
     i >> buf;
@@ -458,7 +461,7 @@ std::istream &operator >> (std::istream &i, decimal &x)
     return i;
 }
 
-std::wostream &operator << (std::wostream &o, const decimal &x)
+YBUTIL_DECL std::wostream &operator << (std::wostream &o, const decimal &x)
 {
     std::ostringstream out;
     out << x;
@@ -466,7 +469,7 @@ std::wostream &operator << (std::wostream &o, const decimal &x)
     return o;
 }
 
-std::wistream &operator >> (std::wistream &i, decimal &x)
+YBUTIL_DECL std::wistream &operator >> (std::wistream &i, decimal &x)
 {
     std::wstring buf;
     i >> buf;

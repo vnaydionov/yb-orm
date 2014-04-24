@@ -1,3 +1,6 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBUTIL_SOURCE
+
 #include <time.h>
 #include <stdio.h>
 #include <iomanip>

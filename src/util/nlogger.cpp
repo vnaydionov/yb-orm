@@ -1,3 +1,6 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBUTIL_SOURCE
+
 #if defined(__WIN32__) || defined(_WIN32)
 #include <windows.h>
 #elif defined(__unix__)
@@ -302,4 +305,4 @@ int main()
 }
 #endif
 
-// vim:ts=4:sts=4:sw=4:et
+// vim:ts=4:sts=4:sw=4:et:

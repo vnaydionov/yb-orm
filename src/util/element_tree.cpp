@@ -1,3 +1,5 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBUTIL_SOURCE
 
 #include "util/element_tree.h"
 #include "util/string_utils.h"
@@ -23,22 +25,20 @@ Element::Element(const Yb::String &name, const Yb::String &s)
         text_.push_back(s);
 }
 
-ElementPtr
-new_element(const Yb::String &name, const Yb::String &s)
+YBUTIL_DECL ElementPtr new_element(const Yb::String &name,
+        const Yb::String &s)
 {
     return ElementPtr(new Element(name, s));
 }
 
-ElementPtr
-Element::sub_element(const Yb::String &name, const Yb::String &s)
+ElementPtr Element::sub_element(const Yb::String &name, const Yb::String &s)
 {
     ElementPtr p = new_element(name, s);
     children_.push_back(p);
     return p;
 }
 
-const Yb::String
-Element::get_text() const
+const Yb::String Element::get_text() const
 {
     Yb::String r;
     size_t i = 0;
@@ -52,8 +52,7 @@ Element::get_text() const
     return r;
 }
 
-void
-Element::set_text(const Yb::String &s)
+void Element::set_text(const Yb::String &s)
 {
     text_.resize(1);
     text_[0] = s;
@@ -117,6 +116,7 @@ Element::serialize() const
 }
 
 #if defined(YB_USE_WX)
+
 static ElementPtr
 convert_node(wxXmlNode *node)
 {
@@ -138,7 +138,9 @@ convert_node(wxXmlNode *node)
     }
     return p;
 }
+
 #elif defined(YB_USE_QT)
+
 static ElementPtr
 convert_node(QDomElement node)
 {
@@ -160,9 +162,10 @@ convert_node(QDomElement node)
     }
     return p;
 }
-#else
-static Yb::String
-get_node_content(xmlNodePtr node)
+
+#else // libxml2 fallback
+
+static Yb::String get_node_content(xmlNodePtr node)
 {
     Yb::String value;
     xmlChar *content = xmlNodeGetContent(node);
@@ -173,8 +176,7 @@ get_node_content(xmlNodePtr node)
     return value;
 }
 
-static Yb::String
-get_attr(xmlNodePtr node, const xmlChar *name)
+static Yb::String get_attr(xmlNodePtr node, const xmlChar *name)
 {
     Yb::String value;
     xmlChar *prop = xmlGetProp(node, name);
@@ -185,8 +187,7 @@ get_attr(xmlNodePtr node, const xmlChar *name)
     return value;
 }
 
-static ElementPtr
-convert_node(xmlNodePtr node)
+static ElementPtr convert_node(xmlNodePtr node)
 {
     ElementPtr p = new_element(WIDEN((const char *)node->name));
     for (xmlAttrPtr attr = node->properties; attr; attr = attr->next)
@@ -205,10 +206,10 @@ convert_node(xmlNodePtr node)
     }
     return p;
 }
+
 #endif
 
-ElementPtr
-parse(const std::string &content)
+YBUTIL_DECL ElementPtr parse(const std::string &content)
 {
 #if defined(YB_USE_WX)
     wxMemoryInputStream input(content.c_str(), content.size());
@@ -236,8 +237,7 @@ parse(const std::string &content)
 #endif
 }
 
-ElementPtr
-parse(std::istream &inp)
+YBUTIL_DECL ElementPtr parse(std::istream &inp)
 {
     std::ostringstream out;
     while (inp.good()) {
@@ -248,8 +248,29 @@ parse(std::istream &inp)
     return parse(out.str());
 }
 
-const std::string
-etree2json(ElementPtr node)
+YBUTIL_DECL ElementPtr mark_json(ElementPtr node, const Yb::String &json_type)
+{
+    node->attrib_[_T("_json")] = json_type;
+    return node;
+}
+
+YBUTIL_DECL ElementPtr new_json_array(const Yb::String &name)
+{
+    return mark_json(new_element(name), _T("array"));
+}
+
+YBUTIL_DECL ElementPtr new_json_dict(const Yb::String &name)
+{
+    return mark_json(new_element(name), _T("dict"));
+}
+
+YBUTIL_DECL ElementPtr new_json_string(const Yb::String &name,
+        const Yb::String &s)
+{
+    return mark_json(new_element(name, s), _T("string"));
+}
+
+YBUTIL_DECL const std::string etree2json(ElementPtr node)
 {
     std::string r;
     if (node->attrib_.get(_T("_json"), _T("")) == _T("array"))

@@ -1,4 +1,6 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBUTIL_SOURCE
+
 #include "util/data_types.h"
 #if !defined(YB_USE_QT) && !defined(YB_USE_WX)
 #include <iomanip>
@@ -6,8 +8,125 @@
 
 namespace Yb {
 
-#if !defined(YB_USE_QT) && !defined(YB_USE_WX)
-const std::string to_stdstring(const DateTime &dt, bool msec)
+#if defined(YB_USE_WX)
+
+YBUTIL_DECL const DateTime dt_make(int year, int month, int day,
+        int hour, int minute, int second, int millisec)
+{
+    return wxDateTime(day, wxDateTime::Month(month - 1), year,
+        hour, minute, second, millisec);
+}
+
+YBUTIL_DECL const DateTime dt_add_seconds(const DateTime &dt, int seconds)
+{
+    return dt + wxTimeSpan::Seconds(seconds);
+}
+
+YBUTIL_DECL const String to_string(const DateTime &dt, bool msec)
+{
+    return dt.Format(
+            msec? _T("%Y-%m-%dT%H:%M:%S.%l"): _T("%Y-%m-%dT%H:%M:%S"));
+}
+
+YBUTIL_DECL const std::string to_stdstring(const DateTime &dt, bool msec)
+{
+    return NARROW(to_string(dt, msec));
+}
+
+YBUTIL_DECL DateTime &from_string(const String &s, DateTime &x)
+{
+    x = wxDateTime(0, 0, 0);
+    const wxChar *pos = x.ParseFormat(s.GetData(),
+            s.Len() == 10? _T("%Y-%m-%d"): (
+            s.Len() > 19?
+            (s[10] == _T('T')? _T("%Y-%m-%dT%H:%M:%S.%l"):
+                _T("%Y-%m-%d %H:%M:%S.%l")):
+            (s.Len() > 10 && s[10] == _T('T')? _T("%Y-%m-%dT%H:%M:%S"):
+                _T("%Y-%m-%d %H:%M:%S"))));
+    if (!pos || *pos)
+        throw ValueBadCast(s, _T("DateTime (YYYY-MM-DD HH:MI:SS)"));
+    return x;
+}
+
+YBUTIL_DECL DateTime &from_stdstring(const std::string &s, DateTime &x)
+{
+    return from_string(WIDEN(s), x);
+}
+
+#elif defined(YB_USE_QT)
+
+YBUTIL_DECL const DateTime dt_from_time_t(time_t t)
+{
+    QDateTime q;
+    q.setTime_t(t);
+    return q;
+}
+
+YBUTIL_DECL const DateTime dt_make(int year, int month, int day,
+        int hour, int minute, int second, int millisec)
+{
+    return QDateTime(QDate(year, month, day),
+            QTime(hour, minute, second, millisec));
+}
+
+YBUTIL_DECL const DateTime dt_add_seconds(const DateTime &dt, int seconds)
+{
+    return dt.addSecs(seconds);
+}
+
+YBUTIL_DECL const String to_string(const DateTime &dt, bool msec)
+{
+    return dt.toString(
+            msec? "yyyy-MM-dd'T'hh:mm:ss.zzz": "yyyy-MM-dd'T'hh:mm:ss");
+}
+
+YBUTIL_DECL const std::string to_stdstring(const DateTime &dt, bool msec)
+{
+    return NARROW(to_string(dt, msec));
+}
+
+YBUTIL_DECL DateTime &from_string(const String &s, DateTime &x)
+{
+    x = QDateTime::fromString(s,
+            s.length() == 10? _T("yyyy-MM-dd"): (
+            s.length() > 19?
+            (s[10] == 'T'? "yyyy-MM-dd'T'hh:mm:ss.zzz":
+                "yyyy-MM-dd hh:mm:ss.zzz"):
+            (s.length() > 10 && s[10] == 'T'? "yyyy-MM-dd'T'hh:mm:ss":
+                "yyyy-MM-dd hh:mm:ss")));
+    if (!x.isValid())
+        throw ValueBadCast(s, _T("DateTime (YYYY-MM-DD HH:MI:SS)"));
+    return x;
+}
+
+YBUTIL_DECL DateTime &from_stdstring(const std::string &s, DateTime &x)
+{
+    return from_string(WIDEN(s), x);
+}
+
+#else
+
+YBUTIL_DECL const DateTime dt_make(int year, int month, int day,
+        int hour, int minute, int second, int millisec)
+{
+    return boost::posix_time::ptime(
+            boost::gregorian::date(year, month, day),
+            boost::posix_time::time_duration(hour, minute, second) +
+            boost::posix_time::milliseconds(millisec));
+}
+
+YBUTIL_DECL int dt_millisec(const DateTime &dt)
+{
+    return (int)(dt.time_of_day().total_milliseconds() -
+        dt.time_of_day().total_seconds() * 1000);
+}
+
+YBUTIL_DECL const DateTime dt_add_seconds(const DateTime &dt, int seconds)
+{
+    return dt + boost::posix_time::seconds(seconds);
+}
+
+YBUTIL_DECL const std::string to_stdstring(const DateTime &dt, bool msec)
 {
     std::ostringstream out;
     out << std::setfill('0')
@@ -30,7 +149,7 @@ static int extract_int(const char *s, int len)
     return len == 0? a: -1;
 }
 
-DateTime &from_stdstring(const std::string &s, DateTime &x)
+YBUTIL_DECL DateTime &from_stdstring(const std::string &s, DateTime &x)
 {
 #define DT_FORMAT_REX _T("DateTime YYYY-mm-dd([T ]HH:MM:SS(.XXX)?)?")
     const char *cs = s.c_str();
@@ -62,7 +181,8 @@ DateTime &from_stdstring(const std::string &s, DateTime &x)
     x = dt_make(year, month, day, hours, minutes, seconds, millis);
     return x;
 }
-#endif
+
+#endif // !defined(YB_USE_QT) && !defined(YB_USE_WX)
 
 } // namespace Yb
 
