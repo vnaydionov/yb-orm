@@ -3,11 +3,15 @@
 
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
 #include <windows.h>
-#elif defined(__unix__)
+#endif
+#if defined(__unix__)
 #include <sys/types.h>
-#include <sys/syscall.h>
-#include <unistd.h>
 #include <sys/time.h>
+#include <unistd.h>
+#include <pthread.h>
+#endif
+#if defined(__linux__)
+#include <sys/syscall.h>
 #endif
 #include <time.h>
 #include <stdio.h>
@@ -16,9 +20,18 @@
 
 namespace Yb {
 
-YBUTIL_DECL unsigned long get_process_id()
+InvalidLogLevel::InvalidLogLevel()
+    : ValueError("Invalid log level")
+{}
+
+InvalidLoggerName::InvalidLoggerName()
+    : ValueError("Invalid logger name")
+{}
+
+YBUTIL_DECL unsigned long
+get_process_id()
 {
-#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
+#if defined(__WIN32__) || defined(_WIN32)
     return GetCurrentProcessId();
 #elif defined(__unix__)
     return getpid();
@@ -27,20 +40,33 @@ YBUTIL_DECL unsigned long get_process_id()
 #endif
 }
 
-YBUTIL_DECL unsigned long get_thread_id()
+YBUTIL_DECL unsigned long
+get_thread_id()
 {
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
     return GetCurrentThreadId();
+//#elif defined(__linux__)
+//    return syscall(SYS_gettid);
 #elif defined(__unix__)
-    return syscall(SYS_gettid);
+    // dirty hack
+    pthread_t tid = pthread_self();
+    return *(unsigned long *)&tid;
 #else
     return -1;
 #endif
 }
 
-YBUTIL_DECL MilliSec get_cur_time_millisec()
+YBUTIL_DECL MilliSec
+get_cur_time_millisec()
 {
-#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
+#if defined(__unix__)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    MilliSec r = tv.tv_sec;
+    r *= 1000;
+    r += tv.tv_usec / 1000;
+    return r;
+#elif defined(__WIN32__) || defined(_WIN32)
     // quick & dirty
     time_t t0 = time(NULL);
     SYSTEMTIME st;
@@ -50,13 +76,6 @@ YBUTIL_DECL MilliSec get_cur_time_millisec()
     r *= 1000;
     if (t1 == t0)
         r += st.wMilliseconds;
-    return r;
-#elif defined(__unix__)
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    MilliSec r = tv.tv_sec;
-    r *= 1000;
-    r += tv.tv_usec / 1000;
     return r;
 #else
     MilliSec r = time(NULL);
@@ -69,12 +88,12 @@ YBUTIL_DECL struct tm *localtime_safe(const time_t *clock, struct tm *result)
 {
     if (!clock || !result)
         return NULL;
-#if defined(_MSC_VER)
+#if defined(__unix__)
+    if (!localtime_r(clock, result))
+        return NULL;
+#elif defined(_MSC_VER)
     errno_t err = localtime_s(result, clock);
     if (err)
-        return NULL;
-#elif defined(__unix__)
-    if (!localtime_r(clock, result))
         return NULL;
 #else
     static Mutex m;
@@ -86,14 +105,6 @@ YBUTIL_DECL struct tm *localtime_safe(const time_t *clock, struct tm *result)
 #endif
     return result;
 }
-
-InvalidLogLevel::InvalidLogLevel()
-    : std::logic_error("Invalid log level")
-{}
-
-InvalidLoggerName::InvalidLoggerName()
-    : std::logic_error("Invalid logger name")
-{}
 
 int LogRecord::check_level(int level)
 {

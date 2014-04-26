@@ -12,6 +12,10 @@ using namespace Yb::StrUtils;
 
 namespace Yb {
 
+ValueIsNull::ValueIsNull()
+    : ValueError(_T("Trying to get value of null"))
+{}
+
 void
 Value::init()
 {
@@ -72,6 +76,68 @@ Value::assign(const Value &other)
         get_as<double>() = other.get_as<double>();
         break;
     }
+}
+
+Value::Value()
+    : type_(INVALID)
+{}
+
+Value::Value(const int &x)
+    : type_(INTEGER)
+{
+    copy_as<int>(x);
+}
+
+Value::Value(const LongInt &x)
+    : type_(LONGINT)
+{
+    copy_as<LongInt>(x);
+}
+
+Value::Value(const double &x)
+    : type_(FLOAT)
+{
+    copy_as<double>(x);
+}
+
+Value::Value(const Decimal &x)
+    : type_(DECIMAL)
+{
+    copy_as<Decimal>(x);
+}
+
+Value::Value(const DateTime &x)
+    : type_(DATETIME)
+{
+    copy_as<DateTime>(x);
+}
+
+Value::Value(const String &x)
+    : type_(STRING)
+{
+    copy_as<String>(x);
+}
+
+Value::Value(const Char *x)     : type_(STRING)
+    { copy_as<String>(str_from_chars(x)); }
+Value::Value(const Value &other)
+    : type_(INVALID)
+{
+    memset(bytes_, 0, sizeof(bytes_));
+    assign(other);
+}
+
+Value &
+Value::operator=(const Value &other)
+{
+    if (this != &other)
+        assign(other);
+    return *this;
+}
+
+Value::~Value()
+{
+    destroy();
 }
 
 void
@@ -303,6 +369,12 @@ Value::sql_str() const
     return as_string();
 }
 
+const Value
+Value::nvl(const Value &def_value) const
+{
+    return is_null()? def_value: *this;
+}
+
 int
 Value::cmp(const Value &x) const
 {
@@ -354,7 +426,7 @@ Value::get_type_name(int type)
     return WIDEN(type_names[type]);
 }
 
-bool
+YBUTIL_DECL bool
 empty_key(const Key &key)
 {
     ValueMap::const_iterator i = key.second.begin(), iend = key.second.end();

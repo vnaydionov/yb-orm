@@ -447,7 +447,7 @@ AC_DEFUN([YB_CHECK_YBORM],
     AC_TRY_LINK([
 #include <util/decimal.h>
 ],
-        [decimal x(10); x.str(); ],
+        [Yb::Decimal x(10); x.str(); ],
         [ac_yborm_present=yes],[ac_yborm_present=no])
     AC_LANG_POP(C++)
 

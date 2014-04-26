@@ -1,23 +1,22 @@
-// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
-#ifndef YB__UTIL__VALUE__INCLUDED
-#define YB__UTIL__VALUE__INCLUDED
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#ifndef YB__UTIL__VALUE_TYPE__INCLUDED
+#define YB__UTIL__VALUE_TYPE__INCLUDED
 
 #include <string.h>
 #include <string>
 #include <vector>
 #include <stdexcept>
 #include <utility>
+#include "util_config.h"
 #include "data_types.h"
 #include "nlogger.h"
 
 namespace Yb {
 
-class ValueIsNull : public ValueError
+class YBUTIL_DECL ValueIsNull: public ValueError
 {
 public:
-    ValueIsNull()
-        :ValueError(_T("Trying to get value of null"))
-    {}
+    ValueIsNull();
 };
 
 template <class T__> struct ValueTraits {};
@@ -38,7 +37,7 @@ template <> struct ValueTraits<double> { enum { TYPE_CODE = 6 }; };
  * @remark Value class should not be implemented upon boost::any because of massive
  * copying of Value objects here and there.
  */
-class Value
+class YBUTIL_DECL Value
 {
     template <class T__>
     T__ &get_as() {
@@ -62,29 +61,20 @@ public:
     enum Type {
         INVALID = 0, INTEGER, LONGINT, STRING, DECIMAL, DATETIME, FLOAT
     };
-    Value() : type_(INVALID) {}
-    Value(const int &x)      : type_(INTEGER)  { copy_as<int>(x); }
-    Value(const LongInt &x)  : type_(LONGINT)  { copy_as<LongInt>(x); }
-    Value(const double &x)   : type_(FLOAT)    { copy_as<double>(x); }
-    Value(const Decimal &x)  : type_(DECIMAL)  { copy_as<Decimal>(x); }
-    Value(const DateTime &x) : type_(DATETIME) { copy_as<DateTime>(x); }
-    Value(const String &x)   : type_(STRING)   { copy_as<String>(x); }
-    Value(const Char *x)     : type_(STRING)
-        { copy_as<String>(str_from_chars(x)); }
-    ~Value() { destroy(); }
-    Value(const Value &other) : type_(INVALID) {
-        memset(bytes_, 0, sizeof(bytes_));
-        assign(other);
-    }
-    Value &operator=(const Value &other) {
-        if (this != &other)
-            assign(other);
-        return *this;
-    }
+    Value();
+    Value(const int &x);
+    Value(const LongInt &x);
+    Value(const double &x);
+    Value(const Decimal &x);
+    Value(const DateTime &x);
+    Value(const String &x);
+    Value(const Char *x);
+    Value(const Value &other);
+    Value &operator=(const Value &other);
+    ~Value();
     void swap(Value &other);
     void fix_type(int type);
 
-    bool is_null() const { return type_ == INVALID; }
     int as_integer() const;
     LongInt as_longint() const;
     const String as_string() const;
@@ -92,8 +82,9 @@ public:
     const DateTime as_date_time() const;
     double as_float() const;
     const String sql_str() const;
-    const Value nvl(const Value &def_value) const { return is_null()? def_value: *this; }
+    const Value nvl(const Value &def_value) const;
     int cmp(const Value &x) const;
+    bool is_null() const { return type_ == INVALID; }
     int get_type() const { return type_; }
     static const String get_type_name(int type);
 
@@ -126,7 +117,7 @@ typedef std::vector<std::pair<String, Value> > ValueMap;
 typedef std::pair<String, ValueMap> Key;
 typedef std::vector<Key> Keys;
 
-bool empty_key(const Key &key);
+YBUTIL_DECL bool empty_key(const Key &key);
 
 //! @name Casting from variant typed to certain type
 //! @{
@@ -176,4 +167,4 @@ inline void swap(::Yb::Value &x, ::Yb::Value &y) { x.swap(y); }
 } // namespace std
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__UTIL__VALUE__INCLUDED
+#endif // YB__UTIL__VALUE_TYPE__INCLUDED

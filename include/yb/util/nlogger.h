@@ -10,17 +10,18 @@
 #include <stdexcept>
 #include <time.h>
 #include "util_config.h"
+#include "exception.h"
 #include "thread.h"
 
 namespace Yb {
 
-class YBUTIL_DECL InvalidLogLevel: public std::logic_error
+class YBUTIL_DECL InvalidLogLevel: public ValueError
 {
 public:
     InvalidLogLevel();
 };
 
-class YBUTIL_DECL InvalidLoggerName: public std::logic_error
+class YBUTIL_DECL InvalidLoggerName: public ValueError
 {
 public:
     InvalidLoggerName();
