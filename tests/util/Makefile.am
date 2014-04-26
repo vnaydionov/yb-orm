@@ -25,7 +25,8 @@ unit_tests_LDFLAGS = \
 	$(CPPUNIT_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
-	$(QT_LIBS)
+	$(QT_LIBS) \
+	$(EXECINFO_LIBS)
 
 TESTS = unit_tests
 

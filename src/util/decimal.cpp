@@ -60,7 +60,7 @@ decimal_numerator add(decimal_numerator x, decimal_numerator y)
         {
             decimal_numerator d = MAX_DECIMAL_NUMERATOR - ax;
             if (ay > d)
-                throw Decimal::overflow();
+                throw DecimalOverflow();
         }
     }
     return x + y;
@@ -73,7 +73,7 @@ decimal_numerator mul(decimal_numerator x, decimal_numerator y)
         decimal_numerator ax(my_abs(x)), ay(my_abs(y));
         int lx(log10(ax)), ly(log10(ay));
         if (lx + ly + 1 > MAX_DECIMAL_LENGTH)
-            throw Decimal::overflow();
+            throw DecimalOverflow();
         if (lx + ly + 1 == MAX_DECIMAL_LENGTH)
         {
             if (ay > ax)
@@ -84,7 +84,7 @@ decimal_numerator mul(decimal_numerator x, decimal_numerator y)
             }
             decimal_numerator n = MAX_DECIMAL_NUMERATOR / ay;
             if (ax > n)
-                throw Decimal::overflow();
+                throw DecimalOverflow();
         }
     }
     return x * y;
@@ -93,21 +93,21 @@ decimal_numerator mul(decimal_numerator x, decimal_numerator y)
 decimal_numerator my_div(decimal_numerator x, decimal_numerator y)
 {
     if (!y)
-        throw Decimal::divizion_by_zero();
+        throw DecimalDivByZero();
     return x / y;
 }
 
 int check_precision(int p)
 {
     if (p < 0 || p > MAX_DECIMAL_LENGTH)
-        throw Decimal::invalid_format();
+        throw DecimalInvalidFormat();
     return p;
 }
 
 decimal_numerator check_value(decimal_numerator x)
 {
     if (my_abs(x) > MAX_DECIMAL_NUMERATOR)
-        throw Decimal::invalid_format();
+        throw DecimalInvalidFormat();
     return x;
 }
 
@@ -166,7 +166,7 @@ void init_from_str(const Char *s, decimal_numerator &value, int &precision)
     }
     while (is_space(*s)) ++s;
     if (char_code(*s) || !digits)
-        throw Decimal::invalid_format();
+        throw DecimalInvalidFormat();
     if (negative)
         value = -value;
 }
@@ -198,6 +198,22 @@ void normalize(decimal_numerator &value, int &precision)
 }
 
 } // end of Anonymous namespace
+
+DecimalException::DecimalException(const String &msg)
+    : ValueError(msg)
+{}
+
+DecimalOverflow::DecimalOverflow()
+    : DecimalException(_T("Decimal exception: overflow"))
+{}
+
+DecimalDivByZero::DecimalDivByZero()
+    : DecimalException(_T("Decimal exception: divizion by zero"))
+{}
+
+DecimalInvalidFormat::DecimalInvalidFormat()
+    : DecimalException(_T("Decimal exception: invalid format"))
+{}
 
 Decimal::Decimal(int x, int p):
     value_(x),
@@ -273,7 +289,7 @@ Decimal &Decimal::operator *= (const Decimal &x)
 Decimal &Decimal::operator /= (const Decimal &x)
 {
     if (!x.value_)
-        throw divizion_by_zero();
+        throw DecimalDivByZero();
     if (!value_) {
         *this = Decimal();
         return *this;
@@ -285,7 +301,7 @@ Decimal &Decimal::operator /= (const Decimal &x)
             xx = mul(xx, 10);
             ++p;
         }
-        catch (const Decimal::overflow &) {
+        catch (const DecimalOverflow &) {
             break;
         }
     }
@@ -457,7 +473,7 @@ YBUTIL_DECL std::istream &operator >> (std::istream &i, Decimal &x)
     try {
         x = Decimal(WIDEN(buf));
     }
-    catch (const Decimal::exception &) {
+    catch (const DecimalException &) {
         i.setstate(ios_base::failbit);
     }
     return i;
@@ -478,7 +494,7 @@ YBUTIL_DECL std::wistream &operator >> (std::wistream &i, Decimal &x)
     try {
         x = Decimal(WIDEN(fast_narrow(buf)));
     }
-    catch (const Decimal::exception &) {
+    catch (const DecimalException &) {
         i.setstate(ios_base::failbit);
     }
     catch (const std::runtime_error &) {

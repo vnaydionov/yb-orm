@@ -34,26 +34,17 @@ unit_tests_LDFLAGS = \
 	$(SOCI_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
-	$(QT_LIBS)
+	$(QT_LIBS) \
+	$(EXECINFO_LIBS)
 
-TESTS = unit_tests
+TESTS = unit_tests.sh
+TEST_EXTENSIONS = .sh
+SH_LOG_COMPILER = /bin/sh
 
-export YBORM_DBTYPE=@YBORM_DBTYPE@
-export YBORM_DB=@YBORM_DB@
-export YBORM_USER=@YBORM_USER@
-export YBORM_PASSWD=@YBORM_PASSWD@
-export YBORM_URL=@YBORM_URL@
+SCHEMA=$(srcdir)/testdb_schema.xml
 
-# Oracle specific
-export TWO_TASK=balance-dev.yandex.ru
-export ORACLE_HOME=/opt/oracle/instantclient_10_2
-export LD_LIBRARY_PATH=/opt/oracle/instantclient_10_2
-export NLS_NUMERIC_CHARACTERS=. 
-export NLS_SORT=RUSSIAN
-export NLS_LANG=AMERICAN_CIS.UTF8
-
-mk_tables.sql: $(srcdir)/testdb_schema.xml
-	$(top_builddir)/src/yborm_gen/yborm_gen --ddl $^ ${YBORM_DBTYPE} $@
+mk_tables.sql: $(SCHEMA)
+	$(top_builddir)/src/yborm_gen/yborm_gen --ddl $(SCHEMA) "@YBORM_DBTYPE@" $@
 
 clean-local:
 	-rm -f mk_tables.sql

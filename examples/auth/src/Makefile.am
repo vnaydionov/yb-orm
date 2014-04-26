@@ -34,6 +34,7 @@ auth_LDFLAGS=\
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
 	$(QT_LIBS) \
+	$(EXECINFO_LIBS) \
 	$(YBORM_LDFLAGS) \
 	$(YBORM_LIBS)
 

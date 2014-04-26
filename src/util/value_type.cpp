@@ -274,7 +274,7 @@ Value::as_decimal() const
     try {
         return Decimal(s);
     }
-    catch (const Decimal::exception &) {
+    catch (const DecimalException &) {
         double f = 0.0;
         try {
             from_string(s, f);
@@ -287,7 +287,7 @@ Value::as_decimal() const
         try {
             return Decimal(WIDEN(o.str()));
         }
-        catch (const Decimal::exception &) {
+        catch (const DecimalException &) {
             throw ValueBadCast(s, _T("Decimal"));
         }
     }

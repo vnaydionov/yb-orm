@@ -18,27 +18,27 @@ class TestDecimal: public CppUnit::TestFixture
     CPPUNIT_TEST(testDecimalInit);
     CPPUNIT_TEST(testDecimalRounding);
 
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail0, Decimal::overflow);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail1, Decimal::exception);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail2, Decimal::invalid_format);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail3, Decimal::invalid_format);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail4, Decimal::invalid_format);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail5, Decimal::invalid_format);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail6, Decimal::invalid_format);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail7, Decimal::invalid_format);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail8, Decimal::invalid_format);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail9, Decimal::invalid_format);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail10, Decimal::invalid_format);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail11, Decimal::invalid_format);
-    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail12, Decimal::exception);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail0, DecimalOverflow);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail1, DecimalException);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail2, DecimalInvalidFormat);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail3, DecimalInvalidFormat);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail4, DecimalInvalidFormat);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail5, DecimalInvalidFormat);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail6, DecimalInvalidFormat);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail7, DecimalInvalidFormat);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail8, DecimalInvalidFormat);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail9, DecimalInvalidFormat);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail10, DecimalInvalidFormat);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail11, DecimalInvalidFormat);
+    CPPUNIT_TEST_EXCEPTION(testDecimalInitFail12, DecimalException);
 
     CPPUNIT_TEST(testDecimalComparison);
     CPPUNIT_TEST(testDecimalArithmeticMembers);
     CPPUNIT_TEST(testDecimalArithmetics);
-    CPPUNIT_TEST_EXCEPTION(testDivByZero, Decimal::divizion_by_zero);
-    CPPUNIT_TEST_EXCEPTION(testOverflow1, Decimal::overflow);
-    CPPUNIT_TEST_EXCEPTION(testOverflow2, Decimal::overflow);
-    CPPUNIT_TEST_EXCEPTION(testOverflow3, Decimal::overflow);
+    CPPUNIT_TEST_EXCEPTION(testDivByZero, DecimalDivByZero);
+    CPPUNIT_TEST_EXCEPTION(testOverflow1, DecimalOverflow);
+    CPPUNIT_TEST_EXCEPTION(testOverflow2, DecimalOverflow);
+    CPPUNIT_TEST_EXCEPTION(testOverflow3, DecimalOverflow);
 
     CPPUNIT_TEST(testSerialization);
     CPPUNIT_TEST(testDeserialization);

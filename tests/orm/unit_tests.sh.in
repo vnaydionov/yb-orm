@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Oracle specific
+export TWO_TASK=balance-dev.yandex.ru
+export ORACLE_HOME=/opt/oracle/instantclient_10_2
+export LD_LIBRARY_PATH=/opt/oracle/instantclient_10_2
+export NLS_NUMERIC_CHARACTERS=. 
+export NLS_SORT=RUSSIAN
+export NLS_LANG=AMERICAN_CIS.UTF8
+
+YBORM_DBTYPE="@YBORM_DBTYPE@" \
+YBORM_DB="@YBORM_DB@" \
+YBORM_USER="@YBORM_USER@" \
+YBORM_PASSWD="@YBORM_PASSWD@" \
+YBORM_URL="@YBORM_URL@" \
+`dirname $0`/unit_tests

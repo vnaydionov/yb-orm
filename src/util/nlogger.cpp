@@ -13,6 +13,9 @@
 #if defined(__linux__)
 #include <sys/syscall.h>
 #endif
+#if defined(__FreeBSD__)
+#include <pthread_np.h>
+#endif
 #include <time.h>
 #include <stdio.h>
 #include <sstream>
@@ -45,8 +48,12 @@ get_thread_id()
 {
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
     return GetCurrentThreadId();
-//#elif defined(__linux__)
-//    return syscall(SYS_gettid);
+#elif defined(__linux__)
+    return syscall(SYS_gettid);
+#elif defined(__FreeBSD__)
+    if (pthread_main_np() == 0)
+        return pthread_getthreadid_np(); 
+    return getpid();
 #elif defined(__unix__)
     // dirty hack
     pthread_t tid = pthread_self();

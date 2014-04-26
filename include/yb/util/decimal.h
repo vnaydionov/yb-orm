@@ -19,33 +19,32 @@ typedef LongInt decimal_numerator;
 
 const int MAX_DECIMAL_LENGTH = 18;
 
-class YBUTIL_DECL Decimal
+class YBUTIL_DECL DecimalException: public ValueError
 {
 public:
-    class exception: public RunTimeError
-    {
-    public:
-        exception(const String &msg): RunTimeError(msg) {}
-    };
+    DecimalException(const String &msg);
+};
 
-    class overflow: public exception
-    {
-    public:
-        overflow(): exception(_T("Decimal exception: overflow")) {}
-    };
+class YBUTIL_DECL DecimalOverflow: public DecimalException
+{
+public:
+    DecimalOverflow();
+};
 
-    class divizion_by_zero: public exception
-    {
-    public:
-        divizion_by_zero(): exception(_T("Decimal exception: divizion by zero")) {}
-    };
+class YBUTIL_DECL DecimalDivByZero: public DecimalException
+{
+public:
+    DecimalDivByZero();
+};
 
-    class invalid_format: public exception
-    {
-    public:
-        invalid_format(): exception(_T("Decimal exception: invalid format")) {}
-    };
+class YBUTIL_DECL DecimalInvalidFormat: public DecimalException
+{
+public:
+    DecimalInvalidFormat();
+};
 
+class YBUTIL_DECL Decimal
+{
 public:
     Decimal(int x = 0, int p = 0);
     explicit Decimal(decimal_numerator x, int p = 0);

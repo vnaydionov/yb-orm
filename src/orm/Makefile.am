@@ -4,6 +4,7 @@ AM_CXXFLAGS = \
 	-I $(top_srcdir)/include/private \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
+	$(ODBC_CFLAGS) \
 	$(SQLITE3_CFLAGS) \
 	$(SOCI_CXXFLAGS) \
 	$(WX_CFLAGS) \

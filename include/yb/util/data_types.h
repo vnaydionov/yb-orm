@@ -54,6 +54,7 @@ inline T &from_stdstring(const std::string &s, T &x)
         throw ValueBadCast(WIDEN(s), _T("value error: extra characters left"));
     return x;
 }
+YBUTIL_DECL double &from_stdstring(const std::string &s, double &x);
 #if defined(YB_STRING_NOSTD)
 inline String &from_stdstring(const std::string &s, String &x)
 {

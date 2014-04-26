@@ -21,7 +21,8 @@ tut1_LDFLAGS = \
 	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
-	$(SOCI_LIBS)
+	$(SOCI_LIBS) \
+	$(EXECINFO_LIBS)
 
 tut2_SOURCES=tut2.cpp domain/Client.cpp domain/Order.cpp
 
@@ -33,7 +34,8 @@ tut2_LDFLAGS = \
 	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
-	$(SOCI_LIBS)
+	$(SOCI_LIBS) \
+	$(EXECINFO_LIBS)
 
 tut3_SOURCES=tut3.cpp domain/Client.cpp domain/Order.cpp
 
@@ -45,7 +47,8 @@ tut3_LDFLAGS = \
 	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
-	$(SOCI_LIBS)
+	$(SOCI_LIBS) \
+	$(EXECINFO_LIBS)
 
 tut4_SOURCES=tut4.cpp domain/ProductGroup.cpp domain/Product.cpp
 
@@ -57,5 +60,6 @@ tut4_LDFLAGS = \
 	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
-	$(SOCI_LIBS)
+	$(SOCI_LIBS) \
+	$(EXECINFO_LIBS)
 

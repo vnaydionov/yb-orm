@@ -34,7 +34,8 @@ example1_LDFLAGS = \
 	$(SOCI_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
-	$(QT_LIBS)
+	$(QT_LIBS) \
+	$(EXECINFO_LIBS)
 
 example2_SOURCES=example2.cpp domain/Client.cpp domain/Order.cpp \
 	domain/Product.cpp domain/ProductGroup.cpp domain/Contract.cpp \
@@ -51,5 +52,6 @@ example2_LDFLAGS = \
 	$(SOCI_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
-	$(QT_LIBS)
+	$(QT_LIBS) \
+	$(EXECINFO_LIBS)
 

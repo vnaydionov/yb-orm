@@ -2,11 +2,21 @@
 #define YBUTIL_SOURCE
 
 #include "util/data_types.h"
+#include <stdlib.h>
 #if !defined(YB_USE_QT) && !defined(YB_USE_WX)
 #include <iomanip>
 #endif
 
 namespace Yb {
+
+YBUTIL_DECL double &from_stdstring(const std::string &s, double &x)
+{
+    char *end = NULL;
+    x = strtod(s.c_str(), &end);
+    if (!end || *end)
+        throw ValueBadCast(WIDEN(s), _T("value error: extra characters left"));
+    return x;
+}
 
 #if defined(YB_USE_WX)
 
