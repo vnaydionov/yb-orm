@@ -37,9 +37,13 @@ unit_tests_LDFLAGS = \
 	$(QT_LIBS) \
 	$(EXECINFO_LIBS)
 
-TESTS = unit_tests.sh
-TEST_EXTENSIONS = .sh
-SH_LOG_COMPILER = /bin/sh
+TESTS = unit_tests_wrapper.sh
+#TEST_EXTENSIONS = .sh
+#SH_LOG_COMPILER = /bin/sh
+
+unit_tests_wrapper.sh: unit_tests.sh
+	cp unit_tests.sh $@
+	chmod a+x $@
 
 SCHEMA=$(srcdir)/testdb_schema.xml
 
