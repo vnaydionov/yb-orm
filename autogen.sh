@@ -3,7 +3,7 @@
 libtoolize --automake --copy --force &&
 autoheader &&
 rm -rf aclocal.m4 &&
-aclocal &&
+aclocal -I . &&
 autoconf &&
 automake --foreign --add-missing --copy
 

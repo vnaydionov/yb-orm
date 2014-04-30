@@ -1,4 +1,4 @@
-#if defined(__WIN32__) || defined(_WIN32)
+#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
 #include <windows.h>
 #elif defined(__unix__)
 #include <sys/types.h>
@@ -15,7 +15,7 @@ namespace Yb {
 
 unsigned long get_process_id()
 {
-#if defined(__WIN32__) || defined(_WIN32)
+#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
     return GetCurrentProcessId();
 #elif defined(__unix__)
     return getpid();
@@ -26,7 +26,7 @@ unsigned long get_process_id()
 
 unsigned long get_thread_id()
 {
-#if defined(__WIN32__) || defined(_WIN32)
+#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
     return GetCurrentThreadId();
 #elif defined(__unix__)
     return syscall(SYS_gettid);
@@ -37,7 +37,7 @@ unsigned long get_thread_id()
 
 MilliSec get_cur_time_millisec()
 {
-#if defined(__WIN32__) || defined(_WIN32)
+#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
     // quick & dirty
     time_t t0 = time(NULL);
     SYSTEMTIME st;

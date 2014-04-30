@@ -33,6 +33,9 @@ ltmain.sh
 missing
 stamp-h1
 
+compile
+test-driver
+
 # Editors' temporary and backup files
 *.swp
 *.bak
