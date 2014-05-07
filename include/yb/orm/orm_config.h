@@ -22,5 +22,9 @@
 #  define YBORM_DECL
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(disable:4251 4275)
+#endif // _MSC_VER
+
 // vim:ts=4:sts=4:sw=4:et:
 #endif // YB__ORM__ORM_CONFIG__INCLUDED

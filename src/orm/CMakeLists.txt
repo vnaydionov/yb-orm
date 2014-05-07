@@ -38,14 +38,22 @@ if (USE_SOCI)
     set(SOURCES_CPP ${SOURCES_CPP} soci_driver.cpp)
 endif ()
 
-add_library (yborm SHARED ${SOURCES_CPP})
+add_library (yborm STATIC #SHARED 
+    ${SOURCES_CPP})
 
-add_definitions (-D YBORM_DLL)
+#add_definitions (-D YBORM_DLL)
 
 target_link_libraries (
     yborm ybutil
     ${LIBXML2_LIBS} ${YB_BOOST_LIBS} ${ODBC_LIBS}
     ${SQLITE3_LIBS} ${SOCI_LIBS} ${QT_LIBRARIES})
 
-install (TARGETS yborm DESTINATION lib)
+if (UNIX)
+    install (TARGETS yborm DESTINATION lib)
+else ()
+    install (TARGETS yborm
+                RUNTIME DESTINATION bin COMPONENT libraries
+                LIBRARY DESTINATION lib COMPONENT libraries
+                ARCHIVE DESTINATION lib COMPONENT libraries)
+endif ()
 

@@ -22,6 +22,10 @@
 #  define YBUTIL_DECL
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(disable:4251 4275)
+#endif // _MSC_VER
+
 namespace Yb {
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)

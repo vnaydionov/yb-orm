@@ -4,9 +4,9 @@ include_directories (
     ${PROJECT_SOURCE_DIR}/include/yb
     ${PROJECT_SOURCE_DIR}/include/private)
 
-add_definitions (-D YBUTIL_DLL)
+#add_definitions (-D YBUTIL_DLL)
 
-add_library (ybutil SHARED
+add_library (ybutil STATIC #SHARED
     data_types.cpp
     decimal.cpp
     element_tree.cpp
@@ -23,5 +23,12 @@ add_library (ybutil SHARED
 target_link_libraries (ybutil
     ${LIBXML2_LIBS} ${YB_BOOST_LIBS} ${QT_LIBRARIES})
 
-install (TARGETS ybutil DESTINATION lib)
+if (UNIX)
+    install (TARGETS ybutil DESTINATION lib)
+else ()
+    install (TARGETS ybutil
+                RUNTIME DESTINATION bin COMPONENT libraries
+                LIBRARY DESTINATION lib COMPONENT libraries
+                ARCHIVE DESTINATION lib COMPONENT libraries)
+endif ()
 
