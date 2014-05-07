@@ -9,10 +9,18 @@ include_directories (
     ${PROJECT_SOURCE_DIR}/include/private)
 
 set (SOURCES_CPP
-    engine.cpp expression.cpp schema.cpp
-    schema_config.cpp xmlizer.cpp sql_driver.cpp
-    sql_pool.cpp data_object.cpp domain_object.cpp
-    domain_factory.cpp code_gen.cpp)
+    code_gen.cpp
+    data_object.cpp
+    domain_factory.cpp
+    domain_object.cpp
+    engine.cpp
+    expression.cpp
+    schema_config.cpp
+    schema.cpp
+    sql_driver.cpp
+    sql_pool.cpp
+    xmlizer.cpp
+)
 
 if (USE_QT4)
     set(SOURCES_CPP ${SOURCES_CPP} qtsql_driver.cpp)
@@ -30,7 +38,9 @@ if (USE_SOCI)
     set(SOURCES_CPP ${SOURCES_CPP} soci_driver.cpp)
 endif ()
 
-add_library (yborm ${SOURCES_CPP})
+add_library (yborm SHARED ${SOURCES_CPP})
+
+add_definitions (-D YBORM_DLL)
 
 target_link_libraries (
     yborm ybutil

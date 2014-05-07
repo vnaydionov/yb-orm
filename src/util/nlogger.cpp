@@ -1,7 +1,8 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #define YBUTIL_SOURCE
 
-#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
+#include "util/util_config.h"
+#if defined(YBUTIL_WINDOWS) || defined(__CYGWIN__)
 #include <windows.h>
 #endif
 #if defined(__unix__)
@@ -24,17 +25,17 @@
 namespace Yb {
 
 InvalidLogLevel::InvalidLogLevel()
-    : ValueError("Invalid log level")
+    : ValueError(_T("Invalid log level"))
 {}
 
 InvalidLoggerName::InvalidLoggerName()
-    : ValueError("Invalid logger name")
+    : ValueError(_T("Invalid logger name"))
 {}
 
 YBUTIL_DECL unsigned long
 get_process_id()
 {
-#if defined(__WIN32__) || defined(_WIN32)
+#if defined(YBUTIL_WINDOWS)
     return GetCurrentProcessId();
 #elif defined(__unix__)
     return getpid();
@@ -46,7 +47,7 @@ get_process_id()
 YBUTIL_DECL unsigned long
 get_thread_id()
 {
-#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
+#if defined(YBUTIL_WINDOWS) || defined(__CYGWIN__)
     return GetCurrentThreadId();
 #elif defined(__linux__)
     return syscall(SYS_gettid);
@@ -73,7 +74,7 @@ get_cur_time_millisec()
     r *= 1000;
     r += tv.tv_usec / 1000;
     return r;
-#elif defined(__WIN32__) || defined(_WIN32)
+#elif defined(YBUTIL_WINDOWS)
     // quick & dirty
     time_t t0 = time(NULL);
     SYSTEMTIME st;

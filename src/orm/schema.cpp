@@ -1,3 +1,6 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
+
 #include <sstream>
 #include <algorithm>
 #include "util/string_utils.h"
@@ -12,7 +15,7 @@ using namespace Yb::StrUtils;
 namespace Yb {
 
 MetaDataError::MetaDataError(const String &msg)
-    : BaseError(msg)
+    : RunTimeError(msg)
 {}
 
 BadAttributeName::BadAttributeName(const String &obj, const String &attr)
@@ -65,12 +68,20 @@ TableHasNoSurrogatePK::TableHasNoSurrogatePK(const String &table)
     : MetaDataError(_T("Table '") + table + _T("' has no surrogate primary key"))
 {}
 
+IntegrityCheckFailed::IntegrityCheckFailed(const String &what)
+    : MetaDataError(what)
+{}
+
+NullPointer::NullPointer(const String &ctx)
+    : ValueError(ctx)
+{}
+
 
 static
 Char
 underscore_to_dash(Char c) { return c == _T('_')? _T('-'): c; }
 
-const String
+YBORM_DECL const String
 mk_xml_name(const String &name, const String &xml_name)
 {
     if (xml_name == _T("-"))
@@ -597,7 +608,8 @@ Schema::join_expr(const Strings &tables) const
     return make_join_expr(Expression(tbl1), tbl1, ++it, tables.end());
 }
 
-Schema &init_schema()
+YBORM_DECL Schema &
+init_schema()
 {
     Schema &schema = theSchema::instance();
     DomainObject::save_registered(schema);

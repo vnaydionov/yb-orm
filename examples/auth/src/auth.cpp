@@ -1,4 +1,5 @@
-#if defined(__WIN32__) || defined(_WIN32)
+#include <util/util_config.h>
+#if defined(YBUTIL_WINDOWS)
 #include <rpc.h>
 #else
 #include <unistd.h>

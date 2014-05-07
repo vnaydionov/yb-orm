@@ -112,7 +112,8 @@ template <class T__>
 inline bool operator >= (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
 { return a.get() >= b.get(); }
 
-class YBUTIL_DECL RefCountBase {
+class YBUTIL_DECL RefCountBase
+{
 protected:
     int ref_count_;
 public:
@@ -122,7 +123,8 @@ public:
     void release();
 };
 
-class YBUTIL_DECL NonCopyable {
+class YBUTIL_DECL NonCopyable
+{
     NonCopyable(const NonCopyable &);
     const NonCopyable &operator=(const NonCopyable &);
 protected:

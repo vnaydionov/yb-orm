@@ -34,7 +34,7 @@
 #include "util/utility.h"
 
 // System headers
-#if defined(__WIN32__) || defined(_WIN32)
+#if defined(YBUTIL_WINDOWS)
 #include <windows.h>
 #endif
 #include <sql.h>

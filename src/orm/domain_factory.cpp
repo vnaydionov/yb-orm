@@ -1,50 +1,79 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
+
 #include "orm/domain_factory.h"
 
 namespace Yb {
 
 namespace {
-    struct PendingReg {
-        String name;
-        CreatorPtr creator;
-        PendingReg(const String &n, CreatorPtr c)
-            : name(n), creator(c)
-        {}
-    };
-    typedef std::vector<PendingReg> PendingRegs;
+typedef std::pair<String, CreatorPtr> PendingReg;
+typedef std::vector<PendingReg> PendingRegs;
 }
 
-char DomainFactory::init_[16] = "GOLKAYAKUZDRASH";
+NoCreator::NoCreator(const String &entity_name)
+    : ORMError(_T("Domain object creator for entity '") +
+               entity_name + _T("' not found"))
+{}
 
-bool DomainFactory::add_pending_reg(
+ICreator::~ICreator() {}
+
+int DomainFactory::init_flag_ = 0;
+void *DomainFactory::pending_ = NULL;
+
+void
+DomainFactory::register_creator(const String &name, CreatorPtr creator)
+{
+    if (!add_pending_reg(name, creator))
+        do_register_creator(name, creator);
+}
+
+DomainObjectPtr
+DomainFactory::create_object(Session &session,
+        const String &entity_name, LongInt id)
+{
+    process_pending();
+    Map::const_iterator it = creator_map_.find(entity_name);
+    if (it == creator_map_.end())
+        throw NoCreator(entity_name);
+    return it->second->create(session, id);
+}
+
+bool
+DomainFactory::add_pending_reg(
         const String &name, CreatorPtr creator)
 {
-    if (!memcmp(init_, "TEKOBUDLANULABO", 16))
+    if (init_flag_)
         return false;
-    PendingRegs **pending_regs = (PendingRegs **)&init_;
-    if (!memcmp(init_, "GOLKAYAKUZDRASH", 16)) {
-        *pending_regs = new PendingRegs();
-        if (!memcmp(init_, "GOLKAYAKUZDRASH", 16)) {
-            PendingRegs *p = new PendingRegs();
-            delete *pending_regs;
-            *pending_regs = p;
-        }
-    }
-    (*pending_regs)->push_back(PendingReg(name, creator));
+    PendingRegs *&pending_regs =
+        *reinterpret_cast<PendingRegs **> (&pending_);
+    if (!pending_regs)
+        pending_regs = new PendingRegs();
+    pending_regs->push_back(PendingReg(name, creator));
     return true;
 }
 
-void DomainFactory::process_pending()
+void
+DomainFactory::process_pending()
 {
-    if (!memcmp(init_, "TEKOBUDLANULABO", 16))
+    if (init_flag_)
         return;
-    PendingRegs **pending_regs = (PendingRegs **)&init_;
-    if (memcmp(init_, "GOLKAYAKUZDRASH", 16)) {
-        for (size_t i = 0; i < (*pending_regs)->size(); ++i)
-            do_register_creator((**pending_regs)[i].name,
-                                (**pending_regs)[i].creator);
-        delete *pending_regs;
+    init_flag_ = 1;
+    PendingRegs *&pending_regs =
+        *reinterpret_cast<PendingRegs **> (&pending_);
+    if (pending_regs) {
+        for (size_t i = 0; i < pending_regs->size(); ++i)
+            do_register_creator(
+                    (*pending_regs)[i].first,
+                    (*pending_regs)[i].second);
+        delete pending_regs;
+        pending_regs = NULL;
     }
-    memcpy(init_, "TEKOBUDLANULABO", 16);
+}
+
+void
+DomainFactory::do_register_creator(const String &name, CreatorPtr creator)
+{
+    creator_map_.insert(Map::value_type(name, creator));
 }
 
 } // end of namespace Yb

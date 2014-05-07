@@ -4,10 +4,21 @@ include_directories (
     ${PROJECT_SOURCE_DIR}/include/yb
     ${PROJECT_SOURCE_DIR}/include/private)
 
-add_library (ybutil
-    string_type.cpp exception.cpp thread.cpp decimal.cpp
-    data_types.cpp string_utils.cpp xml_writer.cpp
-    element_tree.cpp value_type.cpp nlogger.cpp)
+add_definitions (-D YBUTIL_DLL)
+
+add_library (ybutil SHARED
+    data_types.cpp
+    decimal.cpp
+    element_tree.cpp
+    exception.cpp
+    nlogger.cpp
+    string_type.cpp
+    string_utils.cpp
+    thread.cpp
+    utility.cpp
+    value_type.cpp
+    xml_writer.cpp
+)
 
 target_link_libraries (ybutil
     ${LIBXML2_LIBS} ${YB_BOOST_LIBS} ${QT_LIBRARIES})

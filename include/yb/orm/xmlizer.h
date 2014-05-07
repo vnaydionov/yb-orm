@@ -1,22 +1,25 @@
-// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__XMLIZER__INCLUDED
 #define YB__ORM__XMLIZER__INCLUDED
 
 #include <vector>
 #include "util/element_tree.h"
 #include "util/utility.h"
+#include "orm_config.h"
 #include "data_object.h"
 #include "sql_driver.h"
 
 namespace Yb {
 
-ElementTree::ElementPtr data_object_to_etree(DataObject::Ptr data,
-        const String &alt_name = _T(""));
+YBORM_DECL ElementTree::ElementPtr data_object_to_etree(
+        DataObject::Ptr data, const String &alt_name = _T(""));
 
-void replace_child_object_by_field(ElementTree::ElementPtr node,
+YBORM_DECL void replace_child_object_by_field(
+        ElementTree::ElementPtr node,
         const String &field_name, ElementTree::ElementPtr sub_node);
 
-void replace_child_object_by_field(ElementTree::ElementPtr node,
+YBORM_DECL void replace_child_object_by_field(
+        ElementTree::ElementPtr node,
         const String &field_name, DataObject::Ptr data);
 
 /**
@@ -26,15 +29,15 @@ void replace_child_object_by_field(ElementTree::ElementPtr node,
  *              >= 1 nested levels
  * @return ElementTree::ElementPtr
  */
-ElementTree::ElementPtr deep_xmlize(Session &session,
+YBORM_DECL ElementTree::ElementPtr deep_xmlize(Session &session,
         DataObject::Ptr d, int depth = 0, const String &alt_name = _T(""));
 
-ElementTree::ElementPtr xmlize_row(const Row &row, const String &entry_name);
+YBORM_DECL ElementTree::ElementPtr xmlize_row(const Row &row, const String &entry_name);
 
-ElementTree::ElementPtr xmlize_rows(const Rows &rows,
+YBORM_DECL ElementTree::ElementPtr xmlize_rows(const Rows &rows,
         const String &entries_name, const String &entry_name);
 
-class XMLizable: public RefCountBase
+class YBORM_DECL XMLizable: public RefCountBase
 {
 public:
     typedef IntrusivePtr<XMLizable> Ptr;

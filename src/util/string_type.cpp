@@ -186,7 +186,7 @@ YBUTIL_DECL const std::string get_locale(const std::string &enc_name = "")
 {
     if (enc_name.empty())
         return
-#if defined(__WIN32__) || defined(_WIN32)
+#ifdef YBUTIL_WINDOWS
             "rus_rus.866"
 #else
             "ru_RU.UTF-8"

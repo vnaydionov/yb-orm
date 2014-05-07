@@ -1,9 +1,10 @@
-// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__DOMAIN_OBJECT__INCLUDED
 #define YB__ORM__DOMAIN_OBJECT__INCLUDED
 
 #include <iterator>
 #include <stdexcept>
+#include "orm_config.h"
 #include "xmlizer.h"
 #include "data_object.h"
 #if defined(YB_USE_TUPLE)
@@ -12,57 +13,49 @@
 
 namespace Yb {
 
-class NoDataObject: public ORMError {
+class YBORM_DECL NoDataObject: public ORMError
+{
 public:
-    NoDataObject()
-        : ORMError(_T("No ROW data is associated with DomainObject"))
-    {}
+    NoDataObject();
 };
 
-class NoSessionBaseGiven: public ORMError {
+class YBORM_DECL NoSessionBaseGiven: public ORMError
+{
 public:
-    NoSessionBaseGiven()
-        : ORMError(_T("No session given to the WeakObject"))
-    {}
+    NoSessionBaseGiven();
 };
 
-class AlreadySavedInAnotherSession: public ORMError {
+class YBORM_DECL AlreadySavedInAnotherSession: public ORMError
+{
 public:
-    AlreadySavedInAnotherSession()
-        : ORMError(_T("Object has been already saved in some other session"))
-    {}
+    AlreadySavedInAnotherSession();
 };
 
-class CouldNotSaveEmptyObject: public ORMError {
+class YBORM_DECL CouldNotSaveEmptyObject: public ORMError
+{
 public:
-    CouldNotSaveEmptyObject()
-        : ORMError(_T("Attempt to save an empty object failed"))
-    {}
+    CouldNotSaveEmptyObject();
 };
 
-class OutOfManagedList: public std::runtime_error {
+class YBORM_DECL OutOfManagedList: public ORMError
+{
 public:
-    OutOfManagedList(int pos, int sz)
-        : std::runtime_error("Trying to access index " +
-            to_stdstring(pos) + 
-            " that falls out of ManagedList of size " +
-            to_stdstring(sz))
-    {}
+    OutOfManagedList(int pos, int sz);
 };
 
-class InvalidIterator: public std::runtime_error {
+class YBORM_DECL InvalidIterator: public ORMError
+{
 public:
-    InvalidIterator()
-        : std::runtime_error(NARROW(_T("Trying to use an invalid iterator")))
-    {}
+    InvalidIterator();
 };
 
 template <class T>
 class ManagedList;
 
-class DomainObject: public XMLizable
+class YBORM_DECL DomainObject: public XMLizable
 {
-    static char init_[16];
+    static int init_flag_;
+    static void *pending_;
     void check_ptr() const;
 
     DataObject::Ptr d_;

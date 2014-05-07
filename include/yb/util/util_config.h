@@ -8,7 +8,11 @@
 #  define YBUTIL_WIN32
 #endif
 
-#if (defined(YBUTIL_WIN32) || defined(YBUTIL_WIN64)) && defined(YBUTIL_DLL)
+#if defined(YBUTIL_WIN32) || defined(YBUTIL_WIN64)
+#  define YBUTIL_WINDOWS
+#endif
+
+#if defined(YBUTIL_WINDOWS) && defined(YBUTIL_DLL)
 #  if defined(YBUTIL_SOURCE)
 #    define YBUTIL_DECL __declspec(dllexport)
 #  else

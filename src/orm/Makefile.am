@@ -35,17 +35,17 @@ SOCI_DRV_CPP =
 endif
 
 CPP_FILES = \
-	expression.cpp \
-	schema.cpp \
+	code_gen.cpp \
+	data_object.cpp \
+	domain_factory.cpp \
+	domain_object.cpp \
 	engine.cpp \
+	expression.cpp \
+	schema_config.cpp \
+	schema.cpp \
 	sql_driver.cpp \
 	sql_pool.cpp \
-	schema_config.cpp \
-	xmlizer.cpp \
-	domain_factory.cpp \
-	data_object.cpp \
-	domain_object.cpp \
-	code_gen.cpp
+	xmlizer.cpp
 
 libyborm_la_SOURCES = \
 	$(CPP_FILES) \

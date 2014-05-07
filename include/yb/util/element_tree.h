@@ -21,15 +21,20 @@ typedef IntrusivePtr<Element> ElementPtr;
 typedef std::vector<ElementPtr> Elements;
 typedef std::auto_ptr<Elements> ElementsPtr;
 
-class ElementNotFound: public std::runtime_error {
-public: ElementNotFound(const std::string &t): std::runtime_error(t) {}
+class YBUTIL_DECL ElementNotFound: public BaseError
+{
+public:
+    ElementNotFound(const String &t);
 };
 
-class ParseError: public std::runtime_error {
-public: ParseError(const std::string &t): std::runtime_error(t) {}
+class YBUTIL_DECL ParseError: public BaseError
+{
+public:
+    ParseError(const String &t);
 };
 
-YBUTIL_DECL ElementPtr mark_json(ElementPtr node, const Yb::String &json_type);
+YBUTIL_DECL ElementPtr mark_json(ElementPtr node,
+        const Yb::String &json_type);
 
 class YBUTIL_DECL Element: public RefCountBase
 {

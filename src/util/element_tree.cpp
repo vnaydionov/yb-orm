@@ -18,6 +18,14 @@ namespace Yb {
 
 namespace ElementTree {
 
+ElementNotFound::ElementNotFound(const String &t):
+    BaseError(t)
+{}
+
+ParseError::ParseError(const String &t):
+    BaseError(t)
+{}
+
 Element::Element(const Yb::String &name, const Yb::String &s)
     : name_(name)
 {
@@ -76,7 +84,7 @@ Element::find_first(const Yb::String &path)
     for (size_t i = 0; i < children_.size(); ++i)
         if (path == children_[i]->name_)
             return children_[i];
-    throw ElementNotFound(NARROW(path));
+    throw ElementNotFound(path);
 }
 
 ElementsPtr
@@ -215,7 +223,7 @@ YBUTIL_DECL ElementPtr parse(const std::string &content)
     wxMemoryInputStream input(content.c_str(), content.size());
     wxXmlDocument doc(input);
     if (!doc.IsOk())
-        throw ParseError("parsing XML failed");
+        throw ParseError(_T("parsing XML failed"));
     ElementPtr p = convert_node(doc.GetRoot());
     return p;
 #elif defined(YB_USE_QT)
@@ -223,13 +231,13 @@ YBUTIL_DECL ElementPtr parse(const std::string &content)
     buf.setData(content.c_str(), content.size());
     QDomDocument doc("xml-data");
     if (!doc.setContent(&buf))
-        throw ParseError("parsing XML failed");
+        throw ParseError(_T("parsing XML failed"));
     ElementPtr p = convert_node(doc.documentElement());
     return p;
 #else
     xmlDocPtr doc = xmlParseMemory(content.c_str(), content.size());
     if (!doc)
-        throw ParseError("xmlParseMemory failed");
+        throw ParseError(_T("xmlParseMemory failed"));
     xmlNodePtr node = xmlDocGetRootElement(doc);
     ElementPtr p = convert_node(node);
     xmlFreeDoc(doc);

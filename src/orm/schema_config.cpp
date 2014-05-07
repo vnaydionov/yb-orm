@@ -10,7 +10,33 @@ class TestXMLConfig;
 
 namespace Yb {
 
-bool load_xml_file(const String &name, string &where)
+XMLConfigError::XMLConfigError(const String &msg)
+    : MetaDataError(msg)
+{}
+
+MandatoryAttributeAbsent::MandatoryAttributeAbsent(
+        const String &element, const String &attr)
+    : XMLConfigError(_T("Mandatory attribyte '") + attr +
+            _T("' not found or empty while parsing element '") +
+            element + _T("'"))
+{}
+
+WrongColumnType::WrongColumnType(const String &type, const String &field_name)
+    : XMLConfigError(_T("Type '") + type +
+            _T("' is unknown and not supported while parsing field '")
+            + field_name + _T("'"))
+{}
+
+ParseError::ParseError(const String &msg)
+    : XMLConfigError(_T("XML config parse error, details: ") + msg)
+{}
+
+InvalidCombination::InvalidCombination(const String &msg)
+    : XMLConfigError(_T("Invalid element-attribute combination, details: ") + msg)
+{}
+
+YBORM_DECL bool
+load_xml_file(const String &name, string &where)
 {
     ifstream tfile(NARROW(name).c_str());
     if (!tfile)
@@ -23,7 +49,8 @@ bool load_xml_file(const String &name, string &where)
     return true;
 }
 
-void load_schema(const String &name, Schema &reg, bool check)
+YBORM_DECL void
+load_schema(const String &name, Schema &reg, bool check)
 {
     string xml;
     if (!load_xml_file(name, xml))

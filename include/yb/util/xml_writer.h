@@ -1,7 +1,9 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__UTIL__XML_WRITER__INCLUDED
 #define YB__UTIL__XML_WRITER__INCLUDED
 
 #include <sstream>
+#include "util_config.h"
 #include "string_type.h"
 #include "utility.h"
 
@@ -9,7 +11,7 @@ namespace Yb {
 
 namespace XmlWriter {
 
-class Document: NonCopyable
+class YBUTIL_DECL Document: public NonCopyable
 {
     friend class Element;
     std::ostringstream buffer_;
@@ -44,7 +46,7 @@ public:
     std::string const & get_string ();
 };
 
-class Element: NonCopyable
+class YBUTIL_DECL Element: public NonCopyable
 {
     Document & doc_;
     Yb::String name_;
@@ -83,7 +85,7 @@ public:
     }
 };
 
-class Attribute: NonCopyable
+class YBUTIL_DECL Attribute: public NonCopyable
 {
 public:
     template <class TValue>
