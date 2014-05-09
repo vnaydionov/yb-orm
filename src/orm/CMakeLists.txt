@@ -38,10 +38,10 @@ if (USE_SOCI)
     set(SOURCES_CPP ${SOURCES_CPP} soci_driver.cpp)
 endif ()
 
-add_library (yborm STATIC #SHARED 
+add_library (yborm SHARED 
     ${SOURCES_CPP})
 
-#add_definitions (-D YBORM_DLL)
+add_definitions (-D YBORM_DLL)
 
 target_link_libraries (
     yborm ybutil

@@ -6,6 +6,7 @@
 #include "util/string_utils.h"
 #include "util/exception.h"
 #include "util/value_type.h"
+#include "util/singleton.h"
 #include "orm/schema.h"
 #include "orm/domain_factory.h"
 
@@ -608,10 +609,18 @@ Schema::join_expr(const Strings &tables) const
     return make_join_expr(Expression(tbl1), tbl1, ++it, tables.end());
 }
 
+typedef SingletonHolder<Schema> SchemaSingleton;
+
+YBORM_DECL Schema &
+theSchema()
+{
+    return SchemaSingleton::instance();
+}
+
 YBORM_DECL Schema &
 init_schema()
 {
-    Schema &schema = theSchema::instance();
+    Schema &schema = theSchema();
     DomainObject::save_registered(schema);
     schema.fill_fkeys();
     schema.check_cycles();

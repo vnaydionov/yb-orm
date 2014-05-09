@@ -403,7 +403,7 @@ SqlDriver::convert_to_numbered_params(
     std::vector<String> parts;
     split_by_subst_sign(sql, pos_list, parts);
     String sql2 = parts[0];
-    for (int i = 1; i < parts.size(); ++i) {
+    for (size_t i = 1; i < parts.size(); ++i) {
         sql2 += _T(":") + to_string(i);
         sql2 += parts[i];
     }
@@ -647,7 +647,7 @@ SqlCursor::exec(const Values &params)
         if (echo_) {
             std::ostringstream out;
             out << "exec prepared:";
-            for (unsigned i = 0; i < params.size(); ++i)
+            for (size_t i = 0; i < params.size(); ++i)
                 out << " p" << (i + 1) << "=\""
                     << NARROW(params[i].sql_str()) << "\"";
             debug(WIDEN(out.str()));
@@ -935,7 +935,7 @@ find_subst_signs(const String &sql, std::vector<int> &pos_list, String &first_wo
     bool found_first_word = false;
     first_word = String();
     st = NORMAL;
-    for (int i = 0; i < sql.size();) {
+    for (size_t i = 0; i < str_length(sql);) {
         Char c = sql[i];
         switch (st) {
         case NORMAL:
@@ -1018,12 +1018,12 @@ split_by_subst_sign(const String &sql,
         const std::vector<int> &pos_list, std::vector<String> &parts)
 {
     int prev_pos = -1;
-    for (int i = 0; i < pos_list.size(); ++i) {
+    for (size_t i = 0; i < pos_list.size(); ++i) {
         int cur_pos = pos_list[i];
         parts.push_back(str_substr(sql, prev_pos + 1, cur_pos - prev_pos - 1));
         prev_pos = cur_pos;
     }
-    parts.push_back(str_substr(sql, prev_pos + 1, sql.size() - prev_pos - 1));
+    parts.push_back(str_substr(sql, prev_pos + 1, str_length(sql) - prev_pos - 1));
 }
 
 } // namespace Yb

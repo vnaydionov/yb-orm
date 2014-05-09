@@ -241,6 +241,10 @@ void LogAppender::output(std::ostream &s, const LogRecord &rec, const char *time
         s << '\n';
 }
 
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif // _MSC_VER
+
 void LogAppender::do_flush(time_t now)
 {
     std::ostringstream s;

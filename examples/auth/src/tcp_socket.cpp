@@ -86,6 +86,10 @@ TcpSocket::listen()
     ::listen(s_, 3);
 }
 
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif // _MSC_VER
+
 SOCKET
 TcpSocket::accept(string *ip_addr, int *ip_port)
 {
@@ -107,7 +111,7 @@ TcpSocket::accept(string *ip_addr, int *ip_port)
         *ip_port = ntohs(*(unsigned short *)&addr.sin_port);
     if (ip_addr) {
         unsigned ip = ntohl(*(unsigned *)&addr.sin_addr);
-        char buf[20];
+        char buf[40];
         sprintf(buf, "%d.%d.%d.%d",
                 ip >> 24, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255);
         *ip_addr = string(buf);
@@ -158,7 +162,7 @@ TcpSocket::write(const string &msg)
     int count = ::send(s_, msg.c_str(), msg.size(), 0);
     if (-1 == count)
         throw SocketEx("write", get_last_error());
-    if (count < msg.size())
+    if (static_cast<size_t>(count) < msg.size())
         throw SocketEx("write", "short write");
 }
 

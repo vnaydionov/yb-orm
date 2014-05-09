@@ -436,7 +436,7 @@ YBUTIL_DECL const Decimal operator / (const Decimal &x, const Decimal &y)
 
 YBUTIL_DECL std::ostream &operator << (std::ostream &o, const Decimal &x)
 {
-    int prec = o.precision();
+    int prec = static_cast<int>(o.precision());
     if (prec < 0)
         prec = 0;
     else if (prec > MAX_DECIMAL_LENGTH)
@@ -460,7 +460,8 @@ YBUTIL_DECL std::ostream &operator << (std::ostream &o, const Decimal &x)
     {
         if (y.get_precision() == 0)
             s += _T('.');
-        s += str_n(o.precision() - y.get_precision(), _T('0'));
+        s += str_n(static_cast<int>(o.precision()) - y.get_precision(),
+                   _T('0'));
     }
     o << NARROW(s);
     return o;

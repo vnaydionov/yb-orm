@@ -10,7 +10,6 @@
 #include <list>
 #include "util/utility.h"
 #include "util/exception.h"
-#include "util/singleton.h"
 #include "util/value_type.h"
 #include "orm_config.h"
 #include "expression.h"
@@ -346,7 +345,7 @@ private:
 
 YBORM_DECL const String mk_xml_name(const String &name, const String &xml_name);
 
-typedef SingletonHolder<Schema> theSchema;
+YBORM_DECL Schema &theSchema();
 
 YBORM_DECL Schema &init_schema();
 

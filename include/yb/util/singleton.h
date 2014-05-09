@@ -2,6 +2,9 @@
 #define YB__UTIL__SINGLETON___INCLUDED
 
 #include <memory>
+#ifdef YB_DEBUG_SINGLETON
+#include <iostream>
+#endif
 #include "thread.h"
 
 class TestSingleton;
@@ -22,7 +25,17 @@ class SingletonHolder
     SingletonHolder &operator=(const SingletonHolder &);
 public:
     SingletonHolder()
-    {}
+    {
+#ifdef YB_DEBUG_SINGLETON
+        std::cerr << "SingletonHolder(" << typeid(*this).name() << ") cons" << std::endl;
+#endif
+    }
+    ~SingletonHolder()
+    {
+#ifdef YB_DEBUG_SINGLETON
+        std::cerr << "SingletonHolder(" << typeid(*this).name() << ") des" << std::endl;
+#endif
+    }
     T *get()
     {
         if (!mutex_.get())

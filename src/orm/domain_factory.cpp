@@ -2,6 +2,7 @@
 #define YBORM_SOURCE
 
 #include "orm/domain_factory.h"
+#include "util/singleton.h"
 
 namespace Yb {
 
@@ -74,6 +75,14 @@ void
 DomainFactory::do_register_creator(const String &name, CreatorPtr creator)
 {
     creator_map_.insert(Map::value_type(name, creator));
+}
+
+typedef SingletonHolder<DomainFactory> DomainFactorySingleton;
+
+YBORM_DECL DomainFactory &
+theDomainFactory()
+{
+    return DomainFactorySingleton::instance();
 }
 
 } // end of namespace Yb

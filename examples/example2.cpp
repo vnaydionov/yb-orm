@@ -18,14 +18,14 @@ int main()
         if (Yb::str_empty(conf_dir))
             conf_dir = _T(".");
 #if 0
-        Yb::load_schema(conf_dir + _T("/ex1_schema.xml"), Yb::theSchema::instance());
+        Yb::load_schema(conf_dir + _T("/ex1_schema.xml"), Yb::theSchema());
 #else
         Yb::init_schema();
 #endif
         Yb::Engine engine;
         engine.set_echo(true);
         engine.set_logger(root_logger.new_logger("yb"));
-        Yb::Session session(Yb::theSchema::instance(), &engine);
+        Yb::Session session(Yb::theSchema(), &engine);
         Domain::Client::Holder client(session);
         string name, email;
         cout << "Enter name, email: \n";

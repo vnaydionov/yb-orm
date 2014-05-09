@@ -1,6 +1,9 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #define YBORM_SOURCE
 
+#ifdef YB_DEBUG_DOMAIN_REG
+#include <iostream>
+#endif
 #include "orm/domain_object.h"
 
 namespace Yb {
@@ -41,6 +44,10 @@ void *DomainObject::pending_ = NULL;
 
 bool DomainObject::register_table_meta(Table::Ptr tbl)
 {
+#ifdef YB_DEBUG_DOMAIN_REG
+    std::cerr << "register_table_meta(" << tbl->name() 
+              << "), init_flag_=" << init_flag_ << std::endl;
+#endif
     if (init_flag_)
         return false;
     SchemaInfo *&items =
@@ -53,6 +60,11 @@ bool DomainObject::register_table_meta(Table::Ptr tbl)
 
 bool DomainObject::register_relation_meta(Relation::Ptr rel)
 {
+#ifdef YB_DEBUG_DOMAIN_REG
+    std::cerr << "register_relation_meta(" << rel->side(0)
+              << ", " << rel->side(1)
+              << "), init_flag_=" << init_flag_ << std::endl;
+#endif
     if (init_flag_)
         return false;
     SchemaInfo *&items =
@@ -65,6 +77,9 @@ bool DomainObject::register_relation_meta(Relation::Ptr rel)
 
 void DomainObject::save_registered(Schema &schema)
 {
+#ifdef YB_DEBUG_DOMAIN_REG
+    std::cerr << "save_registered(), init_flag_=" << init_flag_ << std::endl;
+#endif
     if (init_flag_)
         return;
     init_flag_ = 1;
@@ -73,12 +88,20 @@ void DomainObject::save_registered(Schema &schema)
     if (items) {
         Tables &tables = items->first;
         Tables::iterator i = tables.begin(), iend = tables.end();
-        for (; i != iend; ++i)
+        for (; i != iend; ++i) {
+#ifdef YB_DEBUG_DOMAIN_REG
+            std::cerr << "table: " << (*i)->name() << std::endl;
+#endif
             schema.add_table(*i);
+        }
         Relations &relations = items->second;
         Relations::iterator j = relations.begin(), jend = relations.end();
-        for (; j != jend; ++j)
+        for (; j != jend; ++j) {
+#ifdef YB_DEBUG_DOMAIN_REG
+            std::cerr << "relation: " << (*j)->side(0) << "," << (*j)->side(1) << std::endl;
+#endif
             schema.add_relation(*j);
+        }
         delete items;
         items = NULL;
     }

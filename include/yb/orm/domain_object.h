@@ -108,15 +108,15 @@ typedef IntrusivePtr<DomainObject> DomainObjectPtr;
 inline bool operator==(const DomainObject &a, const DomainObject &b)
 { return !a.cmp(b); }
 inline bool operator!=(const DomainObject &a, const DomainObject &b)
-{ return a.cmp(b); }
+{ return a.cmp(b) != 0; }
 inline bool operator<(const DomainObject &a, const DomainObject &b)
-{ return a.cmp(b)<0; }
+{ return a.cmp(b) < 0; }
 inline bool operator>(const DomainObject &a, const DomainObject &b)
-{ return a.cmp(b)>0; }
+{ return a.cmp(b) > 0; }
 inline bool operator<=(const DomainObject &a, const DomainObject &b)
-{ return !(a.cmp(b)>0); }
+{ return !(a.cmp(b) > 0); }
 inline bool operator>=(const DomainObject &a, const DomainObject &b)
-{ return !(a.cmp(b)<0); }
+{ return !(a.cmp(b) < 0); }
 
 template <class T>
 class ManagedList;

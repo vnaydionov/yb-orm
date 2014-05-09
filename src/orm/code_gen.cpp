@@ -23,6 +23,10 @@ const char
     *AUTOGEN_BEGIN = "// AUTOGEN_BEGIN",
     *AUTOGEN_END = "// } AUTOGEN_END\n";
 
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif // _MSC_VER
+
 string MK_AUTOGEN_BEGIN(int n) {
     char buf[100];
     sprintf(buf, "// AUTOGEN_BEGIN(%03d) {\n", n);
@@ -864,7 +868,7 @@ void CppCodeGenerator::write_cpp_file(ostream &out)
     if (auto_xmlize) {
         out << "struct "<< class_name_ << "Registrator\n{\n"
             << "\tstatic void register_domain() {\n"
-            << "\t\tYb::theDomainFactory::instance().register_creator(_T(\"" << table_name_ << "\"),\n"
+            << "\t\tYb::theDomainFactory().register_creator(_T(\"" << table_name_ << "\"),\n"
             << "\t\t\tYb::CreatorPtr(new Yb::DomainCreator<" << class_name_ << ">()));\n"
             << "\t}\n"
             << "\t" << class_name_ << "Registrator() { register_domain(); }\n"

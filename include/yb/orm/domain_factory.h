@@ -5,7 +5,6 @@
 #include <map>
 #include <stdexcept>
 #include "util/utility.h"
-#include "util/singleton.h"
 #include "orm_config.h"
 #include "domain_object.h"
 
@@ -52,7 +51,7 @@ private:
     static void *pending_;
 };
 
-typedef SingletonHolder<DomainFactory> theDomainFactory;
+YBORM_DECL DomainFactory &theDomainFactory();
 
 } // namespace Yb
 
