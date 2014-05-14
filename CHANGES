@@ -1,4 +1,17 @@
 
+0.4.5
+    * New source tree layout: separate public includes from private,
+      all source file names are lowercase.
+    * Tested build on Windows under MS Visual Studio 2013.
+    * Enable building .dll libraries on Windows by default.
+    * Fixed Autoconf/Automake scripts to build on Ubuntu 14.04,
+      as well as on FreeBSD 10, Cygwin.
+    * Use third party boost.m4 to detect Boost at ./configure stage.
+    * Added stuff to make Debian packages.
+    * Many small API improvements.
+    * Basic means to create indices from schema.
+    * Auth example: refactor micro_http server.
+
 0.4.0
     * New SQL driver for SOCI library (http://soci.sourceforge.net/).
       If you build with SOCI then you can use connection URL like this:
