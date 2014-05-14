@@ -1,10 +1,21 @@
-#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBUTIL_SOURCE
+
+#include "util/util_config.h"
+#if defined(YBUTIL_WINDOWS) || defined(__CYGWIN__)
 #include <windows.h>
-#elif defined(__unix__)
+#endif
+#if defined(__unix__)
 #include <sys/types.h>
-#include <sys/syscall.h>
-#include <unistd.h>
 #include <sys/time.h>
+#include <unistd.h>
+#include <pthread.h>
+#endif
+#if defined(__linux__)
+#include <sys/syscall.h>
+#endif
+#if defined(__FreeBSD__)
+#include <pthread_np.h>
 #endif
 #include <time.h>
 #include <stdio.h>
@@ -13,9 +24,18 @@
 
 namespace Yb {
 
-unsigned long get_process_id()
+InvalidLogLevel::InvalidLogLevel()
+    : ValueError(_T("Invalid log level"))
+{}
+
+InvalidLoggerName::InvalidLoggerName()
+    : ValueError(_T("Invalid logger name"))
+{}
+
+YBUTIL_DECL unsigned long
+get_process_id()
 {
-#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
+#if defined(YBUTIL_WINDOWS)
     return GetCurrentProcessId();
 #elif defined(__unix__)
     return getpid();
@@ -24,20 +44,37 @@ unsigned long get_process_id()
 #endif
 }
 
-unsigned long get_thread_id()
+YBUTIL_DECL unsigned long
+get_thread_id()
 {
-#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
+#if defined(YBUTIL_WINDOWS) || defined(__CYGWIN__)
     return GetCurrentThreadId();
-#elif defined(__unix__)
+#elif defined(__linux__)
     return syscall(SYS_gettid);
+#elif defined(__FreeBSD__)
+    if (pthread_main_np() == 0)
+        return pthread_getthreadid_np(); 
+    return getpid();
+#elif defined(__unix__)
+    // dirty hack
+    pthread_t tid = pthread_self();
+    return *(unsigned long *)&tid;
 #else
     return -1;
 #endif
 }
 
-MilliSec get_cur_time_millisec()
+YBUTIL_DECL MilliSec
+get_cur_time_millisec()
 {
-#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
+#if defined(__unix__)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    MilliSec r = tv.tv_sec;
+    r *= 1000;
+    r += tv.tv_usec / 1000;
+    return r;
+#elif defined(YBUTIL_WINDOWS)
     // quick & dirty
     time_t t0 = time(NULL);
     SYSTEMTIME st;
@@ -48,13 +85,6 @@ MilliSec get_cur_time_millisec()
     if (t1 == t0)
         r += st.wMilliseconds;
     return r;
-#elif defined(__unix__)
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    MilliSec r = tv.tv_sec;
-    r *= 1000;
-    r += tv.tv_usec / 1000;
-    return r;
 #else
     MilliSec r = time(NULL);
     r *= 1000;
@@ -62,16 +92,16 @@ MilliSec get_cur_time_millisec()
 #endif
 }
 
-struct tm *localtime_safe(const time_t *clock, struct tm *result)
+YBUTIL_DECL struct tm *localtime_safe(const time_t *clock, struct tm *result)
 {
     if (!clock || !result)
         return NULL;
-#if defined(_MSC_VER)
+#if defined(__unix__)
+    if (!localtime_r(clock, result))
+        return NULL;
+#elif defined(_MSC_VER)
     errno_t err = localtime_s(result, clock);
     if (err)
-        return NULL;
-#elif defined(__unix__)
-    if (!localtime_r(clock, result))
         return NULL;
 #else
     static Mutex m;
@@ -83,14 +113,6 @@ struct tm *localtime_safe(const time_t *clock, struct tm *result)
 #endif
     return result;
 }
-
-InvalidLogLevel::InvalidLogLevel()
-    : std::logic_error("Invalid log level")
-{}
-
-InvalidLoggerName::InvalidLoggerName()
-    : std::logic_error("Invalid logger name")
-{}
 
 int LogRecord::check_level(int level)
 {
@@ -110,10 +132,10 @@ LogRecord::LogRecord(int level, const std::string &component, const std::string 
 
 const char *LogRecord::get_level_name() const
 {
-    static const char *ll_name[] = {
+    static const char *log_level_name[] = {
         "CRIT", "ERRO", "WARN", "INFO", "DEBG"
     };
-    return ll_name[check_level(level_) - 1];
+    return log_level_name[check_level(level_) - 1];
 }
 
 ILogAppender::~ILogAppender()
@@ -219,6 +241,10 @@ void LogAppender::output(std::ostream &s, const LogRecord &rec, const char *time
         s << '\n';
 }
 
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif // _MSC_VER
+
 void LogAppender::do_flush(time_t now)
 {
     std::ostringstream s;
@@ -302,4 +328,4 @@ int main()
 }
 #endif
 
-// vim:ts=4:sts=4:sw=4:et
+// vim:ts=4:sts=4:sw=4:et:

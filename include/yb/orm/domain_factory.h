@@ -1,29 +1,29 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__DOMAIN_FACTORY__INCLUDED
 #define YB__ORM__DOMAIN_FACTORY__INCLUDED
 
 #include <map>
 #include <stdexcept>
 #include "util/utility.h"
-#include "util/singleton.h"
+#include "orm_config.h"
 #include "domain_object.h"
 
 namespace Yb {
 
-class NoCreator: public std::logic_error
+class YBORM_DECL NoCreator: public ORMError
 {
 public:
-    NoCreator(const String &entity_name) :
-        std::logic_error(NARROW(_T("Domain object creator for entity '") +
-                         entity_name + _T("' not found")))
-    {}
+    NoCreator(const String &entity_name);
 };
 
-class ICreator
+class YBORM_DECL ICreator
 {
 public:
     virtual DomainObjectPtr create(Session &session, LongInt id) const = 0;
-    virtual ~ICreator() {}
+    virtual ~ICreator();
 };
+
+typedef SharedPtr<ICreator>::Type CreatorPtr;
 
 template <typename T>
 class DomainCreator: public ICreator
@@ -33,43 +33,25 @@ public:
     {
         return DomainObjectPtr(new T(session, id));
     }
-    virtual ~DomainCreator() {}
 };
 
-typedef SharedPtr<ICreator>::Type CreatorPtr;
-
-class DomainFactory
+class YBORM_DECL DomainFactory
 {
 public:
-    typedef std::map<String, CreatorPtr> Map; 
-
-    void register_creator(const String &name, CreatorPtr creator)
-    {
-        if (!add_pending_reg(name, creator))
-            do_register_creator(name, creator);
-    }
-
+    void register_creator(const String &name, CreatorPtr creator);
     DomainObjectPtr create_object(Session &session, 
-            const String &entity_name, LongInt id)
-    {
-        process_pending();
-        Map::const_iterator it = creator_map_.find(entity_name);
-        if (it == creator_map_.end())
-            throw NoCreator(entity_name);
-        return it->second->create(session, id);
-    }
+            const String &entity_name, LongInt id);
 private:
     static bool add_pending_reg(const String &name, CreatorPtr creator);
     void process_pending();
-    void do_register_creator(const String &name, CreatorPtr creator)
-    {
-        creator_map_.insert(Map::value_type(name, creator));
-    }
+    void do_register_creator(const String &name, CreatorPtr creator);
+    typedef std::map<String, CreatorPtr> Map; 
     Map creator_map_;
-    static char init_[16];
+    static int init_flag_;
+    static void *pending_;
 };
 
-typedef SingletonHolder<DomainFactory> theDomainFactory;
+YBORM_DECL DomainFactory &theDomainFactory();
 
 } // namespace Yb
 

@@ -770,10 +770,10 @@ public:
         MList slaves = d.get_slaves();
         CPPUNIT_ASSERT_EQUAL((size_t)2, slaves.size());
         MList::iterator it = slaves.begin();
-        int a = it->get(_T("ID")).as_longint();
+        int a = static_cast<int>(it->get(_T("ID")).as_longint());
         CPPUNIT_ASSERT(-20 == a || -30 == a);
         ++it;
-        a += it->get(_T("ID")).as_longint();
+        a += static_cast<int>(it->get(_T("ID")).as_longint());
         CPPUNIT_ASSERT_EQUAL(-50, a);
         ++it;
         CPPUNIT_ASSERT(slaves.end() == it);

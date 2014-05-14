@@ -1,3 +1,6 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
+
 #include <sstream>
 #include <fstream>
 #include "util/string_utils.h"
@@ -19,6 +22,10 @@ namespace { // anonymous namespace
 const char
     *AUTOGEN_BEGIN = "// AUTOGEN_BEGIN",
     *AUTOGEN_END = "// } AUTOGEN_END\n";
+
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif // _MSC_VER
 
 string MK_AUTOGEN_BEGIN(int n) {
     char buf[100];
@@ -118,7 +125,7 @@ const string fk_rule(const Column &c)
 
 } // end of anonymous namespace
 
-void expand_tabs_to_stream(const string &in, ostream &out)
+YBORM_DECL void expand_tabs_to_stream(const string &in, ostream &out)
 {
     string::const_iterator it = in.begin(), end = in.end();
     for (; it != end; ++it) {
@@ -129,7 +136,7 @@ void expand_tabs_to_stream(const string &in, ostream &out)
     }
 }
 
-bool create_backup(const char *fname)
+YBORM_DECL bool create_backup(const char *fname)
 {
     FILE *t = fopen(fname, "r");
     if (t) {
@@ -147,7 +154,7 @@ bool create_backup(const char *fname)
     return false;
 }
 
-void split_by_autogen(const string &fname,
+YBORM_DECL void split_by_autogen(const string &fname,
         vector<string> &parts, vector<int> &stypes)
 {
     parts.clear();
@@ -289,7 +296,7 @@ void SqlTableGenerator::gen_create_indexes(ostream &out)
 {
     Columns::const_iterator it = table_.begin(), end = table_.end();
     for (; it != end; ++it) {
-        if (!it->index_name().empty())
+        if (!str_empty(it->index_name()))
             out << "CREATE INDEX " << NARROW(it->index_name())
                 << " ON " << NARROW(table_.name()) << "("
                 << NARROW(it->name()) << ");\n";
@@ -372,7 +379,7 @@ bool SqlSchemaGenerator::generate_next_statement(String &out_str)
             col_end_ = tbl_idx_it_->second->end();
         }
         if (col_it_ != col_end_) {
-            if (!col_it_->index_name().empty()) {
+            if (!str_empty(col_it_->index_name())) {
                 out_str = _T("CREATE INDEX ") + col_it_->index_name() + 
                     _T(" ON ") + tbl_idx_it_->second->name() + _T("(") +
                     col_it_->name() + _T(")");
@@ -861,7 +868,7 @@ void CppCodeGenerator::write_cpp_file(ostream &out)
     if (auto_xmlize) {
         out << "struct "<< class_name_ << "Registrator\n{\n"
             << "\tstatic void register_domain() {\n"
-            << "\t\tYb::theDomainFactory::instance().register_creator(_T(\"" << table_name_ << "\"),\n"
+            << "\t\tYb::theDomainFactory().register_creator(_T(\"" << table_name_ << "\"),\n"
             << "\t\t\tYb::CreatorPtr(new Yb::DomainCreator<" << class_name_ << ">()));\n"
             << "\t}\n"
             << "\t" << class_name_ << "Registrator() { register_domain(); }\n"
@@ -901,7 +908,7 @@ void CppCodeGenerator::update_cpp_file()
     expand_tabs_to_stream(out.str(), cpp_file);
 }
 
-void generate_domain(const Schema &schema,
+YBORM_DECL void generate_domain(const Schema &schema,
         const string &path, const string &inc_prefix)
 {
     Schema::TblMap::const_iterator it = schema.tbl_begin(),
@@ -914,7 +921,7 @@ void generate_domain(const Schema &schema,
         }
 }
 
-void generate_ddl(const Schema &schema,
+YBORM_DECL void generate_ddl(const Schema &schema,
         const string &path, const string &dialect_name)
 {
     SqlSchemaGenerator sql_gen(schema, sql_dialect(WIDEN(dialect_name)));

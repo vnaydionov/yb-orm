@@ -60,7 +60,7 @@ int main()
         cout << "Order count: " << query<Order>(session)
             .filter_by(Order::c.client_id == client_2.id).count() << endl;
 
-        typedef tuple<Order, Client> Pair;
+        typedef boost::tuple<Order, Client> Pair;
         DomainResultSet<Pair> rs = query<Pair>(session)
             .filter_by(Order::c.total_sum > Decimal(100)
                        && Client::c.budget == Value())

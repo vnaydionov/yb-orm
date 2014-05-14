@@ -1,3 +1,6 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
+
 #include "odbc_driver.h"
 #include "util/string_utils.h"
 
@@ -156,7 +159,7 @@ OdbcConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
     conn_.reset(new tiodbc::connection());
     if (!conn_->connect(source.db(), source.user(), source.passwd(),
                 source.get_as<int>(String(_T("timeout")), 10),
-                source.get_as<int>(String(_T("autocommit")), 0)))
+                bool(source.get_as<int>(String(_T("autocommit")), 0))))
         throw DBError(conn_->last_error_ex());
 }
 

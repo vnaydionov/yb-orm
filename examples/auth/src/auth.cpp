@@ -1,4 +1,5 @@
-#if defined(__WIN32__) || defined(_WIN32)
+#include <util/util_config.h>
+#if defined(YBUTIL_WINDOWS)
 #include <rpc.h>
 #else
 #include <unistd.h>
@@ -83,6 +84,10 @@ check(const Yb::StringDict &params)
             params) == -1? BAD_RESP: OK_RESP;
 }
 
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif // _MSC_VER
+
 Yb::String 
 md5_hash(const Yb::String &str0)
 {
@@ -92,7 +97,7 @@ md5_hash(const Yb::String &str0)
     MD5Update(&mdContext, (unsigned char *)str.c_str(), str.size());
     MD5Final(&mdContext);
     std::string rez;
-    char omg[3];
+    char omg[20];
     for (int i = 0; i < 16; ++i) {
         sprintf(omg, "%02x", mdContext.digest[i]);
         rez.append(omg, 2);
@@ -104,7 +109,7 @@ std::string
 registration(const Yb::StringDict &params)
 {
     auto_ptr<Yb::Session> session = theApp::instance().new_session();
-    int total_count = Yb::query<User>(*session).count();
+    Yb::LongInt total_count = Yb::query<User>(*session).count();
     if (total_count) {
         // when user table is empty it is allowed to create the first user
         // w/o password check, otherwise we should check permissions

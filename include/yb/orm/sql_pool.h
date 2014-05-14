@@ -1,10 +1,11 @@
-// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__SQL_POOL__INCLUDED
 #define YB__ORM__SQL_POOL__INCLUDED
 
 #include <map>
 #include <deque>
 #include "util/thread.h"
+#include "orm_config.h"
 #include "sql_driver.h"
 
 namespace Yb {
@@ -16,7 +17,13 @@ namespace Yb {
 
 class SqlPool;
 
-class PoolMonThread: public Thread
+class YBORM_DECL PoolError: public DBError
+{
+public:
+    PoolError(const String &err);
+};
+
+class YBORM_DECL PoolMonThread: public Thread
 {
     SqlPool *pool_;
 public:
@@ -24,7 +31,7 @@ public:
     void on_run();
 };
 
-class SqlPool
+class YBORM_DECL SqlPool
 {
     friend class PoolMonThread;
 public:
@@ -61,7 +68,7 @@ private:
     const String get_stats(const String &source_id);
 };
 
-class SqlPoolDescr
+class YBORM_DECL SqlPoolDescr
 {
     SqlPool &pool_;
     String source_id_;
@@ -77,31 +84,16 @@ public:
     int get_timeout() const { return timeout_; }
 };
 
-class SqlConnectionVar: NonCopyable
+class YBORM_DECL SqlConnectionVar: NonCopyable
 {
     SqlPool &pool_;
     SqlConnection *handle_;
 public:
-    explicit SqlConnectionVar(const SqlPoolDescr &d)
-        : pool_(d.get_pool())
-        , handle_(pool_.get(d.get_source_id(), d.get_timeout()))
-    {
-        if (!handle_)
-            throw GenericDBError(_T("Can't get connection"));
-    }
+    explicit SqlConnectionVar(const SqlPoolDescr &d);
     SqlConnectionVar(SqlPool &pool, const String &source_id,
-                 int timeout = YB_POOL_WAIT_TIME)
-        : pool_(pool)
-        , handle_(pool_.get(source_id, timeout))
-    {
-        if (!handle_)
-            throw GenericDBError(_T("Can't get connection"));
-    }
-    ~SqlConnectionVar()
-    {
-        pool_.put(handle_);
-    }
-    SqlConnection *operator-> () const { return handle_; }
+                 int timeout = YB_POOL_WAIT_TIME);
+    ~SqlConnectionVar();
+    SqlConnection *operator-> () const;
 };
 
 } // namespace Yb

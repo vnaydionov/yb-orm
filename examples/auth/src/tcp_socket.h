@@ -1,7 +1,8 @@
 #ifndef _AUTH__TCP_SOCKET_H_
 #define _AUTH__TCP_SOCKET_H_
 
-#if defined(__WIN32__) || defined(_WIN32)
+#include <util/util_config.h>
+#ifdef YBUTIL_WINDOWS
 #include <windows.h>
 #include <winsock.h>
 typedef char SockOpt;

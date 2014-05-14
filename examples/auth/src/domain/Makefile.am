@@ -1,13 +1,13 @@
 
 BUILT_SOURCES=LoginSession.cpp auth_schema.sql
 
-LoginSession.cpp: $(top_srcdir)/src/auth_schema.xml
-	@YBORM_GEN@ --domain $^ ./
+SCHEMA=$(top_srcdir)/src/auth_schema.xml
 
-auth_schema.sql: $(top_srcdir)/src/auth_schema.xml
-	@YBORM_GEN@ --ddl $^ ${YBORM_DBTYPE} $@
+LoginSession.cpp: $(SCHEMA)
+	@YBORM_GEN@ --domain $(SCHEMA) ./
 
-export YBORM_DBTYPE=@YBORM_DBTYPE@
+auth_schema.sql: $(SCHEMA)
+	@YBORM_GEN@ --ddl $(SCHEMA) "@YBORM_DBTYPE@" $@
 
 clean-local:
 	-rm -f *.cpp *.h *.sql

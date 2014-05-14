@@ -22,5 +22,6 @@ yborm_gen_LDFLAGS = \
 	$(SOCI_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
-	$(QT_LIBS)
+	$(QT_LIBS) \
+	$(EXECINFO_LIBS)
 
