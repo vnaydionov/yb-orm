@@ -2,47 +2,52 @@
 #ifndef YB__UTIL__EXCEPTION__INCLUDED
 #define YB__UTIL__EXCEPTION__INCLUDED
 
+#include "util_config.h"
 #include "string_type.h"
 #include <stdexcept>
 
 namespace Yb {
 
-class BaseError: public std::logic_error {
+class YBUTIL_DECL BaseError: public std::logic_error
+{
     static const String format_base(const String &msg);
 public:
     BaseError(const String &msg);
 };
 
-class AssertError: public BaseError {
+class YBUTIL_DECL AssertError: public BaseError
+{
     static const String format_assert(const char *file,
         int line, const char *expr);
 public:
     AssertError(const char *file, int line, const char *expr);
 };
 
-#define YB_ASSERT(X) do { if (!(X)) throw ::Yb::AssertError(__FILE__, __LINE__, \
-    #X); } while (0)
+#define YB_ASSERT(X) do { if (!(X)) throw ::Yb::AssertError(\
+        __FILE__, __LINE__, #X); } while (0)
 
-typedef BaseError RunTimeError;
-
-class KeyError : public RunTimeError
+class YBUTIL_DECL RunTimeError: public BaseError
 {
 public:
-    KeyError(const String &msg): RunTimeError(msg) {}
+    RunTimeError(const String &msg);
 };
 
-class ValueError : public RunTimeError
+class YBUTIL_DECL KeyError: public RunTimeError
 {
 public:
-    ValueError(const String &msg): RunTimeError(msg) {}
+    KeyError(const String &msg);
 };
 
-class ValueBadCast : public ValueError
+class YBUTIL_DECL ValueError: public RunTimeError
 {
 public:
-    ValueBadCast(const String &value, const String &type)
-        :ValueError(_T("Can't cast value '") + value + _T("' to type ") + type)
-    {}
+    ValueError(const String &msg);
+};
+
+class YBUTIL_DECL ValueBadCast: public ValueError
+{
+public:
+    ValueBadCast(const String &value, const String &type);
 };
 
 } // namespace Yb

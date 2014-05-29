@@ -1,6 +1,6 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
-#ifndef YB__UTIL__STRING__INCLUDED
-#define YB__UTIL__STRING__INCLUDED
+#ifndef YB__UTIL__STRING_TYPE__INCLUDED
+#define YB__UTIL__STRING_TYPE__INCLUDED
 
 #include <cstring>
 #include <string>
@@ -9,6 +9,7 @@
 #elif defined(YB_USE_QT)
 #include <QString>
 #endif
+#include "util_config.h"
 
 namespace Yb {
 
@@ -191,15 +192,17 @@ inline const String str_substr(const String &s, int start, int count = -1)
 inline String &str_append(String &s, const String &t) { return (s += t); }
 inline String &str_append(String &s, Char c) { return (s += c); }
 
-const std::string str2std(const String &s, const std::string &enc_name = "");
-const String std2str(const std::string &s, const std::string &enc_name = "");
-const std::string str_narrow(const std::wstring &wide,
+YBUTIL_DECL const std::string str2std(const String &s,
         const std::string &enc_name = "");
-const std::wstring str_widen(const std::string &narrow,
+YBUTIL_DECL const String std2str(const std::string &s,
         const std::string &enc_name = "");
-const std::string get_locale_enc();
-const std::string fast_narrow(const std::wstring &wide);
-const std::wstring fast_widen(const std::string &narrow);
+YBUTIL_DECL const std::string str_narrow(const std::wstring &wide,
+        const std::string &enc_name = "");
+YBUTIL_DECL const std::wstring str_widen(const std::string &narrow,
+        const std::string &enc_name = "");
+YBUTIL_DECL const std::string get_locale_enc();
+YBUTIL_DECL const std::string fast_narrow(const std::wstring &wide);
+YBUTIL_DECL const std::wstring fast_widen(const std::string &narrow);
 
 template <class T>
 const std::string to_stdstring(const T &x);
@@ -219,4 +222,4 @@ inline void str_swap(String &a, String &b) {
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__UTIL__STRING__INCLUDED
+#endif // YB__UTIL__STRING_TYPE__INCLUDED

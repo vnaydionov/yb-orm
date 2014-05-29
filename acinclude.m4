@@ -97,16 +97,38 @@ dnl Defines
 dnl   ODBC_LIBS to the set of flags required to link against ODBC
 AC_DEFUN([YB_ODBC],
 [
+    AC_SUBST(ODBC_CFLAGS)
     AC_SUBST(ODBC_LIBS)
     AC_MSG_CHECKING([whether we can use ODBC library])
 
-    if test "$build_os" = "mingw32"; then
-        ODBC_LIBS="-lodbc32"
+    AC_ARG_WITH([odbc-includes],
+        AC_HELP_STRING([--with-odbc-includes=DIR],
+            [Directory where ODBC header files reside]),
+        [ac_odbc_includes="$withval"])
+    AC_ARG_WITH([odbc-lib],
+        AC_HELP_STRING([--with-odbc-lib=LIB],
+            [Library implementing ODBC interface]),
+        [ac_odbc_lib="$withval"])
+    
+    if test "x$ac_odbc_includes" != "x"; then
+        ODBC_CFLAGS="-I $ac_odbc_includes"
     else
-        ODBC_LIBS="-lodbc"
+        ODBC_CFLAGS=""
     fi
+    if test "x$ac_odbc_lib" != "x"; then
+        ODBC_LIBS="$ac_odbc_lib"
+    else
+        if test "$build_os" = "mingw32"; then
+            ODBC_LIBS="-lodbc32"
+        else
+            ODBC_LIBS="-lodbc"
+        fi
+    fi
+
     ac_save_libs="$LIBS"
+    ac_save_cflags="$CFLAGS"
     LIBS="$ac_save_libs $ODBC_LIBS"
+    CFLAGS="$ac_save_cflags $ODBC_CFLAGS"
 
     AC_LANG_PUSH(C)
     AC_TRY_LINK(
@@ -129,9 +151,66 @@ AC_DEFUN([YB_ODBC],
         ],
         [ 
         AC_MSG_RESULT([no])
+        ODBC_CFLAGS=""
         ODBC_LIBS=""
         have_odbc="no"
         ifelse([$2], , :, [$2])
+        ])
+
+    AC_LANG_POP(C)
+    LIBS="$ac_save_libs"
+    CFLAGS="$ac_save_cflags"
+])
+
+dnl YB_EXECINFO([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
+dnl Test for the execinfo interface: whether it is in libc or
+dnl in a separate library.
+dnl Defines
+dnl   EXECINFO_LIBS to the set of flags required to link against execinfo
+AC_DEFUN([YB_EXECINFO],
+[
+    AC_SUBST(EXECINFO_LIBS)
+    AC_MSG_CHECKING([whether we can access execinfo])
+
+    ac_save_libs="$LIBS"
+    AC_LANG_PUSH(C)
+
+    EXECINFO_LIBS=""
+    LIBS="$ac_save_libs $EXECINFO_LIBS"
+    AC_TRY_LINK(
+        [
+#include <execinfo.h>
+        ],
+        [
+    void *addrlist[10];
+    int addrlen = backtrace(addrlist, sizeof(addrlist) / sizeof(void *));
+    char **symbollist = backtrace_symbols(addrlist, addrlen);
+        ], 
+        [
+        AC_MSG_RESULT([yes])
+        ifelse([$1], , :, [$1])
+        ],
+        [ 
+        EXECINFO_LIBS="-lexecinfo"
+        LIBS="$ac_save_libs $EXECINFO_LIBS"
+        AC_TRY_LINK(
+            [
+    #include <execinfo.h>
+            ],
+            [
+        void *addrlist[10];
+        int addrlen = backtrace(addrlist, sizeof(addrlist) / sizeof(void *));
+        char **symbollist = backtrace_symbols(addrlist, addrlen);
+            ], 
+            [
+            AC_MSG_RESULT([yes, -lexecinfo])
+            ifelse([$1], , :, [$1])
+            ],
+            [
+            AC_MSG_RESULT([no])
+            EXECINFO_LIBS=""
+            ifelse([$2], , :, [$2])
+            ])
         ])
 
     AC_LANG_POP(C)
@@ -441,13 +520,13 @@ AC_DEFUN([YB_CHECK_YBORM],
     YBORM_LIBS="-lybutil -lyborm"
     CXXFLAGS="$ac_save_cxxflags $YBORM_CXXFLAGS $WX_CFLAGS $QT_CFLAGS"
     LDFLAGS="$ac_save_ldflags $YBORM_LDFLAGS $QT_LDFLAGS"
-    LIBS="$ac_save_libs $YBORM_LIBS $WX_LIBS $QT_LIBS"
+    LIBS="$ac_save_libs $YBORM_LIBS $EXECINFO_LIBS $WX_LIBS $QT_LIBS"
 
     AC_LANG_PUSH(C++)
     AC_TRY_LINK([
 #include <util/decimal.h>
 ],
-        [decimal x(10); x.str(); ],
+        [Yb::Decimal x(10); x.str(); ],
         [ac_yborm_present=yes],[ac_yborm_present=no])
     AC_LANG_POP(C++)
 

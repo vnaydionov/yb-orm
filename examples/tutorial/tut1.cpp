@@ -10,9 +10,9 @@ int main()
         auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(
                     "sqlite+sqlite://c:/yborm/examples/test1_db"));
         Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-        engine.drop_schema(Yb::theSchema::instance(), true);
-        engine.create_schema(Yb::theSchema::instance(), false);
-        Yb::Session session(Yb::theSchema::instance(), &engine);
+        engine.drop_schema(Yb::theSchema(), true);
+        engine.create_schema(Yb::theSchema(), false);
+        Yb::Session session(Yb::theSchema(), &engine);
 
         Domain::Client client;
         string name, email, budget;

@@ -1,3 +1,4 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__ODBC_DRIVER__INCLUDED
 #define YB__ORM__ODBC_DRIVER__INCLUDED
 

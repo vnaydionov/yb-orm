@@ -1,4 +1,4 @@
-// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__ENGINE__INCLUDED
 #define YB__ORM__ENGINE__INCLUDED
 
@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include "util/nlogger.h"
 #include "util/value_type.h"
+#include "orm_config.h"
 #include "expression.h"
 #include "sql_driver.h"
 #include "sql_pool.h"
@@ -19,7 +20,7 @@ class TestEngine;
 
 namespace Yb {
 
-class EngineBase
+class YBORM_DECL EngineBase
 {
 public:
     enum Mode { READ_ONLY = 0, READ_WRITE = 1, MANUAL = 1 }; 
@@ -68,14 +69,14 @@ public:
             const Table &table, bool numbered_params = false);
 };
 
-class EngineSource
+class YBORM_DECL EngineSource
 {
 public:
     virtual ~EngineSource();
     virtual std::auto_ptr<EngineBase> clone() = 0;
 };
 
-class EngineCloned: public EngineBase
+class YBORM_DECL EngineCloned: public EngineBase
 {
     int mode_;
     SqlConnection *conn_;
@@ -99,10 +100,10 @@ public:
     ILogger *logger();
 };
 
-const String env_cfg(const String &entry,
+YBORM_DECL const String env_cfg(const String &entry,
         const String &def_val = _T(""));
 
-class Engine
+class YBORM_DECL Engine
     : public EngineBase, public EngineSource, private NonCopyable
 {
 public:

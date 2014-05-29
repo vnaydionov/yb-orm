@@ -1,4 +1,6 @@
-// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
+
 #include "util/string_utils.h"
 #include "orm/data_object.h"
 #include <algorithm>
@@ -8,23 +10,50 @@
 #include <boost/lambda/bind.hpp>
 #endif
 
-using namespace std;
-
 namespace Yb {
 
-StringTooLong::StringTooLong(
-        const String &table_name, const String &field_name,
-        int max_len, const String &value)
-    : ORMError(_T("Can't set value of ") + table_name + _T(".") + field_name +
-            _T(" with '") + value + _T("', having max length ") +
-            to_string(max_len))
+ORMError::ORMError(const String &msg)
+    : RunTimeError(msg)
 {}
 
-BadTypeCast::BadTypeCast(
-        const String &table_name, const String &field_name,
-        const String &str_value, const String &type)
-    : ORMError(_T("Can't cast field ") + table_name + _T(".") + field_name +
-            _T(" = \"") + str_value + _T("\" to type ") + type)
+ObjectNotFoundByKey::ObjectNotFoundByKey(const String &msg)
+    : ORMError(msg)
+{}
+
+NullPK::NullPK(const String &table_name)
+    : ORMError(_T("Null PK given for table: ") + table_name)
+{}
+
+CascadeDeleteError::CascadeDeleteError(const Relation &rel)
+    : ORMError(_T("Cascade delete error: ") +
+            rel.side(0) + _T("-") + rel.side(1))
+{}
+
+CycleDetected::CycleDetected()
+    : ORMError(_T("Cycle detected in the graph of objects"))
+{}
+
+BadTypeCast::BadTypeCast(const String &table_name,
+                         const String &column_name,
+                         const String &str_value, const String &type)
+    : ORMError(_T("Can't cast column ") + table_name +
+               _T(".") + column_name +
+               _T(" = \"") + str_value + _T("\" to type ") + type)
+{}
+
+StringTooLong::StringTooLong(
+        const String &table_name, const String &column_name,
+        int max_len, const String &value)
+    : ORMError(_T("Can't set value of ") + table_name + 
+               _T(".") + column_name +
+               _T(" with '") + value + _T("', having max length ") +
+               to_string(max_len))
+{}
+
+DataObjectAlreadyInSession::DataObjectAlreadyInSession(
+        const Key &key)
+    : ORMError(_T("DataObject is already registered "
+                  "in the identity map: ") + key2str(key))
 {}
 
 bool DataObjectResultSet::fetch(ObjectList &row)
@@ -68,7 +97,7 @@ DataObjectResultSet::DataObjectResultSet(const DataObjectResultSet &obj)
     YB_ASSERT(!obj.it_.get());
 }
 
-const String key2str(const Key &key)
+YBORM_DECL const String key2str(const Key &key)
 {
     std::ostringstream out;
     out << "Key('" << NARROW(key.first) << "', {";
@@ -80,10 +109,6 @@ const String key2str(const Key &key)
     out << "}";
     return WIDEN(out.str());
 }
-
-DataObjectAlreadyInSession::DataObjectAlreadyInSession(const Key &key)
-    : ORMError(_T("DataObject is already registered in the identity map: ") + key2str(key))
-{}
 
 Session::Session(const Schema &schema, EngineSource *engine)
     : schema_(schema)
@@ -220,18 +245,18 @@ DataObject::Ptr Session::get_lazy(const Key &key)
     return new_obj;
 }
 
-typedef map<String, Rows> RowsByTable;
-typedef map<String, RowsData> RowsDataByTable;
+typedef std::map<String, Rows> RowsByTable;
+typedef std::map<String, RowsData> RowsDataByTable;
 
 template <class Row__, class Rows__>
-void add_row_to_rows_by_table(map<String, Rows__> &rows_by_table,
+void add_row_to_rows_by_table(std::map<String, Rows__> &rows_by_table,
                               const String &tbl_name, const Row__ &row)
 {
-    typename map<String, Rows__>::iterator k = rows_by_table.find(tbl_name);
+    typename std::map<String, Rows__>::iterator k = rows_by_table.find(tbl_name);
     if (k == rows_by_table.end()) {
         Rows__ rows(1);
         rows[0] = row;
-        rows_by_table.insert(make_pair(tbl_name, rows));
+        rows_by_table.insert(std::make_pair(tbl_name, rows));
     }
     else {
         Rows__ &rows = k->second;
@@ -273,7 +298,7 @@ void Session::flush_tbl_new_unkeyed(const Table &tbl, Objects &unkeyed_objs)
         (*i)->refresh_master_fkeys();
         rows.push_back(&(*i)->raw_values());
     }
-    vector<LongInt> ids = engine_->insert(tbl, rows, use_autoinc);
+    std::vector<LongInt> ids = engine_->insert(tbl, rows, use_autoinc);
     if (use_autoinc) {
         String pk = tbl.get_surrogate_pk();
         i = unkeyed_objs.begin();
@@ -300,8 +325,8 @@ void Session::flush_new()
         if ((*i)->status() == DataObject::New)
             (*i)->calc_depth(0);
     int max_depth = -1;
-    typedef map<String, Objects> ObjectsByTable;
-    typedef map<int, ObjectsByTable> GroupsByDepth;
+    typedef std::map<String, Objects> ObjectsByTable;
+    typedef std::map<int, ObjectsByTable> GroupsByDepth;
     GroupsByDepth groups_by_depth;
     for (i = objects_.begin(); i != iend; ++i)
         if ((*i)->status() == DataObject::New)
@@ -310,18 +335,20 @@ void Session::flush_new()
         if (d > max_depth)
             max_depth = d;
         GroupsByDepth::iterator k = groups_by_depth.find(d);
-        if (k == groups_by_depth.end()) {
-            groups_by_depth.insert(pair<int, ObjectsByTable> 
-                                   (d, ObjectsByTable()));
-            k = groups_by_depth.find(d);
+        if (groups_by_depth.end() == k) {
+            std::pair<GroupsByDepth::iterator, bool> res =
+                groups_by_depth.insert(std::make_pair(
+                            d, ObjectsByTable()));
+            k = res.first;
         }
         ObjectsByTable &objs_by_table = k->second;
         const String &tbl_name = (*i)->table().name();
         ObjectsByTable::iterator q = objs_by_table.find(tbl_name);
-        if (q == objs_by_table.end()) {
-            objs_by_table.insert(pair<String, Objects>
-                                 (tbl_name, Objects()));
-            q = objs_by_table.find(tbl_name);
+        if (objs_by_table.end() == q) {
+            std::pair<ObjectsByTable::iterator, bool> res =
+                objs_by_table.insert(std::make_pair(
+                            tbl_name, Objects()));
+            q = res.first;
         }
         Objects &objs = q->second;
         objs.insert(*i);
@@ -370,9 +397,9 @@ void Session::flush_update(IdentityMap &idmap_copy)
 
 void Session::flush_delete(IdentityMap &idmap_copy)
 {
-    typedef vector<Key> Keys;
-    typedef map<String, Keys> KeysByTable;
-    typedef map<int, KeysByTable> GroupsByDepth;
+    typedef std::vector<Key> Keys;
+    typedef std::map<String, Keys> KeysByTable;
+    typedef std::map<int, KeysByTable> GroupsByDepth;
     int max_depth = -1;
     GroupsByDepth groups_by_depth;
     IdentityMap::iterator i = idmap_copy.begin(), iend = idmap_copy.end();
@@ -383,17 +410,20 @@ void Session::flush_delete(IdentityMap &idmap_copy)
         if (d > max_depth)
             max_depth = d;
         GroupsByDepth::iterator k = groups_by_depth.find(d);
-        if (k == groups_by_depth.end()) {
-            groups_by_depth.insert(pair<int, KeysByTable> 
-                                   (d, KeysByTable()));
-            k = groups_by_depth.find(d);
+        if (groups_by_depth.end() == k) {
+            std::pair<GroupsByDepth::iterator, bool> res =
+                groups_by_depth.insert(std::make_pair(
+                            d, KeysByTable()));
+            k = res.first;
         }
         KeysByTable &keys_by_table = k->second;
         const String &tbl_name = i->second->table().name();
         KeysByTable::iterator q = keys_by_table.find(tbl_name);
-        if (q == keys_by_table.end()) {
-            keys_by_table.insert(pair<String, Keys> (tbl_name, Keys()));
-            q = keys_by_table.find(tbl_name);
+        if (keys_by_table.end() == q) {
+            std::pair<KeysByTable::iterator, bool> res =
+                keys_by_table.insert(std::make_pair(
+                            tbl_name, Keys()));
+            q = res.first;
         }
         Keys &keys = q->second;
         keys.push_back(i->second->key());
@@ -575,7 +605,7 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     // Create one if it doesn't exist, master will own it
     if (!ro) {
         RelationObject::Ptr new_ro = RelationObject::create_new(r, master);
-        master->master_relations().insert(make_pair(&r, new_ro));
+        master->master_relations().insert(std::make_pair(&r, new_ro));
         ro = shptr_get(new_ro);
     }
     // Register slave in the relation
@@ -618,7 +648,7 @@ Key DataObject::fk_value_for(const Relation &r)
         j = master_tbl.pk_fields().begin(),
         jend = master_tbl.pk_fields().end();
     for (; i != iend && j != jend; ++i, ++j)
-        fkey.second.push_back(make_pair(*j, get(*i)));
+        fkey.second.push_back(std::make_pair(*j, get(*i)));
     return fkey;
 }
 
@@ -660,7 +690,7 @@ RelationObject *DataObject::get_slaves(const Relation &r)
     // Create one if it doesn't exist, master will own it
     if (!ro) {
         RelationObject::Ptr new_ro = RelationObject::create_new(r, this);
-        master_relations_.insert(make_pair(&r, new_ro));
+        master_relations_.insert(std::make_pair(&r, new_ro));
         ro = shptr_get(new_ro);
     }
     return ro;
@@ -813,11 +843,11 @@ void DataObject::dump_tree(std::ostream &out, int level)
 
 void RelationObject::add_slave(DataObject::Ptr slave)
 {
-    pair<SlaveObjectsOrder::iterator, bool> r
-        = slave_order_.insert(make_pair(shptr_get(slave), slave_objects_.size()));
+    std::pair<SlaveObjectsOrder::iterator, bool> r =
+        slave_order_.insert(std::make_pair(shptr_get(slave), slave_objects_.size()));
     if (r.second) {
         slave_objects_.push_back(slave);
-        slave->slave_relations().insert(make_pair(&relation_info(), this));
+        slave->slave_relations().insert(std::make_pair(&relation_info(), this));
     }
 }
 
@@ -891,7 +921,7 @@ const Key RelationObject::gen_fkey() const
         j = master_tbl.pk_fields().begin(),
         jend = master_tbl.pk_fields().end();
     for (; i != iend && j != jend; ++i, ++j)
-        fkey.second.push_back(make_pair(*i, master_object_->get(*j)));
+        fkey.second.push_back(std::make_pair(*i, master_object_->get(*j)));
     return fkey;
 }
 

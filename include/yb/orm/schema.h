@@ -1,4 +1,4 @@
-// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__META_DATA__INCLUDED
 #define YB__ORM__META_DATA__INCLUDED
 
@@ -10,8 +10,8 @@
 #include <list>
 #include "util/utility.h"
 #include "util/exception.h"
-#include "util/singleton.h"
 #include "util/value_type.h"
+#include "orm_config.h"
 #include "expression.h"
 #include "sql_driver.h"
 
@@ -19,90 +19,91 @@ class TestMetaData;
 
 namespace Yb {
 
-class MetaDataError : public BaseError
+class YBORM_DECL MetaDataError: public RunTimeError
 {
 public:
     MetaDataError(const String &msg);
 };
 
-class BadAttributeName: public MetaDataError
+class YBORM_DECL BadAttributeName: public MetaDataError
 {
 public:
     BadAttributeName(const String &obj, const String &attr);
 };
 
-class BadColumnName : public MetaDataError {
+class YBORM_DECL BadColumnName: public MetaDataError
+{
 public:
     BadColumnName(const String &table, const String &column);
 };
 
-class ColumnNotFoundInMetaData : public MetaDataError
+class YBORM_DECL ColumnNotFoundInMetaData: public MetaDataError
 {
 public:
     ColumnNotFoundInMetaData(const String &table, const String &column);
 };
 
-class TableWithoutColumns : public MetaDataError
+class YBORM_DECL TableWithoutColumns: public MetaDataError
 {
 public:
     TableWithoutColumns(const String &table);
 };
 
-class BadTableName : public MetaDataError
+class YBORM_DECL BadTableName: public MetaDataError
 {
 public:
     BadTableName(const String &table);
 };
 
-class TableNotFoundInMetaData : public MetaDataError
+class YBORM_DECL TableNotFoundInMetaData: public MetaDataError
 {
 public:
     TableNotFoundInMetaData(const String &table);
 };
 
-class ClassNotFoundInMetaData : public MetaDataError
+class YBORM_DECL ClassNotFoundInMetaData: public MetaDataError
 {
 public:
     ClassNotFoundInMetaData(const String &class_name);
 };
 
-class FkNotFoundInMetaData : public MetaDataError
+class YBORM_DECL FkNotFoundInMetaData: public MetaDataError
 {
 public:
     FkNotFoundInMetaData(const String &master_tbl, const String &slave_tbl);
 };
 
-class RowNotLinkedToTable: public MetaDataError
+class YBORM_DECL RowNotLinkedToTable: public MetaDataError
 {
 public:
     RowNotLinkedToTable();
 };
 
-class ReadOnlyColumn : public MetaDataError
+class YBORM_DECL ReadOnlyColumn: public MetaDataError
 {
 public:
     ReadOnlyColumn(const String &table, const String &column);
 };
 
-class TableHasNoSurrogatePK : public MetaDataError {
+class YBORM_DECL TableHasNoSurrogatePK: public MetaDataError
+{
 public:
     TableHasNoSurrogatePK(const String &table);
 };
 
-class IntegrityCheckFailed: public MetaDataError
+class YBORM_DECL IntegrityCheckFailed: public MetaDataError
 {
 public:
-    IntegrityCheckFailed(const String &what)
-        : MetaDataError(what)
-    {}
+    IntegrityCheckFailed(const String &what);
+};
+
+class YBORM_DECL NullPointer: public ValueError
+{
+public:
+    NullPointer(const String &ctx);
 };
 
 class Table;
-
-class NullPointer: public std::runtime_error {
-public: NullPointer(const String &ctx)
-    : std::runtime_error(NARROW(ctx)) {}
-};
 
 template <class T, class U>
 T *check_not_null(T *p, U ctx)
@@ -112,7 +113,7 @@ T *check_not_null(T *p, U ctx)
     return p;
 }
 
-class Column
+class YBORM_DECL Column
 {
 public:
     enum { PK = 1, RO = 2, NULLABLE = 4 };
@@ -159,7 +160,7 @@ typedef std::map<String, int> IndexMap;
 class Schema;
 class Relation;
 
-class Table: NonCopyable
+class YBORM_DECL Table: NonCopyable
 {
     Table();
 public:
@@ -225,7 +226,7 @@ private:
 
 typedef std::vector<Table::Ptr> Tables;
 
-class Relation: NonCopyable
+class YBORM_DECL Relation: NonCopyable
 {
     Relation();
 public:
@@ -281,7 +282,7 @@ private:
 
 typedef std::vector<Relation::Ptr> Relations;
 
-class Schema
+class YBORM_DECL Schema
 {
     friend class ::TestMetaData;
     typedef std::multimap<String, String> StrMap;
@@ -342,11 +343,11 @@ private:
     RelVect relations_;
 };
 
-const String mk_xml_name(const String &name, const String &xml_name);
+YBORM_DECL const String mk_xml_name(const String &name, const String &xml_name);
 
-typedef SingletonHolder<Schema> theSchema;
+YBORM_DECL Schema &theSchema();
 
-Schema &init_schema();
+YBORM_DECL Schema &init_schema();
 
 } // namespace Yb
 

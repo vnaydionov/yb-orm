@@ -1,15 +1,15 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__UTIL__DECIMAL__INCLUDED
 #define YB__UTIL__DECIMAL__INCLUDED
 
+#include <iosfwd>
+#include "util_config.h"
 #include "string_type.h"
 #include "exception.h"
-#include <iosfwd>
 
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-typedef __int64 decimal_numerator;
-#else
-typedef long long decimal_numerator;
-#endif
+namespace Yb {
+
+typedef LongInt decimal_numerator;
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 #define MAX_DECIMAL_NUMERATOR 999999999999999999
@@ -19,83 +19,84 @@ typedef long long decimal_numerator;
 
 const int MAX_DECIMAL_LENGTH = 18;
 
-class decimal
+class YBUTIL_DECL DecimalException: public ValueError
 {
 public:
-    class exception: public Yb::RunTimeError
-    {
-    public:
-        exception(const Yb::String &msg): Yb::RunTimeError(msg) {}
-    };
+    DecimalException(const String &msg);
+};
 
-    class overflow: public exception
-    {
-    public:
-        overflow(): exception(_T("Decimal exception: overflow")) {}
-    };
-
-    class divizion_by_zero: public exception
-    {
-    public:
-        divizion_by_zero(): exception(_T("Decimal exception: divizion by zero")) {}
-    };
-
-    class invalid_format: public exception
-    {
-    public:
-        invalid_format(): exception(_T("Decimal exception: invalid format")) {}
-    };
-
+class YBUTIL_DECL DecimalOverflow: public DecimalException
+{
 public:
-    decimal(int x = 0, int p = 0);
-    explicit decimal(decimal_numerator x, int p = 0);
-    explicit decimal(const Yb::Char *s);
-    explicit decimal(const Yb::String &s);
-    explicit decimal(double x);
+    DecimalOverflow();
+};
 
-    decimal &operator += (const decimal &x);
-    decimal &operator -= (const decimal &x);
-    decimal &operator *= (const decimal &x);
-    decimal &operator /= (const decimal &x);
-    decimal &operator ++ ();
-    const decimal operator ++ (int);
-    decimal &operator -- ();
-    const decimal operator -- (int);
-    const decimal operator - () const;
+class YBUTIL_DECL DecimalDivByZero: public DecimalException
+{
+public:
+    DecimalDivByZero();
+};
+
+class YBUTIL_DECL DecimalInvalidFormat: public DecimalException
+{
+public:
+    DecimalInvalidFormat();
+};
+
+class YBUTIL_DECL Decimal
+{
+public:
+    Decimal(int x = 0, int p = 0);
+    explicit Decimal(decimal_numerator x, int p = 0);
+    explicit Decimal(const Char *s);
+    explicit Decimal(const String &s);
+    explicit Decimal(double x);
+
+    Decimal &operator += (const Decimal &x);
+    Decimal &operator -= (const Decimal &x);
+    Decimal &operator *= (const Decimal &x);
+    Decimal &operator /= (const Decimal &x);
+    Decimal &operator ++ ();
+    const Decimal operator ++ (int);
+    Decimal &operator -- ();
+    const Decimal operator -- (int);
+    const Decimal operator - () const;
     bool is_positive() const;
-    int cmp(const decimal &x) const;
+    int cmp(const Decimal &x) const;
 
-    decimal &round(int p = 0);
-    const decimal round(int p = 0) const;
+    Decimal &round(int p = 0);
+    const Decimal round(int p = 0) const;
     decimal_numerator ipart() const;
     decimal_numerator fpart(int p) const;
     inline int get_precision() const { return precision_; }
     inline decimal_numerator get_value() const { return value_; }
-    const Yb::String str() const;
+    const String str() const;
 
 private:
     decimal_numerator value_;
     int precision_;
 };
 
-const decimal operator + (const decimal &, const decimal &);
-const decimal operator - (const decimal &, const decimal &);
-const decimal operator * (const decimal &, const decimal &);
-const decimal operator / (const decimal &, const decimal &);
-std::ostream &operator << (std::ostream &o, const decimal &x);
-std::istream &operator >> (std::istream &i, decimal &x);
-std::wostream &operator << (std::wostream &o, const decimal &x);
-std::wistream &operator >> (std::wistream &i, decimal &x);
+YBUTIL_DECL const Decimal operator + (const Decimal &, const Decimal &);
+YBUTIL_DECL const Decimal operator - (const Decimal &, const Decimal &);
+YBUTIL_DECL const Decimal operator * (const Decimal &, const Decimal &);
+YBUTIL_DECL const Decimal operator / (const Decimal &, const Decimal &);
+YBUTIL_DECL std::ostream &operator << (std::ostream &o, const Decimal &x);
+YBUTIL_DECL std::istream &operator >> (std::istream &i, Decimal &x);
+YBUTIL_DECL std::wostream &operator << (std::wostream &o, const Decimal &x);
+YBUTIL_DECL std::wistream &operator >> (std::wistream &i, Decimal &x);
 
-inline bool operator == (const decimal &x, const decimal &y) { return !x.cmp(y); }
-inline bool operator != (const decimal &x, const decimal &y) { return x.cmp(y) != 0; }
-inline bool operator < (const decimal &x, const decimal &y) { return x.cmp(y) < 0; }
-inline bool operator > (const decimal &x, const decimal &y) { return x.cmp(y) > 0; }
-inline bool operator >= (const decimal &x, const decimal &y) { return x.cmp(y) >= 0; }
-inline bool operator <= (const decimal &x, const decimal &y) { return x.cmp(y) <= 0; }
+inline bool operator == (const Decimal &x, const Decimal &y) { return !x.cmp(y); }
+inline bool operator != (const Decimal &x, const Decimal &y) { return x.cmp(y) != 0; }
+inline bool operator < (const Decimal &x, const Decimal &y) { return x.cmp(y) < 0; }
+inline bool operator > (const Decimal &x, const Decimal &y) { return x.cmp(y) > 0; }
+inline bool operator >= (const Decimal &x, const Decimal &y) { return x.cmp(y) >= 0; }
+inline bool operator <= (const Decimal &x, const Decimal &y) { return x.cmp(y) <= 0; }
 
-inline const decimal decimal2(const Yb::String &s) { return decimal(s).round(2); }
-inline const decimal decimal4(const Yb::String &s) { return decimal(s).round(4); }
+inline const Decimal decimal2(const String &s) { return Decimal(s).round(2); }
+inline const Decimal decimal4(const String &s) { return Decimal(s).round(4); }
+
+} // end of namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
 #endif // YB__UTIL__DECIMAL__INCLUDED

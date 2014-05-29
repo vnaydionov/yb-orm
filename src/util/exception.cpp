@@ -1,3 +1,6 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBUTIL_SOURCE
+
 #include "util/exception.h"
 #include <sstream>
 #include "stack_trace.h"
@@ -28,6 +31,23 @@ const String AssertError::format_assert(const char *file, int line,
 
 AssertError::AssertError(const char *file, int line, const char *expr)
     : BaseError(format_assert(file, line, expr))
+{}
+
+RunTimeError::RunTimeError(const String &msg)
+    : BaseError(msg)
+{}
+
+KeyError::KeyError(const String &msg)
+    : RunTimeError(msg)
+{}
+
+ValueError::ValueError(const String &msg)
+    : RunTimeError(msg)
+{}
+
+ValueBadCast::ValueBadCast(const String &value, const String &type)
+    : ValueError(_T("Can't cast value '") + value +
+                 _T("' to type ") + type)
 {}
 
 } // namespace Yb

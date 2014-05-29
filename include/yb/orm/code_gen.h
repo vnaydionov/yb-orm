@@ -1,4 +1,4 @@
-// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__CODE_GEN__INCLUDED
 #define YB__ORM__CODE_GEN__INCLUDED
 
@@ -8,22 +8,25 @@
 #include <string>
 #include <iostream>
 #include "util/exception.h"
+#include "orm_config.h"
 #include "schema.h"
 #include "sql_driver.h"
 
 namespace Yb {
 
-class CodeGenError: public RunTimeError {
+class YBORM_DECL CodeGenError: public RunTimeError
+{
 public:
     CodeGenError(const String &msg);
 };
 
-void expand_tabs_to_stream(const std::string &in, std::ostream &out);
-bool create_backup(const char *fname);
-void split_by_autogen(const std::string &fname,
+YBORM_DECL void expand_tabs_to_stream(
+        const std::string &in, std::ostream &out);
+YBORM_DECL bool create_backup(const char *fname);
+YBORM_DECL void split_by_autogen(const std::string &fname,
         std::vector<std::string> &parts, std::vector<int> &stypes);
 
-class SqlTableGenerator
+class YBORM_DECL SqlTableGenerator
 {
     const Table &table_;
     SqlDialect *dialect_;
@@ -35,7 +38,7 @@ public:
     void gen_create_indexes(std::ostream &out);
 };
 
-class SqlSchemaGenerator
+class YBORM_DECL SqlSchemaGenerator
 {
     const Schema &schema_;
     SqlDialect *dialect_;
@@ -50,7 +53,7 @@ public:
     bool generate_next_statement(String &out);
 };
 
-class CppCodeGenerator
+class YBORM_DECL CppCodeGenerator
 {
     const Schema &schema_;
     const Table &table_;
@@ -81,9 +84,9 @@ public:
     void update_cpp_file();
 };
 
-void generate_domain(const Schema &schema,
+YBORM_DECL void generate_domain(const Schema &schema,
         const std::string &path, const std::string &inc_prefix);
-void generate_ddl(const Schema &schema,
+YBORM_DECL void generate_ddl(const Schema &schema,
         const std::string &path, const std::string &dialect_name);
 
 } // namespace Yb

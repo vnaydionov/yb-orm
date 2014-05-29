@@ -1,3 +1,4 @@
+
 AC_INIT([auth-example], [0.1])
 AC_CONFIG_SRCDIR([src/auth.cpp])
 AC_CONFIG_HEADERS(config.h)
@@ -19,6 +20,7 @@ YB_QT([
             AC_MSG_ERROR([Package requires the Boost C++ libraries!]))
         BOOST_THREADS([mt])
         BOOST_DATE_TIME([mt])
+        CPPFLAGS="$CPPFLAGS -DYB_USE_TUPLE"
     ])
 ])
 YB_ODBC([
@@ -34,6 +36,9 @@ AM_CONDITIONAL([QT4_PRESENT], [test x$have_qt = xyes])
 AM_CONDITIONAL([ODBC_PRESENT], [test x$have_odbc = xyes])
 AM_CONDITIONAL([SQLITE3_PRESENT], [test x$have_sqlite3 = xyes])
 AM_CONDITIONAL([SOCI_PRESENT], [test x$have_soci = xyes])
+YB_CHECK_UNICODE([], [])
+AM_CONDITIONAL([USING_WIDE_UNICODE], [test x$have_unicode = xyes])
+YB_EXECINFO([], [])
 
 YB_CHECK_YBORM([],
     AC_MSG_ERROR([YB.ORM library is required!]))

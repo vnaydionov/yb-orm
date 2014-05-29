@@ -78,13 +78,13 @@ class TestXMLizer : public CppUnit::TestFixture
         static bool registered = false;
         if (!registered) {
             registered = true;
-            theDomainFactory::instance().register_creator(_T("T_ORM_XML"),
+            theDomainFactory().register_creator(_T("T_ORM_XML"),
                 CreatorPtr(new DomainCreator<OrmXMLDomainSimple>()));
-            theDomainFactory::instance().register_creator(_T("T_ORM_TEST"),
+            theDomainFactory().register_creator(_T("T_ORM_TEST"),
                 CreatorPtr(new DomainCreator<OrmTestDomainSimple>()));
         }
 
-        Schema &r = theSchema::instance();
+        Schema &r = theSchema();
         Table::Ptr t(new Table(_T("T_ORM_TEST"), _T("orm-test"), _T("OrmTest")));
         t->set_seq_name(_T("S_ORM_TEST_ID"));
         t->add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK | Column::RO));
@@ -226,7 +226,7 @@ public:
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
         setup_log(engine);
-        Session session(theSchema::instance(), &engine);
+        Session session(theSchema(), &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize();
         CPPUNIT_ASSERT_EQUAL(string(
@@ -239,7 +239,7 @@ public:
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
         setup_log(engine);
-        Session session(theSchema::instance(), &engine);
+        Session session(theSchema(), &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize(1);
         CPPUNIT_ASSERT_EQUAL(string(
@@ -253,7 +253,7 @@ public:
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
         setup_log(engine);
-        Session session(theSchema::instance(), &engine);
+        Session session(theSchema(), &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize(-1);
         CPPUNIT_ASSERT_EQUAL(string(

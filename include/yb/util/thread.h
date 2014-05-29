@@ -2,6 +2,7 @@
 #ifndef YB__UTIL__THREAD__INCLUDED
 #define YB__UTIL__THREAD__INCLUDED
 
+#include "util_config.h"
 #include "utility.h"
 #include "string_type.h"
 #include "exception.h"
@@ -25,7 +26,8 @@ namespace Yb {
 class Condition;
 class ScopedLock;
 
-class Mutex: NonCopyable {
+class YBUTIL_DECL Mutex: public NonCopyable
+{
     friend class Condition;
     friend class ScopedLock;
 #if defined(YB_USE_WX)
@@ -42,7 +44,8 @@ public:
     void unlock();
 };
 
-class ScopedLock: NonCopyable {
+class YBUTIL_DECL ScopedLock: public NonCopyable
+{
     friend class Condition;
     Mutex &mutex_;
 #if !defined(YB_USE_WX) && !defined(YB_USE_QT)
@@ -53,7 +56,8 @@ public:
     ~ScopedLock();
 };
 
-class Condition: NonCopyable {
+class YBUTIL_DECL Condition: public NonCopyable
+{
     Mutex &mutex_;
 #if defined(YB_USE_WX)
     wxCondition cond_;
@@ -71,7 +75,7 @@ public:
 
 #if !defined(YB_USE_WX) && !defined(YB_USE_QT)
 class Thread;
-struct ThreadCallable
+struct YBUTIL_DECL ThreadCallable
 {
     Thread *thread_obj_;
     ThreadCallable(Thread *thread_obj);
@@ -79,7 +83,7 @@ struct ThreadCallable
 };
 #endif
 
-class Thread
+class YBUTIL_DECL Thread
 #if defined(YB_USE_WX)
     : public wxThread
 #elif defined(YB_USE_QT)

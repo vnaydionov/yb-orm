@@ -1,5 +1,8 @@
-#include <orm/QtSqlDriver.h>
-#include <util/str_utils.hpp>
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
+
+#include "qtsql_driver.h"
+#include "util/string_utils.h"
 
 using namespace std;
 using Yb::StrUtils::str_to_upper;

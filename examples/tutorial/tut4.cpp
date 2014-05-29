@@ -21,7 +21,7 @@ int main()
 
         LongInt root = -1;
         {
-            Session session(Yb::theSchema::instance(), &engine);
+            Session session(Yb::theSchema(), &engine);
 
             ProductGroup::Holder pg1(session);
             pg1->name = "Group1";
@@ -42,7 +42,7 @@ int main()
             root = pg1->id;
         }
         {
-            Session session(Yb::theSchema::instance(), &engine);
+            Session session(Yb::theSchema(), &engine);
             ProductGroup::Holder pg1(session, root);
             cout << pg1->parent->id.is_null() << endl;
             pg1->delete_object();

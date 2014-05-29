@@ -2,17 +2,17 @@
 ybutilincludedir=$(includedir)/yb/util
 
 ybutilinclude_HEADERS = \
-	utility.h \
-	string_type.h \
-	exception.h \
-	thread.h \
-	decimal.h \
 	data_types.h \
-	string_utils.h \
-	xml_writer.h \
+	decimal.h \
 	element_tree.h \
-	value_type.h \
+	exception.h \
 	nlogger.h \
 	result_set.h \
-	singleton.h
-
+	singleton.h \
+	string_type.h \
+	string_utils.h \
+	thread.h \
+	util_config.h \
+	utility.h \
+	value_type.h \
+	xml_writer.h

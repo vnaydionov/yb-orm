@@ -1,56 +1,49 @@
-#ifndef YB__ORM__XML_METADATA_CONFIG__INCLUDED
-#define YB__ORM__XML_METADATA_CONFIG__INCLUDED
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#ifndef YB__ORM__SCHEMA_CONFIG__INCLUDED
+#define YB__ORM__SCHEMA_CONFIG__INCLUDED
 
 #include <stdexcept>
 #include <algorithm>
 #include "util/element_tree.h"
 #include "util/string_utils.h"
+#include "orm_config.h"
 #include "schema.h"
 
 class TestXMLConfig;
 
 namespace Yb {
 
-class XMLConfigError: public std::logic_error {
-public:
-    XMLConfigError(const String &msg) : std::logic_error(NARROW(msg)) {}
-};
-
-class MandatoryAttributeAbsent: public XMLConfigError
+class YBORM_DECL XMLConfigError: public MetaDataError
 {
 public:
-    MandatoryAttributeAbsent(const String &element, const String &attr)
-        : XMLConfigError(_T("Mandatory attribyte '") + attr +
-                _T("' not found or empty while parsing element '") + element + _T("'"))
-    {}
+    XMLConfigError(const String &msg);
 };
 
-class WrongColumnType: public XMLConfigError
+class YBORM_DECL MandatoryAttributeAbsent: public XMLConfigError
 {
 public:
-    WrongColumnType(const String &type, const String &field_name)
-        : XMLConfigError(_T("Type '") + type +
-                _T("' is unknown and not supported while parsing field '") + field_name + _T("'"))
-    {}
+    MandatoryAttributeAbsent(const String &element, const String &attr);
 };
 
-class ParseError: public XMLConfigError
+class YBORM_DECL WrongColumnType: public XMLConfigError
 {
 public:
-    ParseError(const String &msg)
-        : XMLConfigError(_T("XML config parse error, details: ") + msg)
-    {}
+    WrongColumnType(const String &type, const String &field_name);
 };
 
-class InvalidCombination: public XMLConfigError
+class YBORM_DECL ParseError: public XMLConfigError
 {
 public:
-    InvalidCombination(const String &msg)
-        : XMLConfigError(_T("Invalid element-attribute combination, details: ") + msg)
-    {}
+    ParseError(const String &msg);
 };
 
-class MetaDataConfig
+class YBORM_DECL InvalidCombination: public XMLConfigError
+{
+public:
+    InvalidCombination(const String &msg);
+};
+
+class YBORM_DECL MetaDataConfig
 {
 public:
     MetaDataConfig(const std::string &xml_string);
@@ -97,11 +90,11 @@ bool MetaDataConfig::get_value_of(ElementTree::ElementPtr node, const String &fi
     return false;
 }
 
-bool load_xml_file(const String &name, std::string &where);
+YBORM_DECL bool load_xml_file(const String &name, std::string &where);
 
-void load_schema(const String &name, Schema &reg, bool check = true);
+YBORM_DECL void load_schema(const String &name, Schema &reg, bool check = true);
 
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__ORM__XML_METADATA_CONFIG__INCLUDED
+#endif // YB__ORM__SCHEMA_CONFIG__INCLUDED

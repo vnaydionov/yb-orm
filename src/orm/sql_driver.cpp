@@ -1,3 +1,6 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
+
 #include <time.h>
 #include <algorithm>
 #include <iostream>
@@ -32,7 +35,6 @@ typedef Yb::SQLiteDriver DefaultSqlDriver;
 #define DEFAULT_DRIVER _T("SQLITE")
 #endif
 
-using namespace std;
 using namespace Yb::StrUtils;
 
 #if 0
@@ -46,11 +48,7 @@ using namespace Yb::StrUtils;
 namespace Yb {
 
 DBError::DBError(const String &msg)
-    : BaseError(msg)
-{}
-
-GenericDBError::GenericDBError(const String &err)
-    : DBError(_T("Database error, details: ") + err)
+    : RunTimeError(msg)
 {}
 
 NoDataFound::NoDataFound(const String &msg)
@@ -96,13 +94,16 @@ const String SqlDialect::primary_key_flag() { return String(); }
 
 const String SqlDialect::autoinc_flag() { return String(); }
 
-const String SqlDialect::sysdate_func() {
+const String
+SqlDialect::sysdate_func() {
     return _T("CURRENT_TIMESTAMP");
 }
 
-bool SqlDialect::explicit_null() { return false; }
+bool
+SqlDialect::explicit_null() { return false; }
 
-const String SqlDialect::not_null_default(const String &not_null_clause,
+const String
+SqlDialect::not_null_default(const String &not_null_clause,
         const String &default_value)
 {
     if (str_empty(not_null_clause))
@@ -308,9 +309,10 @@ public:
 
 typedef SingletonHolder<ItemRegistry<SqlDialect> > theDialectRegistry;
 
-void register_std_dialects()
+static void
+register_std_dialects()
 {
-    auto_ptr<SqlDialect> dialect;
+    std::auto_ptr<SqlDialect> dialect;
     SqlDialect *p;
     dialect.reset((SqlDialect *)new OracleDialect());
     p = dialect.get();
@@ -334,7 +336,8 @@ void register_std_dialects()
             p->get_name(), dialect);
 }
 
-SqlDialect *sql_dialect(const String &name)
+YBORM_DECL SqlDialect *
+sql_dialect(const String &name)
 {
     if (theDialectRegistry::instance().empty())
         register_std_dialects();
@@ -344,7 +347,8 @@ SqlDialect *sql_dialect(const String &name)
     return dialect;
 }
 
-bool register_sql_dialect(auto_ptr<SqlDialect> dialect)
+YBORM_DECL bool
+register_sql_dialect(std::auto_ptr<SqlDialect> dialect)
 {
     if (theDialectRegistry::instance().empty())
         register_std_dialects();
@@ -353,7 +357,8 @@ bool register_sql_dialect(auto_ptr<SqlDialect> dialect)
             p->get_name(), dialect);
 }
 
-const Strings list_sql_dialects()
+YBORM_DECL const Strings
+list_sql_dialects()
 {
     if (theDialectRegistry::instance().empty())
         register_std_dialects();
@@ -361,11 +366,16 @@ const Strings list_sql_dialects()
 }
 
 SqlCursorBackend::~SqlCursorBackend() {}
-void SqlCursorBackend::bind_params(const TypeCodes &types) {}
+
+void
+SqlCursorBackend::bind_params(const TypeCodes &types) {}
+
 SqlConnectionBackend::~SqlConnectionBackend() {}
+
 SqlDriver::~SqlDriver() {}
 
-void SqlDriver::parse_url_tail(const String &dialect_name,
+void
+SqlDriver::parse_url_tail(const String &dialect_name,
         const String &url_tail, StringDict &source)
 {
     if (sql_dialect(dialect_name)->parse_url_tail(url_tail, source))
@@ -374,20 +384,26 @@ void SqlDriver::parse_url_tail(const String &dialect_name,
 }
 
 // the default policies
-bool SqlDriver::explicit_begin_trans_required() { return true; }
-bool SqlDriver::numbered_params() { return false; }
+bool
+SqlDriver::explicit_begin_trans_required()
+{ return true; }
 
-const String SqlDriver::convert_to_numbered_params(
+bool
+SqlDriver::numbered_params()
+{ return false; }
+
+const String
+SqlDriver::convert_to_numbered_params(
         const String &sql)
 {
     String first_word;
-    vector<int> pos_list;
+    std::vector<int> pos_list;
     if (!find_subst_signs(sql, pos_list, first_word))
         throw DBError(_T("SQL syntax error"));
-    vector<String> parts;
+    std::vector<String> parts;
     split_by_subst_sign(sql, pos_list, parts);
     String sql2 = parts[0];
-    for (int i = 1; i < parts.size(); ++i) {
+    for (size_t i = 1; i < parts.size(); ++i) {
         sql2 += _T(":") + to_string(i);
         sql2 += parts[i];
     }
@@ -396,38 +412,40 @@ const String SqlDriver::convert_to_numbered_params(
 
 typedef SingletonHolder<ItemRegistry<SqlDriver> > theDriverRegistry;
 
-void register_std_drivers()
+static void
+register_std_drivers()
 {
     SqlDriver *p;
 #if defined(YB_USE_QT)
-    auto_ptr<SqlDriver> driver_qtsql((SqlDriver *)new QtSqlDriver(false));
+    std::auto_ptr<SqlDriver> driver_qtsql((SqlDriver *)new QtSqlDriver(false));
     p = driver_qtsql.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver_qtsql);
-    auto_ptr<SqlDriver> driver_qodbc((SqlDriver *)new QtSqlDriver(true));
+    std::auto_ptr<SqlDriver> driver_qodbc((SqlDriver *)new QtSqlDriver(true));
     p = driver_qodbc.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver_qodbc);
 #endif
 #if defined(YB_USE_ODBC)
-    auto_ptr<SqlDriver> driver_odbc((SqlDriver *)new OdbcDriver());
+    std::auto_ptr<SqlDriver> driver_odbc((SqlDriver *)new OdbcDriver());
     p = driver_odbc.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver_odbc);
 #endif
 #if defined(YB_USE_SQLITE3)
-    auto_ptr<SqlDriver> driver_sqlite3((SqlDriver *)new SQLiteDriver());
+    std::auto_ptr<SqlDriver> driver_sqlite3((SqlDriver *)new SQLiteDriver());
     p = driver_sqlite3.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver_sqlite3);
 #endif
 #if defined(YB_USE_SOCI)
-    auto_ptr<SqlDriver> driver_soci((SqlDriver *)new SOCIDriver(false));
+    std::auto_ptr<SqlDriver> driver_soci((SqlDriver *)new SOCIDriver(false));
     p = driver_soci.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver_soci);
-    auto_ptr<SqlDriver> driver_soci_odbc((SqlDriver *)new SOCIDriver(true));
+    std::auto_ptr<SqlDriver> driver_soci_odbc((SqlDriver *)new SOCIDriver(true));
     p = driver_soci_odbc.get();
     theDriverRegistry::instance().register_item(p->get_name(), driver_soci_odbc);
 #endif
 }
 
-SqlDriver *sql_driver(const String &name)
+YBORM_DECL SqlDriver *
+sql_driver(const String &name)
 {
     if (theDriverRegistry::instance().empty())
         register_std_drivers();
@@ -441,7 +459,8 @@ SqlDriver *sql_driver(const String &name)
     return driver;
 }
 
-bool register_sql_driver(auto_ptr<SqlDriver> driver)
+YBORM_DECL bool
+register_sql_driver(std::auto_ptr<SqlDriver> driver)
 {
     if (theDriverRegistry::instance().empty())
         register_std_drivers();
@@ -450,7 +469,8 @@ bool register_sql_driver(auto_ptr<SqlDriver> driver)
             p->get_name(), driver);
 }
 
-const Strings list_sql_drivers()
+YBORM_DECL const Strings
+list_sql_drivers()
 {
     if (theDriverRegistry::instance().empty())
         register_std_drivers();
@@ -469,7 +489,8 @@ SqlSource::SqlSource()
     set(_T("&port"), String());
 }
 
-static String find_driver_name(
+static String
+find_driver_name(
         const String &driver_name, const String &dialect_name)
 {
     if (str_empty(driver_name))
@@ -514,7 +535,8 @@ SqlSource::SqlSource(const String &id,
     set(_T("&port"), String());
 }
 
-const String SqlSource::format(bool hide_passwd) const
+const String
+SqlSource::format(bool hide_passwd) const
 {
     StringDict params = *(StringDict *)this;
     params[_T("&proto")] = str_to_lower(params[_T("&dialect")]);
@@ -528,7 +550,8 @@ const String SqlSource::format(bool hide_passwd) const
     return format_url(params, hide_passwd);
 }
 
-const Strings SqlSource::options() const
+const Strings
+SqlSource::options() const
 {
     Strings options;
     Strings k = keys();
@@ -549,7 +572,7 @@ SqlResultSet::fetch(Row &row)
 }
 
 void
-SqlResultSet::own(auto_ptr<SqlCursor> cursor)
+SqlResultSet::own(std::auto_ptr<SqlCursor> cursor)
 {
     owned_cursor_.reset(NULL);
     owned_cursor_.reset(cursor.release());
@@ -624,7 +647,7 @@ SqlCursor::exec(const Values &params)
         if (echo_) {
             std::ostringstream out;
             out << "exec prepared:";
-            for (unsigned i = 0; i < params.size(); ++i)
+            for (size_t i = 0; i < params.size(); ++i)
                 out << " p" << (i + 1) << "=\""
                     << NARROW(params[i].sql_str()) << "\"";
             debug(WIDEN(out.str()));
@@ -694,9 +717,9 @@ void
 SqlConnection::mark_bad(const std::exception &e)
 {
     if (!bad_) {
-        string s = e.what();
+        std::string s = e.what();
         size_t pos = s.find('\n');
-        if (pos != string::npos)
+        if (pos != std::string::npos)
             s = s.substr(0, pos);
         debug(_T("mark connection bad, because of ") + String(WIDEN(s)));
         bad_ = true;
@@ -770,10 +793,10 @@ SqlConnection::~SqlConnection()
         debug(_T("error while closing connection"));
 }
 
-auto_ptr<SqlCursor>
+std::auto_ptr<SqlCursor>
 SqlConnection::new_cursor()
 {
-    return auto_ptr<SqlCursor>(new SqlCursor(*this));
+    return std::auto_ptr<SqlCursor>(new SqlCursor(*this));
 }
 
 bool
@@ -856,7 +879,7 @@ SqlConnection::clear()
 void
 SqlConnection::exec_direct(const String &sql)
 {
-    auto_ptr<SqlCursor> cursor;
+    std::auto_ptr<SqlCursor> cursor;
     try {
         cursor.reset(NULL);
         cursor.reset(new SqlCursor(*this));
@@ -904,14 +927,15 @@ SqlConnection::fetch_rows(int max_rows)
     return cursor_->fetch_rows(max_rows);
 }
 
-bool find_subst_signs(const String &sql, vector<int> &pos_list, String &first_word)
+YBORM_DECL bool
+find_subst_signs(const String &sql, std::vector<int> &pos_list, String &first_word)
 {
     enum { NORMAL, MINUS_FOUND, LINE_COMMENT, SLASH_FOUND, COMMENT,
         COMMENT_ASTER_FOUND, IN_QUOT, IN_QUOT_QFOUND, IN_DQUOT } st;
     bool found_first_word = false;
     first_word = String();
     st = NORMAL;
-    for (int i = 0; i < sql.size();) {
+    for (size_t i = 0; i < str_length(sql);) {
         Char c = sql[i];
         switch (st) {
         case NORMAL:
@@ -989,16 +1013,17 @@ bool find_subst_signs(const String &sql, vector<int> &pos_list, String &first_wo
                || st == LINE_COMMENT || st == SLASH_FOUND;
 }
 
-void split_by_subst_sign(const String &sql,
-        const vector<int> &pos_list, vector<String> &parts)
+YBORM_DECL void
+split_by_subst_sign(const String &sql,
+        const std::vector<int> &pos_list, std::vector<String> &parts)
 {
     int prev_pos = -1;
-    for (int i = 0; i < pos_list.size(); ++i) {
+    for (size_t i = 0; i < pos_list.size(); ++i) {
         int cur_pos = pos_list[i];
         parts.push_back(str_substr(sql, prev_pos + 1, cur_pos - prev_pos - 1));
         prev_pos = cur_pos;
     }
-    parts.push_back(str_substr(sql, prev_pos + 1, sql.size() - prev_pos - 1));
+    parts.push_back(str_substr(sql, prev_pos + 1, str_length(sql) - prev_pos - 1));
 }
 
 } // namespace Yb

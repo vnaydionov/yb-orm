@@ -1,3 +1,4 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__SQL_DRIVER__INCLUDED
 #define YB__ORM__SQL_DRIVER__INCLUDED
 
@@ -11,6 +12,7 @@
 #include "util/result_set.h"
 #include "util/nlogger.h"
 #include "util/value_type.h"
+#include "orm_config.h"
 
 namespace Yb {
 
@@ -82,49 +84,43 @@ private:
     Mutex mutex_;
 };
 
-class DBError : public BaseError
+class YBORM_DECL DBError: public RunTimeError
 {
 public:
     DBError(const String &msg);
 };
 
-class GenericDBError: public DBError
-{
-public:
-    GenericDBError(const String &err);
-};
-
-class NoDataFound : public DBError
+class YBORM_DECL NoDataFound: public DBError
 {
 public:
     NoDataFound(const String &msg = _T(""));
 };
 
-class BadSQLOperation : public DBError
+class YBORM_DECL BadSQLOperation: public DBError
 {
 public:
     BadSQLOperation(const String &msg);
 };
 
-class BadOperationInMode : public DBError
+class YBORM_DECL BadOperationInMode: public DBError
 {
 public:
     BadOperationInMode(const String &msg);
 };
 
-class SqlDialectError : public DBError
+class YBORM_DECL SqlDialectError: public DBError
 {
 public:
     SqlDialectError(const String &msg);
 };
 
-class SqlDriverError : public DBError
+class YBORM_DECL SqlDriverError: public DBError
 {
 public:
     SqlDriverError(const String &msg);
 };
 
-class SqlDialect: NonCopyable
+class YBORM_DECL SqlDialect: NonCopyable
 {
     String name_, dual_;
     bool has_sequences_;
@@ -162,9 +158,9 @@ public:
             const String &default_value);
 };
 
-SqlDialect *sql_dialect(const String &name);
-bool register_sql_dialect(std::auto_ptr<SqlDialect> dialect);
-const Strings list_sql_dialects();
+YBORM_DECL SqlDialect *sql_dialect(const String &name);
+YBORM_DECL bool register_sql_dialect(std::auto_ptr<SqlDialect> dialect);
+YBORM_DECL const Strings list_sql_dialects();
 
 typedef std::pair<String, Value> RowItem;
 typedef std::vector<RowItem> Row;
@@ -173,7 +169,7 @@ typedef std::vector<Row> Rows;
 typedef std::auto_ptr<Rows> RowsPtr;
 typedef std::vector<int> TypeCodes;
 
-class SqlCursorBackend: NonCopyable
+class YBORM_DECL SqlCursorBackend: NonCopyable
 {
 public:
     SqlCursorBackend() {}
@@ -185,7 +181,7 @@ public:
     virtual RowPtr fetch_row() = 0;
 };
 
-class SqlSource: public StringDict
+class YBORM_DECL SqlSource: public StringDict
 {
 public:
     SqlSource();
@@ -208,7 +204,7 @@ public:
     bool operator< (const SqlSource &obj) const { return id() < obj.id(); }
 };
 
-class SqlConnectionBackend: NonCopyable
+class YBORM_DECL SqlConnectionBackend: NonCopyable
 {
 public:
     SqlConnectionBackend() {}
@@ -221,7 +217,7 @@ public:
     virtual void rollback() = 0;
 };
 
-class SqlDriver: NonCopyable
+class YBORM_DECL SqlDriver: NonCopyable
 {
     String name_;
 public:
@@ -239,15 +235,15 @@ public:
             const String &sql);
 };
 
-SqlDriver *sql_driver(const String &name);
-bool register_sql_driver(std::auto_ptr<SqlDriver> driver);
-const Strings list_sql_drivers();
+YBORM_DECL SqlDriver *sql_driver(const String &name);
+YBORM_DECL bool register_sql_driver(std::auto_ptr<SqlDriver> driver);
+YBORM_DECL const Strings list_sql_drivers();
 
 class SqlCursor;
 class SqlConnection;
 class SqlPool;
 
-class SqlResultSet: public ResultSetBase<Row>
+class YBORM_DECL SqlResultSet: public ResultSetBase<Row>
 {
     friend class SqlCursor;
     SqlCursor &cursor_;
@@ -262,7 +258,7 @@ public:
     void own(std::auto_ptr<SqlCursor> cursor);
 };
 
-class SqlCursor: NonCopyable
+class YBORM_DECL SqlCursor: NonCopyable
 {
     friend class SqlConnection;
     SqlConnection &connection_;
@@ -280,7 +276,7 @@ public:
     RowsPtr fetch_rows(int max_rows = -1); // -1 = all
 };
 
-class SqlConnection: NonCopyable
+class YBORM_DECL SqlConnection: NonCopyable
 {
     friend class SqlPool;
     friend class SqlCursor;
@@ -330,9 +326,9 @@ public:
     RowsPtr fetch_rows(int max_rows = -1); // -1 = all
 };
 
-bool find_subst_signs(const String &sql,
+YBORM_DECL bool find_subst_signs(const String &sql,
         std::vector<int> &pos_list, String &first_word);
-void split_by_subst_sign(const String &sql,
+YBORM_DECL void split_by_subst_sign(const String &sql,
         const std::vector<int> &pos_list, std::vector<String> &parts);
 
 } // namespace Yb
