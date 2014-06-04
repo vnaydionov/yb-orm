@@ -138,7 +138,7 @@ YBUTIL_DECL const Yb::String sql_string_escape(const Yb::String &s)
 {
     Yb::String r;
     r.reserve(str_length(s) * 2);
-    for (size_t pos = 0; pos < str_length(s); ++pos) {
+    for (int pos = 0; pos < (int)str_length(s); ++pos) {
         if (s[pos] == _T('\''))
             str_append(r, _T('\''));
         str_append(r, s[pos]);
@@ -154,7 +154,7 @@ YBUTIL_DECL const Yb::String c_string_escape(const Yb::String &s)
 {
     Yb::String r;
     r.reserve(str_length(s) * 2);
-    for (size_t pos = 0; pos < str_length(s); ++pos) {
+    for (int pos = 0; pos < (int)str_length(s); ++pos) {
         if (char_code(s[pos]) == _T('\''))
             str_append(r, _T("\\\'"));
         else if (char_code(s[pos]) == _T('\"'))
@@ -194,7 +194,7 @@ YBUTIL_DECL const Yb::String html_escape(const Yb::String &s)
 {
     Yb::String r;
     r.reserve(str_length(s) * 2);
-    for (size_t i = 0; i < str_length(s); ++i)
+    for (int i = 0; i < (int)str_length(s); ++i)
     {
         Yb::Char c = s[i];
         switch (char_code(c))
@@ -245,7 +245,7 @@ YBUTIL_DECL void split_str_by_chars(const Yb::String &s, const Yb::String &delim
 {
     const size_t sz0 = parts.size();
     Yb::String p;
-    for (size_t i = 0; i < str_length(s); ++i) {
+    for (int i = 0; i < (int)str_length(s); ++i) {
         if (str_find(delim, s[i]) != -1) {
             if (limit > 0 && !str_empty(p) &&
                     parts.size() - sz0 >= (size_t)(limit - 1))
@@ -291,7 +291,7 @@ YBUTIL_DECL int hex_digit(Char ch)
 YBUTIL_DECL const string url_decode(const String &s)
 {
     string result;
-    for (size_t i = 0; i < str_length(s); ++i) {
+    for (int i = 0; i < (int)str_length(s); ++i) {
         if (char_code(s[i]) == '+')
             result.push_back(' ');
         else if (char_code(s[i]) != '%')

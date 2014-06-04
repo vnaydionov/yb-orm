@@ -935,7 +935,7 @@ find_subst_signs(const String &sql, std::vector<int> &pos_list, String &first_wo
     bool found_first_word = false;
     first_word = String();
     st = NORMAL;
-    for (size_t i = 0; i < str_length(sql);) {
+    for (int i = 0; i < (int)str_length(sql);) {
         Char c = sql[i];
         switch (st) {
         case NORMAL:
