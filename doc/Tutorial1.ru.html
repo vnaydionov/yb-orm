@@ -7,11 +7,11 @@
 	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
 	<META NAME="CREATED" CONTENT="20130520;9345500">
 	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
-	<META NAME="CHANGED" CONTENT="20140601;16482400">
+	<META NAME="CHANGED" CONTENT="20140709;11175900">
 	<STYLE TYPE="text/css">
 	<!--
 		@page { margin: 2cm }
-		P { margin-bottom: 0.21cm }
+		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
 		H2 { margin-bottom: 0.21cm }
 		H2.western { font-family: "Times New Roman", serif }
 		H2.cjk { font-family: "Droid Sans Fallback" }
@@ -29,7 +29,7 @@
 <H2 CLASS="western">Отображение отдельно взятого
 класса (tut1.cpp)</H2>
 <P>В этом руководстве подразумевается,
-что вы используете окружение Unix: Linux,
+что вы используете окружение POSIX: Linux,
 FreeBSD, Mac OS X или Cygwin для Windows — подойдут.
 Для пользователей сборки под Windows все
 шаги практически те же, но пути и опции
@@ -40,87 +40,61 @@ YB.ORM.</P>
 <P>Для начала нужно описать структуру
 таблиц в простом формате XML и сохранить
 ее под именем <TT CLASS="western">tut1.xml</TT> в вашей
-рабочей папке.</P>
+рабочей папке. В приведенной ниже схеме
+описана одна таблица <TT CLASS="western">client_tbl</TT>,
+ей соответствует класс <TT CLASS="western">Client</TT>.</P>
 <PRE CLASS="western">&lt;schema&gt;
-  &lt;table name=&quot;client&quot; sequence=&quot;seq_client&quot; class=&quot;Client&quot;&gt;
-    &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
-      &lt;primary-key /&gt;
-    &lt;/column&gt;
-    &lt;column name=&quot;dt&quot; type=&quot;datetime&quot; null=&quot;false&quot; default=&quot;sysdate&quot; /&gt;
-    &lt;column name=&quot;name&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
-    &lt;column name=&quot;email&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
-    &lt;column name=&quot;phone&quot; type=&quot;string&quot; size=&quot;50&quot; null=&quot;true&quot; /&gt;
-    &lt;column name=&quot;budget&quot; type=&quot;decimal&quot; /&gt;
-  &lt;/table&gt;
+    &lt;table name=&quot;client_tbl&quot; sequence=&quot;client_seq&quot; class=&quot;Client&quot; xml-name=&quot;client&quot;&gt;
+        &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
+            &lt;primary-key /&gt;
+        &lt;/column&gt;
+        &lt;column name=&quot;dt&quot; type=&quot;datetime&quot; null=&quot;false&quot; default=&quot;sysdate&quot; /&gt;
+        &lt;column name=&quot;name&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
+        &lt;column name=&quot;phone&quot; type=&quot;string&quot; size=&quot;50&quot; null=&quot;true&quot; /&gt;
+        &lt;column name=&quot;email&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
+        &lt;column name=&quot;budget&quot; type=&quot;decimal&quot; /&gt;
+    &lt;/table&gt;
 &lt;/schema&gt;</PRE><P>
 Далее, с помощью специальной утилиты
-<TT CLASS="western">yborm_gen</TT> сгенерировать
-доменные классы C++. Первый параметр —
-режим работы утилиты, второй параметр
-— имя файла со схемой, третий — папка,
-куда помещать сгенерированные файлы
-классов, четвертый (необязательный) —
-префикс для директивы <TT CLASS="western">#include</TT>
-(по умолчанию <TT CLASS="western">domain/</TT>).</P>
+<TT CLASS="western">yborm_gen</TT> нужно сгенерировать
+код C++ класса. Первый параметр — режим
+работы утилиты, второй параметр — имя
+файла со схемой, третий — папка, куда
+помещать сгенерированные файлы классов,
+четвертый (необязательный) — префикс
+для директивы <TT CLASS="western">#include</TT> (по
+умолчанию <TT CLASS="western">domain/</TT>).</P>
 <PRE CLASS="western">$ mkdir domain
 $ $YBORM_ROOT/bin/yborm_gen --domain tut1.xml domain
 yborm_gen: table count: 1
 yborm_gen: generation started...
-yborm_gen: Generating file: domain/Client.h for table 'client'
-yborm_gen: Generating cpp file: domain/Client.cpp for table 'client'
+yborm_gen: Generating file: domain/Client.h for table 'client_tbl'
+yborm_gen: Generating cpp file: domain/Client.cpp for table 'client_tbl'
 yborm_gen: generation successfully finished</PRE><P>
 Теперь в папке <TT CLASS="western">domain</TT> находятся
 два файла: <TT CLASS="western">Client.h</TT> и <TT CLASS="western">Client.cpp</TT>.
-В них содержится сгенерированный
-доменный класс <TT CLASS="western">Client</TT> со
-всеми атрибутами. Его можно смотреть и
-(осторожно) редактировать. Файл схемы
-может дополняться новыми таблицами и
-колонками, при последующем запуске
-утилиты <TT CLASS="western">yborm_gen</TT> она не
-перезапишет полностью ранее созданные
-файлы с доменными классами, в них будут
-обновлены лишь секции помеченные как
-&quot;авто-сгенерированные&quot;.</P>
-<P>Теперь воспользуемся той же утилитой
-в другом режиме чтобы создать SQL DDL скрипт
-для создания таблиц. При запуске нужно
-указать диалект SQL. В этом простом примере
-создадим локальную базу данных <TT CLASS="western">SQLITE</TT>.</P>
-<PRE CLASS="western">$ $YBORM_ROOT/bin/yborm_gen --ddl tut1.xml SQLITE &gt; tut1.sql
-yborm_gen: table count: 1
-yborm_gen: generation started...
-yborm_gen: generation successfully finished</PRE><P>
-В результате будет получен SQL наподобие
-такого:</P>
-<PRE CLASS="western">CREATE TABLE client (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    phone VARCHAR(50),
-    budget NUMERIC
-);</PRE><P>
-Создадим файл базы данных и убедимся,
-что таблица пуста:</P>
-<PRE CLASS="western">$ sqlite3 tut1.sqlite &lt; tut1.sql
-$ sqlite3 tut1.sqlite
-SQLite version 3.7.9 2011-11-01 00:52:41
-Enter &quot;.help&quot; for instructions
-Enter SQL statements terminated with a &quot;;&quot;
-sqlite&gt; select count(*) from client;
-0
-sqlite&gt; </PRE><P>
-Теперь можно использовать доменный
+В них содержится новый доменный класс
+<TT CLASS="western">Client</TT> со всеми атрибутами.
+Его можно смотреть и (осторожно)
+редактировать. Файл схемы может
+дополняться новыми таблицами и колонками,
+при последующем запуске утилиты <TT CLASS="western">yborm_gen</TT>
+она не перезапишет полностью ранее
+созданные файлы с доменными классами,
+в них будут обновлены лишь секции
+помеченные как &quot;авто-сгенерированные&quot;.</P>
+<P>Теперь можно использовать доменный
 класс <TT CLASS="western">Client</TT>. См. пример ниже.
-Для синхронизации объектов с БД
-используется экземпляр класса <TT CLASS="western">Yb::Session</TT>.
-В качестве уровня абстракции SQL базы
-используются классы <TT CLASS="western">Yb::Engine</TT>
+Для отслеживания новых, загруженных,
+измененных, удаленных объектов и их
+синхронизации с БД используется экземпляр
+класса <TT CLASS="western">Yb::Session</TT>. Более низкий
+уровень абстракции для работы с SQL
+предоставляется классами <TT CLASS="western">Yb::Engine</TT>
 и <TT CLASS="western">Yb::SqlConnection</TT>. В приведенном
 ниже примере показано создание сессии,
 создание и заполнение нового экземпляра
-отображенного класса и сохранение его
+отображенного класса и регистрация его
 в сессии с последующим сохранением в
 БД. При сохранении объекту присваивается
 новый уникальный ID. Сохраните следующий
@@ -132,7 +106,8 @@ int main()
     std::auto_ptr&lt;Yb::SqlConnection&gt; conn(new Yb::SqlConnection(
             &quot;sqlite+sqlite://./tut1.sqlite&quot;));
     Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-    Yb::Session session(Yb::init_schema(), &amp;engine);
+    Yb::init_schema();
+    Yb::Session session(Yb::theSchema(), &amp;engine);
     Domain::Client client;
     std::string name, email, budget;
     std::cout &lt;&lt; &quot;Enter name, email, budget:\n&quot;;
@@ -151,16 +126,56 @@ int main()
 подключить библиотеки <TT CLASS="western">libyborm</TT>,
 <TT CLASS="western">libybutil</TT>. Требуемые библиотеки
 обычно находятся в папке <TT CLASS="western">$YBORM_ROOT/lib</TT>.
-Если вы используете статическую линковку,
-то нужно будет подключить и их зависимости
-<TT CLASS="western">-lxml2</TT>, <TT CLASS="western">-lboost_thread</TT>,
-<TT CLASS="western">-lboost_date_time</TT>, и, вероятно,
-одно из <TT CLASS="western">-lodbc</TT>, <TT CLASS="western">-lsqlite3</TT>
-или <TT CLASS="western">-lsoci</TT>. В простейшем
-случае следующей команды достаточно,
-чтобы скомпилировать и собрать этот
-пример:</P>
-<PRE CLASS="western" STYLE="margin-bottom: 0.5cm">$ c++ -I. -I$YBORM_ROOT/include/yb -o tut1 tut1.cpp domain/Client.cpp -L$YBORM_ROOT/lib -lybutil -lyborm</PRE><P>
+Если вы используете статическую
+компоновку, то нужно будет подключить
+и их зависимости <TT CLASS="western">-lxml2</TT>,
+<TT CLASS="western">-lboost_thread</TT>, <TT CLASS="western">-lboost_date_time</TT>,
+и, вероятно, одно из <TT CLASS="western">-lodbc</TT>,
+<TT CLASS="western">-lsqlite3</TT> или <TT CLASS="western">-lsoci</TT>.
+В простейшем случае следующей команды
+достаточно, чтобы скомпилировать и
+собрать этот пример:</P>
+<PRE CLASS="western" STYLE="margin-top: 0.1cm; margin-bottom: 0.5cm">$ c++ -I. -I$YBORM_ROOT/include/yb -o tut1 tut1.cpp domain/Client.cpp -L$YBORM_ROOT/lib -lybutil -lyborm</PRE><P>
+Для того, чтобы пример заработал ему
+нужно дать базу данных с таблицами.
+В&nbsp;этом простом примере создадим
+локальную базу данных <TT CLASS="western">SQLITE</TT>.
+Можно воспользоваться той же утилитой
+чтобы создать SQL DDL скрипт для создания
+таблиц. При запуске нужно указать диалект
+SQL.</P>
+<PRE CLASS="western">$ $YBORM_ROOT/bin/yborm_gen --ddl tut1.xml SQLITE &gt; tut1.sql
+yborm_gen: table count: 1
+yborm_gen: generation started...
+yborm_gen: generation successfully finished</PRE><P>
+В результате будет получен SQL наподобие
+такого:</P>
+<PRE CLASS="western">CREATE TABLE client_tbl (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(50),
+    budget NUMERIC
+);</PRE><P>
+Создадим файл базы данных и убедимся,
+что таблица пуста:</P>
+<PRE CLASS="western">$ sqlite3 tut1.sqlite &lt; tut1.sql
+$ sqlite3 tut1.sqlite
+SQLite version 3.7.9 2011-11-01 00:52:41
+Enter &quot;.help&quot; for instructions
+Enter SQL statements terminated with a &quot;;&quot;
+sqlite&gt; select count(*) from client_tbl;
+0
+sqlite&gt; </PRE><P>
+Иногда бывает удобно создать таблицы
+при старте программы. Следующий вызов
+создаст все объекты, описанные в схеме,
+в правильном порядке. Если таблицы уже
+существуют в БД, будет брошено исключение.</P>
+<PRE CLASS="western">    Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
+    Yb::init_schema();
+    <STRONG>engine.create_schema(Yb::theSchema(), false);</STRONG></PRE><P>
 Давайте запустим пример и посмотрим на
 результат. Замечание: если используется
 сборка YB.ORM в виде динамических библиотек,
@@ -170,7 +185,7 @@ int main()
 <PRE CLASS="western">$ export LD_LIBRARY_PATH=$YBORM_ROOT/lib
 $ ./tut1
 Enter name, email, budget:
-Vasya vas@ya.ru 23.45   <EM>&lt;-- </EM><EM>пользовательский ввод</EM>
+Vasya vas@ya.ru 23.45   <EM>&lt;-- пользовательский ввод</EM>
 New client: 1
 $ </PRE><P>
 Проверим, что сейчас в таблице:</P>
@@ -178,7 +193,7 @@ $ </PRE><P>
 SQLite version 3.7.9 2011-11-01 00:52:41
 Enter &quot;.help&quot; for instructions
 Enter SQL statements terminated with a &quot;;&quot;
-sqlite&gt; select * from client;
+sqlite&gt; select * from client_tbl;
 1|2014-06-01T13:30:36|Vasya|vas@ya.ru||23.45
 sqlite&gt; </PRE><P>
 Теперь в таблице есть одна запись. Чтобы
@@ -194,19 +209,20 @@ sqlite&gt; </PRE><P>
     Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
 <STRONG>    engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&amp;appender)));</STRONG>
 <STRONG>    engine.set_echo(true);</STRONG>
-    Yb::Session session(Yb::init_schema(), &amp;engine);</PRE><P>
+    Yb::init_schema();
+    Yb::Session session(Yb::theSchema(), &amp;engine);</PRE><P>
 Скомпилируем и выполним опять, это
 откроет кучу подробностей взаимодействия
-с базой данных:</P>
+с базой данных, в данном случае с SQLite:</P>
 <PRE CLASS="western">$ ./tut1
 Enter name, email, budget:
 Petya pet@ya.ru 56.78   <EM>&lt;-- пользовательский ввод</EM>
 14-06-01 13:55:12.738 28833/28833 DEBG orm: flush started
 14-06-01 13:55:12.739 28833/28833 DEBG sql: begin transaction
-14-06-01 13:55:12.739 28833/28833 DEBG sql: prepare: INSERT INTO client (dt, name, email, phone, budget) VALUES (?, ?, ?, ?, ?)
+14-06-01 13:55:12.739 28833/28833 DEBG sql: prepare: INSERT INTO client_tbl (dt, name, email, phone, budget) VALUES (?, ?, ?, ?, ?)
 14-06-01 13:55:12.739 28833/28833 DEBG sql: bind: (DateTime, String, String, String, Decimal)
 14-06-01 13:55:12.739 28833/28833 DEBG sql: exec prepared: p1=&quot;'2014-06-01 13:55:12'&quot; p2=&quot;'Petya'&quot; p3=&quot;'pet@ya.ru'&quot; p4=&quot;NULL&quot; p5=&quot;56.78&quot;
-14-06-01 13:55:12.740 28833/28833 DEBG sql: prepare: SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = 'client'
+14-06-01 13:55:12.740 28833/28833 DEBG sql: prepare: SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = 'client_tbl'
 14-06-01 13:55:12.740 28833/28833 DEBG sql: exec prepared:
 14-06-01 13:55:12.740 28833/28833 DEBG sql: fetch: LID='2' 
 14-06-01 13:55:12.740 28833/28833 DEBG sql: fetch: no more rows
@@ -214,12 +230,15 @@ Petya pet@ya.ru 56.78   <EM>&lt;-- пользовательский ввод</EM
 New client: 2
 14-06-01 13:55:12.740 28833/28833 DEBG sql: commit
 $ </PRE><P>
-Как видите, YB.ORM дает разработчику мощный
-инструмент для работы с таблицами м
-строками в объектно-ориентированном
-стиле. Можно привычным образом получать
-доступ к полям объекта. И более того,
-этот инструмент берет позволяет управлять
-транзакциями и вести журнал сообщений.</P>
+Инструмент YB.ORM предоставляет удобный
+уровень абстракции, позволяя оперировать
+с таблицами и строками, оставаясь в
+рамках объектно-ориентированной
+парадигмы. Можно привычным образом
+получать доступ к полям объекта. Кроме
+того, учитываются особенности конкретного
+диалекта SQL. Этот инструмент позволяет
+управлять транзакциями и вести журнал
+сообщений, в случае необходимости.</P>
 </BODY>
 </HTML>
