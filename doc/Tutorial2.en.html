@@ -7,7 +7,7 @@
 	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
 	<META NAME="CREATED" CONTENT="20130520;9440700">
 	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
-	<META NAME="CHANGED" CONTENT="20130520;9461600">
+	<META NAME="CHANGED" CONTENT="20140710;10514600">
 	<STYLE TYPE="text/css">
 	<!--
 		@page { margin: 2cm }
@@ -27,25 +27,27 @@
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
 <H2 CLASS="western">Mapping related tables: one-to-many (tut2.cpp)</H2>
-<P>Suppose you have two related tables: there are many rows in
-<TT CLASS="western">order_tbl</TT> table corresponding to just one
-row in <TT CLASS="western">client</TT> table. At SQL level this can
-be expressed as having &quot;foreign key constraint&quot; on column
-<TT CLASS="western">order_tbl.client_id</TT> in &quot;child&quot;
-table referencing column <TT CLASS="western">client.id</TT> in
-&quot;parent&quot; table. 
-</P>
-<P>At ORM level such relations are represented by objects'
-properties. An instance of a class that maps to the child table
-usually has an object reference property, referring to the parent
-object. From the other side of such relation, the instance of a class
-that maps to the parent table may have a collection-of-objects
-property (which is sometimes called &quot;backref&quot;), to be able
-to iterate all over its children. 
-</P>
-<P>First, let's define table mapping and describe their relationship
-in XML file: 
-</P>
+<P>Let's take a look at <EM>one-to-many</EM> kind of relationship,
+consider the example Client – Orders. One client may have zero or
+more orders in some accounting system, each order belongs to some
+client. Clients are stored in table <TT CLASS="western">client_tbl</TT>,
+while their orders are stored in table <TT CLASS="western">order_tbl</TT>.</P>
+<P>At the SQL level this relationship can be expressed as having a
+<EM>foreign key constraint</EM> on column <TT CLASS="western">client_id</TT>
+in the <EM>child table</EM> <TT CLASS="western">order_tbl</TT>
+referencing column <TT CLASS="western">id</TT> in the <EM>parent
+table</EM> <TT CLASS="western">client_tbl</TT>.</P>
+<P>At the ORM level such a relationship is represented by the
+objects' properties. An instance of a class that maps to the child
+table usually has an <EM>object-reference property</EM>, referencing
+the parent object. From the other side of the relationship, an
+instance of a class that maps to the parent table may have a
+<EM>collection-of-objects property</EM> (which is sometimes called
+&quot;backref&quot;), to be able to iterate all over its children.</P>
+<P>First, let's define data schema with two classes <TT CLASS="western">Client</TT>
+and <TT CLASS="western">Order</TT>, mapped to two tables <TT CLASS="western">client_tbl</TT>
+and <TT CLASS="western">order_tbl</TT>. Also let's define the
+relationship between the classes.</P>
 <PRE CLASS="western">&lt;schema&gt;
     &lt;table name=&quot;client_tbl&quot; sequence=&quot;client_seq&quot; class=&quot;Client&quot; xml-name=&quot;client&quot;&gt;
         &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
@@ -75,10 +77,14 @@ in XML file:
         &lt;many class=&quot;Order&quot; property=&quot;owner&quot; /&gt;
     &lt;/relation&gt;
 &lt;/schema&gt;</PRE><P>
-When you generate SQL code (MySQL dialect) for the declaration above
-(see <A HREF="Tutorial1.en.html">Tutorial1</A>),
-it will look like this: 
-</P>
+In the table definition of <TT CLASS="western">order_tbl</TT> the
+column <TT CLASS="western">client_id</TT> is defined to be a foreign
+key, it acts like a link between the tables. When there is only one
+such link between two tables, then there is no need to specify
+additional parameters in the element <TT CLASS="western">&lt;relation&gt;</TT>.</P>
+<P>SQLite code for the definition above looks like this (see
+<A HREF="Tutorial1.en.html">Tutorial1</A>, how to use <TT CLASS="western">yborm_gen</TT>
+utility):</P>
 <PRE CLASS="western">CREATE TABLE client_tbl (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -99,9 +105,9 @@ CREATE TABLE order_tbl (
     , FOREIGN KEY (client_id) REFERENCES client_tbl(id)
 );</PRE><P>
 The following program uses the domain classes, generated from the XML
-description, see <A HREF="Tutorial1.en.html">Tutorial1</A>.
-The program creates the child object first and assigns some values to
-its fields, then it creates the parent object, and then it links the
+description, see <A HREF="Tutorial1.en.html">Tutorial1</A>. The
+program creates the child object first and assigns some values to its
+fields, then it creates the parent object, and then it links the
 child to the parent. After all it stores the objects to the session
 and flushes them to the database committing transaction as well
 (<TT CLASS="western">session.commit();</TT>). Note, that these
@@ -146,24 +152,17 @@ int main()
 Here you can see that linking a child (<TT CLASS="western">Order</TT>
 class) to a parent (<TT CLASS="western">Client</TT> class) looks like
 an assignment (<TT CLASS="western">order-&gt;owner = client;</TT>).
-But this operation also leads to the alteration of <TT CLASS="western">orders</TT>
-collection of corresponding instance of <TT CLASS="western">Client</TT>
-class. This is because both <TT CLASS="western">client-&gt;orders</TT>
-and <TT CLASS="western">order-&gt;client</TT> share the same
-<TT CLASS="western">RelationObject</TT> internally. 
-</P>
-<P>This example does not operate the domain classes directly, as in
-<A HREF="Tutorial1.en.html">Tutorial1</A>,
-but instead uses <TT CLASS="western">&lt;Domain&gt;Holder</TT>
-classes which are necessary to implement recurrent (nested) object
-references. That is, all the object properties are implemented using
-<TT CLASS="western">&lt;Domain&gt;Holder</TT> classes, and therefore
-they must be de-referenced using arrow (<TT CLASS="western">-&gt;</TT>),
-not just dot (<TT CLASS="western">.</TT>). 
-</P>
+Also, this example operates on the domain classes in a different way
+than it was seen in <A HREF="Tutorial1.en.html">Tutorial1</A>. A kind
+of smart pointers <TT CLASS="western">&lt;DomainClass&gt;::Holder</TT>
+is used here to implement the nested or recurrent object references.
+That is, all the object-properties are implemented using
+<TT CLASS="western">&lt;DomainClass&gt;::Holder</TT> classes, and
+therefore they must be dereferenced using an arrow (<TT CLASS="western">-&gt;</TT>),
+and not a dot (<TT CLASS="western">.</TT>).</P>
 <P>Let's compile the example:</P>
 <PRE CLASS="western">$ c++ -I. -I$YBORM_ROOT/include/yb -o tut2 tut2.cpp domain/Client.cpp domain/Order.cpp -L$YBORM_ROOT/lib -lybutil -lyborm</PRE><P>
-And then run:</P>
+And then run it:</P>
 <PRE CLASS="western">$ ./tut2
 Enter order amount: 
 45.67
@@ -172,8 +171,9 @@ Petya pet@ya.ru
 Client's orders count: 0
 Client's orders count: 1
 &lt;order&gt;&lt;id&gt;2&lt;/id&gt;&lt;owner&gt;&lt;id&gt;2&lt;/id&gt;&lt;dt&gt;2014-06-01T17:25:32&lt;/dt&gt;&lt;name&gt;Petya&lt;/name&gt;&lt;email&gt;pet@ya.ru&lt;/email&gt;&lt;budget is_null=&quot;1&quot;/&gt;&lt;/owner&gt;&lt;dt&gt;2014-06-01T17:25:17&lt;/dt&gt;&lt;memo is_null=&quot;1&quot;/&gt;&lt;total-sum&gt;45.67&lt;/total-sum&gt;&lt;receipt-sum&gt;0&lt;/receipt-sum&gt;&lt;receipt-dt is_null=&quot;1&quot;/&gt;&lt;/order&gt;</PRE><P>
-If we would trace the SQL operators, using the same steps as in
-<A HREF="Tutorial1.en.html">Tutorial1</A>, we would see the following:</P>
+If we would trace the SQL operators, performing the same steps as in
+<A HREF="Tutorial1.en.html">Tutorial1</A>, we could see the
+following:</P>
 <PRE CLASS="western">14-06-01 17:25:32.293 31927/31927 DEBG orm: flush started
 14-06-01 17:25:32.293 31927/31927 DEBG sql: begin transaction
 14-06-01 17:25:32.293 31927/31927 DEBG sql: prepare: INSERT INTO client_tbl (dt, name, email, budget) VALUES (?, ?, ?, ?)
@@ -200,6 +200,23 @@ If we would trace the SQL operators, using the same steps as in
 14-06-01 17:25:32.396 31927/31927 DEBG sql: exec prepared: p1=&quot;2&quot;
 14-06-01 17:25:32.396 31927/31927 DEBG sql: fetch: ID='2' DT='2014-06-01T17:25:32' NAME='Petya' EMAIL='pet@ya.ru' BUDGET=NULL 
 14-06-01 17:25:32.396 31927/31927 DEBG sql: fetch: no more rows</PRE><P>
-</P>
+Note the correct sequence of insertion (first – parent, second –
+child). This is achieved by doing the topological sort on the graph
+of objects. The value of foreign key is assigned automatically, as
+well as the values of primary keys.</P>
+<P>On linking these objects using an assignment we can see that the
+<TT CLASS="western">orders</TT> collection of the corresponding
+instance of <TT CLASS="western">Client</TT> class gets altered as
+well. This is because both <TT CLASS="western">client-&gt;orders</TT>
+and <TT CLASS="western">order-&gt;owner</TT> properties share the
+same internal object <TT CLASS="western">RelationObject</TT>. The
+same effect could be achieved if we would insert into the
+collection-property. Let's change the assignment at the child object
+side</P>
+<PRE CLASS="western">    order-&gt;owner = client;</PRE><P>
+to the insertion into the collection-property at the parent object
+side</P>
+<PRE CLASS="western">    client-&gt;orders.insert(*order);</PRE><P>
+These two lines do exactly the same thing.</P>
 </BODY>
 </HTML>

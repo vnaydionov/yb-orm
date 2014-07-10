@@ -6,8 +6,8 @@
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
 	<META NAME="CREATED" CONTENT="20130520;9345500">
-	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
-	<META NAME="CHANGED" CONTENT="20140709;11391500">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20140710;10090100">
 	<STYLE TYPE="text/css">
 	<!--
 		@page { margin: 2cm }
@@ -31,9 +31,11 @@
 <P>Рассмотрим связь <EM>один-ко-многим</EM>
 на примере отношения Клиент — Заказы.
 У одного клиента может быть ноль или
-более заказов. Клиенты хранятся в таблице
-<TT CLASS="western">client_tbl</TT>, их заказы — в таблице
-<TT CLASS="western">order_tbl</TT>.</P>
+более заказов в некоторой учетной
+системе, при этом каждый заказ относится
+к какому-либо клиенту. Клиенты хранятся
+в таблице <TT CLASS="western">client_tbl</TT>, их заказы
+— в таблице <TT CLASS="western">order_tbl</TT>.</P>
 <P>На уровне SQL эту связь можно выразить
 так: на колонке <TT CLASS="western">client_id</TT> в
 т.&nbsp;н. <EM>дочерней</EM> таблице <TT CLASS="western">order_tbl</TT>
@@ -98,8 +100,8 @@
 в дополнительных указаниях.</P>
 <P>Код SQLite для приведенной выше схемы
 (использование утилиты <TT CLASS="western">yborm_gen</TT>
-см. в <A HREF="Tutorial1.ru.html">Tutorial1</A>)
-будет выглядеть так:</P>
+см. в <A HREF="Tutorial1.ru.html">Tutorial1</A>) будет
+выглядеть так:</P>
 <PRE CLASS="western">CREATE TABLE client_tbl (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -122,15 +124,14 @@ CREATE TABLE order_tbl (
 Следующая программа использует доменные
 классы из приведенной выше схемы
 (использование утилиты <TT CLASS="western">yborm_gen</TT>
-см. в <A HREF="Tutorial1.ru.html">Tutorial1</A>).
-Эта программа сначала создаёт дочерний
-объект, присваивает какие-то значения
-его полям, затем она создаёт родительский
-объект, потом она связывает дочерний
-объект с родительским. В конце она
-сохраняет объекты в сессии и записывает
-их в базу, завершая транзакцию
-(<TT CLASS="western">session.commit();</TT>).</P>
+см. в <A HREF="Tutorial1.ru.html">Tutorial1</A>). Эта программа
+сначала создаёт дочерний объект,
+присваивает какие-то значения его полям,
+затем она создаёт родительский объект,
+потом она связывает дочерний объект с
+родительским. В конце она сохраняет
+объекты в сессии и записывает их в базу,
+завершая транзакцию (<TT CLASS="western">session.commit();</TT>).</P>
 <PRE CLASS="western">#include &lt;iostream&gt;
 #include &quot;domain/Client.h&quot;
 #include &quot;domain/Order.h&quot;
@@ -171,8 +172,8 @@ int main()
 выглядит как присваивание (<TT CLASS="western">order-&gt;owner
 = client;</TT>). Однако, этот пример оперирует
 с объектами доменных классов не напрямую,
-как в <A HREF="Tutorial1.ru.html">Tutorial1</A>,
-вместо этого используются классы
+как в <A HREF="Tutorial1.ru.html">Tutorial1</A>, вместо
+этого используются классы
 <TT CLASS="western">&lt;DomainClass&gt;::Holder</TT>, которые
 необходимы для реализации вложенных и
 рекурсивных объектных ссылок. То есть,
@@ -230,13 +231,12 @@ Client's orders count: 1
 Значение внешнего ключа будет присвоено
 автоматически, так же как и значения
 первичных ключей.</P>
-<P>При связывании
-объектов с помощью присваивания
-происходит и изменение коллекции <TT CLASS="western">orders</TT>
-в соответствующем экземпляре класса
-<TT CLASS="western">Client</TT>. Дело в том, что оба
-свойства <TT CLASS="western">client-&gt;orders</TT> и
-<TT CLASS="western">order-&gt;owner</TT> используют один
+<P>При связывании объектов с помощью
+присваивания происходит и изменение
+коллекции <TT CLASS="western">orders</TT> в соответствующем
+экземпляре класса <TT CLASS="western">Client</TT>.
+Дело в том, что оба свойства <TT CLASS="western">client-&gt;orders</TT>
+и <TT CLASS="western">order-&gt;owner</TT> используют один
 и тот же внутренний объект <TT CLASS="western">RelationObject</TT>.
 Можно добиться такого же эффекта вставкой
 в свойство-коллекцию. Заменяем присваивание

@@ -112,7 +112,7 @@ their dependencies: <TT CLASS="western">-lxml2</TT>, <TT CLASS="western">-lboost
 <TT CLASS="western">-lodbc</TT>, <TT CLASS="western">-lsqlite3</TT>
 or <TT CLASS="western">-lsoci</TT>. In the simplest case the
 following command will build and link the example:</P>
-<PRE CLASS="western" STYLE="margin-top: 0.1cm; margin-bottom: 0.5cm">$ c++ -I. -I$YBORM_ROOT/include/yb -o tut1 tut1.cpp domain/Client.cpp -L$YBORM_ROOT/lib -lybutil -lyborm</PRE><P>
+<PRE CLASS="western">$ c++ -I. -I$YBORM_ROOT/include/yb -o tut1 tut1.cpp domain/Client.cpp -L$YBORM_ROOT/lib -lybutil -lyborm</PRE><P>
 To make it work we need to create a database with a table. In this
 example we'll use a local database <TT CLASS="western">SQLITE</TT>.
 We can use the same utility to generate SQL DDL script for table

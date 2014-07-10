@@ -1,4 +1,3 @@
-#include <memory>
 #include <iostream>
 #include <boost/foreach.hpp>
 #include "domain/Client.h"
@@ -13,7 +12,7 @@ int main()
     LogAppender appender(cerr);
     try {
         auto_ptr<SqlConnection> conn(new SqlConnection(
-                    "sqlite+sqlite://c:/yborm/examples/test1_db"));
+                "sqlite+sqlite://./test1_db"));
         Engine engine(Engine::READ_WRITE, conn);
         engine.set_logger(ILogger::Ptr(new Logger(&appender)));
         engine.set_echo(true);
