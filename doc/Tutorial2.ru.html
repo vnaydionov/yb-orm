@@ -193,7 +193,7 @@ Enter name, email:
 Petya pet@ya.ru
 Client's orders count: 0
 Client's orders count: 1
-&lt;order&gt;&lt;id&gt;2&lt;/id&gt;&lt;owner&gt;&lt;id&gt;2&lt;/id&gt;&lt;dt&gt;2014-06-01T17:25:32&lt;/dt&gt;&lt;name&gt;Petya&lt;/name&gt;&lt;email&gt;pet@ya.ru&lt;/email&gt;&lt;budget is_null=&quot;1&quot;/&gt;&lt;/owner&gt;&lt;dt&gt;2014-06-01T17:25:17&lt;/dt&gt;&lt;memo is_null=&quot;1&quot;/&gt;&lt;total-sum&gt;45.67&lt;/total-sum&gt;&lt;receipt-sum&gt;0&lt;/receipt-sum&gt;&lt;receipt-dt is_null=&quot;1&quot;/&gt;&lt;/order&gt;</PRE><P>
+&lt;order&gt;&lt;id&gt;2&lt;/id&gt;&lt;owner&gt;&lt;id&gt;2&lt;/id&gt;&lt;dt&gt;2014-06-01T17:25:32&lt;/dt&gt;&lt;name&gt;Petya&lt;/name&gt;&lt;email&gt;pet@ya.ru&lt;/email&gt;&lt;budget is_null=&quot;1&quot;/&gt;&lt;/owner&gt;&lt;dt&gt;2014-06-01T17:25:17&lt;/dt&gt;&lt;memo is_null=&quot;1&quot;/&gt;&lt;total-sum&gt;45.67&lt;/total-sum&gt;&lt;paid-sum&gt;0&lt;/paid-sum&gt;&lt;paid-dt is_null=&quot;1&quot;/&gt;&lt;/order&gt;</PRE><P>
 Если проследить операторы SQL, включив
 журнал сообщений по примеру <A HREF="Tutorial1.ru.html">Tutorial1</A>,
 то увидим следующие подробности:</P>
@@ -206,7 +206,7 @@ Client's orders count: 1
 14-06-01 17:25:32.295 31927/31927 DEBG sql: exec prepared:
 14-06-01 17:25:32.295 31927/31927 DEBG sql: fetch: LID='2' 
 14-06-01 17:25:32.295 31927/31927 DEBG sql: fetch: no more rows
-14-06-01 17:25:32.295 31927/31927 DEBG sql: prepare: INSERT INTO order_tbl (client_id, dt, memo, total_sum, receipt_sum, receipt_dt) VALUES (?, ?, ?, ?, ?, ?)
+14-06-01 17:25:32.295 31927/31927 DEBG sql: prepare: INSERT INTO order_tbl (client_id, dt, memo, total_sum, paid_sum, paid_dt) VALUES (?, ?, ?, ?, ?, ?)
 14-06-01 17:25:32.295 31927/31927 DEBG sql: bind: (LongInt, DateTime, String, Decimal, Decimal, DateTime)
 14-06-01 17:25:32.295 31927/31927 DEBG sql: exec prepared: p1=&quot;2&quot; p2=&quot;'2014-06-01 17:25:17'&quot; p3=&quot;NULL&quot; p4=&quot;45.67&quot; p5=&quot;0&quot; p6=&quot;NULL&quot;
 14-06-01 17:25:32.295 31927/31927 DEBG sql: prepare: SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = 'order_tbl'
@@ -215,7 +215,7 @@ Client's orders count: 1
 14-06-01 17:25:32.296 31927/31927 DEBG sql: fetch: no more rows
 14-06-01 17:25:32.296 31927/31927 DEBG orm: flush finished OK
 14-06-01 17:25:32.296 31927/31927 DEBG sql: commit
-14-06-01 17:25:32.395 31927/31927 DEBG sql: prepare: SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum, order_tbl.receipt_sum, order_tbl.receipt_dt FROM order_tbl WHERE order_tbl.id = ?
+14-06-01 17:25:32.395 31927/31927 DEBG sql: prepare: SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum, order_tbl.paid_sum, order_tbl.paid_dt FROM order_tbl WHERE order_tbl.id = ?
 14-06-01 17:25:32.395 31927/31927 DEBG sql: exec prepared: p1=&quot;2&quot;
 14-06-01 17:25:32.395 31927/31927 DEBG sql: fetch: ID='2' CLIENT_ID='2' DT='2014-06-01T17:25:17' MEMO=NULL TOTAL_SUM='45.67' RECEIPT_SUM='0' RECEIPT_DT=NULL 
 14-06-01 17:25:32.395 31927/31927 DEBG sql: fetch: no more rows

@@ -35,7 +35,7 @@ int main()
             .filter_by(Client::c.name == name).one();
         cout << client_2.name.value() << endl;
 
-        cout << "Walking through client's orders property: \n";
+        cout << "Walking through the client's orders property: \n";
         BOOST_FOREACH(Order order, client_2.orders) {
             cout << "(" << order.id 
                 << "," << order.owner->id 
@@ -49,7 +49,7 @@ int main()
         cin >> min_sum;
         DomainResultSet<Order> rs_1 = query<Order>(session)
             .filter_by(Order::c.total_sum > Decimal(min_sum)
-                       && Order::c.receipt_dt == Value()).all();
+                       && Order::c.paid_dt == Value()).all();
         cout << "Found orders: ";
         BOOST_FOREACH(Order order, rs_1) {
             cout << order.id << ",";
@@ -68,11 +68,10 @@ int main()
             cout << pair.get<1>().name.value()
                  << " " << pair.get<0>().total_sum.value() << endl;
         }
-
-        return 0;
     }
     catch (const std::exception &ex) {
         cout << "exception: " << ex.what() << endl;
         return 1;
     }
+    return 0;
 }

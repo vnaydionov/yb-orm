@@ -173,14 +173,14 @@ SELECT client_tbl.id, client_tbl.dt, client_tbl.name, client_tbl.email, client_t
 </P>
 <PRE CLASS="western">    DomainResultSet&lt;Order&gt; rs = query&lt;Order&gt;(session)
       .filter_by(Order::c.total_sum &gt; Decimal(100)
-           &amp;&amp; Order::c.receipt_dt == Value()).all();
+           &amp;&amp; Order::c.paid_dt == Value()).all();
     BOOST_FOREACH(Order order, rs) {
       cout &lt;&lt; order.id.value() &lt;&lt; &quot;,&quot;;
     }
 SQL:
 SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, 
- order_tbl.total_sum, order_tbl.receipt_sum, order_tbl.receipt_dt 
-FROM order_tbl WHERE (order_tbl.total_sum &gt; ?) AND (order_tbl.receipt_dt IS NULL)</PRE><P>
+ order_tbl.total_sum, order_tbl.paid_sum, order_tbl.paid_dt 
+FROM order_tbl WHERE (order_tbl.total_sum &gt; ?) AND (order_tbl.paid_dt IS NULL)</PRE><P>
 Для объекта <TT CLASS="western">QueryObj</TT> можно
 применять и метод <TT CLASS="western">count()</TT>.
 Этот вызов преобразует запрос в подзапрос,
@@ -194,7 +194,7 @@ FROM order_tbl WHERE (order_tbl.total_sum &gt; ?) AND (order_tbl.receipt_dt IS N
 SQL:
 SELECT COUNT(*) CNT FROM (
 SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum,
- order_tbl.receipt_sum, order_tbl.receipt_dt 
+ order_tbl.paid_sum, order_tbl.paid_dt 
 FROM order_tbl WHERE order_tbl.client_id = ?) X</PRE><P>
 Иногда бывают нужны более сложные
 запросы, включающие связки таблиц по
@@ -224,7 +224,7 @@ FROM order_tbl WHERE order_tbl.client_id = ?) X</PRE><P>
     } 
 SQL:
 SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum,
- order_tbl.receipt_sum, order_tbl.receipt_dt, 
+ order_tbl.paid_sum, order_tbl.paid_dt, 
  client_tbl.id, client_tbl.dt, client_tbl.name, client_tbl.email, client_tbl.budget 
 FROM order_tbl JOIN client_tbl ON (client_tbl.ID = order_tbl.client_id) 
 WHERE (order_tbl.total_sum &gt; ?) AND (client_tbl.budget IS NOT NULL) 

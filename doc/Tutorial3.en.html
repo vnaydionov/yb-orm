@@ -144,14 +144,14 @@ having total_sum more than given one.</STRONG>
 </P>
 <PRE CLASS="western">    DomainResultSet&lt;Order&gt; rs = query&lt;Order&gt;(session)
       .filter_by(Order::c.total_sum &gt; Decimal(100)
-           &amp;&amp; Order::c.receipt_dt == Value()).all();
+           &amp;&amp; Order::c.paid_dt == Value()).all();
     BOOST_FOREACH(Order order, rs) {
       cout &lt;&lt; order.id.value() &lt;&lt; &quot;,&quot;;
     }
 SQL:
 SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, 
- order_tbl.total_sum, order_tbl.receipt_sum, order_tbl.receipt_dt 
-FROM order_tbl WHERE (order_tbl.total_sum &gt; ?) AND (order_tbl.receipt_dt IS NULL)</PRE><P>
+ order_tbl.total_sum, order_tbl.paid_sum, order_tbl.paid_dt 
+FROM order_tbl WHERE (order_tbl.total_sum &gt; ?) AND (order_tbl.paid_dt IS NULL)</PRE><P>
 Also there is method <TT CLASS="western">count()</TT> in class
 <TT CLASS="western">QueryObj</TT>. This call transforms the query
 into a sub-query then all the rows are counted in the sub-query. This
@@ -163,7 +163,7 @@ of all orders for given client.</STRONG>
 SQL:
 SELECT COUNT(*) CNT FROM (
 SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum,
- order_tbl.receipt_sum, order_tbl.receipt_dt 
+ order_tbl.paid_sum, order_tbl.paid_dt 
 FROM order_tbl WHERE order_tbl.client_id = ?) X</PRE><P>
 Sometimes we need more complicated queries involving table joined
 using foreign keys. In YB.ORM library we may pass as a parameter to
@@ -188,7 +188,7 @@ order ID.</STRONG>
     } 
 SQL:
 SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum,
- order_tbl.receipt_sum, order_tbl.receipt_dt, 
+ order_tbl.paid_sum, order_tbl.paid_dt, 
  client_tbl.id, client_tbl.dt, client_tbl.name, client_tbl.email, client_tbl.budget 
 FROM order_tbl JOIN client_tbl ON (client_tbl.ID = order_tbl.client_id) 
 WHERE (order_tbl.total_sum &gt; ?) AND (client_tbl.budget IS NOT NULL) 
