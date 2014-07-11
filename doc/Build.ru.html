@@ -6,33 +6,29 @@
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="AUTHOR" CONTENT="Vaclav Naydionov">
 	<META NAME="CREATED" CONTENT="20130618;22415700">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20140711;10184200">
 	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
-	<META NAME="CHANGED" CONTENT="20130618;22424100">
 	<STYLE TYPE="text/css">
 	<!--
-		@page { size: 21cm 29.7cm; margin: 2cm }
-		P { margin-bottom: 0.21cm }
-		H1 { margin-bottom: 0.21cm; page-break-after: avoid }
-		H1.western { font-family: "Times New Roman", serif; font-size: 24pt; font-weight: bold }
-		H1.cjk { font-family: "Droid Sans Fallback"; font-size: 24pt; font-weight: bold }
-		H1.ctl { font-family: "Lohit Hindi"; font-size: 24pt; font-weight: bold }
-		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
-		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
-		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
-		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
-		TH P { font-weight: bold; text-align: center }
-		PRE.western { font-family: "Droid Sans Mono", monospace; font-size: 10pt }
-		PRE.cjk { font-family: "Droid Sans Fallback", monospace; font-size: 10pt }
-		PRE.ctl { font-family: "Lohit Hindi", monospace; font-size: 10pt }
-		STRONG { font-weight: bold }
-		A:link { color: #000080; so-language: zxx; text-decoration: underline }
-		TT.western { font-family: "Droid Sans Mono", monospace }
+		@page { margin: 2cm }
+		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
+		H2 { margin-bottom: 0.21cm }
+		H2.western { font-family: "Times New Roman", serif }
+		H2.cjk { font-family: "Droid Sans Fallback" }
+		H2.ctl { font-family: "Lohit Hindi" }
+		H1.cjk { font-family: "Droid Sans Fallback" }
+		H1.ctl { font-family: "Lohit Hindi" }
+		PRE.western { font-family: "Courier New", monospace }
+		PRE.cjk { font-family: "Droid Sans Fallback", monospace }
+		PRE.ctl { font-family: "Lohit Hindi", monospace }
+		TT.western { font-family: "Courier New", monospace }
 		TT.cjk { font-family: "Droid Sans Fallback", monospace }
 		TT.ctl { font-family: "Lohit Hindi", monospace }
 	-->
 	</STYLE>
 </HEAD>
-<BODY LANG="ru-RU" LINK="#000080" VLINK="#800000" DIR="LTR">
+<BODY LANG="ru-RU" DIR="LTR">
 <H1 CLASS="western">С чего начать</H1>
 <P>Чтобы попробовать инструмент YB.ORM в
 вашем окружении нужно собрать саму
@@ -41,10 +37,10 @@
 способов это сделать. 
 </P>
 <UL>
-	<LI><P STYLE="margin-bottom: 0cm">Для пользователей
-	Windows, более простой способ - взять готовый
-	пакет, совместимый с вашим компилятором,
-	См. <STRONG>Готовые пакеты</STRONG>. 
+	<LI><P>Для пользователей Windows, более простой
+	способ - взять готовый пакет, совместимый
+	с вашим компилятором, См. <STRONG>Готовые
+	пакеты</STRONG>. 
 	</P>
 	<LI><P>В любом окружении вы можете скачать
 	один из релизов в виде архива с исходным
@@ -55,6 +51,8 @@
 	с помощью Autotools</STRONG> и <STRONG>Сборка с
 	помощью CMake</STRONG>. 
 	</P>
+	<LI><P>Для систем на базе Debian GNU/Linux и Ubuntu
+	можно собрать .deb пакет.</P>
 </UL>
 <P>Вы можете также использовать инструмент
 для контроля версий <A HREF="http://git-scm.com/">Git</A>
@@ -77,7 +75,7 @@ Windows, в виде .zip-файлов - чтобы было легче
 конкретными версиями библиотек <A HREF="http://www.boost.org/">Boost</A>
 или <A HREF="http://qt-project.org/">Qt</A>. Собраны они
 конкретными версиями компиляторов C++
-(напр. MinGW 4.4, MSVC 2010, MSVC 2008, и т.д.). Версия,
+(напр. MinGW 4.4, MSVC 2013, MSVC 2010, и т.д.). Версия,
 собранная с Boost, включает все необходимые
 компоненты библиотек Boost в себе, в то
 время как версия, собранная с Qt, требует
@@ -89,7 +87,7 @@ Windows, в виде .zip-файлов - чтобы было легче
 Конечно, вы можете пересобрать YB.ORM с
 использованием того тулкита/компилятора/бакэнда
 для БД, который вам подходит, исходный
-код включен. 
+код имеется. 
 </P>
 <P><STRONG>Замечание для Qt4 и MinGW</STRONG>: Qt4 SDK
 было собрано производителем с
@@ -132,17 +130,22 @@ Windows, обычно распаковывается в папку
 		</TD>
 		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
 			<UL>
-				<LI><P>файлы .dll, от которых может зависеть
-				данная сборка: <TT CLASS="western">boost_date_time</TT>,
+				<LI><P STYLE="margin-bottom: 0.5cm"><TT CLASS="western">.dll</TT>
+				файлы самой библиотеки, например
+				<TT CLASS="western">ybutil.dll</TT>, <TT CLASS="western">yborm.dll</TT>.</P>
+				<LI><P STYLE="margin-bottom: 0.5cm">файлы <TT CLASS="western">.dll</TT>,
+				от которых может зависеть данная
+				сборка: <TT CLASS="western">boost_date_time</TT>,
 				<TT CLASS="western">boost_thread</TT>, <TT CLASS="western">cppunit</TT>,
 				<TT CLASS="western">libxml2</TT>, <TT CLASS="western">sqlite3</TT>,
 				различные служебные библиотеки 
 				</P>
-				<LI><P>некоторые сторонние утилиты:
-				<TT CLASS="western">iconv.exe</TT>, <TT CLASS="western">xmllint.exe</TT>,
+				<LI><P STYLE="margin-bottom: 0.5cm">некоторые сторонние
+				утилиты: <TT CLASS="western">iconv.exe</TT>, <TT CLASS="western">xmllint.exe</TT>,
 				<TT CLASS="western">xsltproc.exe</TT>, <TT CLASS="western">sqlite3.exe</TT>
 								</P>
-				<LI><P>утилита генерации кода: <STRONG><TT CLASS="western">yborm_gen.exe</TT></STRONG>
+				<LI><P STYLE="margin-bottom: 0.5cm">утилита генерации
+				кода: <STRONG><TT CLASS="western">yborm_gen.exe</TT></STRONG>
 								</P>
 				<LI><P>конфигурация окружения: <STRONG><TT CLASS="western">yborm_env.bat</TT></STRONG></P>
 			</UL>
@@ -170,7 +173,7 @@ Windows, обычно распаковывается в папку
 		</TD>
 		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
 			<P>папка для сборки примеров из папки
-			Tutorial</P>
+			tutorial</P>
 		</TD>
 	</TR>
 	<TR>
@@ -178,7 +181,7 @@ Windows, обычно распаковывается в папку
 			<P><TT CLASS="western">c:\yborm\doc</TT></P>
 		</TD>
 		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
-			<P>куски документации</P>
+			<P>документация в формате HTML</P>
 		</TD>
 	</TR>
 	<TR>
@@ -238,11 +241,12 @@ Windows, обычно распаковывается в папку
 			<P><TT CLASS="western">c:\yborm\lib</TT></P>
 		</TD>
 		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
-			<P>статические библиотеки YB.ORM: <STRONG><TT CLASS="western">ybutil.lib</TT></STRONG>,
-			<STRONG><TT CLASS="western">yborm.lib</TT></STRONG> (или файлы
-			<TT CLASS="western">.a</TT>, в случае MinGW); а также
-			библиотеки импорта для зависимостей
-			YB.ORM</P>
+			<P>статические библиотеки YB.ORM, если
+			используется статическая сборка:
+			<STRONG><TT CLASS="western">ybutil.lib</TT></STRONG>, <STRONG><TT CLASS="western">yborm.lib</TT></STRONG>
+			(или файлы <TT CLASS="western">.a</TT>, в случае
+			MinGW); а также библиотеки импорта для
+			зависимостей YB.ORM</P>
 		</TD>
 	</TR>
 	<TR>
@@ -302,8 +306,8 @@ Visual Studio command line prompt. Все такие файлы <TT CLASS="weste
 			</P>
 		</TD>
 		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
-			<P>MinGW GCC 4.4.0, MS Visual C++ 2008 or 2010, Borland C++
-			Builder 6 или другой компилятор, которым
+			<P>MinGW GCC 4.4.0, MS Visual C++ 2013, 2010 или 2008, Borland
+			C++ Builder 6 или другой компилятор, которым
 			был собран пакет 
 			</P>
 		</TD>
@@ -340,14 +344,14 @@ Visual Studio command line prompt. Все такие файлы <TT CLASS="weste
 Linux, с использованием инструментов GNU,
 включая GNU Autotools. Вы можете собрать YB.ORM
 в среде, совместимой с POSIX, такой как
-Linux, FreeBSD, Mac OS X. Типичная последовательность
-шагов: 
+Linux, FreeBSD, Mac OS X или Cygwin. Типичная
+последовательность шагов: 
 </P>
-<PRE CLASS="western">$ sh autogen.sh # создать скрипт configure; требуется после &quot;git clone&quot;, не для исходников из тарбола с релизом
+<PRE CLASS="western">$ sh autogen.sh  # создать скрипт configure; требуется после &quot;git clone&quot;, не для исходников из тарбола с релизом
 $ ./configure --prefix=/home/user1/yb-orm --with-test-db-url=sqlite+sqlite:///home/user1/test1_db.sqlite --disable-static
 $ make
-$ make check # для запуска тестов понадобится создать базу /home/user1/test1_db.sqlite
-$ make install # будет установлено в /home/user1/yb-orm</PRE><P>
+$ make check     # для запуска тестов понадобится создать базу /home/user1/test1_db.sqlite
+$ make install   # будет установлено в /home/user1/yb-orm</PRE><P>
 Скрипт <TT CLASS="western">configure</TT> пытается
 автоматически определить доступность
 и расположение библиотек и заголовочных
@@ -362,19 +366,18 @@ $ make install # будет установлено в /home/user1/yb-orm</PRE><P
 </P>
 <PRE CLASS="western">$ ./configure --help
 ...
-&nbsp; --prefix=PREFIX &nbsp; &nbsp; &nbsp; &nbsp; Корень установки файлов, по умолчанию [/usr/local]
-&nbsp; --with-qt-includes=DIR &nbsp;Директория с заголовочными файлами QT
-&nbsp; --with-qt-libs=DIR &nbsp; &nbsp; &nbsp;Директория с библиотеками QT
-&nbsp; --with-wx-config=BIN &nbsp; &nbsp;Конфигурационный скрипт библиотеки wxWidgets
-&nbsp; --with-boost-includes=DIR
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Директория с заголовочными файлами Boost
-&nbsp; --with-boost-libs=DIR &nbsp; Директория с библиотеками Boost
-&nbsp; --with-soci-includes=DIR
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Директория с заголовочными файлами SOCI
-&nbsp; --with-soci-libs=DIR &nbsp; &nbsp;Директория с библиотеками SOCI
-&nbsp; --with-test-db-url=dialect+driver://user:password@database or like
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Укажите строку подключения (URL) для тестовой БД
-...</PRE><P>
+ --prefix=PREFIX     Корень установки файлов, по умолчанию [/usr/local]
+ --with-qt-includes=DIR Директория с заголовочными файлами QT
+ --with-qt-libs=DIR   Директория с библиотеками QT
+ --with-wx-config=BIN  Конфигурационный скрипт библиотеки wxWidgets
+ --with-boost-includes=DIR
+             Директория с заголовочными файлами Boost
+ --with-boost-libs=DIR  Директория с библиотеками Boost
+ --with-soci-includes=DIR
+             Директория с заголовочными файлами SOCI
+ --with-soci-libs=DIR  Директория с библиотеками SOCI
+ --with-test-db-url=dialect+driver://user:password@database or like
+             Укажите строку подключения (URL) для тестовой БД</PRE><P>
 Пользовательские макросы, используемые
 в скрипте <TT CLASS="western">configure</TT>, помещаются
 в <TT CLASS="western">acinclude.m4</TT>. Если вы собираете
@@ -393,22 +396,21 @@ Auth</A>.
 Следующие версии пакетов должны подойти:
 </P>
 <UL>
-	<LI><P STYLE="margin-bottom: 0cm">libboost-thread-dev &gt;= 1.34.1 
+	<LI><P>libboost-thread-dev &gt;= 1.34.1 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">libboost-date-time-dev &gt;=
-	1.34.1 
+	<LI><P>libboost-date-time-dev &gt;= 1.34.1 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">libxml2-dev &gt;= 2.6.31 
+	<LI><P>libxml2-dev &gt;= 2.6.31 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">libcppunit-dev &gt;= 1.12.0 (если
-	вы собираетесь запускать наборы тестов)
-		</P>
-	<LI><P STYLE="margin-bottom: 0cm">autoconf &gt;= 2.61 
+	<LI><P>libcppunit-dev &gt;= 1.12.0 (если вы собираетесь
+	запускать наборы тестов) 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">automake &gt;= 1.10.1 
+	<LI><P>autoconf &gt;= 2.61 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">libqt4-dev &gt;= 4.5 (проверялось
-	на Ubuntu 9.04) 
+	<LI><P>automake &gt;= 1.10.1 
+	</P>
+	<LI><P>libqt4-dev &gt;= 4.5 (проверялось на Ubuntu
+	9.04) 
 	</P>
 	<LI><P>libwxgtk2.8-dev &gt;= 2.8.12 
 	</P>
@@ -417,18 +419,18 @@ Auth</A>.
 что-то из следующего: 
 </P>
 <UL>
-	<LI><P STYLE="margin-bottom: 0cm">libsqlite3-dev &gt;= 3.7.9 
+	<LI><P>libsqlite3-dev &gt;= 3.7.9 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">soci &gt;= 3.2.0 
+	<LI><P>soci &gt;= 3.2.0 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">unixodbc-dev &gt;= 2.2.14 (чтобы
-	заработала связка Oracle ODBC под Ubuntu 8.04
-	64bit пришлось использовать unixODBC = 2.3.0) 
+	<LI><P>unixodbc-dev &gt;= 2.2.14 (чтобы заработала
+	связка Oracle ODBC под Ubuntu 8.04 64bit пришлось
+	использовать unixODBC = 2.3.0) 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">instantclient &gt;= 10.2 (клиент
-	и драйвер ODBC для Oracle) 
+	<LI><P>instantclient &gt;= 10.2 (клиент и драйвер ODBC
+	для Oracle) 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">libmyodbc &gt;= 5.1.10 
+	<LI><P>libmyodbc &gt;= 5.1.10 
 	</P>
 	<LI><P>odbc-postgresql &gt;= 09.00.0310 
 	</P>
@@ -444,20 +446,16 @@ YB.ORM под Windows, хотя для окружения POSIX они
 протестирован для следующих версий ПО:
 </P>
 <UL>
-	<LI><P STYLE="margin-bottom: 0cm">MinGW GCC 4.4.0, Boost 1.46.1, Qt
-	4.8.1 
+	<LI><P>MS Visual C++ 2013 Express Edition, Boost 1.53.0</P>
+	<LI><P>MS Visual C++ 2010 Express Edition, Boost 1.46.1, Qt 4.8.1 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">MS Visual C++ 2010 Express
-	Edition, Boost 1.46.1, Qt 4.8.1 
+	<LI><P>MS Visual C++ 2008 Express Edition, Boost 1.38.0, Qt 4.8.1 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">MS Visual C++ 2008 Express
-	Edition, Boost 1.38.0, Qt 4.8.1 
+	<LI><P>MinGW GCC 4.4.0, Boost 1.46.1, Qt 4.8.1 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">Borland C++ Builder 6, Boost
-	1.33.1 
+	<LI><P>Borland C++ Builder 6, Boost 1.33.1 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">Borland C++ 5.5 Free Command Line
-	Compiler, Boost 1.33.1 
+	<LI><P>Borland C++ 5.5 Free Command Line Compiler, Boost 1.33.1 
 	</P>
 	<LI><P>Ubuntu GCC 4.6.3, Boost 1.46.1, Qt 4.8.1 
 	</P>
@@ -564,15 +562,22 @@ SQLite3, MySQL, Postgres или Firebird), а потом создать
 <P>Примеры строк для подключения к БД
 SQLite3: 
 </P>
-<TABLE CELLPADDING=2 CELLSPACING=2>
+<TABLE WIDTH=278 CELLPADDING=5 CELLSPACING=0>
+	<COL WIDTH=266>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD WIDTH=266 STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+			<P>sqlite+sqlite://./test1_db 
+			</P>
+		</TD>
+	</TR>
+	<TR>
+		<TD WIDTH=266 STYLE="border-top: none; border-bottom: 1px solid #cccccc; border-left: 1px solid #cccccc; border-right: 1px solid #cccccc; padding-top: 0cm; padding-bottom: 0.13cm; padding-left: 0.13cm; padding-right: 0.13cm">
 			<P>sqlite+sqlite://c:/yborm/examples/test1_db 
 			</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD WIDTH=266 STYLE="border: 1px solid #cccccc; padding: 0.13cm">
 			<P>sqlite+qtsql://c:/yborm/examples/test1_db 
 			</P>
 		</TD>
@@ -621,7 +626,7 @@ MySQL:
 </P>
 <PRE CLASS="western">C:\MySQL\bin&gt;mysql.exe -u root -p mysql
 Enter password: ******** &lt;-- введите сюда пароль пользователя root базы MySQL
-Welcome to the MySQL monitor. &nbsp;Commands end with ; or \g.
+Welcome to the MySQL monitor. Commands end with ; or \g.
 Your MySQL connection id is 361
 Server version: 5.0.51b-community-nt-log MySQL Community Edition (GPL)
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
@@ -675,9 +680,9 @@ Password: &lt;ваш главный пароль от Postgres&gt;</PRE><P>
 </P>
 <PRE CLASS="western">C:\Program Files\PostgreSQL\9.1\bin&gt;psql -h 127.0.0.1 -p 5432 -d test1_db -U test1_usr &lt; c:\yborm\examples\test_schema.sql
 Password for user test1_usr: test1_pwd
-NOTICE: &nbsp;CREATE TABLE / PRIMARY KEY will create implicit index &quot;t_orm_test_pkey&quot; for table &quot;t_orm_test&quot;
+NOTICE: CREATE TABLE / PRIMARY KEY will create implicit index &quot;t_orm_test_pkey&quot; for table &quot;t_orm_test&quot;
 CREATE TABLE
-NOTICE: &nbsp;CREATE TABLE / PRIMARY KEY will create implicit index &quot;t_orm_xml_pkey&quot; for table &quot;t_orm_xml&quot;
+NOTICE: CREATE TABLE / PRIMARY KEY will create implicit index &quot;t_orm_xml_pkey&quot; for table &quot;t_orm_xml&quot;
 CREATE TABLE
 ALTER TABLE
 CREATE SEQUENCE
@@ -737,12 +742,10 @@ SQL&gt; CREATE DATABASE '/var/lib/firebird/2.5/data/test1_db.fdb'
 CON&gt; page_size 8192 user 'test1_usr' password 'test1_pwd';
 SQL&gt; quit;
 $ isql-fb -u test1_usr -p test1_pwd \
-&nbsp; localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; lib/orm/test/mk_tables.sql
+ localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; lib/orm/test/mk_tables.sql
 $ isql-fb -u test1_usr -p test1_pwd \
-&nbsp; localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; examples/domain/mk_tables.sql
+ localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; examples/domain/mk_tables.sql
 $ isql-fb -u test1_usr -p test1_pwd \
-&nbsp; localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; examples/auth/src/domain/auth_schema.sql</PRE><P STYLE="margin-bottom: 0cm">
-<BR>
-</P>
+ localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; examples/auth/src/domain/auth_schema.sql</PRE>
 </BODY>
 </HTML>
