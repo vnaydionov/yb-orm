@@ -144,7 +144,7 @@ having total_sum more than given one.</STRONG>
 </P>
 <PRE CLASS="western">    DomainResultSet&lt;Order&gt; rs = query&lt;Order&gt;(session)
       .filter_by(Order::c.total_sum &gt; Decimal(100)
-           &amp;&amp; Order::c.paid_dt == Value()).all();
+           &amp;&amp; Order::c.paid_dt == YB_NULL).all();
     BOOST_FOREACH(Order order, rs) {
       cout &lt;&lt; order.id.value() &lt;&lt; &quot;,&quot;;
     }
@@ -180,7 +180,7 @@ order ID.</STRONG>
 <PRE CLASS="western">    typedef tuple&lt;Order, Client&gt; Pair; 
     DomainResultSet&lt;Pair&gt; rs = query&lt;Pair&gt;(session) 
       .filter_by(Order::c.total_sum &gt; Decimal(&quot;3.14&quot;) 
-           &amp;&amp; Client::c.budget != Value())
+           &amp;&amp; Client::c.budget != YB_NULL)
       .order_by(ExpressionList(Client::c.id, Order::c.id)).all(); 
     BOOST_FOREACH(Pair pair, rs) { 
       cout &lt;&lt; pair.get&lt;1&gt;().name.value() 

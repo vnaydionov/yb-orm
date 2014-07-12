@@ -49,7 +49,7 @@ int main()
         cin >> min_sum;
         DomainResultSet<Order> rs_1 = query<Order>(session)
             .filter_by(Order::c.total_sum > Decimal(min_sum)
-                       && Order::c.paid_dt == Value()).all();
+                       && Order::c.paid_dt == YB_NULL).all();
         cout << "Found orders: ";
         BOOST_FOREACH(Order order, rs_1) {
             cout << order.id << ",";
@@ -62,7 +62,7 @@ int main()
         typedef boost::tuple<Order, Client> Pair;
         DomainResultSet<Pair> rs = query<Pair>(session)
             .filter_by(Order::c.total_sum > Decimal(100)
-                       && Client::c.budget == Value())
+                       && Client::c.budget == YB_NULL)
             .order_by(ExpressionList(Client::c.id, Order::c.id)).all();
         BOOST_FOREACH(Pair pair, rs) {
             cout << pair.get<1>().name.value()
