@@ -1,0 +1,41 @@
+# Near future plans
+
+These features should be implemented in next release or two. Some kind of road
+map:
+
+* Construct `SqlConnection` from raw connection handle. 
+
+* Support for BLOB data type. 
+
+* `yborm_gen`: it should be possible to specify the types of columns explicitly. 
+
+* `yborm_gen`: basic database schema reverse engineering. 
+
+* Try code generation with macros. 
+
+* `QueryObj`: optional explicit `.select_from()` clause. 
+
+* `QueryObj`: explicit `.join()` clause in Query object. 
+
+* `SqlConnection`: information about character encoding, support automatic encoding conversions. 
+
+# Wish list
+
+These things will be implemented one day. Need to keep in mind:
+
+* Relationships: implement inheritance, at least three models are possible. 
+
+* Relationships: implement n-to-n relationship using link table, represent it as collection properties. 
+
+* Improve query language, allow for intermixing domain classes and column expressions in `query<>()`. 
+
+* Optional caching of result sets. 
+
+* Library API in common: more possibilities for customization. 
+
+* Comment the source code! Use Doxygen for API docs. 
+
+* What about C++11? 
+
+* and more ... 
+
