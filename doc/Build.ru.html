@@ -7,14 +7,14 @@
 	<META NAME="AUTHOR" CONTENT="Vaclav Naydionov">
 	<META NAME="CREATED" CONTENT="20130618;22415700">
 	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
-	<META NAME="CHANGED" CONTENT="20140716;22203600">
+	<META NAME="CHANGED" CONTENT="20140717;1021600">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
 	<STYLE TYPE="text/css">
 	<!--
 		@page { margin: 2cm }
-		TD P { margin-top: 0.1cm; margin-bottom: 0.1cm }
+		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
 		H1.cjk { font-family: "Droid Sans Fallback" }
 		H1.ctl { font-family: "Lohit Hindi" }
-		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
 		H2 { margin-bottom: 0.21cm }
 		H2.western { font-family: "Times New Roman", serif }
 		H2.cjk { font-family: "Droid Sans Fallback" }
@@ -22,6 +22,7 @@
 		PRE.western { font-family: "Courier New", monospace }
 		PRE.cjk { font-family: "Droid Sans Fallback", monospace }
 		PRE.ctl { font-family: "Lohit Hindi", monospace }
+		TD P { margin-top: 0.1cm; margin-bottom: 0.1cm }
 		TH P { margin-top: 0.1cm; margin-bottom: 0.1cm }
 		TT.western { font-family: "Courier New", monospace }
 		TT.cjk { font-family: "Droid Sans Fallback", monospace }
@@ -241,11 +242,12 @@ Windows, обычно распаковывается в папку
 		</TD>
 		<TD STYLE="border: none; padding: 0cm">
 			<P>статические библиотеки YB.ORM, если
-			используется статическая сборка:
-			<STRONG><TT CLASS="western">ybutil.lib</TT></STRONG>, <STRONG><TT CLASS="western">yborm.lib</TT></STRONG>
-			(или файлы <TT CLASS="western">.a</TT>, в случае
-			MinGW); а также библиотеки импорта для
-			зависимостей YB.ORM</P>
+			используется статическая сборка, или
+			библиотеки импорта: <STRONG><TT CLASS="western">ybutil.lib</TT></STRONG>,
+			<STRONG><TT CLASS="western">yborm.lib</TT></STRONG> (или файлы
+			<TT CLASS="western">.a</TT>, в случае MinGW); а также
+			библиотеки импорта для зависимостей
+			YB.ORM</P>
 		</TD>
 	</TR>
 	<TR>
@@ -253,8 +255,7 @@ Windows, обычно распаковывается в папку
 			<P><TT CLASS="western">c:\yborm\src</TT></P>
 		</TD>
 		<TD STYLE="border: none; padding: 0cm">
-			<P>исходный код данного релиза 
-			</P>
+			<P>исходный код данной версии</P>
 		</TD>
 	</TR>
 </TABLE>
@@ -266,9 +267,11 @@ Windows, обычно распаковывается в папку
 Пересборка пакета YB.ORM</H2>
 <P>Самый простой способ собрать YB.ORM под
 MS Windows - это пересобрать один из готовых
-пакетов. Это может быть полезно, если у
-вас уже установлен YB.ORM, и просто нужна
-более свежая версия из Git. В этом случае
+пакетов. Это может быть полезно, к
+примеру, если у вас уже установлен
+YB.ORM, и просто нужна более свежая версия
+из Git, или если вы скачали сборку с Qt и
+хотите пересобрать с Boost. В этом случае
 поместите свежие исходники в папку <TT CLASS="western">src</TT>,
 затем используйте окно командной строки
 чтобы перейти <TT CLASS="western">cd</TT> в папку

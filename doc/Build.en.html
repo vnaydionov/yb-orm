@@ -7,14 +7,14 @@
 	<META NAME="AUTHOR" CONTENT="Vaclav Naydionov">
 	<META NAME="CREATED" CONTENT="20130618;22411100">
 	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
-	<META NAME="CHANGED" CONTENT="20140716;22202100">
+	<META NAME="CHANGED" CONTENT="20140717;593500">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
 	<STYLE TYPE="text/css">
 	<!--
 		@page { margin: 2cm }
-		TD P { margin-top: 0.1cm; margin-bottom: 0.1cm }
+		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
 		H1.cjk { font-family: "Droid Sans Fallback" }
 		H1.ctl { font-family: "Lohit Hindi" }
-		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
 		H2 { margin-bottom: 0.21cm }
 		H2.western { font-family: "Times New Roman", serif }
 		H2.cjk { font-family: "Droid Sans Fallback" }
@@ -22,6 +22,7 @@
 		PRE.western { font-family: "Courier New", monospace }
 		PRE.cjk { font-family: "Droid Sans Fallback", monospace }
 		PRE.ctl { font-family: "Lohit Hindi", monospace }
+		TD P { margin-top: 0.1cm; margin-bottom: 0.1cm }
 		TH P { margin-top: 0.1cm; margin-bottom: 0.1cm }
 		TT.western { font-family: "Courier New", monospace }
 		TT.cjk { font-family: "Droid Sans Fallback", monospace }
@@ -60,16 +61,15 @@ tests and samples, see <STRONG>Setting up test database</STRONG>.
 packages</H1>
 <P>There are pre-built packages released for Microsoft Windows
 developers in form of .zip-files, to make it easier to play with the
-library and tools. These packages are built against a specific
-version of <A HREF="http://www.boost.org/">Boost</A> or <A HREF="http://qt-project.org/">Qt</A>
-toolkit, compiled using a specific version of C++ compiler (e.g.
-MinGW 4.4, MSVC 2013, MSVC 2010, etc.). A Boost-enabled package
-includes all the required components of Boost libraries, whereas
-Qt-enabled one requires you to install proper version of Qt SDK
-beforehand. By default, Boost-enabled version has ODBC as database
-backend API plus SQLite native driver, and Qt-enabled version relies
-on <A HREF="http://qt-project.org/doc/qt-4.8/qtsql.html">QtSql</A>.
-Of course, you can still rebuild YB.ORM library to use your
+library and tools. Each package is built against a specific version
+of <A HREF="http://www.boost.org/">Boost</A> or <A HREF="http://qt-project.org/">Qt</A>
+toolkit, compiled with a specific version of C++ compiler (e.g. MinGW
+4.4, MSVC 2013, MSVC 2010, etc.). A Boost-enabled package includes
+all the required components of Boost libraries, whereas Qt-enabled
+one requires you to install proper version of Qt SDK beforehand. By
+default, Boost-enabled version has ODBC as database backend API plus
+SQLite native driver, and Qt-enabled version relies on <A HREF="http://qt-project.org/doc/qt-4.8/qtsql.html">QtSql</A>.
+Of course, you can still configure YB.ORM to use your
 toolkit/compiler/database backend of choice, source code is included.
 </P>
 <P><STRONG>Note for Qt4 and MinGW</STRONG>: the Qt4 SDK was built
@@ -107,7 +107,7 @@ layout:
 		</TD>
 		<TD STYLE="border: none; padding: 0cm">
 			<UL>
-				<LI><P><TT CLASS="western">.dll</TT>-files of the library:
+				<LI><P><TT CLASS="western">.dll</TT>-files of the library, e. g.
 				<TT CLASS="western">ybutil.dll</TT>, <TT CLASS="western">yborm.dll</TT>.</P>
 				<LI><P><TT CLASS="western">.dll</TT>-files that this build may
 				depend on: <TT CLASS="western">boost_date_time</TT>,
@@ -214,9 +214,10 @@ layout:
 			<P><TT CLASS="western">c:\yborm\lib</TT></P>
 		</TD>
 		<TD STYLE="border: none; padding: 0cm">
-			<P>YB.ORM in form of static libraries: <STRONG><TT CLASS="western">ybutil.lib</TT></STRONG>,
+			<P>YB.ORM static libraries, in case of static build, or import
+			libraries, if dynamic: <STRONG><TT CLASS="western">ybutil.lib</TT></STRONG>,
 			<STRONG><TT CLASS="western">yborm.lib</TT></STRONG> (or <TT CLASS="western">.a</TT>-files
-			for MinGW); as well as import libraries for YB.ORM dependencies</P>
+			for MinGW); also here: import libraries for YB.ORM dependencies</P>
 		</TD>
 	</TR>
 	<TR>
@@ -224,7 +225,7 @@ layout:
 			<P><TT CLASS="western">c:\yborm\src</TT></P>
 		</TD>
 		<TD STYLE="border: none; padding: 0cm">
-			<P>source code of that released version 
+			<P>source code for this version 
 			</P>
 		</TD>
 	</TR>
@@ -236,19 +237,20 @@ folder with no additional configuration.
 YB.ORM package</H2>
 <P>The most simple way to build YB.ORM under MS Windows is to rebuild
 one of pre-built packages. This may be useful if you already have
-YB.ORM installed and just want to update your installation with fresh
-sources from Git. It this case put updated sources under <TT CLASS="western">src</TT>
-folder, then use command line window to <TT CLASS="western">cd</TT>
-into <TT CLASS="western">build</TT> folder and start corresponding
-<TT CLASS="western">build-*.bat</TT>-file from there. If you're using
-MS Visual C++ you'll need to launch that <TT CLASS="western">.bat</TT>-file
-from within <EM>Visual Studio command line prompt</EM>. All those
-<TT CLASS="western">.bat</TT>-files do is just calling CMake script
-with predefined configuration parameters and then run <TT CLASS="western">make</TT>
-command. After build is successfully completed the new libraries,
-headers, examples and code generation utility replace old ones in
-corresponding folders. Below are the prerequisites for the rebuild
-process. 
+YB.ORM installed and you just wanted to update your installation with
+fresh sources from Git, or you have downloaded a Qt-enabled build and
+wanted to rebuild it with Boost. It this case put updated sources
+under <TT CLASS="western">src</TT> folder, then use command line
+window to <TT CLASS="western">cd</TT> into <TT CLASS="western">build</TT>
+folder and start corresponding <TT CLASS="western">build-*.bat</TT>-file
+from there. If you're using MS Visual C++ you'll need to launch that
+<TT CLASS="western">.bat</TT>-file from within <EM>Visual Studio
+command line prompt</EM>. All those <TT CLASS="western">.bat</TT>-files
+do is just calling CMake script with predefined configuration
+parameters and then run <TT CLASS="western">make</TT> command. After
+build is successfully completed the new libraries, headers, examples
+and code generation utility replace old ones in corresponding
+folders. Below are the prerequisites for the rebuild process. 
 </P>
 <TABLE CELLPADDING=2 CELLSPACING=2>
 	<TR>
