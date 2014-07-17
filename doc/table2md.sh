@@ -8,7 +8,7 @@ cat $1 |
     sed 's/<\([^>]*\)\(TT\)[^>]*>/<\1tt>/g' |
     sed 's/<\([^>]*\)\(UL\)[^>]*>/<\1ul>/g' | 
     sed 's/<\([^>]*\)\(LI\)[^>]*>/<\1li>/g' | 
-    sed 's/<A HREF=/<a href/g' | 
+    sed 's/<A HREF=/<a href=/g' | 
     sed 's/<.A>/<\/a>/g' |
     sed 's/<\([^>]*\)\(COL\)[^>]*>//g' |
     sed 's/<\([^>]*\)\(P\)[^>]*>//g' > $1.table
