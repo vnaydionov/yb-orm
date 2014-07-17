@@ -51,7 +51,7 @@ are several ways to achieve this.
 	help building a <TT CLASS="western">.deb</TT> package.</P>
 </UL>
 <P>Use <A HREF="http://git-scm.com/">Git</A> to pull fresh code from
-repository, see <A HREF="http://code.google.com/p/yb-orm/source/checkout">YB.ORM
+repository, see <A HREF="https://github.com/vnaydionov/yb-orm">YB.ORM
 Git repository</A>, and then use either Autotools or CMake. 
 </P>
 <P>Then you'll probably want to setup a test database to run provided
@@ -87,10 +87,10 @@ layout:
 <TABLE CELLPADDING=2 CELLSPACING=2>
 	<TR>
 		<TH STYLE="border: none; padding: 0cm">
-			<P>Path</P>
+            <P><STRONG>Path</STRONG></P>
 		</TH>
 		<TH STYLE="border: none; padding: 0cm">
-			<P>Description</P>
+            <P><STRONG>Description</STRONG></P>
 		</TH>
 	</TR>
 	<TR>
@@ -108,7 +108,8 @@ layout:
 		<TD STYLE="border: none; padding: 0cm">
 			<UL>
 				<LI><P><TT CLASS="western">.dll</TT>-files of the library, e. g.
-				<TT CLASS="western">ybutil.dll</TT>, <TT CLASS="western">yborm.dll</TT>.</P>
+                <STRONG><TT CLASS="western">ybutil.dll</TT></STRONG>,
+                <STRONG><TT CLASS="western">yborm.dll</TT></STRONG>.</P>
 				<LI><P><TT CLASS="western">.dll</TT>-files that this build may
 				depend on: <TT CLASS="western">boost_date_time</TT>,
 				<TT CLASS="western">boost_thread</TT>, <TT CLASS="western">cppunit</TT>,
@@ -334,7 +335,8 @@ placed in <TT CLASS="western">acinclude.m4</TT> file. When you build
 your own application with Autotools and YB.ORM you can take
 <TT CLASS="western">YB_CHECK_YBORM()</TT> macro to your <TT CLASS="western">configure.ac</TT>
 file. This will add option <TT CLASS="western">--with-yborm-root</TT>
-to your <TT CLASS="western">configure</TT> script. See the <A HREF="http://code.google.com/p/yb-orm/source/browse/examples/auth/README.auth">Auth
+to your <TT CLASS="western">configure</TT> script. See the <A
+HREF="https://github.com/vnaydionov/yb-orm/blob/master/examples/auth/README.auth">Auth
 example</A>. 
 </P>
 <H2 CLASS="western"><A NAME="Minimal_requirements"></A>Minimal
