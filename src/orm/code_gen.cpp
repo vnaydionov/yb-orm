@@ -610,7 +610,7 @@ void CppCodeGenerator::update_h_file()
             throw CodeGenError(
                 _T("Error while parsing AUTOGEN sections in file: ")
                 + WIDEN(file_path));
-        for (int i = 0; i < stypes.size(); ++i) {
+        for (size_t i = 0; i < stypes.size(); ++i) {
             out << parts[i];
             write_autogen_body(out, stypes[i]);
         }
@@ -791,6 +791,9 @@ void CppCodeGenerator::write_cpp_file(ostream &out)
 {
     out << "#include \"" << inc_prefix_ << class_name_ << ".h\"\n"
         << "#include <orm/domain_factory.h>\n"
+        << "#ifdef _MSC_VER\n"
+        << "#pragma warning(disable:4355)\n"
+        << "#endif // _MSC_VER\n"
         << "namespace Domain {\n\n"
         << class_name_ << "::Columns " << class_name_ << "::c;\n\n";
 
@@ -894,7 +897,7 @@ void CppCodeGenerator::update_cpp_file()
             throw CodeGenError(
                 _T("Error while parsing AUTOGEN sections in file: ")
                 + WIDEN(file_path));
-        for (int i = 0; i < stypes.size(); ++i) {
+        for (size_t i = 0; i < stypes.size(); ++i) {
             out << parts[i];
             write_autogen_body(out, stypes[i]);
         }
