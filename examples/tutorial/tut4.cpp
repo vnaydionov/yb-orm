@@ -14,14 +14,14 @@ int main()
     try {
         Yb::init_schema();
         auto_ptr<SqlConnection> conn(new SqlConnection(
-                    "sqlite+sqlite://c:/yborm/examples/test1_db"));
+                "sqlite+sqlite://./test1_db"));
         Engine engine(Engine::READ_WRITE, conn);
         engine.set_logger(ILogger::Ptr(new Logger(&appender)));
         engine.set_echo(true);
 
         LongInt root = -1;
         {
-            Session session(Yb::theSchema::instance(), &engine);
+            Session session(Yb::theSchema(), &engine);
 
             ProductGroup::Holder pg1(session);
             pg1->name = "Group1";
@@ -42,17 +42,17 @@ int main()
             root = pg1->id;
         }
         {
-            Session session(Yb::theSchema::instance(), &engine);
+            Session session(Yb::theSchema(), &engine);
             ProductGroup::Holder pg1(session, root);
             cout << pg1->parent->id.is_null() << endl;
             pg1->delete_object();
 
             session.commit();
         }
-        return 0;
     }
     catch (const std::exception &ex) {
         cout << "exception: " << ex.what() << endl;
         return 1;
     }
+    return 0;
 }

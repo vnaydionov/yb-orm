@@ -1,3 +1,6 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
+
 #include <sstream>
 #include <algorithm>
 #include "util/string_utils.h"
@@ -384,7 +387,7 @@ SqlConnection *EngineCloned::get_conn() { return conn_; }
 SqlDialect *EngineCloned::get_dialect() { return dialect_; }
 ILogger *EngineCloned::logger() { return logger_; }
 
-const String env_cfg(const String &entry, const String &def_val)
+YBORM_DECL const String env_cfg(const String &entry, const String &def_val)
 {
     String value = xgetenv(_T("YBORM_") + entry);
     if (str_empty(value))
@@ -473,10 +476,10 @@ auto_ptr<EngineBase> Engine::clone()
 SqlConnection *Engine::get_from_pool()
 {
     if (!pool_.get())
-        throw GenericDBError(_T("Engine with no connection"));
+        throw PoolError(_T("Engine with no connection"));
     SqlConnection *conn = pool_->get(source_id_, timeout_);
     if (!conn)
-        throw GenericDBError(_T("Can't get connection"));
+        throw PoolError(_T("Can't get connection"));
     dialect_ = conn->get_dialect();
     conn->set_echo(echo_);
     conn->init_logger(logger_.get());

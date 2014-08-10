@@ -1,36 +1,32 @@
-#include <memory>
 #include <iostream>
 #include "domain/Client.h"
-using namespace std;
-
 int main()
 {
     try {
-        Yb::init_schema();
-        auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(
-                    "sqlite+sqlite://c:/yborm/examples/test1_db"));
+        std::auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(
+                "sqlite+sqlite://./test1_db"));
         Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-        engine.drop_schema(Yb::theSchema::instance(), true);
-        engine.create_schema(Yb::theSchema::instance(), false);
-        Yb::Session session(Yb::theSchema::instance(), &engine);
+        Yb::init_schema();
+        //engine.drop_schema(Yb::theSchema(), true);
+        //engine.create_schema(Yb::theSchema(), false);
+        Yb::Session session(Yb::theSchema(), &engine);
 
         Domain::Client client;
-        string name, email, budget;
-        cout << "Enter name, email, budget:\n";
-        cin >> name >> email >> budget;
+        std::string name, email, budget;
+        std::cout << "Enter name, email, budget:\n";
+        std::cin >> name >> email >> budget;
         client.name = name;
         client.email = email;
         client.budget = Yb::Decimal(budget);
         client.dt = Yb::now();
         client.save(session);
         session.flush();
-        cout << "New client: " << client.id.value() << endl;
+        std::cout << "New client: " << client.id.value() << std::endl;
         engine.commit();
-        return 0;
     }
     catch (const std::exception &ex) {
-        cout << "exception: " << ex.what() << endl;
+        std::cerr << "exception: " << ex.what() << std::endl;
         return 1;
     }
+    return 0;
 }
- 

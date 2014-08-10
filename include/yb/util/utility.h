@@ -19,14 +19,9 @@
 #else
 #include <boost/shared_ptr.hpp>
 #endif
+#include "util_config.h"
 
 namespace Yb {
-
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-typedef __int64 LongInt;
-#else
-typedef long long LongInt;
-#endif
 
 #if defined(YB_USE_WX)
 #if wxCHECK_VERSION(2, 9, 0)
@@ -117,25 +112,27 @@ template <class T__>
 inline bool operator >= (const IntrusivePtr<T__> &a, const IntrusivePtr<T__> &b)
 { return a.get() >= b.get(); }
 
-class RefCountBase {
+class YBUTIL_DECL RefCountBase
+{
 protected:
     int ref_count_;
 public:
-    RefCountBase(): ref_count_(0) {}
-    virtual ~RefCountBase() {}
-    void add_ref() { ++ref_count_; }
-    void release() { if (!--ref_count_) delete this; }
+    RefCountBase();
+    virtual ~RefCountBase();
+    void add_ref();
+    void release();
 };
 
-class NonCopyable {
+class YBUTIL_DECL NonCopyable
+{
     NonCopyable(const NonCopyable &);
     const NonCopyable &operator=(const NonCopyable &);
 protected:
-    NonCopyable() {}
-    ~NonCopyable() {}
+    NonCopyable();
+    ~NonCopyable();
 };
 
-} // namespace Yb
+} // end of namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
 #endif // YB__UTIL__UTILITY__INCLUDED

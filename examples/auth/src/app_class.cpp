@@ -60,7 +60,7 @@ Yb::Engine *App::get_engine()
 auto_ptr<Yb::Session> App::new_session()
 {
     return auto_ptr<Yb::Session>(
-            new Yb::Session(Yb::theSchema::instance(), get_engine()));
+            new Yb::Session(Yb::theSchema(), get_engine()));
 }
 
 Yb::ILogger::Ptr App::new_logger(const string &name)

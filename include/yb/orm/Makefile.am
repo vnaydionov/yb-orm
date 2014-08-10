@@ -8,6 +8,7 @@ yborminclude_HEADERS = \
 	domain_object.h \
 	engine.h \
 	expression.h \
+	orm_config.h \
 	schema_config.h \
 	schema.h \
 	sql_driver.h \

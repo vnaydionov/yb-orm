@@ -2,209 +2,191 @@
 <HTML>
 <HEAD>
 	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
-	<TITLE></TITLE>
+	<TITLE>XML format for schema description</TITLE>
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
 	<META NAME="CREATED" CONTENT="20130520;10080300">
-	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
-	<META NAME="CHANGED" CONTENT="20130520;10091200">
+	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
+	<META NAME="CHANGED" CONTENT="20140601;16544300">
 	<STYLE TYPE="text/css">
 	<!--
-		@page { size: 21cm 29.7cm; margin: 2cm }
+		@page { margin: 2cm }
 		P { margin-bottom: 0.21cm }
-		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
-		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
-		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
-		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
-		BLOCKQUOTE { margin-left: 1cm; margin-right: 1cm }
-		TT.western { font-family: "Droid Sans Mono", monospace }
+		H2 { margin-bottom: 0.21cm }
+		H2.western { font-family: "Times New Roman", serif }
+		H2.cjk { font-family: "Droid Sans Fallback" }
+		H2.ctl { font-family: "Lohit Hindi" }
+		TT.western { font-family: "Courier New", monospace }
 		TT.cjk { font-family: "Droid Sans Fallback", monospace }
 		TT.ctl { font-family: "Lohit Hindi", monospace }
 	-->
 	</STYLE>
 </HEAD>
-<BODY LANG="en-US" LINK="#000080" VLINK="#800000" DIR="LTR">
-<H2 CLASS="western">Below is a brief description of XML format used
-for metadata</H2>
-<P>See also in <TT CLASS="western">examples</TT> folder. 
-</P>
-<P><TT CLASS="western">&lt;schema&gt;</TT> - the root element, it may
-contain elements <TT CLASS="western">&lt;table&gt;</TT> and
-<TT CLASS="western">&lt;relation&gt;</TT>. 
-</P>
+<BODY LANG="en-US" DIR="LTR">
+<H2 CLASS="western">XML format for schema description</H2>
+<P>See also files <TT CLASS="western">*.xml</TT> in the <TT CLASS="western">examples</TT>
+folder.</P>
+<P>The root element of the schema description document is <TT CLASS="western">&lt;schema&gt;</TT>.
+It can have nested elements <TT CLASS="western">&lt;table&gt;</TT>
+and <TT CLASS="western">&lt;relation&gt;</TT>.</P>
+<P>To describe an entity (a table) and to map it to a class use
+<TT CLASS="western">&lt;table&gt;</TT> element. In turn, it contains
+one or more nested <TT CLASS="western">&lt;column&gt;</TT> elements
+to describe a single table column and to map it to object data
+member. The following attributes for <TT CLASS="western">&lt;table&gt;</TT>
+element are accepted:</P>
 <UL>
-	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;table&gt;</TT>
-	- element describes table with its columns, it maps table to a
-	class. It has the following attributes: 
-	</P>
+	<LI><P><TT CLASS="western">name</TT> – The name of table, provide
+	as in SQL. This is a <EM>required</EM> attribute.</P>
+	<LI><P><TT CLASS="western">class</TT> – The name of class to map
+	the table to, if not set no domain class will be created for the
+	table.</P>
+	<LI><P><TT CLASS="western">sequence</TT> – To be able to generate
+	unique IDs for newly inserted records some databases (Oracle,
+	Postgres) utilize sequences or generators, some others (e.g. MySQL)
+	– don't. You can safely set here the name of sequence that will be
+	used to generate IDs if the underlying database supports this; for
+	other databases this will mean that the value for the primary key in
+	the table is auto-generated on insertion.</P>
+	<LI><P><TT CLASS="western">autoinc</TT> – Like the previous, but
+	only suitable for databases with no sequences or generators, like
+	MySQL and SQLite. The value of this attribute is ignored.</P>
+	<LI><P><TT CLASS="western">xml-name</TT> – The name will be used
+	when a persistent object is serialized in form of XML (look at
+	<TT CLASS="western">include/yb/orm/xmlizer.h</TT>). If not given the
+	table's name is used, translated to lower case, where all <TT CLASS="western">&quot;_&quot;</TT>
+	are replaced with <TT CLASS="western">&quot;-&quot;</TT>.</P>
+</UL>
+<P>Use element <TT CLASS="western">&lt;column&gt;</TT> to describe a
+column/class data member. This element may have the following
+attributes:</P>
+<UL>
+	<LI><P><TT CLASS="western">name</TT> – The name of column, provide
+	as in SQL. This is a <EM>required</EM> attribute.</P>
+	<LI><P><TT CLASS="western">property</TT> – The name of class
+	member if it must differ from column's name.</P>
+	<LI><P><TT CLASS="western">type</TT> – The data type of the
+	column. This is a <EM>required</EM> attribute. YB.ORM has its own
+	set of types, and they are mapped both to SQL types, taking into
+	account dialect specifics, and to C++ types. As of now, the
+	following data types are supported:</P>
 	<UL>
-		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">name</TT> -
-		(required) name of the table, as in SQL; 
-		</P>
-		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">sequence</TT>
-		- (optional) name of sequence used to generate primary key values.
-		Primary key must be a surrogate ID. When this attribute is not
-		empty for databases without sequences (e.g. MySQL) it tells that
-		the primary key values are autogenerated; 
-		</P>
-		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">class</TT> -
-		(optional) name of a class to map the table to; 
-		</P>
-		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">xml-name</TT>
-		- (optional) name of the XML element, used by the <TT CLASS="western">AutoXMLizer</TT>,
-		if not set then the table's name is used, translated to lower case,
-		<TT CLASS="western">'_'</TT> is substituted with <TT CLASS="western">'-'</TT>.
-				</P>
-		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;column&gt;</TT>
-		- element <TT CLASS="western">&lt;table&gt;</TT> contains one or
-		more <TT CLASS="western">&lt;column&gt;</TT> elements, each of them
-		describing a single column. It has the following attributes: 
-		</P>
-		<UL>
-			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">name</TT> -
-			(required) name of the column, as in SQL; 
-			</P>
-			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">type</TT> -
-			(required) type of the column, for now the following types are
-			supported: 
-			</P>
-			<UL>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">integer</TT>
-				- 32bit integer (at least) 
-				</P>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">longint</TT>
-				- 64bit (at least) integer, suitable for IDs 
-				</P>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">decimal</TT>
-				- decimal number with fraction part, suitable for storing money
-				values, etc. 
-				</P>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">datetime</TT>
-				- timestamp data, with date and time parts 
-				</P>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">string</TT>
-				- string of characters; 
-				</P>
-			</UL>
-			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">size</TT> -
-			(required for string type, unused otherwise) - maximum length of
-			the value; 
-			</P>
-			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">null</TT> -
-			(optional) if the column may be assigned <TT CLASS="western">NULL</TT>
-			value, the possible values are <TT CLASS="western">&quot;true&quot;</TT>
-			and <TT CLASS="western">&quot;false&quot;</TT>. The default is
-			<TT CLASS="western">&quot;true&quot;</TT> unless the column is
-			marked to be a (part of) primary key; 
-			</P>
-			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">default</TT>
-			- (optional) if the column has a value assigned by default, this
-			field may contain a constant of type, specified by the <TT CLASS="western">&quot;type&quot;</TT>
-			attribute, or a special value <TT CLASS="western">&quot;sysdate&quot;</TT>
-			for <TT CLASS="western">&quot;datetime&quot;</TT> type columns to
-			insert the current date and time; 
-			</P>
-			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">property</TT>
-			- (optional) name of object's attribute, if it differs from column
-			name; 
-			</P>
-			<LI><P><TT CLASS="western">xml-name</TT> - (optional) name of the
-			XML element, used by the <TT CLASS="western">AutoXMLizer</TT>, if
-			not set then the column's name is used, translated to lower case,
-			<TT CLASS="western">'_'</TT> is substituted with <TT CLASS="western">'-'</TT>.
-			To disable column output set this field to special value <TT CLASS="western">'!'</TT>.
-						</P>
-		</UL>
-		<BLOCKQUOTE>Also <TT CLASS="western">&lt;column&gt;</TT> may
-		contain nested elements to describe additional constraints: 
-		</BLOCKQUOTE>
-		<UL>
-			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;read-only&gt;</TT>
-			- the column may be only assigned once created, any subsequent
-			updates will produce an error. 
-			</P>
-			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;primary-key&gt;</TT>
-			- the column is a primary key or is a part of compound primary
-			key. 
-			</P>
-			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;foreign-key&gt;</TT>
-			- the column refers to another table/column, this is known as
-			foreign key constraint. This element has the following attributes:
-						</P>
-			<UL>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">table</TT>
-				- (required) table name the column refers to; 
-				</P>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">key</TT> -
-				(optional) column name in the referenced table, this may be
-				omitted if the referenced column is a primary key. 
-				</P>
-			</UL>
-		</UL>
+		<LI><P><TT CLASS="western">&quot;string&quot;</TT> – String of
+		text characters.</P>
+		<LI><P><TT CLASS="western">&quot;integer&quot;</TT> – 32-bit
+		signed integer.</P>
+		<LI><P><TT CLASS="western">&quot;longint&quot;</TT> – 64-bit
+		signed integer, suitable for ID generation.</P>
+		<LI><P><TT CLASS="western">&quot;decimal&quot;</TT> – Precise
+		decimal number with fraction part, suitable for storing money
+		values, etc.</P>
+		<LI><P><TT CLASS="western">&quot;float&quot;</TT> – Double
+		precision floating point number.</P>
+		<LI><P><TT CLASS="western">&quot;datetime&quot;</TT> – Time stamp
+		with date and time parts.</P>
 	</UL>
-	<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;relation&gt;</TT>
-	- element describes relations between domain classes. Contents of
-	this element depends on type of relationship specified. The required
-	attribute <TT CLASS="western">&quot;type&quot;</TT> can be
-	<TT CLASS="western">&quot;one-to-many&quot;</TT>. Other kinds of
-	relationship (<TT CLASS="western">&quot;many-to-many&quot;</TT>,
-	<TT CLASS="western">&quot;parent-to-child&quot;</TT>) are yet to be
-	implemented. The optional attribute <TT CLASS="western">&quot;cascade&quot;</TT>
-	defines what action to take for the slave records on attempt to
-	delete the master record. Possible actions are: <TT CLASS="western">&quot;restrict&quot;</TT>,
-	<TT CLASS="western">&quot;set-null&quot;</TT>, <TT CLASS="western">&quot;delete&quot;</TT>.
-	To use <TT CLASS="western">&quot;set-null&quot;</TT> the dependent
-	table must have its foreign key field nullable: <TT CLASS="western">null=&quot;true&quot;</TT>.
-		</P>
+	<LI><P><TT CLASS="western">size</TT> – The maximum length of the
+	value in that column, applicable to <TT CLASS="western">&quot;string&quot;</TT>
+	type columns only.</P>
+	<LI><P><TT CLASS="western">null</TT> – The flag denotes the column
+	that may be assigned <TT CLASS="western">NULL</TT>, the possible
+	values are <TT CLASS="western">&quot;true&quot;</TT> and <TT CLASS="western">&quot;false&quot;</TT>.
+	By default it's <TT CLASS="western">&quot;true&quot;</TT> unless the
+	column is marked to be a (part of) primary key, see below.</P>
+	<LI><P><TT CLASS="western">default</TT> – The option sets the
+	default value for the column. This attribute may contain a constant
+	of type, specified by the <TT CLASS="western">type</TT> attribute,
+	or a special value <TT CLASS="western">&quot;sysdate&quot;</TT>
+	suitable for <TT CLASS="western">&quot;datetime&quot;</TT> type
+	columns. In latter case the current time will be used as the default
+	when a record is created.</P>
+	<LI><P><TT CLASS="western">xml-name</TT> – The name will be used
+	when a persistent object is serialized in form of XML (look at
+	<TT CLASS="western">include/yb/orm/xmlizer.h</TT>), if not given the
+	column's name is used, translated to lower case, where all <TT CLASS="western">&quot;_&quot;</TT>
+	are replaced with <TT CLASS="western">&quot;-&quot;</TT>. To exclude
+	a column from the serialized representation of the object set this
+	field to special value <TT CLASS="western">&quot;!&quot;</TT>.</P>
+</UL>
+<P>The following nested elements may be found inside a <TT CLASS="western">&lt;column&gt;</TT>
+element, they describe additional constraints:</P>
+<UL>
+	<LI><P><TT CLASS="western">&lt;read-only&gt;</TT> – The column may
+	only be assigned a value on selection from database or on object
+	creation, any subsequent updates will produce an error.</P>
+	<LI><P><TT CLASS="western">&lt;primary-key&gt;</TT> – Mark the
+	column as a primary key or as a part of compound primary key.</P>
+	<LI><P><TT CLASS="western">&lt;foreign-key&gt;</TT> – The column
+	references to another table and column, this is also known as
+	foreign key constraint. To describe the reference this element is
+	given the following attributes:</P>
 	<UL>
-		<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&quot;one-to-many&quot;</TT>
-		- this kind of relationship assumes two nested elements. 
-		</P>
-		<UL>
-			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;one&gt;</TT>
-			- class for the master table, its attributes: 
-			</P>
-			<UL>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">class</TT>
-				- (required) class name, mapped to the master table; 
-				</P>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">property</TT>
-				- (optional) property name, created to reference typically
-				multiple dependent objects; 
-				</P>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">use-list</TT>
-				- (optional) if there is a property at master object, referring
-				slave objects, then if this attribute set to <TT CLASS="western">false</TT>,
-				the property looks like a single object reference rather than a
-				list; useful for modeling relations one-to-one. 
-				</P>
-			</UL>
-			<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">&lt;many&gt;</TT>
-			- for the dependent class, possible attributes: 
-			</P>
-			<UL>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">class</TT>
-				- (required) class name, mapped to the dependent table; 
-				</P>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">property</TT>
-				- (optional) property name, created to reference single master
-				object; 
-				</P>
-				<LI><P STYLE="margin-bottom: 0cm"><TT CLASS="western">key</TT> -
-				(optional) specifies what column to use as a foreign key, useful
-				if there's more than one relation between two tables; 
-				</P>
-				<LI><P><TT CLASS="western">order-by</TT> - (optional) it contains
-				SQL expression to <TT CLASS="western">ORDER BY</TT> clause to
-				determine the order in which dependent objects will appear when
-				accessing the relationship object, e. g. when walking through
-				list-property at master object. 
-				</P>
-			</UL>
-		</UL>
+		<LI><P><TT CLASS="western">table</TT> – The name of the table the
+		column references. This is a <EM>required</EM> attribute.</P>
+		<LI><P><TT CLASS="western">key</TT> – The column name in the
+		referenced table. This may be omitted if the column referenced is
+		the primary key.</P>
 	</UL>
 </UL>
-<P STYLE="margin-bottom: 0cm"><BR>
-</P>
+<P>To describe a relationship between domain classes use a top-level
+element <TT CLASS="western">&lt;relation&gt;</TT>. The contents of
+this element depends on the type of the relationship, that can be set
+using a required attribute <TT CLASS="western">type</TT>. As of now,
+the only accepted value for that attribute is <TT CLASS="western">&quot;one-to-many&quot;</TT>.
+Other kinds of relationships (e.g. <TT CLASS="western">&quot;many-to-many&quot;</TT>,
+<TT CLASS="western">&quot;parent-to-child&quot;</TT>) are yet to be
+implemented. The optional attribute <TT CLASS="western">cascade</TT>
+defines what action to take for the slave records on an attempt to
+delete the master record. Possible actions are the following.</P>
+<UL>
+	<LI><P><TT CLASS="western">&quot;restrict&quot;</TT> – Deny to
+	delete the parent.</P>
+	<LI><P><TT CLASS="western">&quot;set-null&quot;</TT> – Set to <TT CLASS="western">NULL</TT>
+	the foreign key column in all the child records. To use <TT CLASS="western">&quot;set-null&quot;</TT>
+	the dependent table must have its foreign key column marked as
+	nullable: <TT CLASS="western">null=&quot;true&quot;</TT>.</P>
+	<LI><P><TT CLASS="western">&quot;delete&quot;</TT> – Cascade
+	delete all the child records.</P>
+</UL>
+<P>For <TT CLASS="western">&quot;one-to-many&quot;</TT> kind of
+relationship there are always two sides, each described by one of two
+required nested elements: <TT CLASS="western">&lt;one&gt;</TT> or
+<TT CLASS="western">&lt;many&gt;</TT>. The former refers to the
+master table and class, and the latter refers to the dependent
+(slave) table and its class. Element <TT CLASS="western">&lt;one&gt;</TT>
+may have the following attributes:</P>
+<UL>
+	<LI><P><TT CLASS="western">class</TT> – The class name, mapped to
+	the master table. This is a <EM>required</EM> attribute.</P>
+	<LI><P><TT CLASS="western">property</TT> – The name of the
+	property that is added to the master class to reference (typically
+	multiple) dependent objects. This is a <EM>collection</EM> property
+	unless attribute <TT CLASS="western">use-list</TT> specifies the
+	opposite case. If not specified – no property is added to the
+	master class for that relationship.</P>
+	<LI><P><TT CLASS="western">use-list</TT> – If there is a property
+	at the master object, referencing its slave objects, then this
+	attribute set to <TT CLASS="western">&quot;false&quot;</TT>
+	instructs to add a <EM>single object</EM> reference property rather
+	than a collection property. This is particularly useful for modeling
+	relationships of <TT CLASS="western">&quot;one-to-one&quot;</TT>
+	kind.</P>
+</UL>
+<P>Element <TT CLASS="western">&lt;many&gt;</TT> for the dependent
+class may have the following attributes:</P>
+<UL>
+	<LI><P><TT CLASS="western">class</TT> – The class name, mapped to
+	the dependent table. This is a <EM>required</EM> attribute.</P>
+	<LI><P><TT CLASS="western">property</TT> – The name of the
+	property added to the dependent class to reference its master
+	object.</P>
+	<LI><P><TT CLASS="western">key</TT> – The attribute specifies what
+	column to use as a foreign key, may be useful if there's more than
+	one relationship between the two tables.</P>
+	<LI><P><TT CLASS="western">order-by</TT> – Here you can put an SQL
+	expression for <TT CLASS="western">ORDER BY</TT> clause to determine
+	the order in which dependent objects will be selected, e.g. when
+	walking through the collection property at the master object side.</P>
+</UL>
 </BODY>
 </HTML>

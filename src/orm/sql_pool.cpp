@@ -1,15 +1,20 @@
-#if !(defined(__WIN32__) || defined(_WIN32))
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
+
+#if !defined(YBORM_WINDOWS)
 #include <signal.h>
 #endif
 #include <time.h>
 #include "orm/sql_pool.h"
 
-using namespace std;
-
 #define LOG(l, x) do { if (logger_.get()) { std::ostringstream __log; \
     __log << NARROW(x); logger_->log(l, __log.str()); } } while(0)
 
 namespace Yb {
+
+PoolError::PoolError(const String &err)
+    : DBError(err)
+{}
 
 PoolMonThread::PoolMonThread(SqlPool *pool) : pool_(pool) {}
 
@@ -19,7 +24,7 @@ static
 void
 block_sigpipe()
 {
-#if !(defined(__WIN32__) || defined(_WIN32))
+#if !(defined(YBORM_WIN32) || defined(YBORM_WIN64))
     struct sigaction sa;
     sa.sa_handler = SIG_IGN;
     sa.sa_flags = SA_NODEFER;
@@ -44,7 +49,7 @@ format_stats(const String &source_id, int count = -1, int pool_size = -1)
 const String
 SqlPool::get_stats(const String &source_id)
 {
-    map<String, int>::iterator c = counts_.find(source_id);
+    std::map<String, int>::iterator c = counts_.find(source_id);
     if (counts_.end() == c)
         return _T(" [source: ") + source_id + _T(", unknown source]");
     return format_stats(source_id, c->second, pools_[source_id].size());
@@ -73,7 +78,7 @@ SqlPool::monitor_thread()
             }
             if (str_empty(id))
                 break;
-            map<String, SqlSource>::iterator src = sources_.find(id);
+            std::map<String, SqlSource>::iterator src = sources_.find(id);
             if (sources_.end() == src) {
                 LOG(ll_ERROR, _T("unknown source") + format_stats(id));
                 continue;
@@ -110,7 +115,7 @@ SqlPool::monitor_thread()
         // processing 'idle close'
         {
             ScopedLock lock(pool_mux_);
-            map<String, Pool>::iterator i = pools_.begin(), iend = pools_.end();
+            std::map<String, Pool>::iterator i = pools_.begin(), iend = pools_.end();
             for (bool quit = false; !quit && i != iend; ++i) {
                 Pool::iterator j = i->second.begin(), jend = i->second.end();
                 for (; j != jend; ++j) {
@@ -141,7 +146,7 @@ void
 SqlPool::close_all()
 {
     ScopedLock lock(pool_mux_);
-    for (map<String, Pool>::iterator i = pools_.begin(); i != pools_.end(); ++i) {
+    for (std::map<String, Pool>::iterator i = pools_.begin(); i != pools_.end(); ++i) {
         LOG(ll_DEBUG, _T("closing all") + get_stats(i->first));
         for (Pool::iterator j = i->second.begin(); j != i->second.end(); ++j)
             delete *j;
@@ -205,9 +210,9 @@ SqlPool::SqlConnectionPtr
 SqlPool::get(const String &id, int timeout)
 {
     //LOG(ll_DEBUG, _T("SqlPool::get()"));
-    map<String, SqlSource>::iterator src = sources_.find(id);
+    std::map<String, SqlSource>::iterator src = sources_.find(id);
     if (sources_.end() == src)
-        throw GenericDBError(_T("Unknown source ID: ") + id);
+        throw PoolError(_T("Unknown source ID: ") + id);
     String stats;
     {
         ScopedLock lock(pool_mux_);
@@ -289,6 +294,35 @@ SqlPool::put(SqlConnectionPtr handle, bool close_now, bool new_conn)
         connections_for_delete_.push_back(del_handle);
         stop_cond_.notify_all();
     }
+}
+
+SqlConnectionVar::SqlConnectionVar(const SqlPoolDescr &d)
+    : pool_(d.get_pool())
+    , handle_(pool_.get(d.get_source_id(), d.get_timeout()))
+{
+    if (!handle_)
+        throw PoolError(_T("Can't get connection"));
+}
+
+SqlConnectionVar::SqlConnectionVar(SqlPool &pool,
+        const String &source_id,
+        int timeout)
+    : pool_(pool)
+    , handle_(pool_.get(source_id, timeout))
+{
+    if (!handle_)
+        throw PoolError(_T("Can't get connection"));
+}
+
+SqlConnectionVar::~SqlConnectionVar()
+{
+    pool_.put(handle_);
+}
+
+SqlConnection *
+SqlConnectionVar::operator-> () const
+{
+    return handle_;
 }
 
 } // namespace Yb

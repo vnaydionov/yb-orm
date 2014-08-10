@@ -6,6 +6,7 @@ TUTORIAL_DIR=tutorial
 endif
 
 SUBDIRS=domain . $(TUTORIAL_DIR)
+AUTOMAKE_OPTIONS = subdir-objects
 
 AM_CXXFLAGS = \
 	-I $(top_srcdir)/include/yb \
@@ -26,14 +27,15 @@ example1_LDFLAGS = \
 	$(top_builddir)/src/orm/libyborm.la \
 	$(top_builddir)/src/util/libybutil.la \
 	$(XML_LIBS) \
-	$(BOOST_LDFLAGS) \
-	$(BOOST_LIBS_R) \
+	$(BOOST_THREAD_LDFLAGS) \
+	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
 	$(SOCI_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
-	$(QT_LIBS)
+	$(QT_LIBS) \
+	$(EXECINFO_LIBS)
 
 example2_SOURCES=example2.cpp domain/Client.cpp domain/Order.cpp \
 	domain/Product.cpp domain/ProductGroup.cpp domain/Contract.cpp \
@@ -43,12 +45,13 @@ example2_LDFLAGS = \
 	$(top_builddir)/src/orm/libyborm.la \
 	$(top_builddir)/src/util/libybutil.la \
 	$(XML_LIBS) \
-	$(BOOST_LDFLAGS) \
-	$(BOOST_LIBS_R) \
+	$(BOOST_THREAD_LDFLAGS) \
+	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
 	$(SOCI_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
-	$(QT_LIBS)
+	$(QT_LIBS) \
+	$(EXECINFO_LIBS)
 

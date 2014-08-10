@@ -4,6 +4,7 @@ AM_CXXFLAGS = \
 	-I $(top_srcdir)/include/private \
 	$(XML_CPPFLAGS) \
 	$(BOOST_CPPFLAGS) \
+	$(ODBC_CFLAGS) \
 	$(SQLITE3_CFLAGS) \
 	$(SOCI_CXXFLAGS) \
 	$(WX_CFLAGS) \
@@ -34,17 +35,17 @@ SOCI_DRV_CPP =
 endif
 
 CPP_FILES = \
-	expression.cpp \
-	schema.cpp \
+	code_gen.cpp \
+	data_object.cpp \
+	domain_factory.cpp \
+	domain_object.cpp \
 	engine.cpp \
+	expression.cpp \
+	schema_config.cpp \
+	schema.cpp \
 	sql_driver.cpp \
 	sql_pool.cpp \
-	schema_config.cpp \
-	xmlizer.cpp \
-	domain_factory.cpp \
-	data_object.cpp \
-	domain_object.cpp \
-	code_gen.cpp
+	xmlizer.cpp
 
 libyborm_la_SOURCES = \
 	$(CPP_FILES) \
@@ -57,8 +58,8 @@ libyborm_la_LDFLAGS = -version-info 0:0:0
 libyborm_la_LIBADD = \
 	$(top_builddir)/src/util/libybutil.la \
 	$(XML_LIBS) \
-	$(BOOST_LDFLAGS) \
-	$(BOOST_LIBS_R) \
+	$(BOOST_THREAD_LDFLAGS) \
+	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
 	$(SOCI_LIBS) \

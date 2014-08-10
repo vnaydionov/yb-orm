@@ -1,4 +1,6 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBUTIL_SOURCE
+
 #include "util/string_type.h"
 #if defined(YB_USE_WX)
 #include <wx/strconv.h>
@@ -49,7 +51,7 @@ static size_t do_fast_widen(const std::string &narrow, std::wstring &wide)
     return processed;
 }
 
-const std::string fast_narrow(const std::wstring &wide)
+YBUTIL_DECL const std::string fast_narrow(const std::wstring &wide)
 {
     if (wide.empty())
         return std::string();
@@ -60,7 +62,7 @@ const std::string fast_narrow(const std::wstring &wide)
     throw std::runtime_error("non ascii detected, fast_narrow failed");
 }
 
-const std::wstring fast_widen(const std::string &narrow)
+YBUTIL_DECL const std::wstring fast_widen(const std::string &narrow)
 {
     if (narrow.empty())
         return std::wstring();
@@ -71,7 +73,8 @@ const std::wstring fast_widen(const std::string &narrow)
     throw std::runtime_error("non ascii detected, fast_widen failed");
 }
 
-const std::string do_narrow(const std::wstring &wide, const std::locale &loc)
+static const std::string do_narrow(
+        const std::wstring &wide, const std::locale &loc)
 {
     if (wide.empty())
         return std::string();
@@ -127,7 +130,8 @@ const std::string do_narrow(const std::wstring &wide, const std::locale &loc)
     return narrow;
 }
 
-const std::wstring do_widen(const std::string &narrow, const std::locale &loc)
+static const std::wstring do_widen(
+        const std::string &narrow, const std::locale &loc)
 {
     if (narrow.empty())
         return std::wstring();
@@ -178,11 +182,11 @@ const std::wstring do_widen(const std::string &narrow, const std::locale &loc)
     return wide;
 }
 
-const std::string get_locale(const std::string &enc_name = "")
+YBUTIL_DECL const std::string get_locale(const std::string &enc_name = "")
 {
     if (enc_name.empty())
         return
-#if defined(__WIN32__) || defined(_WIN32)
+#ifdef YBUTIL_WINDOWS
             "rus_rus.866"
 #else
             "ru_RU.UTF-8"
@@ -191,7 +195,7 @@ const std::string get_locale(const std::string &enc_name = "")
     return enc_name;
 }
 
-const std::string str2std(const String &s, const std::string &enc_name)
+YBUTIL_DECL const std::string str2std(const String &s, const std::string &enc_name)
 {
 #if defined(YB_USE_WX)
     if (enc_name.empty())
@@ -211,7 +215,7 @@ const std::string str2std(const String &s, const std::string &enc_name)
 #endif
 }
 
-const String std2str(const std::string &s, const std::string &enc_name)
+YBUTIL_DECL const String std2str(const std::string &s, const std::string &enc_name)
 {
 #if defined(YB_USE_WX)
     if (enc_name.empty())
@@ -231,19 +235,21 @@ const String std2str(const std::string &s, const std::string &enc_name)
 #endif
 }
 
-const std::string str_narrow(const std::wstring &wide, const std::string &enc_name)
+YBUTIL_DECL const std::string str_narrow(
+        const std::wstring &wide, const std::string &enc_name)
 {
     std::locale loc(get_locale(enc_name).c_str());
     return do_narrow(wide, loc);
 }
 
-const std::wstring str_widen(const std::string &narrow, const std::string &enc_name)
+YBUTIL_DECL const std::wstring str_widen(
+        const std::string &narrow, const std::string &enc_name)
 {
     std::locale loc(get_locale(enc_name).c_str());
     return do_widen(narrow, loc);
 }
 
-const std::string get_locale_enc()
+YBUTIL_DECL const std::string get_locale_enc()
 {
     std::string loc_name = get_locale();
     int pos = loc_name.find('.');

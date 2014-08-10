@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <schema>
-    <table name="client" sequence="seq_client" class="Client">
+    <table name="client_tbl" sequence="client_seq" class="Client" xml-name="client">
         <column name="id" type="longint">
             <primary-key />
         </column>
@@ -12,18 +12,18 @@
         <column name="email" type="string" size="100" null="false" />
         <column name="budget" type="decimal" />
     </table>
-    <table name="order_tbl" sequence="seq_order" class="Order" xml-name="order">
+    <table name="order_tbl" sequence="order_seq" class="Order" xml-name="order">
         <column name="id" type="longint">
             <primary-key />
         </column>
         <column name="client_id" type="longint" null="false">
-            <foreign-key table="client" key="id"/>
+            <foreign-key table="client_tbl" key="id"/>
         </column>
         <column name="dt" type="datetime" null="false" default="sysdate" />
         <column name="memo" type="string" size="100" />
         <column name="total_sum" type="decimal" null="false" />
-        <column name="receipt_sum" type="decimal" default="0" />
-        <column name="receipt_dt" type="datetime" />
+        <column name="paid_sum" type="decimal" default="0" />
+        <column name="paid_dt" type="datetime" />
     </table>
     <relation type="one-to-many">
         <one class="Client" property="orders" />

@@ -10,23 +10,24 @@ AM_CXXFLAGS = \
 lib_LTLIBRARIES = libybutil.la
 
 libybutil_la_SOURCES = \
-	string_type.cpp \
-	exception.cpp \
-	thread.cpp \
-	decimal.cpp \
 	data_types.cpp \
-	string_utils.cpp \
-	xml_writer.cpp \
+	decimal.cpp \
 	element_tree.cpp \
+	exception.cpp \
+	nlogger.cpp \
+	string_type.cpp \
+	string_utils.cpp \
+	thread.cpp \
+	utility.cpp \
 	value_type.cpp \
-	nlogger.cpp
+	xml_writer.cpp
 
 libybutil_la_LDFLAGS = -version-info 0:0:0
 
 libybutil_la_LIBADD = \
 	$(XML_LIBS) \
-	$(BOOST_LDFLAGS) \
-	$(BOOST_LIBS_R) \
+	$(BOOST_THREAD_LDFLAGS) \
+	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
 	$(QT_LIBS)

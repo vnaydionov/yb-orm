@@ -1,4 +1,4 @@
-// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__DATA_OBJECT__INCLUDED
 #define YB__ORM__DATA_OBJECT__INCLUDED
 
@@ -17,6 +17,7 @@
 #include "util/utility.h"
 #include "util/exception.h"
 #include "util/value_type.h"
+#include "orm_config.h"
 #include "schema.h"
 #include "engine.h"
 
@@ -24,6 +25,58 @@ class TestDataObject;
 class TestDataObjectSaveLoad;
 
 namespace Yb {
+
+class YBORM_DECL ORMError: public RunTimeError
+{
+public:
+    ORMError(const String &msg);
+};
+
+class ObjectNotFoundByKey : public ORMError
+{
+public:
+    ObjectNotFoundByKey(const String &msg);
+};
+
+class YBORM_DECL NullPK: public ORMError
+{
+public:
+    NullPK(const String &table_name);
+};
+
+class YBORM_DECL CascadeDeleteError: public ORMError
+{
+public:
+    CascadeDeleteError(const Relation &rel);
+};
+
+class YBORM_DECL CycleDetected: public ORMError
+{
+public:
+    CycleDetected();
+};
+
+class YBORM_DECL BadTypeCast: public ORMError
+{
+public:
+    BadTypeCast(const String &table_name,
+            const String &column_name,
+            const String &str_value, const String &type);
+};
+
+class YBORM_DECL StringTooLong: public ORMError
+{
+public:
+    StringTooLong(const String &table_name,
+            const String &column_name,
+            int max_len, const String &value);
+};
+
+class YBORM_DECL DataObjectAlreadyInSession: public ORMError
+{
+public:
+    DataObjectAlreadyInSession(const Key &key);
+};
 
 #define EMPTY_DATAOBJ (::Yb::DataObject::Ptr(NULL))
 
@@ -36,11 +89,9 @@ inline DataObject *shptr_get(DataObjectPtr p) { return p.get(); }
 inline RelationObject *shptr_get(RelationObjectPtr p) { return p.get(); }
 typedef std::vector<DataObjectPtr> ObjectList;
 
-const String key2str(const Key &key);
-
 class Session;
 
-class DataObjectResultSet: public ResultSetBase<ObjectList>
+class YBORM_DECL DataObjectResultSet: public ResultSetBase<ObjectList>
 {
     SqlResultSet rs_;
     std::auto_ptr<SqlResultSet::iterator> it_;
@@ -55,12 +106,15 @@ public:
     DataObjectResultSet(const DataObjectResultSet &obj);
 };
 
+YBORM_DECL const String key2str(const Key &key);
+
 //! Session handles persisted DataObjects
 /** Session class rules all over the mapped objects that should be
  * persisted in the database.  Session has associated Schema object
  * to consult to, and Engine instance to send queries to.
  */
-class Session: NonCopyable {
+class YBORM_DECL Session: public NonCopyable
+{
     friend class ::TestDataObject;
     friend class ::TestDataObjectSaveLoad;
     typedef std::set<DataObjectPtr> Objects;
@@ -111,59 +165,6 @@ public:
             bool for_update_flag = false);
 };
 
-class NullPK: public BaseError {
-public:
-    NullPK(const String &table_name):
-        BaseError(_T("Null PK given for table: ") + table_name) {}
-};
-
-class CascadeDeleteError: public BaseError {
-public:
-    CascadeDeleteError(const Relation &rel):
-        BaseError(_T("Cascade delete error: ") +
-                rel.side(0) + _T("-") + rel.side(1))
-    {}
-};
-
-class CycleDetected: public BaseError {
-public:
-    CycleDetected():
-        BaseError(_T("Cycle detected in the graph of objects"))
-    {}
-};
-
-class FieldNotFoundInFetchedRow : public ORMError
-{
-public:
-    FieldNotFoundInFetchedRow(const String &table_name, const String &field_name);
-};
-
-class BadTypeCast : public ORMError
-{
-public:
-    BadTypeCast(const String &table_name, const String &field_name,
-            const String &str_value, const String &type);
-};
-
-class TableDoesNotMatchRow : public ORMError
-{
-public:
-    TableDoesNotMatchRow(const String &table_name, const String &table_name_from_row);
-};
-
-class StringTooLong : public ORMError
-{
-public:
-    StringTooLong(const String &table_name, const String &field_name,
-                  int max_len, const String &value);
-};
-
-class DataObjectAlreadyInSession : public ORMError
-{
-public:
-    DataObjectAlreadyInSession(const Key &key);
-};
-
 enum DeletionMode { DelNormal, DelDryRun, DelUnchecked };
 
 //! Represents an instance of a mapped class.
@@ -180,7 +181,8 @@ enum DeletionMode { DelNormal, DelDryRun, DelUnchecked };
   <li>Each relation is a pointer to a RelationObject instance.
 </ul>
 */
-class DataObject: private NonCopyable, public RefCountBase
+class YBORM_DECL DataObject
+    : private NonCopyable, public RefCountBase
 {
     friend class Session;
 public:
@@ -299,7 +301,9 @@ public:
   <li>and vector of pointers to slaves.
 </ul>
 */
-class RelationObject: private NonCopyable, public RefCountBase {
+class YBORM_DECL RelationObject
+    : private NonCopyable, public RefCountBase
+{
     friend class DataObject;
 public:
     typedef RelationObjectPtr Ptr;

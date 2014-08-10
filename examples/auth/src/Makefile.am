@@ -1,5 +1,6 @@
 
 SUBDIRS=domain
+AUTOMAKE_OPTIONS = subdir-objects
 
 AM_CXXFLAGS=\
 	-I $(top_srcdir)/lib \
@@ -25,14 +26,15 @@ auth_SOURCES=\
 
 auth_LDFLAGS=\
 	$(XML_LIBS) \
-	$(BOOST_LDFLAGS) \
-	$(BOOST_LIBS_R) \
+	$(BOOST_THREAD_LDFLAGS) \
+	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
 	$(ODBC_LIBS) \
 	$(SQLITE3_LIBS) \
 	$(SOCI_LIBS) \
 	$(WX_LIBS) \
 	$(QT_LDFLAGS) \
 	$(QT_LIBS) \
+	$(EXECINFO_LIBS) \
 	$(YBORM_LDFLAGS) \
 	$(YBORM_LIBS)
 

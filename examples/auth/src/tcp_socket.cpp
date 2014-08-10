@@ -10,7 +10,7 @@ using namespace std;
 void 
 TcpSocket::init_socket_lib()
 {
-#if defined(__WIN32__) || defined(_WIN32)
+#ifdef YBUTIL_WINDOWS
     static bool did_it = false;
     static WSAData wsaData;
     if (!did_it) {
@@ -40,7 +40,7 @@ TcpSocket::get_last_error()
 {
     char buf[1024];
     int buf_sz = sizeof(buf);
-#if defined(__WIN32__) || defined(_WIN32)
+#ifdef YBUTIL_WINDOWS
     int err;
     LPTSTR msg_buf;
     err = GetLastError();
@@ -86,13 +86,17 @@ TcpSocket::listen()
     ::listen(s_, 3);
 }
 
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif // _MSC_VER
+
 SOCKET
 TcpSocket::accept(string *ip_addr, int *ip_port)
 {
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     struct sockaddr *p_addr = NULL;
-#if defined(__WIN32__) || defined(_WIN32)
+#ifdef YBUTIL_WINDOWS
     typedef int socklen_t;
 #endif
     socklen_t addr_len = sizeof(addr), *p_addr_len = NULL;
@@ -107,7 +111,7 @@ TcpSocket::accept(string *ip_addr, int *ip_port)
         *ip_port = ntohs(*(unsigned short *)&addr.sin_port);
     if (ip_addr) {
         unsigned ip = ntohl(*(unsigned *)&addr.sin_addr);
-        char buf[20];
+        char buf[40];
         sprintf(buf, "%d.%d.%d.%d",
                 ip >> 24, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255);
         *ip_addr = string(buf);
@@ -158,7 +162,7 @@ TcpSocket::write(const string &msg)
     int count = ::send(s_, msg.c_str(), msg.size(), 0);
     if (-1 == count)
         throw SocketEx("write", get_last_error());
-    if (count < msg.size())
+    if (static_cast<size_t>(count) < msg.size())
         throw SocketEx("write", "short write");
 }
 
@@ -167,7 +171,7 @@ TcpSocket::close(bool shut_down)
 {
     if (shut_down)
         ::shutdown(s_, 2);
-#if defined(__WIN32__) || defined(_WIN32)
+#ifdef YBUTIL_WINDOWS
     ::closesocket(s_);
 #else
     ::close(s_);

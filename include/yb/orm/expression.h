@@ -1,3 +1,4 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #ifndef YB__ORM__EXPRESSION__INCLUDED
 #define YB__ORM__EXPRESSION__INCLUDED
 
@@ -8,12 +9,13 @@
 #include "util/utility.h"
 #include "util/exception.h"
 #include "util/value_type.h"
+#include "orm_config.h"
 
 namespace Yb {
 
 typedef std::map<String, int> ParamNums;
 
-class ExpressionBackend: public RefCountBase
+class YBORM_DECL ExpressionBackend: public RefCountBase
 {
 public:
     virtual const String generate_sql(
@@ -25,7 +27,7 @@ typedef IntrusivePtr<ExpressionBackend> ExprBEPtr;
 
 class Column;
 
-class Expression
+class YBORM_DECL Expression
 {
 protected:
     ExprBEPtr backend_;
@@ -42,14 +44,14 @@ public:
     ExpressionBackend *backend() const { return backend_.get(); }
 };
 
-bool is_number_or_object_name(const String &s);
-bool is_string_constant(const String &s);
-bool is_in_parentheses(const String &s);
-const String sql_parentheses_as_needed(const String &s);
-const String sql_prefix(const String &s, const String &prefix);
-const String sql_alias(const String &s, const String &alias);
+YBORM_DECL bool is_number_or_object_name(const String &s);
+YBORM_DECL bool is_string_constant(const String &s);
+YBORM_DECL bool is_in_parentheses(const String &s);
+YBORM_DECL const String sql_parentheses_as_needed(const String &s);
+YBORM_DECL const String sql_prefix(const String &s, const String &prefix);
+YBORM_DECL const String sql_alias(const String &s, const String &alias);
 
-class ColumnExprBackend: public ExpressionBackend
+class YBORM_DECL ColumnExprBackend: public ExpressionBackend
 {
     Expression expr_;
     String tbl_name_, col_name_, alias_;
@@ -61,7 +63,7 @@ public:
     const String &alias() const { return alias_; }
 };
 
-class ColumnExpr: public Expression
+class YBORM_DECL ColumnExpr: public Expression
 {
 public:
     ColumnExpr(const Expression &expr, const String &alias = _T(""));
@@ -70,7 +72,7 @@ public:
     const String &alias() const;
 };
 
-class ConstExprBackend: public ExpressionBackend
+class YBORM_DECL ConstExprBackend: public ExpressionBackend
 {
     Value value_;
 public:
@@ -79,7 +81,7 @@ public:
     const Value &const_value() const { return value_; }
 };
 
-class ConstExpr: public Expression
+class YBORM_DECL ConstExpr: public Expression
 {
 public:
     ConstExpr();
@@ -87,7 +89,7 @@ public:
     const Value &const_value() const;
 };
 
-class UnaryOpExprBackend: public ExpressionBackend
+class YBORM_DECL UnaryOpExprBackend: public ExpressionBackend
 {
     bool prefix_;
     String op_;
@@ -100,7 +102,7 @@ public:
     const Expression &expr() const { return expr_; }
 };
 
-class UnaryOpExpr: public Expression
+class YBORM_DECL UnaryOpExpr: public Expression
 {
 public:
     UnaryOpExpr(bool prefix, const String &op, const Expression &expr);
@@ -109,7 +111,7 @@ public:
     const Expression &expr() const;
 };
 
-class BinaryOpExprBackend: public ExpressionBackend
+class YBORM_DECL BinaryOpExprBackend: public ExpressionBackend
 {
     Expression expr1_, expr2_;
     String op_;
@@ -122,7 +124,7 @@ public:
     const Expression &expr2() const { return expr2_; }
 };
 
-class BinaryOpExpr: public Expression
+class YBORM_DECL BinaryOpExpr: public Expression
 {
 public:
     BinaryOpExpr(const Expression &expr1,
@@ -132,7 +134,7 @@ public:
     const Expression &expr2() const;
 };
 
-class JoinExprBackend: public ExpressionBackend
+class YBORM_DECL JoinExprBackend: public ExpressionBackend
 {
     Expression expr1_, expr2_, cond_;
 public:
@@ -145,7 +147,7 @@ public:
     const Expression &cond() const { return cond_; }
 };
 
-class JoinExpr: public Expression
+class YBORM_DECL JoinExpr: public Expression
 {
 public:
     JoinExpr(const Expression &expr1,
@@ -155,7 +157,7 @@ public:
     const Expression &cond() const;
 };
 
-class ExpressionListBackend: public ExpressionBackend
+class YBORM_DECL ExpressionListBackend: public ExpressionBackend
 {
     std::vector<Expression> items_;
 public:
@@ -169,7 +171,7 @@ public:
     }
 };
 
-class ExpressionList: public Expression
+class YBORM_DECL ExpressionList: public Expression
 {
     template <typename T>
     void fill_from_container(const T &cont)
@@ -204,7 +206,7 @@ public:
     const Expression &operator [] (int n) const { return item(n); }
 };
 
-class SelectExprBackend: public ExpressionBackend
+class YBORM_DECL SelectExprBackend: public ExpressionBackend
 {
     Expression select_expr_, from_expr_, where_expr_,
                group_by_expr_, having_expr_, order_by_expr_;
@@ -233,7 +235,7 @@ public:
     const String generate_sql(Values *params, int *count) const;
 };
 
-class SelectExpr: public Expression
+class YBORM_DECL SelectExpr: public Expression
 {
 public:
     SelectExpr(const Expression &select_expr);
@@ -256,58 +258,58 @@ public:
     bool for_update_flag() const;
 };
 
-const Expression operator ! (const Expression &a);
-const Expression operator && (const Expression &a, const Expression &b);
-const Expression operator || (const Expression &a, const Expression &b);
+YBORM_DECL const Expression operator ! (const Expression &a);
+YBORM_DECL const Expression operator && (const Expression &a, const Expression &b);
+YBORM_DECL const Expression operator || (const Expression &a, const Expression &b);
 
-const Expression operator == (const Expression &a, const Expression &b);
-const Expression operator == (const Expression &a, const Value &b);
-const Expression operator == (const Value &a, const Expression &b);
-const Expression operator == (const Expression &a, const Column &b);
-const Expression operator == (const Column &a, const Expression &b);
-const Expression operator == (const Column &a, const Column &b);
-const Expression operator == (const Column &a, const Value &b);
-const Expression operator == (const Value &a, const Column &b);
-const Expression operator != (const Expression &a, const Expression &b);
-const Expression operator != (const Expression &a, const Value &b);
-const Expression operator != (const Value &a, const Expression &b);
-const Expression operator != (const Expression &a, const Column &b);
-const Expression operator != (const Column &a, const Expression &b);
-const Expression operator != (const Column &a, const Column &b);
-const Expression operator != (const Column &a, const Value &b);
-const Expression operator != (const Value &a, const Column &b);
-const Expression operator > (const Expression &a, const Expression &b);
-const Expression operator > (const Expression &a, const Value &b);
-const Expression operator > (const Value &a, const Expression &b);
-const Expression operator > (const Expression &a, const Column &b);
-const Expression operator > (const Column &a, const Expression &b);
-const Expression operator > (const Column &a, const Column &b);
-const Expression operator > (const Column &a, const Value &b);
-const Expression operator > (const Value &a, const Column &b);
-const Expression operator < (const Expression &a, const Expression &b);
-const Expression operator < (const Expression &a, const Value &b);
-const Expression operator < (const Value &a, const Expression &b);
-const Expression operator < (const Expression &a, const Column &b);
-const Expression operator < (const Column &a, const Expression &b);
-const Expression operator < (const Column &a, const Column &b);
-const Expression operator < (const Column &a, const Value &b);
-const Expression operator < (const Value &a, const Column &b);
-const Expression operator >= (const Expression &a, const Expression &b);
-const Expression operator >= (const Expression &a, const Value &b);
-const Expression operator >= (const Value &a, const Expression &b);
-const Expression operator >= (const Expression &a, const Column &b);
-const Expression operator >= (const Column &a, const Expression &b);
-const Expression operator >= (const Column &a, const Column &b);
-const Expression operator >= (const Column &a, const Value &b);
-const Expression operator >= (const Value &a, const Column &b);
-const Expression operator <= (const Expression &a, const Expression &b);
-const Expression operator <= (const Expression &a, const Value &b);
-const Expression operator <= (const Value &a, const Expression &b);
-const Expression operator <= (const Expression &a, const Column &b);
-const Expression operator <= (const Column &a, const Expression &b);
-const Expression operator <= (const Column &a, const Column &b);
-const Expression operator <= (const Column &a, const Value &b);
-const Expression operator <= (const Value &a, const Column &b);
+YBORM_DECL const Expression operator == (const Expression &a, const Expression &b);
+YBORM_DECL const Expression operator == (const Expression &a, const Value &b);
+YBORM_DECL const Expression operator == (const Value &a, const Expression &b);
+YBORM_DECL const Expression operator == (const Expression &a, const Column &b);
+YBORM_DECL const Expression operator == (const Column &a, const Expression &b);
+YBORM_DECL const Expression operator == (const Column &a, const Column &b);
+YBORM_DECL const Expression operator == (const Column &a, const Value &b);
+YBORM_DECL const Expression operator == (const Value &a, const Column &b);
+YBORM_DECL const Expression operator != (const Expression &a, const Expression &b);
+YBORM_DECL const Expression operator != (const Expression &a, const Value &b);
+YBORM_DECL const Expression operator != (const Value &a, const Expression &b);
+YBORM_DECL const Expression operator != (const Expression &a, const Column &b);
+YBORM_DECL const Expression operator != (const Column &a, const Expression &b);
+YBORM_DECL const Expression operator != (const Column &a, const Column &b);
+YBORM_DECL const Expression operator != (const Column &a, const Value &b);
+YBORM_DECL const Expression operator != (const Value &a, const Column &b);
+YBORM_DECL const Expression operator > (const Expression &a, const Expression &b);
+YBORM_DECL const Expression operator > (const Expression &a, const Value &b);
+YBORM_DECL const Expression operator > (const Value &a, const Expression &b);
+YBORM_DECL const Expression operator > (const Expression &a, const Column &b);
+YBORM_DECL const Expression operator > (const Column &a, const Expression &b);
+YBORM_DECL const Expression operator > (const Column &a, const Column &b);
+YBORM_DECL const Expression operator > (const Column &a, const Value &b);
+YBORM_DECL const Expression operator > (const Value &a, const Column &b);
+YBORM_DECL const Expression operator < (const Expression &a, const Expression &b);
+YBORM_DECL const Expression operator < (const Expression &a, const Value &b);
+YBORM_DECL const Expression operator < (const Value &a, const Expression &b);
+YBORM_DECL const Expression operator < (const Expression &a, const Column &b);
+YBORM_DECL const Expression operator < (const Column &a, const Expression &b);
+YBORM_DECL const Expression operator < (const Column &a, const Column &b);
+YBORM_DECL const Expression operator < (const Column &a, const Value &b);
+YBORM_DECL const Expression operator < (const Value &a, const Column &b);
+YBORM_DECL const Expression operator >= (const Expression &a, const Expression &b);
+YBORM_DECL const Expression operator >= (const Expression &a, const Value &b);
+YBORM_DECL const Expression operator >= (const Value &a, const Expression &b);
+YBORM_DECL const Expression operator >= (const Expression &a, const Column &b);
+YBORM_DECL const Expression operator >= (const Column &a, const Expression &b);
+YBORM_DECL const Expression operator >= (const Column &a, const Column &b);
+YBORM_DECL const Expression operator >= (const Column &a, const Value &b);
+YBORM_DECL const Expression operator >= (const Value &a, const Column &b);
+YBORM_DECL const Expression operator <= (const Expression &a, const Expression &b);
+YBORM_DECL const Expression operator <= (const Expression &a, const Value &b);
+YBORM_DECL const Expression operator <= (const Value &a, const Expression &b);
+YBORM_DECL const Expression operator <= (const Expression &a, const Column &b);
+YBORM_DECL const Expression operator <= (const Column &a, const Expression &b);
+YBORM_DECL const Expression operator <= (const Column &a, const Column &b);
+YBORM_DECL const Expression operator <= (const Column &a, const Value &b);
+YBORM_DECL const Expression operator <= (const Value &a, const Column &b);
 
 inline const Expression filter_eq(const String &name, const Value &value) {
     return Expression(name) == value;
@@ -328,7 +330,7 @@ inline const Expression filter_ge(const String &name, const Value &value) {
     return Expression(name) >= value;
 }
 
-class FilterBackendByPK: public ExpressionBackend
+class YBORM_DECL FilterBackendByPK: public ExpressionBackend
 {
     Expression expr_;
     Key key_;
@@ -339,7 +341,7 @@ public:
     const Key &key() const { return key_; }
 };
 
-class KeyFilter: public Expression
+class YBORM_DECL KeyFilter: public Expression
 {
 public:
     KeyFilter(const Key &key);
@@ -348,22 +350,10 @@ public:
 
 typedef Expression Filter;
 
-class ORMError : public BaseError
-{
-public:
-    ORMError(const String &msg);
-};
-
-class ObjectNotFoundByKey : public ORMError
-{
-public:
-    ObjectNotFoundByKey(const String &msg);
-};
-
 class Schema;
 
-void find_all_tables(const Expression &expr, Strings &tables);
-SelectExpr make_select(const Schema &schema, const Expression &from_where,
+YBORM_DECL void find_all_tables(const Expression &expr, Strings &tables);
+YBORM_DECL SelectExpr make_select(const Schema &schema, const Expression &from_where,
         const Expression &filter, const Expression &order_by,
         bool for_update_flag = false);
 

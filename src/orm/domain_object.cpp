@@ -1,67 +1,110 @@
-// -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*-
-#include "orm/domain_object.h"
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
 
-using namespace std;
+#ifdef YB_DEBUG_DOMAIN_REG
+#include <iostream>
+#endif
+#include "orm/domain_object.h"
 
 namespace Yb {
 
+NoDataObject::NoDataObject()
+    : ORMError(_T("No ROW data is associated with DomainObject"))
+{}
+
+NoSessionBaseGiven::NoSessionBaseGiven()
+    : ORMError(_T("No session given to the WeakObject"))
+{}
+
+AlreadySavedInAnotherSession::AlreadySavedInAnotherSession()
+    : ORMError(_T("Object has been already saved in some other session"))
+{}
+
+CouldNotSaveEmptyObject::CouldNotSaveEmptyObject()
+    : ORMError(_T("Attempt to save an empty object failed"))
+{}
+
+OutOfManagedList::OutOfManagedList(int pos, int sz)
+    : ORMError(_T("Trying to access index ") +
+            to_string(pos) + 
+            _T(" that falls out of ManagedList of size ") +
+            to_string(sz))
+{}
+
+InvalidIterator::InvalidIterator()
+    : ORMError(_T("Trying to use an invalid iterator"))
+{}
+
 namespace {
-    typedef std::pair<Tables, Relations> SchemaInfo;
+typedef std::pair<Tables, Relations> SchemaInfo;
 }
 
-char DomainObject::init_[16] = "VARKALOSHLIVKIE";
+int DomainObject::init_flag_ = 0;
+void *DomainObject::pending_ = NULL;
 
 bool DomainObject::register_table_meta(Table::Ptr tbl)
 {
-    if (!memcmp(init_, "SHARKISHNYRYALI", 16))
+#ifdef YB_DEBUG_DOMAIN_REG
+    std::cerr << "register_table_meta(" << tbl->name() 
+              << "), init_flag_=" << init_flag_ << std::endl;
+#endif
+    if (init_flag_)
         return false;
-    SchemaInfo **items = (SchemaInfo **)&init_;
-    if (!memcmp(init_, "VARKALOSHLIVKIE", 16)) {
-        *items = new SchemaInfo();
-        if (!memcmp(init_, "VARKALOSHLIVKIE", 16)) {
-            SchemaInfo *p = new SchemaInfo();
-            delete *items;
-            *items = p;
-        }
-    }
-    (*items)->first.push_back(tbl);
+    SchemaInfo *&items =
+        *reinterpret_cast<SchemaInfo **> (&pending_);
+    if (!items)
+        items = new SchemaInfo();
+    items->first.push_back(tbl);
     return true;
 }
 
 bool DomainObject::register_relation_meta(Relation::Ptr rel)
 {
-    if (!memcmp(init_, "SHARKISHNYRYALI", 16))
+#ifdef YB_DEBUG_DOMAIN_REG
+    std::cerr << "register_relation_meta(" << rel->side(0)
+              << ", " << rel->side(1)
+              << "), init_flag_=" << init_flag_ << std::endl;
+#endif
+    if (init_flag_)
         return false;
-    SchemaInfo **items = (SchemaInfo **)&init_;
-    if (!memcmp(init_, "VARKALOSHLIVKIE", 16)) {
-        *items = new SchemaInfo();
-        if (!memcmp(init_, "VARKALOSHLIVKIE", 16)) {
-            SchemaInfo *p = new SchemaInfo();
-            delete *items;
-            *items = p;
-        }
-    }
-    (*items)->second.push_back(rel);
+    SchemaInfo *&items =
+        *reinterpret_cast<SchemaInfo **> (&pending_);
+    if (!items)
+        items = new SchemaInfo();
+    items->second.push_back(rel);
     return true;
 }
 
 void DomainObject::save_registered(Schema &schema)
 {
-    if (!memcmp(init_, "SHARKISHNYRYALI", 16))
+#ifdef YB_DEBUG_DOMAIN_REG
+    std::cerr << "save_registered(), init_flag_=" << init_flag_ << std::endl;
+#endif
+    if (init_flag_)
         return;
-    if (memcmp(init_, "VARKALOSHLIVKIE", 16)) {
-        SchemaInfo **items = (SchemaInfo **)&init_;
-        Tables &tables = (*items)->first;
+    init_flag_ = 1;
+    SchemaInfo *&items =
+        *reinterpret_cast<SchemaInfo **> (&pending_);
+    if (items) {
+        Tables &tables = items->first;
         Tables::iterator i = tables.begin(), iend = tables.end();
-        for (; i != iend; ++i)
+        for (; i != iend; ++i) {
+#ifdef YB_DEBUG_DOMAIN_REG
+            std::cerr << "table: " << (*i)->name() << std::endl;
+#endif
             schema.add_table(*i);
-        Relations &relations = (*items)->second;
+        }
+        Relations &relations = items->second;
         Relations::iterator j = relations.begin(), jend = relations.end();
-        for (; j != jend; ++j)
+        for (; j != jend; ++j) {
+#ifdef YB_DEBUG_DOMAIN_REG
+            std::cerr << "relation: " << (*j)->side(0) << "," << (*j)->side(1) << std::endl;
+#endif
             schema.add_relation(*j);
-        delete *items;
+        }
+        delete items;
+        items = NULL;
     }
-    memcpy(init_, "SHARKISHNYRYALI", 16);
 }
 
 void DomainObject::check_ptr() const
@@ -127,7 +170,7 @@ DomainObject::DomainObject(Session &session, const String &tbl_name,
 {}
 
 DomainObject::DomainObject(const DomainObject &obj)
-    : d_(obj.get_data_object())
+    : d_(obj.get_data_object(false))
     , owner_(NULL)
 {}
 
@@ -137,7 +180,7 @@ DomainObject::~DomainObject()
 DomainObject &DomainObject::operator=(const DomainObject &obj)
 {
     if (this != &obj)
-        set_data_object(obj.get_data_object());
+        set_data_object(obj.get_data_object(false));
     return *this;
 }
 

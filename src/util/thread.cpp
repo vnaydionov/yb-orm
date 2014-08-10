@@ -1,4 +1,6 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBUTIL_SOURCE
+
 #include "util/thread.h"
 
 namespace Yb {

@@ -1,13 +1,13 @@
 
 BUILT_SOURCES=Client.cpp mk_tables.sql
 
-Client.cpp: $(top_srcdir)/examples/ex2_schema.xml
-	$(top_builddir)/src/yborm_gen/yborm_gen --domain $^ ./
+SCHEMA=$(top_srcdir)/examples/ex2_schema.xml
 
-mk_tables.sql: $(top_srcdir)/examples/ex2_schema.xml
-	$(top_builddir)/src/yborm_gen/yborm_gen --ddl $^ ${YBORM_DBTYPE} $@
+Client.cpp: $(SCHEMA)
+	$(top_builddir)/src/yborm_gen/yborm_gen --domain $(SCHEMA) ./
 
-export YBORM_DBTYPE=@YBORM_DBTYPE@
+mk_tables.sql: $(SCHEMA)
+	$(top_builddir)/src/yborm_gen/yborm_gen --ddl $(SCHEMA) "@YBORM_DBTYPE@" $@
 
 clean-local:
 	-rm -f *.cpp *.h *.sql

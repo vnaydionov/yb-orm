@@ -1,11 +1,12 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
+
 #include "orm/xmlizer.h"
 #include "orm/domain_factory.h"
 
-using namespace std;
-
 namespace Yb {
 
-ElementTree::ElementPtr
+YBORM_DECL ElementTree::ElementPtr
 data_object_to_etree(DataObject::Ptr data, const String &alt_name)
 {
     const Table &table = data->table();
@@ -26,7 +27,7 @@ data_object_to_etree(DataObject::Ptr data, const String &alt_name)
     return node;
 }
 
-void
+YBORM_DECL void
 replace_child_object_by_field(ElementTree::ElementPtr node,
         const String &field_name, ElementTree::ElementPtr sub_node)
 {
@@ -39,7 +40,7 @@ replace_child_object_by_field(ElementTree::ElementPtr node,
         }
 }
 
-void
+YBORM_DECL void
 replace_child_object_by_field(ElementTree::ElementPtr node,
         const String &field_name, DataObject::Ptr data)
 {
@@ -53,7 +54,7 @@ replace_child_object_by_field(ElementTree::ElementPtr node,
  *              >= 0 nested levels
  * @return ElementTree::ElementPtr
  */
-ElementTree::ElementPtr
+YBORM_DECL ElementTree::ElementPtr
 deep_xmlize(Session &session, DataObject::Ptr d,
     int depth, const String &alt_name)
 {
@@ -78,7 +79,7 @@ deep_xmlize(Session &session, DataObject::Ptr d,
                          j->second->attr(1, _T("key")) == it->name()))
                     {
                         DomainObjectPtr domain_obj = 
-                            theDomainFactory::instance().create_object(
+                            theDomainFactory().create_object(
                                 session, fk_table.name(), fk_v.as_longint());
                         ElementTree::ElementPtr ref_node = domain_obj->xmlize(
                             depth == -1? -1: depth - 1, mk_xml_name(
@@ -94,7 +95,7 @@ deep_xmlize(Session &session, DataObject::Ptr d,
     return node;
 }
 
-ElementTree::ElementPtr
+YBORM_DECL ElementTree::ElementPtr
 xmlize_row(const Row &row, const String &entry_name)
 {
     ElementTree::ElementPtr entry = ElementTree::new_element(entry_name);
@@ -105,7 +106,7 @@ xmlize_row(const Row &row, const String &entry_name)
     return entry;
 }
 
-ElementTree::ElementPtr
+YBORM_DECL ElementTree::ElementPtr
 xmlize_rows(const Rows &rows, const String &entries_name, const String &entry_name)
 {
     ElementTree::ElementPtr entries = ElementTree::new_element(entries_name);

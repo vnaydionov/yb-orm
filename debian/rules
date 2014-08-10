@@ -13,7 +13,7 @@ configure-stamp:
 	dh_testdir
 	# Add here commands to configure the package.
 	test -x ./configure || sh autogen.sh
-	./configure --with-soci-includes=/blah
+	./configure --with-soci-includes=/usr/include/soci
 	touch $@
 
 build: build-stamp
