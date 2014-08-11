@@ -2,7 +2,9 @@
 message(STATUS
     "DEBUG: SDIR=${SDIR}, BDIR=${BDIR}")
 
-if (NOT UNIX)
+if (UNIX)
+    set(ENV{PATH} "${BDIR}/src/util:${BDIR}/src/orm:${BDIR}/src/yborm_gen:$ENV{PATH}")
+else ()
     set(ENV{PATH} "${BDIR}/src/util;${BDIR}/src/orm;${BDIR}/src/yborm_gen;$ENV{PATH}")
 endif ()
 
