@@ -784,11 +784,15 @@ SqlConnection::~SqlConnection()
         if (activity_)
             rollback();
     }
-    catch (const std::exception &e) { err = true; }
+    catch (const std::exception &) {
+        err = true;
+    }
     try {
         backend_->close();
     }
-    catch (const std::exception &e) { err = true; }
+    catch (const std::exception &) {
+        err = true;
+    }
     if (err)
         debug(_T("error while closing connection"));
 }

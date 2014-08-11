@@ -2,7 +2,6 @@
 cmake_minimum_required (VERSION 2.8)
 project (yborm)
 
-
 option (USE_QT4 "Build YB.ORM against QT4" OFF)
 
 if (UNIX)

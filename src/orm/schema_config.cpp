@@ -138,9 +138,10 @@ void MetaDataConfig::parse_relation_side(ElementTree::ElementPtr node,
         throw MandatoryAttributeAbsent(node->name_, _T("class"));
     cname = node->get_attr(_T("class"));
     Relation::AttrMap new_attrs;
-    for (int i = 0; i < attr_count; ++i)
+    for (size_t i = 0; i < attr_count; ++i)
         if (node->has_attr(std2str(attr_names[i])))
-            new_attrs[std2str(attr_names[i])] = node->get_attr(std2str(attr_names[i]));
+            new_attrs[std2str(attr_names[i])] = 
+                node->get_attr(std2str(attr_names[i]));
     attrs.swap(new_attrs);
 }
 

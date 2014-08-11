@@ -154,7 +154,7 @@ convert_node(QDomElement node)
 {
     ElementPtr p = new_element(node.tagName());
     QDomNamedNodeMap attr = node.attributes();
-    for (int i = 0; i < attr.length(); ++i) {
+    for (size_t i = 0; i < attr.length(); ++i) {
         QDomNode it = attr.item(i);
         p->attrib_[it.nodeName()] = it.nodeValue();
     }

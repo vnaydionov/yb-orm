@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include "util/string_utils.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif // _MSC_VER
+
 namespace Yb {
 
 namespace StrUtils {
@@ -145,10 +149,6 @@ YBUTIL_DECL const Yb::String sql_string_escape(const Yb::String &s)
     }
     return r;
 }
-
-#ifdef _MSC_VER
-#pragma warning(disable:4996)
-#endif // _MSC_VER
 
 YBUTIL_DECL const Yb::String c_string_escape(const Yb::String &s)
 {

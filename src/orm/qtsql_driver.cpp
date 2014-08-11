@@ -144,7 +144,7 @@ QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
         conn_->setHostName(source.host());
     String options;
     Strings keys = source.options();
-    for (int i = 0; i < keys.size(); ++i) {
+    for (size_t i = 0; i < keys.size(); ++i) {
         if (!str_empty(options))
             options += _T(";");
         options += keys[i] + _T("=") + source[keys[i]];

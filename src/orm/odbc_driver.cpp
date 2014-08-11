@@ -4,6 +4,10 @@
 #include "odbc_driver.h"
 #include "util/string_utils.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable:4800)
+#endif // _MSC_VER
+
 using namespace std;
 using Yb::StrUtils::str_to_upper;
 
