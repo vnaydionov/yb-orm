@@ -508,29 +508,29 @@ void DataObject::touch()
 void DataObject::set(int i, const Value &v)
 {
     const Column &c = table_[i];
-    if (c.is_ro() && !c.is_pk())
-        throw ReadOnlyColumn(table_.name(), c.name());
     lazy_load(&c);
+    if (values_[i].get_type() == v.get_type()) {
+        if (values_[i] == v)
+            return;
+    }
     Value new_v = v;
     new_v.fix_type(c.type());
-    bool equal = values_[i] == new_v;
-    if (c.is_pk() && session_ != NULL
-        && !equal && !values_[i].is_null())
-    {
+    if (values_[i] == new_v)
+        return;
+    if (!c.is_pk() && c.is_ro())
         throw ReadOnlyColumn(table_.name(), c.name());
-    }
-    if (c.type() == Value::STRING) {
+    if (c.is_pk() && session_ != NULL && !values_[i].is_null())
+        throw ReadOnlyColumn(table_.name(), c.name());
+    if (c.type() == Value::STRING && !new_v.is_null()) {
         const String &s = new_v.read_as<String>();
-        if (c.size() && c.size() < static_cast<size_t>(s.size()))
+        if (c.size() && c.size() < str_length(s))
             throw StringTooLong(table_.name(), c.name(), c.size(), s);
     }
-    if (!equal) {
-        values_[i].swap(new_v);
-        if (c.is_pk())
-            update_key();
-        else
-            touch();
-    }
+    values_[i].swap(new_v);
+    if (c.is_pk())
+        update_key();
+    else
+        touch();
 }
 
 void DataObject::update_key()
