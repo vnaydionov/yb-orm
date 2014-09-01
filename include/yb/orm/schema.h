@@ -1,6 +1,6 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
-#ifndef YB__ORM__META_DATA__INCLUDED
-#define YB__ORM__META_DATA__INCLUDED
+#ifndef YB__ORM__SCHEMA__INCLUDED
+#define YB__ORM__SCHEMA__INCLUDED
 
 #include <string>
 #include <vector>
@@ -352,4 +352,4 @@ YBORM_DECL Schema &init_schema();
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__ORM__META_DATA__INCLUDED
+#endif // YB__ORM__SCHEMA__INCLUDED

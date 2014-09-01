@@ -193,6 +193,8 @@ add_executable (tut2 tut2.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp)
 
+add_executable (tut2_new tut2_new.cpp)
+
 add_executable (tut3 tut3.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Order.cpp)
@@ -200,6 +202,8 @@ add_executable (tut3 tut3.cpp
 add_executable (tut4 tut4.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/ProductGroup.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Product.cpp)
+
+add_executable (tut4_new tut4_new.cpp)
 
 set_source_files_properties (
     ${CMAKE_CURRENT_BINARY_DIR}/domain/Client.cpp
@@ -240,13 +244,19 @@ target_link_libraries (tut1 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
 target_link_libraries (tut2 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
     ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS})
 
+target_link_libraries (tut2_new ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS})
+
 target_link_libraries (tut3 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
     ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS})
 
 target_link_libraries (tut4 ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
     ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS})
 
-install (TARGETS tut1 tut2 tut3 tut4 DESTINATION examples)
+target_link_libraries (tut4_new ${YBORM_LIB} ${YBUTIL_LIB} ${LIBXML2_LIBS}
+    ${YB_BOOST_LIBS} ${ODBC_LIBS} ${SQLITE3_LIBS} ${SOCI_LIBS})
+
+install (TARGETS tut1 tut2 tut2_new tut3 tut4 tut4_new DESTINATION examples)
 install (FILES tut1.xml tut4.xml ${CMAKE_CURRENT_BINARY_DIR}/tut1.sql
     ${CMAKE_CURRENT_BINARY_DIR}/tut4.sql  DESTINATION examples)
 

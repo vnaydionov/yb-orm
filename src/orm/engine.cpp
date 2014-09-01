@@ -473,6 +473,24 @@ auto_ptr<EngineBase> Engine::clone()
                 mode_, conn, dialect_, logger_.get(), pool_.get()));
 }
 
+void Engine::set_echo(bool echo)
+{
+    echo_ = echo;
+    if (conn_.get())
+        conn_->set_echo(echo_);
+    else if (conn_ptr_)
+        conn_ptr_->set_echo(echo_);
+}
+
+void Engine::set_logger(ILogger::Ptr logger)
+{
+    logger_ = logger;
+    if (conn_.get())
+        conn_->init_logger(logger_.get());
+    else if (conn_ptr_)
+        conn_ptr_->init_logger(logger_.get());
+}
+
 SqlConnection *Engine::get_from_pool()
 {
     if (!pool_.get())

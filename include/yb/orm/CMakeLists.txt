@@ -12,6 +12,6 @@ install (FILES
     sql_driver.h
     sql_pool.h
     xmlizer.h
-    yb_gen.h
+    schema_decl.h
     DESTINATION include/yb/orm)
 

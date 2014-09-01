@@ -9,7 +9,7 @@ AM_CXXFLAGS = \
 	$(SOCI_CXXFLAGS) \
 	$(BOOST_CPPFLAGS)
 
-noinst_PROGRAMS=tut1 tut2 tut3 tut4
+noinst_PROGRAMS=tut1 tut2 tut2_new tut3 tut4 tut4_new
 
 tut1_SOURCES=tut1.cpp domain/Client.cpp domain/Order.cpp
 
@@ -37,6 +37,19 @@ tut2_LDFLAGS = \
 	$(SOCI_LIBS) \
 	$(EXECINFO_LIBS)
 
+tut2_new_SOURCES=tut2_new.cpp
+
+tut2_new_LDFLAGS = \
+	$(top_builddir)/src/orm/libyborm.la \
+	$(top_builddir)/src/util/libybutil.la \
+	$(XML_LIBS) \
+	$(BOOST_THREAD_LDFLAGS) \
+	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
+	$(ODBC_LIBS) \
+	$(SQLITE3_LIBS) \
+	$(SOCI_LIBS) \
+	$(EXECINFO_LIBS)
+
 tut3_SOURCES=tut3.cpp domain/Client.cpp domain/Order.cpp
 
 tut3_LDFLAGS = \
@@ -53,6 +66,19 @@ tut3_LDFLAGS = \
 tut4_SOURCES=tut4.cpp domain/ProductGroup.cpp domain/Product.cpp
 
 tut4_LDFLAGS = \
+	$(top_builddir)/src/orm/libyborm.la \
+	$(top_builddir)/src/util/libybutil.la \
+	$(XML_LIBS) \
+	$(BOOST_THREAD_LDFLAGS) \
+	$(BOOST_THREAD_LIBS) $(BOOST_DATE_TIME_LIBS) \
+	$(ODBC_LIBS) \
+	$(SQLITE3_LIBS) \
+	$(SOCI_LIBS) \
+	$(EXECINFO_LIBS)
+
+tut4_new_SOURCES=tut4_new.cpp
+
+tut4_new_LDFLAGS = \
 	$(top_builddir)/src/orm/libyborm.la \
 	$(top_builddir)/src/util/libybutil.la \
 	$(XML_LIBS) \
