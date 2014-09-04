@@ -20,14 +20,9 @@ public:
 };
 
 template <class T__> struct ValueTraits {};
-template <> struct ValueTraits<int> { enum { TYPE_CODE = 1 }; };
-template <> struct ValueTraits<LongInt> { enum { TYPE_CODE = 2 }; };
-template <> struct ValueTraits<String> { enum { TYPE_CODE = 3 }; };
-template <> struct ValueTraits<Decimal> { enum { TYPE_CODE = 4 }; };
-template <> struct ValueTraits<DateTime> { enum { TYPE_CODE = 5 }; };
-template <> struct ValueTraits<double> { enum { TYPE_CODE = 6 }; };
 
 #define YB_MAX(x, y) ((x) > (y)? (x): (y))
+#define YB_NULL (::Yb::Value())
 
 //! Variant data type for communication to the database layer
 /** Value class objects can hold NULL values.  Copying such objects
@@ -39,24 +34,10 @@ template <> struct ValueTraits<double> { enum { TYPE_CODE = 6 }; };
  */
 class YBUTIL_DECL Value
 {
-    template <class T__>
-    T__ &get_as() {
-        return *reinterpret_cast<T__ *>(&bytes_[0]);
-    }
-    template <class T__>
-    const T__ &get_as() const {
-        return *reinterpret_cast<const T__ *>(&bytes_[0]);
-    }
-    template <class T__>
-    void cons_as() { new (&bytes_[0]) T__(); }
-    template <class T__>
-    void copy_as(const T__ &x) { new (&bytes_[0]) T__(x); }
-    template <class T__>
-    void des_as() { get_as<T__>().~T__(); }
-
     void init();
     void destroy();
     void assign(const Value &other);
+
 public:
     enum Type {
         INVALID = 0, INTEGER, LONGINT, STRING, DECIMAL, DATETIME, FLOAT
@@ -88,16 +69,80 @@ public:
     int get_type() const { return type_; }
     static const String get_type_name(int type);
 
+    // raw read with no checks and no conversions
+    const int &read_as_integer() const;
+    const LongInt &read_as_longint() const;
+    const double &read_as_float() const;
+    const Decimal &read_as_decimal() const;
+    const DateTime &read_as_datetime() const;
+    const String &read_as_string() const;
+
     template <class T__>
     const T__ &read_as() const {
         YB_ASSERT((int)type_ == (int)ValueTraits<T__>::TYPE_CODE);
-        return get_as<T__>();
+        return ValueTraits<T__>::read(*this);
     }
+
 private:
     int type_;
     char bytes_[YB_MAX(sizeof(int), YB_MAX(sizeof(LongInt),
                 YB_MAX(sizeof(String), YB_MAX(sizeof(Decimal),
                 YB_MAX(sizeof(DateTime), sizeof(double))))))];
+};
+
+template <> struct ValueTraits<int> {
+    enum { TYPE_CODE = (int)Value::INTEGER };
+    static const int &read(const Value &x)
+        { return x.read_as_integer(); }
+    static int &from_variant(const Value &x, int &t) {
+        t = x.as_integer();
+        return t;
+    }
+};
+template <> struct ValueTraits<LongInt> {
+    enum { TYPE_CODE = (int)Value::LONGINT };
+    static const LongInt &read(const Value &x)
+        { return x.read_as_longint(); }
+    static LongInt &from_variant(const Value &x, LongInt &t) {
+        t = x.as_longint();
+        return t;
+    }
+};
+template <> struct ValueTraits<String> {
+    enum { TYPE_CODE = (int)Value::STRING };
+    static const String &read(const Value &x)
+        { return x.read_as_string(); }
+    static String &from_variant(const Value &x, String &t) {
+        t = x.as_string();
+        return t;
+    }
+};
+template <> struct ValueTraits<Decimal> {
+    enum { TYPE_CODE = (int)Value::DECIMAL };
+    static const Decimal &read(const Value &x)
+        { return x.read_as_decimal(); }
+    static Decimal &from_variant(const Value &x, Decimal &t) {
+        t = x.as_decimal();
+        return t;
+    }
+};
+template <> struct ValueTraits<DateTime> {
+    enum { TYPE_CODE = (int)Value::DATETIME };
+    static const DateTime &read(const Value &x)
+        { return x.read_as_datetime(); }
+    static DateTime &from_variant(const Value &x, DateTime &t) {
+        t = x.as_date_time();
+        return t;
+    }
+};
+template <> struct ValueTraits<double> {
+    enum { TYPE_CODE = (int)Value::FLOAT };
+    static const double &read(const Value &x)
+        { return x.read_as_float(); }
+    static double &from_variant(const Value &x, double &t) {
+        t = x.as_float();
+        return t;
+    }
 };
 
 //! @name Overloaded operations for Value class
@@ -121,39 +166,9 @@ YBUTIL_DECL bool empty_key(const Key &key);
 
 //! @name Casting from variant typed to certain type
 //! @{
-template <class T>
-inline T &from_variant(const Value &x, T &t) {
-    return from_string(x.as_string(), t);
-}
-
-template <>
-inline int &from_variant(const Value &x, int &t) {
-    t = x.as_integer();
-    return t;
-}
-
-template <>
-inline LongInt &from_variant(const Value &x, LongInt &t) {
-    t = x.as_longint();
-    return t;
-}
-
-template <>
-inline Decimal &from_variant(const Value &x, Decimal &t) {
-    t = x.as_decimal();
-    return t;
-}
-
-template <>
-inline DateTime &from_variant(const Value &x, DateTime &t) {
-    t = x.as_date_time();
-    return t;
-}
-
-template <>
-inline double &from_variant(const Value &x, double &t) {
-    t = x.as_float();
-    return t;
+template <class T__>
+inline T__ &from_variant(const Value &x, T__ &t) {
+    return ValueTraits<T__>::from_variant(x, t);
 }
 //! @}
 

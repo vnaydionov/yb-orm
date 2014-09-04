@@ -13,4 +13,5 @@ yborminclude_HEADERS = \
 	schema.h \
 	sql_driver.h \
 	sql_pool.h \
-	xmlizer.h
+	xmlizer.h \
+	schema_decl.h

@@ -2,10 +2,10 @@
 rem set USE_QT=ON
 set USE_QT=OFF
 
-rem set QT_DIR=c:\QtSDK\Desktop\Qt\4.8.1\mingw
-rem set QT_DIR=c:\QtSDK\Desktop\Qt\4.8.1\msvc2010
-rem set QT_DIR=c:\QtSDK\4.8.4\vs2008
-rem set PATH=%QT_DIR%\bin;%PATH%
+rem set QTDIR=c:\QtSDK\Desktop\Qt\4.8.1\mingw
+rem set QTDIR=c:\QtSDK\Desktop\Qt\4.8.1\msvc2010
+rem set QTDIR=c:\QtSDK\4.8.4\vs2008
+rem set PATH=%QTDIR%\bin;%PATH%
 
 set MINGW_ROOT=c:\QtSDK\mingw
 set PATH=%MINGW_ROOT%\bin;%PATH%

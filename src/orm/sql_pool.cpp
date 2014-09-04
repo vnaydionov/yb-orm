@@ -7,6 +7,10 @@
 #include <time.h>
 #include "orm/sql_pool.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable:4355)
+#endif // _MSC_VER
+
 #define LOG(l, x) do { if (logger_.get()) { std::ostringstream __log; \
     __log << NARROW(x); logger_->log(l, __log.str()); } } while(0)
 

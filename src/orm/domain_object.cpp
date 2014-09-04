@@ -170,7 +170,7 @@ DomainObject::DomainObject(Session &session, const String &tbl_name,
 {}
 
 DomainObject::DomainObject(const DomainObject &obj)
-    : d_(obj.get_data_object())
+    : d_(obj.get_data_object(false))
     , owner_(NULL)
 {}
 
@@ -180,7 +180,7 @@ DomainObject::~DomainObject()
 DomainObject &DomainObject::operator=(const DomainObject &obj)
 {
     if (this != &obj)
-        set_data_object(obj.get_data_object());
+        set_data_object(obj.get_data_object(false));
     return *this;
 }
 

@@ -1,6 +1,10 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #define YBORM_SOURCE
 
+#ifdef _MSC_VER
+#pragma warning(disable:4503)
+#endif // _MSC_VER
+
 #include "util/string_utils.h"
 #include "orm/data_object.h"
 #include <algorithm>
@@ -65,7 +69,7 @@ bool DataObjectResultSet::fetch(ObjectList &row)
     ObjectList new_row;
     Row &cur = **it_;
     size_t pos = 0;
-    for (int i = 0; i < tables_.size(); ++i) {
+    for (size_t i = 0; i < tables_.size(); ++i) {
         DataObject::Ptr d = DataObject::create_new
             (*tables_[i], DataObject::Sync);
         pos = d->fill_from_row(cur, pos);
@@ -504,29 +508,29 @@ void DataObject::touch()
 void DataObject::set(int i, const Value &v)
 {
     const Column &c = table_[i];
-    if (c.is_ro() && !c.is_pk())
-        throw ReadOnlyColumn(table_.name(), c.name());
     lazy_load(&c);
+    if (values_[i].get_type() == v.get_type()) {
+        if (values_[i] == v)
+            return;
+    }
     Value new_v = v;
     new_v.fix_type(c.type());
-    bool equal = values_[i] == new_v;
-    if (c.is_pk() && session_ != NULL
-        && !equal && !values_[i].is_null())
-    {
+    if (values_[i] == new_v)
+        return;
+    if (!c.is_pk() && c.is_ro())
         throw ReadOnlyColumn(table_.name(), c.name());
-    }
-    if (c.type() == Value::STRING) {
+    if (c.is_pk() && session_ != NULL && !values_[i].is_null())
+        throw ReadOnlyColumn(table_.name(), c.name());
+    if (c.type() == Value::STRING && !new_v.is_null()) {
         const String &s = new_v.read_as<String>();
-        if (c.size() && c.size() < s.size())
+        if (c.size() && c.size() < str_length(s))
             throw StringTooLong(table_.name(), c.name(), c.size(), s);
     }
-    if (!equal) {
-        values_[i].swap(new_v);
-        if (c.is_pk())
-            update_key();
-        else
-            touch();
-    }
+    values_[i].swap(new_v);
+    if (c.is_pk())
+        update_key();
+    else
+        touch();
 }
 
 void DataObject::update_key()
@@ -614,7 +618,7 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     if (master->assigned_key()) {
         Key pkey = master->key();
         const Strings &fkey_parts = r.fk_fields();
-        for (int i = 0; i < fkey_parts.size(); ++i)
+        for (size_t i = 0; i < fkey_parts.size(); ++i)
             slave->set(fkey_parts[i], pkey.second[i].second);
     }
     else if (slave->status() == DataObject::Sync &&
@@ -825,7 +829,7 @@ void DataObject::dump_tree(std::ostream &out, int level)
     for (int i = 0; i < level*4; ++i)
         out << " ";
     out << NARROW(table_.name()) << "(";
-    for (int i = 0; i < values_.size(); ++i) {
+    for (size_t i = 0; i < values_.size(); ++i) {
         if (i)
             out << ", ";
         String s = _T("NULL");
@@ -938,9 +942,9 @@ size_t RelationObject::count_slaves()
     RowsPtr result = session.engine()->
         select(cols, Expression(slave_tbl.name()), f);
     if (result->size() != 1)
-        throw ObjectNotFoundByKey(_T("COUNT(*) FOR ") + slave_tbl.name() + _T("(")
-                                  + f.get_sql() + _T(")"));
-    return result->begin()->begin()->second.as_longint();
+        throw ObjectNotFoundByKey(_T("COUNT(*) FOR ") + slave_tbl.name()
+                + _T("(") + f.get_sql() + _T(")"));
+    return static_cast<int>(result->begin()->begin()->second.as_longint());
 }
 
 void RelationObject::lazy_load_slaves()

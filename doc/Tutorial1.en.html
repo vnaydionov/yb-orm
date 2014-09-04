@@ -5,13 +5,13 @@
 	<TITLE>Mapping a single class to a table (tut1.cpp)</TITLE>
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
-	<META NAME="CREATED" CONTENT="20130520;9295100">
+	<META NAME="CREATED" CONTENT="20130520;9345500">
 	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
-	<META NAME="CHANGED" CONTENT="20140601;16483800">
+	<META NAME="CHANGED" CONTENT="20140709;11234400">
 	<STYLE TYPE="text/css">
 	<!--
 		@page { margin: 2cm }
-		P { margin-bottom: 0.21cm }
+		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
 		H2 { margin-bottom: 0.21cm }
 		H2.western { font-family: "Times New Roman", serif }
 		H2.cjk { font-family: "Droid Sans Fallback" }
@@ -27,7 +27,7 @@
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
 <H2 CLASS="western">Mapping a single class to a table (tut1.cpp)</H2>
-<P>In this tutorial we assume that you are using some Unix-like
+<P>In this tutorial we assume that you are using some POSIX-like
 environment: Linux, FreeBSD, Mac OS X or Cygwin for Windows are OK.
 For native Windows users all steps are basically the same, but paths
 and compiler command line options may vary. Let's assume that the
@@ -35,21 +35,22 @@ root of your installation of YB.ORM is pointed to by the environment
 variable <TT CLASS="western">YBORM_ROOT</TT>.</P>
 <P>First, describe your data schema in a simple XML format and save
 it into file named <TT CLASS="western">tut1.xml</TT> in your working
-directory.</P>
+directory. In the example below we define one table <TT CLASS="western">client_tbl</TT>,
+and one corresponding class <TT CLASS="western">Client</TT>.</P>
 <PRE CLASS="western">&lt;schema&gt;
-  &lt;table name=&quot;client&quot; sequence=&quot;seq_client&quot; class=&quot;Client&quot;&gt;
-    &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
-      &lt;primary-key /&gt;
-    &lt;/column&gt;
-    &lt;column name=&quot;dt&quot; type=&quot;datetime&quot; null=&quot;false&quot; default=&quot;sysdate&quot; /&gt;
-    &lt;column name=&quot;name&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
-    &lt;column name=&quot;email&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
-    &lt;column name=&quot;phone&quot; type=&quot;string&quot; size=&quot;50&quot; null=&quot;true&quot; /&gt;
-    &lt;column name=&quot;budget&quot; type=&quot;decimal&quot; /&gt;
-  &lt;/table&gt;
+    &lt;table name=&quot;client_tbl&quot; sequence=&quot;client_seq&quot; class=&quot;Client&quot; xml-name=&quot;client&quot;&gt;
+        &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
+            &lt;primary-key /&gt;
+        &lt;/column&gt;
+        &lt;column name=&quot;dt&quot; type=&quot;datetime&quot; null=&quot;false&quot; default=&quot;sysdate&quot; /&gt;
+        &lt;column name=&quot;name&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
+        &lt;column name=&quot;phone&quot; type=&quot;string&quot; size=&quot;50&quot; null=&quot;true&quot; /&gt;
+        &lt;column name=&quot;email&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
+        &lt;column name=&quot;budget&quot; type=&quot;decimal&quot; /&gt;
+    &lt;/table&gt;
 &lt;/schema&gt;</PRE><P>
 Then use the code generation utility <TT CLASS="western">yborm_gen</TT>
-to produce C++ domain classes. The first argument is the mode of code
+to produce C++ domain class. The first argument is the mode of code
 generation, the second is the file name of the schema, the third is
 the directory to put your generated class files to, the fourth
 (optional) is the directory prefix for <TT CLASS="western">#include</TT>
@@ -58,48 +59,22 @@ directive (by default: <TT CLASS="western">domain/</TT>).</P>
 $ $YBORM_ROOT/bin/yborm_gen --domain tut1.xml domain
 yborm_gen: table count: 1
 yborm_gen: generation started...
-yborm_gen: Generating file: domain/Client.h for table 'client'
-yborm_gen: Generating cpp file: domain/Client.cpp for table 'client'
+yborm_gen: Generating file: domain/Client.h for table 'client_tbl'
+yborm_gen: Generating cpp file: domain/Client.cpp for table 'client_tbl'
 yborm_gen: generation successfully finished</PRE><P>
-Now there are two files in the <TT CLASS="western">domain</TT>
-directory: <TT CLASS="western">Client.h</TT> and <TT CLASS="western">Client.cpp</TT>.
-They contain domain class definition for <TT CLASS="western">Client</TT>
-with all its properties. You can view and (with some precautions)
-edit them. The schema file can be edited later and new entities and
-columns will be added, the subsequent run of <TT CLASS="western">yborm_gen</TT>
-utility will not overwrite the domain class files completely, only
-the sections marked as &quot;auto-generated&quot; will get updated.</P>
-<P>Then use the same utility with another mode to generate SQL DDL
-statements to help create tables and sequences. When invoking that
-script specify the SQL dialect. For this simple example we will
-create an <TT CLASS="western">SQLITE</TT> database.</P>
-<PRE CLASS="western">$ $YBORM_ROOT/bin/yborm_gen --ddl tut1.xml SQLITE &gt; tut1.sql
-yborm_gen: table count: 1
-yborm_gen: generation started...
-yborm_gen: generation successfully finished</PRE><P>
-The tool will produce SQL code like this:</P>
-<PRE CLASS="western">CREATE TABLE client (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    phone VARCHAR(50),
-    budget NUMERIC
-);</PRE><P>
-Create test database as a file in the working directory, and verify
-that the table is empty:</P>
-<PRE CLASS="western">$ sqlite3 tut1.sqlite &lt; tut1.sql
-$ sqlite3 tut1.sqlite
-SQLite version 3.7.9 2011-11-01 00:52:41
-Enter &quot;.help&quot; for instructions
-Enter SQL statements terminated with a &quot;;&quot;
-sqlite&gt; select count(*) from client;
-0
-sqlite&gt; </PRE><P>
-Now its possible to use domain class <TT CLASS="western">Client</TT>.
-Let's look at the example. To synchronize objects to the DB an
-instance of <TT CLASS="western">Yb::Session</TT> class is used. As an
-abstraction layer for SQL there are classes <TT CLASS="western">Yb::Engine</TT>
+There are two new files in the <TT CLASS="western">domain</TT>:
+<TT CLASS="western">Client.h</TT> and <TT CLASS="western">Client.cpp</TT>.
+They contain new domain class <TT CLASS="western">Client</TT> with
+all of its properties. You can take a look at it and (with some
+cautions) add changes. The schema file may receive modifications,
+say, new tables and columns are added. Then if you run <TT CLASS="western">yborm_gen</TT>
+the utility will not overwrite those domain class files from scratch,
+but only sections marked as &quot;auto-generated&quot;.</P>
+<P>Now its possible to use domain class <TT CLASS="western">Client</TT>.
+Let's look at the example. To keep track of new, loaded, changed and
+deleted objects and to synchronize those objects to the DB an
+instance of <TT CLASS="western">Yb::Session</TT> class is used. There
+is a lower level abstraction layer for SQL: classes <TT CLASS="western">Yb::Engine</TT>
 and <TT CLASS="western">Yb::SqlConnection</TT>. In the example below
 you see the session initialization, then a new instance of mapped
 class is created and its properties are filled, then it is stored in
@@ -112,7 +87,8 @@ int main()
     std::auto_ptr&lt;Yb::SqlConnection&gt; conn(new Yb::SqlConnection(
             &quot;sqlite+sqlite://./tut1.sqlite&quot;));
     Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-    Yb::Session session(Yb::init_schema(), &amp;engine);
+    Yb::init_schema();
+    Yb::Session session(Yb::theSchema(), &amp;engine);
     Domain::Client client;
     std::string name, email, budget;
     std::cout &lt;&lt; &quot;Enter name, email, budget:\n&quot;;
@@ -136,7 +112,42 @@ their dependencies: <TT CLASS="western">-lxml2</TT>, <TT CLASS="western">-lboost
 <TT CLASS="western">-lodbc</TT>, <TT CLASS="western">-lsqlite3</TT>
 or <TT CLASS="western">-lsoci</TT>. In the simplest case the
 following command will build and link the example:</P>
-<PRE CLASS="western" STYLE="margin-bottom: 0.5cm">$ c++ -I. -I$YBORM_ROOT/include/yb -o tut1 tut1.cpp domain/Client.cpp -L$YBORM_ROOT/lib -lybutil -lyborm</PRE><P>
+<PRE CLASS="western">$ c++ -I. -I$YBORM_ROOT/include/yb -o tut1 tut1.cpp domain/Client.cpp -L$YBORM_ROOT/lib -lybutil -lyborm</PRE><P>
+To make it work we need to create a database with a table. In this
+example we'll use a local database <TT CLASS="western">SQLITE</TT>.
+We can use the same utility to generate SQL DDL script for table
+creation. Specify the SQL dialect on start. 
+</P>
+<PRE CLASS="western">$ $YBORM_ROOT/bin/yborm_gen --ddl tut1.xml SQLITE &gt; tut1.sql
+yborm_gen: table count: 1
+yborm_gen: generation started...
+yborm_gen: generation successfully finished</PRE><P>
+The tool will produce SQL code like this:</P>
+<PRE CLASS="western">CREATE TABLE client_tbl (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(50),
+    budget NUMERIC
+);</PRE><P>
+Create test database as a file in the working directory, and verify
+that the table is empty:</P>
+<PRE CLASS="western">$ sqlite3 tut1.sqlite &lt; tut1.sql
+$ sqlite3 tut1.sqlite
+SQLite version 3.7.9 2011-11-01 00:52:41
+Enter &quot;.help&quot; for instructions
+Enter SQL statements terminated with a &quot;;&quot;
+sqlite&gt; select count(*) from client;
+0
+sqlite&gt; </PRE><P>
+Sometimes it is preferred to create the tables on a program startup.
+The following call will create all the tables defined by the schema,
+in proper order. If there are tables already present in the DB an
+exception will be thrown.</P>
+<PRE CLASS="western">    Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
+    Yb::init_schema();
+    <STRONG>engine.create_schema(Yb::theSchema(), false);</STRONG></PRE><P>
 Let's run the example and look at the result. Note, if we have used
 an YB.ORM build with dynamic libraries we may have to add the <TT CLASS="western">lib</TT>
 directory to the search path.</P>
@@ -151,12 +162,12 @@ Let's check what is in the table now:</P>
 SQLite version 3.7.9 2011-11-01 00:52:41
 Enter &quot;.help&quot; for instructions
 Enter SQL statements terminated with a &quot;;&quot;
-sqlite&gt; select * from client;
+sqlite&gt; select * from client_tbl;
 1|2014-06-01T13:30:36|Vasya|vas@ya.ru||23.45
 sqlite&gt; </PRE><P>
 There is one row now. To see what is happening under the hood we can
 enable logging facility. Make the following modifications to your
-<TT CLASS="western">tut1.cpp</TT>:</P>
+code <TT CLASS="western">tut1.cpp</TT>:</P>
 <PRE CLASS="western">int main()
 {
 <STRONG>    Yb::LogAppender appender(std::cerr);</STRONG>
@@ -165,18 +176,19 @@ enable logging facility. Make the following modifications to your
     Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
 <STRONG>    engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&amp;appender)));</STRONG>
 <STRONG>    engine.set_echo(true);</STRONG>
-    Yb::Session session(Yb::init_schema(), &amp;engine);</PRE><P>
-Compile it and run again, this reveals more details about the
-interaction with the database:</P>
+    Yb::init_schema();
+    Yb::Session session(Yb::theSchema(), &amp;engine);</PRE><P>
+Let's compile and run it again, this must reveal the details of
+interaction with the DB, in this case it's SQLite:</P>
 <PRE CLASS="western">$ ./tut1
 Enter name, email, budget:
 Petya pet@ya.ru 56.78   <EM>&lt;-- user input</EM>
 14-06-01 13:55:12.738 28833/28833 DEBG orm: flush started
 14-06-01 13:55:12.739 28833/28833 DEBG sql: begin transaction
-14-06-01 13:55:12.739 28833/28833 DEBG sql: prepare: INSERT INTO client (dt, name, email, phone, budget) VALUES (?, ?, ?, ?, ?)
+14-06-01 13:55:12.739 28833/28833 DEBG sql: prepare: INSERT INTO client_tbl (dt, name, email, phone, budget) VALUES (?, ?, ?, ?, ?)
 14-06-01 13:55:12.739 28833/28833 DEBG sql: bind: (DateTime, String, String, String, Decimal)
 14-06-01 13:55:12.739 28833/28833 DEBG sql: exec prepared: p1=&quot;'2014-06-01 13:55:12'&quot; p2=&quot;'Petya'&quot; p3=&quot;'pet@ya.ru'&quot; p4=&quot;NULL&quot; p5=&quot;56.78&quot;
-14-06-01 13:55:12.740 28833/28833 DEBG sql: prepare: SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = 'client'
+14-06-01 13:55:12.740 28833/28833 DEBG sql: prepare: SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = 'client_tbl'
 14-06-01 13:55:12.740 28833/28833 DEBG sql: exec prepared:
 14-06-01 13:55:12.740 28833/28833 DEBG sql: fetch: LID='2' 
 14-06-01 13:55:12.740 28833/28833 DEBG sql: fetch: no more rows
@@ -184,9 +196,10 @@ Petya pet@ya.ru 56.78   <EM>&lt;-- user input</EM>
 New client: 2
 14-06-01 13:55:12.740 28833/28833 DEBG sql: commit
 $ </PRE><P>
-As you can see YB.ORM gives a developer power to operate with tables
-and rows in an object-oriented fashion. All the properties of a
-mapped object are easily accessible. More than that it will handle
-transactions and logging.</P>
+As you can see YB.ORM provides a developer with a convenient
+abstraction level. It allows for operation on tables and rows,
+staying within OOP. You can easily access object's fields. Besides it
+takes care of differences between dialects of SQL. This tool also
+manages transactions and can handle debug logging if necessary.</P>
 </BODY>
 </HTML>

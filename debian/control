@@ -1,7 +1,9 @@
 Source: libyborm
 Priority: extra
 Maintainer: Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>
-Build-Depends: debhelper (>= 7.0.0), autotools-dev
+Build-Depends: debhelper (>= 7.0.0), autotools-dev,
+ libboost-dev | libboost1.48-dev, libxml2-dev,
+ libsqlite3-dev, unixodbc-dev, libsoci-core-gcc-dev
 Standards-Version: 3.9.2
 Section: libs
 Homepage: http://code.google.com/p/yb-orm/

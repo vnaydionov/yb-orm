@@ -12,6 +12,31 @@ using namespace Yb::StrUtils;
 
 namespace Yb {
 
+template <class T__>
+T__ &get_as(char *bytes) {
+    return *reinterpret_cast<T__ *>(bytes);
+}
+
+template <class T__>
+const T__ &get_as(const char *bytes) {
+    return *reinterpret_cast<const T__ *>(bytes);
+}
+
+template <class T__>
+void cons_as(char *bytes) {
+    new (bytes) T__();
+}
+
+template <class T__>
+void copy_as(char *bytes, const T__ &x) {
+    new (bytes) T__(x);
+}
+
+template <class T__>
+void des_as(char *bytes) {
+    get_as<T__>(bytes).~T__();
+}
+
 ValueIsNull::ValueIsNull()
     : ValueError(_T("Trying to get value of null"))
 {}
@@ -21,13 +46,13 @@ Value::init()
 {
     switch (type_) {
     case STRING:
-        cons_as<String>();
+        cons_as<String>(bytes_);
         break;
     case DECIMAL:
-        cons_as<Decimal>();
+        cons_as<Decimal>(bytes_);
         break;
     case DATETIME:
-        cons_as<DateTime>();
+        cons_as<DateTime>(bytes_);
         break;
     }
 }
@@ -37,13 +62,13 @@ Value::destroy()
 {
     switch (type_) {
     case STRING:
-        des_as<String>();
+        des_as<String>(bytes_);
         break;
     case DECIMAL:
-        des_as<Decimal>();
+        des_as<Decimal>(bytes_);
         break;
     case DATETIME:
-        des_as<DateTime>();
+        des_as<DateTime>(bytes_);
         break;
     }
 }
@@ -58,25 +83,43 @@ Value::assign(const Value &other)
     }
     switch (type_) {
     case INTEGER:
-        get_as<int>() = other.get_as<int>();
+        get_as<int>(bytes_) = get_as<int>(other.bytes_);
         break;
     case LONGINT:
-        get_as<LongInt>() = other.get_as<LongInt>();
+        get_as<LongInt>(bytes_) = get_as<LongInt>(other.bytes_);
         break;
     case STRING:
-        get_as<String>() = other.get_as<String>();
+        get_as<String>(bytes_) = get_as<String>(other.bytes_);
         break;
     case DECIMAL:
-        get_as<Decimal>() = other.get_as<Decimal>();
+        get_as<Decimal>(bytes_) = get_as<Decimal>(other.bytes_);
         break;
     case DATETIME:
-        get_as<DateTime>() = other.get_as<DateTime>();
+        get_as<DateTime>(bytes_) = get_as<DateTime>(other.bytes_);
         break;
     case FLOAT:
-        get_as<double>() = other.get_as<double>();
+        get_as<double>(bytes_) = get_as<double>(other.bytes_);
         break;
     }
 }
+
+const int &
+Value::read_as_integer() const { return get_as<int>(bytes_); }
+
+const LongInt &
+Value::read_as_longint() const { return get_as<LongInt>(bytes_); }
+
+const String &
+Value::read_as_string() const { return get_as<String>(bytes_); }
+
+const Decimal &
+Value::read_as_decimal() const { return get_as<Decimal>(bytes_); }
+
+const DateTime &
+Value::read_as_datetime() const { return get_as<DateTime>(bytes_); }
+
+const double &
+Value::read_as_float() const { return get_as<double>(bytes_); }
 
 Value::Value()
     : type_(INVALID)
@@ -85,41 +128,46 @@ Value::Value()
 Value::Value(const int &x)
     : type_(INTEGER)
 {
-    copy_as<int>(x);
+    copy_as<int>(bytes_, x);
 }
 
 Value::Value(const LongInt &x)
     : type_(LONGINT)
 {
-    copy_as<LongInt>(x);
+    copy_as<LongInt>(bytes_, x);
 }
 
 Value::Value(const double &x)
     : type_(FLOAT)
 {
-    copy_as<double>(x);
+    copy_as<double>(bytes_, x);
 }
 
 Value::Value(const Decimal &x)
     : type_(DECIMAL)
 {
-    copy_as<Decimal>(x);
+    copy_as<Decimal>(bytes_, x);
 }
 
 Value::Value(const DateTime &x)
     : type_(DATETIME)
 {
-    copy_as<DateTime>(x);
+    copy_as<DateTime>(bytes_, x);
 }
 
 Value::Value(const String &x)
     : type_(STRING)
 {
-    copy_as<String>(x);
+    copy_as<String>(bytes_, x);
 }
 
-Value::Value(const Char *x)     : type_(STRING)
-    { copy_as<String>(str_from_chars(x)); }
+Value::Value(const Char *x)
+    : type_(x != NULL? STRING: INVALID)
+{
+    if (x != NULL)
+        copy_as<String>(bytes_, str_from_chars(x));
+}
+
 Value::Value(const Value &other)
     : type_(INVALID)
 {
@@ -174,7 +222,7 @@ Value::fix_type(int type)
             int t = as_integer();
             destroy();
             type_ = type;
-            get_as<int>() = t;
+            get_as<int>(bytes_) = t;
         }
         break;
     case Value::LONGINT:
@@ -182,7 +230,7 @@ Value::fix_type(int type)
             LongInt t = as_longint();
             destroy();
             type_ = type;
-            get_as<LongInt>() = t;
+            get_as<LongInt>(bytes_) = t;
         }
         break;
     case Value::STRING:
@@ -191,7 +239,7 @@ Value::fix_type(int type)
             destroy();
             type_ = type;
             init();
-            get_as<String>() = t;
+            get_as<String>(bytes_) = t;
         }
         break;
     case Value::DECIMAL:
@@ -200,7 +248,7 @@ Value::fix_type(int type)
             destroy();
             type_ = type;
             init();
-            get_as<Decimal>() = t;
+            get_as<Decimal>(bytes_) = t;
         }
         break;
     case Value::DATETIME:
@@ -209,7 +257,7 @@ Value::fix_type(int type)
             destroy();
             type_ = type;
             init();
-            get_as<DateTime>() = t;
+            get_as<DateTime>(bytes_) = t;
         }
         break;
     case Value::FLOAT:
@@ -217,7 +265,7 @@ Value::fix_type(int type)
             double t = as_float();
             destroy();
             type_ = type;
-            get_as<double>() = t;
+            get_as<double>(bytes_) = t;
         }
         break;
     }
@@ -227,9 +275,9 @@ int
 Value::as_integer() const
 {
     if (type_ == INTEGER)
-        return get_as<int>();
+        return get_as<int>(bytes_);
     if (type_ == LONGINT) {
-        LongInt x = get_as<LongInt>();
+        LongInt x = get_as<LongInt>(bytes_);
         LongInt m = 0xFFFF;
         m = (m << 16) | m;
         LongInt h = (x >> 32) & m;
@@ -252,9 +300,9 @@ LongInt
 Value::as_longint() const
 {
     if (type_ == LONGINT)
-        return get_as<LongInt>();
+        return get_as<LongInt>(bytes_);
     if (type_ == INTEGER)
-        return get_as<int>();
+        return get_as<int>(bytes_);
     String s = as_string();
     try {
         LongInt x;
@@ -269,7 +317,7 @@ const Decimal
 Value::as_decimal() const
 {
     if (type_ == DECIMAL)
-        return get_as<Decimal>();
+        return get_as<Decimal>(bytes_);
     String s = as_string();
     try {
         return Decimal(s);
@@ -297,7 +345,7 @@ const DateTime
 Value::as_date_time() const
 {
     if (type_ == DATETIME)
-        return get_as<DateTime>();
+        return get_as<DateTime>(bytes_);
     String s = as_string();
     try {
         DateTime x;
@@ -319,7 +367,7 @@ double
 Value::as_float() const
 {
     if (type_ == FLOAT)
-        return get_as<double>();
+        return get_as<double>(bytes_);
     String s = as_string();
     try {
         double x;
@@ -337,17 +385,17 @@ Value::as_string() const
     case INVALID:
         throw ValueIsNull();
     case INTEGER:
-        return to_string(get_as<int>());
+        return to_string(get_as<int>(bytes_));
     case LONGINT:
-        return to_string(get_as<LongInt>());
+        return to_string(get_as<LongInt>(bytes_));
     case STRING:
-        return get_as<String>();
+        return get_as<String>(bytes_);
     case DECIMAL:
-        return to_string(get_as<Decimal>());
+        return to_string(get_as<Decimal>(bytes_));
     case DATETIME:
-        return to_string(get_as<DateTime>());
+        return to_string(get_as<DateTime>(bytes_));
     case FLOAT:
-        return to_string(get_as<double>());
+        return to_string(get_as<double>(bytes_));
     }
     throw ValueBadCast(_T("UnknownType"), _T("Value::as_string()"));
 }
@@ -358,9 +406,9 @@ Value::sql_str() const
     if (is_null())
         return _T("NULL");
     if (type_ == STRING)
-        return quote(sql_string_escape(get_as<String>()));
+        return quote(sql_string_escape(get_as<String>(bytes_)));
     else if (type_ == DATETIME) {
-        String t(to_string(get_as<DateTime>()));
+        String t(to_string(get_as<DateTime>(bytes_)));
         int pos = str_find(t, _T('T'));
         if (pos != -1)
             t[pos] = _T(' ');
@@ -385,31 +433,31 @@ Value::cmp(const Value &x) const
     if (x.is_null())
         return 1;
     if (type_ == STRING && x.type_ == STRING)
-        return get_as<String>().compare(x.get_as<String>());
+        return get_as<String>(bytes_).compare(get_as<String>(x.bytes_));
     if ((type_ == LONGINT || type_ == INTEGER) &&
         (x.type_ == LONGINT || x.type_ == INTEGER))
     {
         LongInt a, b;
         if (type_ == INTEGER)
-            a = get_as<int>();
+            a = get_as<int>(bytes_);
         else
-            a = get_as<LongInt>();
+            a = get_as<LongInt>(bytes_);
         if (x.type_ == INTEGER)
-            b = x.get_as<int>();
+            b = get_as<int>(x.bytes_);
         else
-            b = x.get_as<LongInt>();
+            b = get_as<LongInt>(x.bytes_);
         return a < b? -1: (a > b? 1: 0);
     }
     if (type_ == DATETIME && x.type_ == DATETIME)
     {
-        const DateTime &a = get_as<DateTime>(), &b = x.get_as<DateTime>();
+        const DateTime &a = get_as<DateTime>(bytes_), &b = get_as<DateTime>(x.bytes_);
         return a < b? -1: (a > b? 1: 0);
     }
     if (type_ == DECIMAL && x.type_ == DECIMAL)
-        return get_as<Decimal>().cmp(x.get_as<Decimal>());
+        return get_as<Decimal>(bytes_).cmp(get_as<Decimal>(x.bytes_));
     if (type_ == FLOAT && x.type_ == FLOAT)
     {
-        const double &a = get_as<double>(), &b = x.get_as<double>();
+        const double &a = get_as<double>(bytes_), &b = get_as<double>(x.bytes_);
         return a < b? -1: (a > b? 1: 0);
     }
     return as_string().compare(x.as_string());

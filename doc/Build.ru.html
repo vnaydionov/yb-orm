@@ -2,49 +2,47 @@
 <HTML>
 <HEAD>
 	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
-	<TITLE></TITLE>
+	<TITLE>С чего начать</TITLE>
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="AUTHOR" CONTENT="Vaclav Naydionov">
 	<META NAME="CREATED" CONTENT="20130618;22415700">
-	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
-	<META NAME="CHANGED" CONTENT="20130618;22424100">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20140717;1021600">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
 	<STYLE TYPE="text/css">
 	<!--
-		@page { size: 21cm 29.7cm; margin: 2cm }
-		P { margin-bottom: 0.21cm }
-		H1 { margin-bottom: 0.21cm; page-break-after: avoid }
-		H1.western { font-family: "Times New Roman", serif; font-size: 24pt; font-weight: bold }
-		H1.cjk { font-family: "Droid Sans Fallback"; font-size: 24pt; font-weight: bold }
-		H1.ctl { font-family: "Lohit Hindi"; font-size: 24pt; font-weight: bold }
-		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
-		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
-		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
-		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
-		TH P { font-weight: bold; text-align: center }
-		PRE.western { font-family: "Droid Sans Mono", monospace; font-size: 10pt }
-		PRE.cjk { font-family: "Droid Sans Fallback", monospace; font-size: 10pt }
-		PRE.ctl { font-family: "Lohit Hindi", monospace; font-size: 10pt }
-		STRONG { font-weight: bold }
-		A:link { color: #000080; so-language: zxx; text-decoration: underline }
-		TT.western { font-family: "Droid Sans Mono", monospace }
+		@page { margin: 2cm }
+		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
+		H1.cjk { font-family: "Droid Sans Fallback" }
+		H1.ctl { font-family: "Lohit Hindi" }
+		H2 { margin-bottom: 0.21cm }
+		H2.western { font-family: "Times New Roman", serif }
+		H2.cjk { font-family: "Droid Sans Fallback" }
+		H2.ctl { font-family: "Lohit Hindi" }
+		PRE.western { font-family: "Courier New", monospace }
+		PRE.cjk { font-family: "Droid Sans Fallback", monospace }
+		PRE.ctl { font-family: "Lohit Hindi", monospace }
+		TD P { margin-top: 0.1cm; margin-bottom: 0.1cm }
+		TH P { margin-top: 0.1cm; margin-bottom: 0.1cm }
+		TT.western { font-family: "Courier New", monospace }
 		TT.cjk { font-family: "Droid Sans Fallback", monospace }
 		TT.ctl { font-family: "Lohit Hindi", monospace }
 	-->
 	</STYLE>
 </HEAD>
-<BODY LANG="ru-RU" LINK="#000080" VLINK="#800000" DIR="LTR">
+<BODY LANG="ru-RU" DIR="LTR">
 <H1 CLASS="western">С чего начать</H1>
-<P>Чтобы попробовать инструмент YB.ORM в
-вашем окружении нужно собрать саму
-библиотеку и инструмент командной
+<P>Чтобы попробовать инструментарий
+YB.ORM в вашем окружении нужно собрать
+саму библиотеку и утилиту командной
 строки для генерации кода. Есть несколько
 способов это сделать. 
 </P>
 <UL>
-	<LI><P STYLE="margin-bottom: 0cm">Для пользователей
-	Windows, более простой способ - взять готовый
-	пакет, совместимый с вашим компилятором,
-	См. <STRONG>Готовые пакеты</STRONG>. 
+	<LI><P>Для пользователей Windows, более простой
+	способ - взять готовый пакет, совместимый
+	с вашим компилятором, См. <STRONG>Готовые
+	пакеты</STRONG>. 
 	</P>
 	<LI><P>В любом окружении вы можете скачать
 	один из релизов в виде архива с исходным
@@ -55,11 +53,12 @@
 	с помощью Autotools</STRONG> и <STRONG>Сборка с
 	помощью CMake</STRONG>. 
 	</P>
+	<LI><P>Для систем на базе Debian GNU/Linux и Ubuntu
+	можно собрать <TT CLASS="western">.deb</TT> пакет.</P>
 </UL>
-<P>Вы можете также использовать инструмент
-для контроля версий <A HREF="http://git-scm.com/">Git</A>
-чтобы получить свежий код из репозитория,
-см. <A HREF="http://code.google.com/p/yb-orm/source/checkout">Git
+<P>Используйте <A HREF="http://git-scm.com/">Git</A> чтобы
+получить свежий код из репозитория, см.
+<A HREF="https://github.com/vnaydionov/yb-orm">Git
 репозиторий проекта YB.ORM</A>, и уже потом
 использовать Autotools или CMake. 
 </P>
@@ -77,19 +76,19 @@ Windows, в виде .zip-файлов - чтобы было легче
 конкретными версиями библиотек <A HREF="http://www.boost.org/">Boost</A>
 или <A HREF="http://qt-project.org/">Qt</A>. Собраны они
 конкретными версиями компиляторов C++
-(напр. MinGW 4.4, MSVC 2010, MSVC 2008, и т.д.). Версия,
-собранная с Boost, включает все необходимые
-компоненты библиотек Boost в себе, в то
-время как версия, собранная с Qt, требует
-установки соответствующей версии Qt SDK
-вручную. По умолчанию, версия с Boost имеет
-в качестве бакэнда для БД ODBC драйвер и
-родной драйвер для SQLite, версия с Qt
-использует <A HREF="http://qt-project.org/doc/qt-4.8/qtsql.html">QtSql</A>.
+(напр. MinGW 4.4, MSVC 2013, MSVC 2010, и т.д.). Версия,
+собранная с Boost, включает в себя все
+необходимые компоненты библиотек Boost,
+в то время как версия, собранная с Qt,
+требует установки соответствующей
+версии Qt SDK вручную. По умолчанию, версия
+с Boost имеет в качестве бакэнда для БД
+ODBC драйвер и родной драйвер для SQLite,
+версия с Qt использует <A HREF="http://qt-project.org/doc/qt-4.8/qtsql.html">QtSql</A>.
 Конечно, вы можете пересобрать YB.ORM с
 использованием того тулкита/компилятора/бакэнда
 для БД, который вам подходит, исходный
-код включен. 
+код имеется. 
 </P>
 <P><STRONG>Замечание для Qt4 и MinGW</STRONG>: Qt4 SDK
 было собрано производителем с
@@ -110,33 +109,38 @@ Windows, обычно распаковывается в папку
 </P>
 <TABLE CELLPADDING=2 CELLSPACING=2>
 	<TR>
-		<TH STYLE="border-top: 1px double #808080; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0.05cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
-			<P>Путь</P>
+		<TH STYLE="border: none; padding: 0cm">
+            <P><STRONG>Путь</STRONG></P>
 		</TH>
-		<TH STYLE="border: 1px double #808080; padding: 0.05cm">
-			<P>Описание</P>
+		<TH STYLE="border: none; padding: 0cm">
+            <P><STRONG>Описание</STRONG></P>
 		</TH>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>корень установки инструментария
 			YB.ORM</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\bin</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<UL>
-				<LI><P>файлы .dll, от которых может зависеть
-				данная сборка: <TT CLASS="western">boost_date_time</TT>,
-				<TT CLASS="western">boost_thread</TT>, <TT CLASS="western">cppunit</TT>,
-				<TT CLASS="western">libxml2</TT>, <TT CLASS="western">sqlite3</TT>,
-				различные служебные библиотеки 
+				<LI><P><TT CLASS="western">.dll</TT> файлы самой
+                библиотеки: <STRONG><TT
+                CLASS="western">ybutil.dll</TT></STRONG>,
+                <STRONG><TT CLASS="western">yborm.dll</TT></STRONG>.</P>
+				<LI><P>файлы <TT CLASS="western">.dll</TT>, от которых
+				может зависеть данная сборка:
+				<TT CLASS="western">boost_date_time</TT>, <TT CLASS="western">boost_thread</TT>,
+				<TT CLASS="western">cppunit</TT>, <TT CLASS="western">libxml2</TT>,
+				<TT CLASS="western">sqlite3</TT>, различные служебные
+				библиотеки 
 				</P>
 				<LI><P>некоторые сторонние утилиты:
 				<TT CLASS="western">iconv.exe</TT>, <TT CLASS="western">xmllint.exe</TT>,
@@ -149,43 +153,43 @@ Windows, обычно распаковывается в папку
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\build</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>папка сборки для самой библиотеки</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\build-auth</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>папка сборки для примера Auth</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\build-tut</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>папка для сборки примеров из папки
-			Tutorial</P>
+			tutorial</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\doc</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
-			<P>куски документации</P>
+		<TD STYLE="border: none; padding: 0cm">
+			<P>документация в формате HTML</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\examples</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>собранные примеры и тесты, файлы
 			схем, тестовая база <A HREF="http://www.sqlite.org/">SQLite3</A>,
 			файлы <TT CLASS="western">.bat</TT> для удобного
@@ -193,52 +197,54 @@ Windows, обычно распаковывается в папку
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\include</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>заголовочные файлы для <A HREF="http://www.sqlite.org/">SQLite3</A>,
 			а также:</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\include\boost</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>- для включенной версии <A HREF="http://www.boost.org/">Boost</A></P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\include\cppunit</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>- для включенной версии <A HREF="http://sourceforge.net/apps/mediawiki/cppunit/">CppUnit</A></P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\include\libxml</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>- для включенной версии <A HREF="http://www.xmlsoft.org/">LibXml2</A></P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\include\yb</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>- <STRONG>заголовочные файлы для YB.ORM</STRONG></P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\lib</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
-			<P>статические библиотеки YB.ORM: <STRONG><TT CLASS="western">ybutil.lib</TT></STRONG>,
+		<TD STYLE="border: none; padding: 0cm">
+			<P>статические библиотеки YB.ORM, если
+			используется статическая сборка, или
+			библиотеки импорта: <STRONG><TT CLASS="western">ybutil.lib</TT></STRONG>,
 			<STRONG><TT CLASS="western">yborm.lib</TT></STRONG> (или файлы
 			<TT CLASS="western">.a</TT>, в случае MinGW); а также
 			библиотеки импорта для зависимостей
@@ -246,12 +252,11 @@ Windows, обычно распаковывается в папку
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: none; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">c:\yborm\src</TT></P>
 		</TD>
-		<TD STYLE="border-top: none; border-bottom: 1px double #808080; border-left: 1px double #808080; border-right: 1px double #808080; padding-top: 0cm; padding-bottom: 0.05cm; padding-left: 0.05cm; padding-right: 0.05cm">
-			<P>исходный код данного релиза 
-			</P>
+		<TD STYLE="border: none; padding: 0cm">
+			<P>исходный код данной версии</P>
 		</TD>
 	</TR>
 </TABLE>
@@ -263,9 +268,11 @@ Windows, обычно распаковывается в папку
 Пересборка пакета YB.ORM</H2>
 <P>Самый простой способ собрать YB.ORM под
 MS Windows - это пересобрать один из готовых
-пакетов. Это может быть полезно, если у
-вас уже установлен YB.ORM, и просто нужна
-более свежая версия из Git. В этом случае
+пакетов. Это может быть полезно, к
+примеру, если у вас уже установлен
+YB.ORM, и просто нужна более свежая версия
+из Git, или если вы скачали сборку с Qt и
+хотите пересобрать с Boost. В этом случае
 поместите свежие исходники в папку <TT CLASS="western">src</TT>,
 затем используйте окно командной строки
 чтобы перейти <TT CLASS="western">cd</TT> в папку
@@ -273,47 +280,46 @@ MS Windows - это пересобрать один из готовых
 файл <TT CLASS="western">build-*.bat</TT> оттуда. Если
 вы используете MS Visual C++ то следует
 запускать сборку из командной строки
-Visual Studio command line prompt. Все такие файлы <TT CLASS="western">.bat</TT>
-просто вызывают CMake с предопределенными
-параметрами, а затем запускают команду
-типа <TT CLASS="western">make</TT>. После того, как
-сборка успешно завершилась, новые
-библиотеки, заголовочные файлы, примеры
-и утилита генерации кода заменят старые
-файлы в соответствующих папках. Ниже
-приведены необходимые требования для
-пересборки. 
+<EM>Visual Studio command line prompt</EM>. Все такие файлы
+<TT CLASS="western">.bat</TT> просто вызывают CMake с
+предопределенными параметрами, а затем
+запускают команду типа <TT CLASS="western">make</TT>.
+После того, как сборка успешно завершилась,
+новые библиотеки, заголовочные файлы,
+примеры и утилита генерации кода заменят
+старые файлы в соответствующих папках.
+Ниже приведены необходимые требования
+для пересборки. 
 </P>
 <TABLE CELLPADDING=2 CELLSPACING=2>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>Система сборки: 
 			</P>
 		</TD>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>CMake 2.8 установлен и доступен через
 			переменную окружения <TT CLASS="western">PATH</TT>
 						</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>Компилятор: 
 			</P>
 		</TD>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
-			<P>MinGW GCC 4.4.0, MS Visual C++ 2008 or 2010, Borland C++
-			Builder 6 или другой компилятор, которым
-			был собран пакет 
-			</P>
+		<TD STYLE="border: none; padding: 0cm">
+			<P>MinGW GCC 4.4.0, MS Visual C++ 2013, 2010, 2008 или другой
+			компилятор, которым был собран пакет
+						</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>Qt SDK: 
 			</P>
 		</TD>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>тестировалось с Qt4.8, требуется только
 			для сборки с Qt, см. замечание выше о
 			&quot;правильной&quot; версии компилятора
@@ -329,8 +335,8 @@ Visual Studio command line prompt. Все такие файлы <TT CLASS="weste
 <STRONG><TT CLASS="western">\bin\yborm_env.bat</TT></STRONG>. 
 </P>
 <P>Тем же образом можно пересобрать
-пример Auth и примеры Tutorial в папках
-<TT CLASS="western">build-auth</TT> и <TT CLASS="western">build-tut</TT>,
+пример Auth и примеры Tutorial (только без Qt)
+в папках <TT CLASS="western">build-auth</TT> и <TT CLASS="western">build-tut</TT>,
 соответственно. 
 </P>
 <H1 CLASS="western"><A NAME="Сборка_с_помощью_Autotools"></A>
@@ -340,14 +346,14 @@ Visual Studio command line prompt. Все такие файлы <TT CLASS="weste
 Linux, с использованием инструментов GNU,
 включая GNU Autotools. Вы можете собрать YB.ORM
 в среде, совместимой с POSIX, такой как
-Linux, FreeBSD, Mac OS X. Типичная последовательность
-шагов: 
+Linux, FreeBSD, Mac OS X или Cygwin. Типичная
+последовательность шагов: 
 </P>
-<PRE CLASS="western">$ sh autogen.sh # создать скрипт configure; требуется после &quot;git clone&quot;, не для исходников из тарбола с релизом
+<PRE CLASS="western">$ sh autogen.sh  # создать скрипт configure; требуется после &quot;git clone&quot;, не для исходников из тарбола с релизом
 $ ./configure --prefix=/home/user1/yb-orm --with-test-db-url=sqlite+sqlite:///home/user1/test1_db.sqlite --disable-static
 $ make
-$ make check # для запуска тестов понадобится создать базу /home/user1/test1_db.sqlite
-$ make install # будет установлено в /home/user1/yb-orm</PRE><P>
+$ make check     # для запуска тестов понадобится создать базу /home/user1/test1_db.sqlite
+$ make install   # будет установлено в /home/user1/yb-orm</PRE><P>
 Скрипт <TT CLASS="western">configure</TT> пытается
 автоматически определить доступность
 и расположение библиотек и заголовочных
@@ -355,25 +361,22 @@ $ make install # будет установлено в /home/user1/yb-orm</PRE><P
 скрипта, которые управляют этим поиском.
 Также можно указать строку подключение
 к тестовой базе. Чтобы включить сборку
-с Qt используйте опции
-<TT CLASS="western">--with-qt-includes,--with-qt-libs</TT>, для
-сборки с wxWidgets используйте опцию
-<TT CLASS="western">--with-wx-config</TT>. 
+с Qt используйте опции <TT CLASS="western">--with-qt-includes</TT>,
+<TT CLASS="western">--with-qt-libs</TT>, для сборки с
+wxWidgets используйте опцию <TT CLASS="western">--with-wx-config</TT>.
 </P>
 <PRE CLASS="western">$ ./configure --help
 ...
-&nbsp; --prefix=PREFIX &nbsp; &nbsp; &nbsp; &nbsp; Корень установки файлов, по умолчанию [/usr/local]
-&nbsp; --with-qt-includes=DIR &nbsp;Директория с заголовочными файлами QT
-&nbsp; --with-qt-libs=DIR &nbsp; &nbsp; &nbsp;Директория с библиотеками QT
-&nbsp; --with-wx-config=BIN &nbsp; &nbsp;Конфигурационный скрипт библиотеки wxWidgets
-&nbsp; --with-boost-includes=DIR
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Директория с заголовочными файлами Boost
-&nbsp; --with-boost-libs=DIR &nbsp; Директория с библиотеками Boost
-&nbsp; --with-soci-includes=DIR
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Директория с заголовочными файлами SOCI
-&nbsp; --with-soci-libs=DIR &nbsp; &nbsp;Директория с библиотеками SOCI
-&nbsp; --with-test-db-url=dialect+driver://user:password@database or like
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Укажите строку подключения (URL) для тестовой БД
+  --prefix=PREFIX        Корень установки файлов, по умолчанию [/usr/local]
+  --with-qt-includes=DIR Директория с заголовочными файлами QT
+  --with-qt-libs=DIR     Директория с библиотеками QT
+  --with-wx-config=BIN   Конфигурационный скрипт библиотеки wxWidgets
+  --with-boost=DIR       Директория, куда установлен Boost
+  --with-soci-includes=DIR
+                         Директория с заголовочными файлами SOCI
+  --with-soci-libs=DIR   Директория с библиотеками SOCI
+  --with-test-db-url=dialect+driver://user:password@database or like
+                         Строка подключения (URL) для тестовой БД
 ...</PRE><P>
 Пользовательские макросы, используемые
 в скрипте <TT CLASS="western">configure</TT>, помещаются
@@ -383,7 +386,8 @@ $ make install # будет установлено в /home/user1/yb-orm</PRE><P
 в свой файл <TT CLASS="western">configure.ac</TT>. Это
 добавит опцию <TT CLASS="western">--with-yborm-root</TT>
 к вашему скрипту <TT CLASS="western">configure</TT>.
-Смотрите пример: <A HREF="http://code.google.com/p/yb-orm/source/browse/examples/auth/README.auth">приложение
+Смотрите пример: <A 
+HREF="https://github.com/vnaydionov/yb-orm/blob/master/examples/auth/README.auth">приложение
 Auth</A>. 
 </P>
 <H2 CLASS="western"><A NAME="Минимальные_требования"></A>
@@ -393,22 +397,21 @@ Auth</A>.
 Следующие версии пакетов должны подойти:
 </P>
 <UL>
-	<LI><P STYLE="margin-bottom: 0cm">libboost-thread-dev &gt;= 1.34.1 
+	<LI><P>libboost-thread-dev &gt;= 1.34.1 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">libboost-date-time-dev &gt;=
-	1.34.1 
+	<LI><P>libboost-date-time-dev &gt;= 1.34.1 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">libxml2-dev &gt;= 2.6.31 
+	<LI><P>libxml2-dev &gt;= 2.6.31 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">libcppunit-dev &gt;= 1.12.0 (если
-	вы собираетесь запускать наборы тестов)
-		</P>
-	<LI><P STYLE="margin-bottom: 0cm">autoconf &gt;= 2.61 
+	<LI><P>libcppunit-dev &gt;= 1.12.0 (если вы собираетесь
+	запускать наборы тестов) 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">automake &gt;= 1.10.1 
+	<LI><P>autoconf &gt;= 2.61 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">libqt4-dev &gt;= 4.5 (проверялось
-	на Ubuntu 9.04) 
+	<LI><P>automake &gt;= 1.10.1 
+	</P>
+	<LI><P>libqt4-dev &gt;= 4.5 (проверялось на Ubuntu
+	9.04) 
 	</P>
 	<LI><P>libwxgtk2.8-dev &gt;= 2.8.12 
 	</P>
@@ -417,18 +420,18 @@ Auth</A>.
 что-то из следующего: 
 </P>
 <UL>
-	<LI><P STYLE="margin-bottom: 0cm">libsqlite3-dev &gt;= 3.7.9 
+	<LI><P>libsqlite3-dev &gt;= 3.7.9 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">soci &gt;= 3.2.0 
+	<LI><P>soci &gt;= 3.2.0 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">unixodbc-dev &gt;= 2.2.14 (чтобы
-	заработала связка Oracle ODBC под Ubuntu 8.04
-	64bit пришлось использовать unixODBC = 2.3.0) 
+	<LI><P>unixodbc-dev &gt;= 2.2.14 (чтобы заработала
+	связка Oracle ODBC под Ubuntu 8.04 64bit пришлось
+	использовать unixODBC = 2.3.0) 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">instantclient &gt;= 10.2 (клиент
-	и драйвер ODBC для Oracle) 
+	<LI><P>instantclient &gt;= 10.2 (клиент и драйвер ODBC
+	для Oracle) 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">libmyodbc &gt;= 5.1.10 
+	<LI><P>libmyodbc &gt;= 5.1.10 
 	</P>
 	<LI><P>odbc-postgresql &gt;= 09.00.0310 
 	</P>
@@ -444,22 +447,14 @@ YB.ORM под Windows, хотя для окружения POSIX они
 протестирован для следующих версий ПО:
 </P>
 <UL>
-	<LI><P STYLE="margin-bottom: 0cm">MinGW GCC 4.4.0, Boost 1.46.1, Qt
-	4.8.1 
+	<LI><P>MS Visual C++ 2013 Express Edition, Boost 1.53.0</P>
+	<LI><P>MS Visual C++ 2010 Express Edition, Boost 1.46.1, Qt 4.8.1 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">MS Visual C++ 2010 Express
-	Edition, Boost 1.46.1, Qt 4.8.1 
+	<LI><P>MS Visual C++ 2008 Express Edition, Boost 1.38.0, Qt 4.8.1 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">MS Visual C++ 2008 Express
-	Edition, Boost 1.38.0, Qt 4.8.1 
+	<LI><P>MinGW GCC 4.4.0, Boost 1.46.1, Qt 4.8.1 
 	</P>
-	<LI><P STYLE="margin-bottom: 0cm">Borland C++ Builder 6, Boost
-	1.33.1 
-	</P>
-	<LI><P STYLE="margin-bottom: 0cm">Borland C++ 5.5 Free Command Line
-	Compiler, Boost 1.33.1 
-	</P>
-	<LI><P>Ubuntu GCC 4.6.3, Boost 1.46.1, Qt 4.8.1 
+	<LI><P>Ubuntu Linux GCC 4.6.3, Boost 1.46.1, Qt 4.8.1 
 	</P>
 </UL>
 <P>Загрузить CMake 2.8 можно отсюда:
@@ -473,51 +468,51 @@ YB.ORM под Windows, хотя для окружения POSIX они
 </P>
 <TABLE CELLPADDING=2 CELLSPACING=2>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>-G &quot;NMake Makefiles&quot; 
 			</P>
 		</TD>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>какой диалект языка Makefile использовать
 						</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>-D USE_QT4:BOOL=ON 
 			</P>
 		</TD>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>сборка с Qt 
 			</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>-D CMAKE_INSTALL_PREFIX=c:/yborm 
 			</P>
 		</TD>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>задать корень установки 
 			</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>-D SOCI_INCLUDEDIR:PATH=c:/work/soci-3.2.1/include/soci 
 			</P>
 		</TD>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>заголовочные файлы библиотеки SOCI 
 			</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>-D SOCI_LIBS:FILEPATH=c:/work/soci-3.2.1/lib/libsoci_core.lib 
 			</P>
 		</TD>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P>библиотека SOCI 
 			</P>
 		</TD>
@@ -565,16 +560,20 @@ SQLite3, MySQL, Postgres или Firebird), а потом создать
 SQLite3: 
 </P>
 <TABLE CELLPADDING=2 CELLSPACING=2>
+	<COL WIDTH=0>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
-			<P>sqlite+sqlite://c:/yborm/examples/test1_db 
-			</P>
+		<TD STYLE="border: none; padding: 0cm">
+			<P><TT CLASS="western">&quot;sqlite+sqlite://./test1_db&quot;</TT></P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
-			<P>sqlite+qtsql://c:/yborm/examples/test1_db 
-			</P>
+		<TD STYLE="border: none; padding: 0cm">
+			<P><TT CLASS="western">&quot;sqlite+sqlite://c:/yborm/examples/test1_db&quot;</TT></P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<P><TT CLASS="western">&quot;sqlite+qtsql://c:/yborm/examples/test1_db&quot;</TT></P>
 		</TD>
 	</TR>
 </TABLE>
@@ -595,22 +594,31 @@ C:\yborm\bin&gt;sqlite3 c:\yborm\examples\test1_db &lt; c:\yborm\examples\auth_s
 MySQL: 
 </P>
 <TABLE CELLPADDING=2 CELLSPACING=2>
+	<COL WIDTH=0>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
-			<P>mysql+odbc://test1_usr:test1_pwd@test1_dsn 
-			</P>
+		<TD STYLE="border: none; padding: 0cm">
+			<P><TT CLASS="western">&quot;mysql+odbc://test1_usr:test1_pwd@test1_dsn&quot;</TT></P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
-			<P>mysql+qodbc3://test1_usr:test1_pwd@test1_dsn 
-			</P>
+		<TD STYLE="border: none; padding: 0cm">
+			<P><TT CLASS="western">&quot;mysql+soci://user=test1
+			pass=test1_pwd host=localhost service=test1_db&quot;</TT></P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
-			<P>mysql+qtsql://test1_usr:test1_pwd@127.0.0.1:3306/test1_db 
-			</P>
+		<TD STYLE="border: none; padding: 0cm">
+			<P><TT CLASS="western">&quot;mysql+soci_odbc://DSN=test1_dsn;UID=test1_usr;PWS=test1_pwd&quot;</TT></P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<P><TT CLASS="western">&quot;mysql+qodbc3://test1_usr:test1_pwd@test1_dsn&quot;</TT></P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<P><TT CLASS="western">&quot;mysql+qtsql://test1_usr:test1_pwd@127.0.0.1:3306/test1_db&quot;</TT></P>
 		</TD>
 	</TR>
 </TABLE>
@@ -621,7 +629,7 @@ MySQL:
 </P>
 <PRE CLASS="western">C:\MySQL\bin&gt;mysql.exe -u root -p mysql
 Enter password: ******** &lt;-- введите сюда пароль пользователя root базы MySQL
-Welcome to the MySQL monitor. &nbsp;Commands end with ; or \g.
+Welcome to the MySQL monitor. Commands end with ; or \g.
 Your MySQL connection id is 361
 Server version: 5.0.51b-community-nt-log MySQL Community Edition (GPL)
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
@@ -644,22 +652,22 @@ C:\MySQL\bin&gt;mysql.exe -u test1_usr -ptest1_pwd test1_db &lt; c:\yborm\exampl
 Postgres: 
 </P>
 <TABLE CELLPADDING=2 CELLSPACING=2>
+	<COL WIDTH=0>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
-			<P>postgres+odbc://test1_usr:test1_pwd@test1_dsn 
+		<TD STYLE="border: none; padding: 0cm">
+			<P><TT CLASS="western">&quot;postgres+odbc://test1_usr:test1_pwd@test1_dsn&quot;</TT></P>
+		</TD>
+	</TR>
+	<TR>
+		<TD STYLE="border: none; padding: 0cm">
+			<P><TT CLASS="western">&quot;postgres+qodbc3://test1_usr:test1_pwd@test1_dsn&quot;
+			</TT>
 			</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
-			<P>postgres+qodbc3://test1_usr:test1_pwd@test1_dsn 
-			</P>
-		</TD>
-	</TR>
-	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
-			<P>postgres+qtsql://test1_usr:test1_pwd@127.0.0.1:5432/test1_db 
-			</P>
+		<TD STYLE="border: none; padding: 0cm">
+			<P><TT CLASS="western">&quot;postgres+qtsql://test1_usr:test1_pwd@127.0.0.1:5432/test1_db&quot;</TT></P>
 		</TD>
 	</TR>
 </TABLE>
@@ -675,9 +683,9 @@ Password: &lt;ваш главный пароль от Postgres&gt;</PRE><P>
 </P>
 <PRE CLASS="western">C:\Program Files\PostgreSQL\9.1\bin&gt;psql -h 127.0.0.1 -p 5432 -d test1_db -U test1_usr &lt; c:\yborm\examples\test_schema.sql
 Password for user test1_usr: test1_pwd
-NOTICE: &nbsp;CREATE TABLE / PRIMARY KEY will create implicit index &quot;t_orm_test_pkey&quot; for table &quot;t_orm_test&quot;
+NOTICE: CREATE TABLE / PRIMARY KEY will create implicit index &quot;t_orm_test_pkey&quot; for table &quot;t_orm_test&quot;
 CREATE TABLE
-NOTICE: &nbsp;CREATE TABLE / PRIMARY KEY will create implicit index &quot;t_orm_xml_pkey&quot; for table &quot;t_orm_xml&quot;
+NOTICE: CREATE TABLE / PRIMARY KEY will create implicit index &quot;t_orm_xml_pkey&quot; for table &quot;t_orm_xml&quot;
 CREATE TABLE
 ALTER TABLE
 CREATE SEQUENCE
@@ -694,13 +702,13 @@ Postgres (для Interbase может тоже подойти):
 </P>
 <TABLE CELLPADDING=2 CELLSPACING=2>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">&quot;interbase+odbc://test1_usr:test1_pwd@test1_dsn&quot;</TT>
 						</P>
 		</TD>
 	</TR>
 	<TR>
-		<TD STYLE="border: 1px solid #cccccc; padding: 0.13cm">
+		<TD STYLE="border: none; padding: 0cm">
 			<P><TT CLASS="western">&quot;interbase+soci://service=localhost:/var/lib/firebird/2.5/data/test1_db.fdb
 			user=test1_usr password=test1_pwd charset=UTF8&quot;</TT> 
 			</P>
@@ -737,12 +745,10 @@ SQL&gt; CREATE DATABASE '/var/lib/firebird/2.5/data/test1_db.fdb'
 CON&gt; page_size 8192 user 'test1_usr' password 'test1_pwd';
 SQL&gt; quit;
 $ isql-fb -u test1_usr -p test1_pwd \
-&nbsp; localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; lib/orm/test/mk_tables.sql
+ localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; lib/orm/test/mk_tables.sql
 $ isql-fb -u test1_usr -p test1_pwd \
-&nbsp; localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; examples/domain/mk_tables.sql
+ localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; examples/domain/mk_tables.sql
 $ isql-fb -u test1_usr -p test1_pwd \
-&nbsp; localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; examples/auth/src/domain/auth_schema.sql</PRE><P STYLE="margin-bottom: 0cm">
-<BR>
-</P>
+ localhost:/var/lib/firebird/2.5/data/test1_db.fdb &lt; examples/auth/src/domain/auth_schema.sql</PRE>
 </BODY>
 </HTML>

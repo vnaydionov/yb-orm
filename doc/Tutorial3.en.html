@@ -2,67 +2,66 @@
 <HTML>
 <HEAD>
 	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
-	<TITLE></TITLE>
+	<TITLE>Querying objects (tut3.cpp)</TITLE>
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
 	<META NAME="CREATED" CONTENT="20130520;10024900">
 	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
-	<META NAME="CHANGED" CONTENT="20130520;10033500">
+	<META NAME="CHANGED" CONTENT="20140710;11132600">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
 	<STYLE TYPE="text/css">
 	<!--
-		@page { size: 21cm 29.7cm; margin: 2cm }
-		P { margin-bottom: 0.21cm }
-		H2 { margin-bottom: 0.21cm; page-break-after: avoid }
-		H2.western { font-family: "Times New Roman", serif; font-size: 18pt; font-weight: bold }
-		H2.cjk { font-family: "Droid Sans Fallback"; font-size: 18pt; font-weight: bold }
-		H2.ctl { font-family: "Lohit Hindi"; font-size: 18pt; font-weight: bold }
-		PRE.western { font-family: "Droid Sans Mono", monospace; font-size: 10pt }
-		PRE.cjk { font-family: "Droid Sans Fallback", monospace; font-size: 10pt }
-		PRE.ctl { font-family: "Lohit Hindi", monospace; font-size: 10pt }
-		A:link { color: #000080; so-language: zxx; text-decoration: underline }
-		TT.western { font-family: "Droid Sans Mono", monospace }
+		@page { margin: 2cm }
+		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
+		H2 { margin-bottom: 0.21cm }
+		H2.western { font-family: "Times New Roman", serif }
+		H2.cjk { font-family: "Droid Sans Fallback" }
+		H2.ctl { font-family: "Lohit Hindi" }
+		PRE.western { font-family: "Courier New", monospace }
+		PRE.cjk { font-family: "Droid Sans Fallback", monospace }
+		PRE.ctl { font-family: "Lohit Hindi", monospace }
+		TT.western { font-family: "Courier New", monospace }
 		TT.cjk { font-family: "Droid Sans Fallback", monospace }
 		TT.ctl { font-family: "Lohit Hindi", monospace }
-		STRONG { font-weight: bold }
 	-->
 	</STYLE>
 </HEAD>
-<BODY LANG="en-US" LINK="#000080" VLINK="#800000" DIR="LTR">
+<BODY LANG="en-US" DIR="LTR">
 <H2 CLASS="western">Querying objects (tut3.cpp)</H2>
 <P>We'll use the data schema from <A HREF="Tutorial2.en.html">Tutorial2</A>
 &quot;Mapping related tables: one-to-many&quot;. There are two
-tables: Clients (<TT CLASS="western">client</TT>) and Orders
+tables: Clients (<TT CLASS="western">client_tbl</TT>) and Orders
 (<TT CLASS="western">order_tbl</TT>), one client is supposed to have
 zero or more orders. Let's define the tables, their mapping to
-classes and their relationship in an XML file: 
-</P>
+classes and their relationship in an XML file:</P>
 <PRE CLASS="western">&lt;schema&gt;
-&nbsp; &nbsp; &lt;table name=&quot;client_tbl&quot; sequence=&quot;seq_client&quot; class=&quot;Client&quot;&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;primary-key /&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;/column&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;dt&quot; type=&quot;datetime&quot; null=&quot;false&quot; default=&quot;sysdate&quot; /&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;name&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;email&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;budget&quot; type=&quot;decimal&quot; /&gt;
-&nbsp; &nbsp; &lt;/table&gt;
-&nbsp; &nbsp; &lt;table name=&quot;order_tbl&quot; sequence=&quot;seq_order&quot; class=&quot;Order&quot; xml-name=&quot;order&quot;&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;primary-key /&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;/column&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;client_id&quot; type=&quot;longint&quot; null=&quot;false&quot;&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;foreign-key table=&quot;client&quot; key=&quot;id&quot;/&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;/column&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;dt&quot; type=&quot;datetime&quot; null=&quot;false&quot; default=&quot;sysdate&quot; /&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;memo&quot; type=&quot;string&quot; size=&quot;100&quot; /&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;total_sum&quot; type=&quot;decimal&quot; null=&quot;false&quot; /&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;receipt_sum&quot; type=&quot;decimal&quot; default=&quot;0&quot; /&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;column name=&quot;receipt_dt&quot; type=&quot;datetime&quot; /&gt;
-&nbsp; &nbsp; &lt;/table&gt;
-&nbsp; &nbsp; &lt;relation type=&quot;one-to-many&quot;&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;one class=&quot;Client&quot; property=&quot;orders&quot; /&gt;
-&nbsp; &nbsp; &nbsp; &nbsp; &lt;many class=&quot;Order&quot; property=&quot;owner&quot; /&gt;
-&nbsp; &nbsp; &lt;/relation&gt;
+    &lt;table name=&quot;client_tbl&quot; sequence=&quot;client_seq&quot; class=&quot;Client&quot; xml-name=&quot;client&quot;&gt;
+        &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
+            &lt;primary-key /&gt;
+        &lt;/column&gt;
+        &lt;column name=&quot;dt&quot; type=&quot;datetime&quot; null=&quot;false&quot; default=&quot;sysdate&quot; /&gt;
+        &lt;column name=&quot;name&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
+        &lt;column name=&quot;email&quot; type=&quot;string&quot; size=&quot;100&quot; null=&quot;false&quot; /&gt;
+        &lt;column name=&quot;phone&quot; type=&quot;string&quot; size=&quot;50&quot; null=&quot;true&quot; /&gt;
+        &lt;column name=&quot;budget&quot; type=&quot;decimal&quot; /&gt;
+    &lt;/table&gt;
+    &lt;table name=&quot;order_tbl&quot; sequence=&quot;order_seq&quot; class=&quot;Order&quot; xml-name=&quot;order&quot;&gt;
+        &lt;column name=&quot;id&quot; type=&quot;longint&quot;&gt;
+            &lt;primary-key /&gt;
+        &lt;/column&gt;
+        &lt;column name=&quot;client_id&quot; type=&quot;longint&quot; null=&quot;false&quot;&gt;
+            &lt;foreign-key table=&quot;client_tbl&quot; key=&quot;id&quot;/&gt;
+        &lt;/column&gt;
+        &lt;column name=&quot;dt&quot; type=&quot;datetime&quot; null=&quot;false&quot; default=&quot;sysdate&quot; /&gt;
+        &lt;column name=&quot;memo&quot; type=&quot;string&quot; size=&quot;100&quot; /&gt;
+        &lt;column name=&quot;total_sum&quot; type=&quot;decimal&quot; null=&quot;false&quot; /&gt;
+        &lt;column name=&quot;paid_sum&quot; type=&quot;decimal&quot; default=&quot;0&quot; /&gt;
+        &lt;column name=&quot;paid_dt&quot; type=&quot;datetime&quot; /&gt;
+    &lt;/table&gt;
+    &lt;relation type=&quot;one-to-many&quot;&gt;
+        &lt;one class=&quot;Client&quot; property=&quot;orders&quot; /&gt;
+        &lt;many class=&quot;Order&quot; property=&quot;owner&quot; /&gt;
+    &lt;/relation&gt;
 &lt;/schema&gt;</PRE><P>
 If necessary, generate the SQL code to create tables and other
 objects in your database schema. Specify the SQL dialect when using
@@ -71,25 +70,23 @@ the code generation tool, the following dialects are accepted:
 <TT CLASS="western">POSTGRES</TT>, <TT CLASS="western">ORACLE</TT>,
 <TT CLASS="western">INTERBASE</TT>. Then you can apply the generated
 script using standard means of your corresponding database engine,
-e.g. for Oracle there is <TT CLASS="western">sqlplus</TT>. 
-</P>
-<PRE CLASS="western" STYLE="margin-bottom: 0.5cm">&nbsp;$(YBORM_ROOT)/bin/yborm_gen --ddl tutorial/tut3.xml MYSQL script.sql</PRE><P>
+e.g. for Oracle there is <TT CLASS="western">sqlplus</TT>.</P>
+<PRE CLASS="western" STYLE="margin-bottom: 0.5cm">$(YBORM_ROOT)/bin/yborm_gen --ddl tutorial/tut3.xml MYSQL script.sql</PRE><P>
 Generate the domain classes using the same tool with different
 command line option. If you have already done this, but since then
 the tables have received changes to their columns, you can use the
 tool to update your domain classes' definitions to reflect the
 changes made to the schema. 
 </P>
-<PRE CLASS="western" STYLE="margin-bottom: 0.5cm">&nbsp;$(YBORM_ROOT)/bin/yborm_gen --domain tutorial/tut3.xml domain/</PRE><P>
+<PRE CLASS="western" STYLE="margin-bottom: 0.5cm">$(YBORM_ROOT)/bin/yborm_gen --domain tutorial/tut3.xml domain/</PRE><P>
 To operate on a database we will need <TT CLASS="western">Engine</TT>
 object, that will manage all the operations at the SQL level. Object
 <TT CLASS="western">Engine</TT> needs one of the following to operate
 properly: 
 </P>
 <OL>
-	<LI><P STYLE="margin-bottom: 0cm">a standalone database connection
-	object <TT CLASS="western">SqlConnection</TT>, it will be used to
-	execute all the SQL statements; 
+	<LI><P>a standalone database connection object <TT CLASS="western">SqlConnection</TT>,
+	it will be used to execute all the SQL statements; 
 	</P>
 	<LI><P>or a pool of database connections <TT CLASS="western">SqlPool</TT>,
 	that can manage the connections on its own, it can give a connection
@@ -102,10 +99,10 @@ object that works on top of Engine, it keeps track of state for each
 object, it performs loading and saving fro/to the database as
 necessary. 
 </P>
-<PRE CLASS="western">&nbsp; &nbsp; &nbsp; &nbsp; auto_ptr&lt;SqlConnection&gt; conn(
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; new SqlConnection(&quot;mysql://test1_usr:test1_pwd@test1_db&quot;));
-&nbsp; &nbsp; &nbsp; &nbsp; Engine engine(Engine::READ_WRITE, conn);
-&nbsp; &nbsp; &nbsp; &nbsp; Session session(init_schema(), &amp;engine);</PRE><P>
+<PRE CLASS="western">    auto_ptr&lt;SqlConnection&gt; conn(
+        new SqlConnection(&quot;mysql://test1_usr:test1_pwd@test1_db&quot;));
+    Engine engine(Engine::READ_WRITE, conn);
+    Session session(init_schema(), &amp;engine);</PRE><P>
 And now to some querying examples. <STRONG>The simplest case: fetch
 an object by its primary key.</STRONG> To do this just construct your
 domain class object with a parameter-primary key value. The domain
@@ -116,24 +113,22 @@ loading&quot;. Of course, this may be the case that there is no
 object in the database with such primary key value as we specified,
 then an exception will be thrown. 
 </P>
-<PRE CLASS="western">&nbsp; &nbsp; &nbsp; &nbsp; Client client(session, 32738);
-&nbsp; &nbsp; &nbsp; &nbsp; try {
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; cout &lt;&lt; client.name.value() &lt;&lt; endl;
-&nbsp; &nbsp; &nbsp; &nbsp; } catch (NoDataFound &amp;) {
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; cerr &lt;&lt; &quot;No such client\n&quot;;
-&nbsp; &nbsp; &nbsp; &nbsp; }
-&nbsp;SQL:
-&nbsp;SELECT client.id, client.dt, client.name, client.email, client.budget FROM client WHERE client.id = ?
-&nbsp;</PRE><P>
+<PRE CLASS="western">    Client client(session, 32738);
+    try {
+      cout &lt;&lt; client.name.value() &lt;&lt; endl;
+    } catch (NoDataFound &amp;) {
+      cerr &lt;&lt; &quot;No such client\n&quot;;
+    }
+SQL:
+SELECT client_tbl.id, client_tbl.dt, client_tbl.name, client_tbl.email, client_tbl.budget FROM client_tbl WHERE client_tbl.id = ?</PRE><P>
 Often we need to select an object by an arbitrary condition, which
 may be not necessarily filtering by primary key. This is <STRONG>how
 one can query for just one Client object with filter by name.</STRONG>
 </P>
-<PRE CLASS="western">&nbsp; &nbsp; &nbsp; &nbsp; Client client = query&lt;Client&gt;(session)
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; .filter_by(Client::c.name == name).one();
-&nbsp;SQL:
-&nbsp;SELECT client.id, client.dt, client.name, client.email, client.budget FROM client WHERE client.name = ?
-&nbsp;</PRE><P>
+<PRE CLASS="western">    Client client = query&lt;Client&gt;(session)
+      .filter_by(Client::c.name == name).one();
+SQL:
+SELECT client_tbl.id, client_tbl.dt, client_tbl.name, client_tbl.email, client_tbl.budget FROM client_tbl WHERE client_tbl.name = ?</PRE><P>
 The template function <TT CLASS="western">query&lt;R&gt;()</TT>
 returns a query object <TT CLASS="western">QueryObj</TT>, that we may
 add filtering and sorting to. We may substitute a domain class for
@@ -147,31 +142,29 @@ collection is also &quot;lazy&quot;, a new object is fetched on
 iterator de-referencing. <STRONG>Example: find all unpaid orders
 having total_sum more than given one.</STRONG> 
 </P>
-<PRE CLASS="western">&nbsp; &nbsp; &nbsp; &nbsp; DomainResultSet&lt;Order&gt; rs = query&lt;Order&gt;(session)
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; .filter_by(Order::c.total_sum &gt; Decimal(100)
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&amp;&amp; Order::c.receipt_dt == Value()).all();
-&nbsp; &nbsp; &nbsp; &nbsp; BOOST_FOREACH(Order order, rs) {
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; cout &lt;&lt; order.id.value() &lt;&lt; &quot;,&quot;;
-&nbsp; &nbsp; &nbsp; &nbsp; }
-&nbsp;SQL:
-&nbsp;SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, 
-&nbsp; &nbsp;order_tbl.total_sum, order_tbl.receipt_sum, order_tbl.receipt_dt 
-&nbsp;FROM order_tbl WHERE (order_tbl.total_sum &gt; ?) AND (order_tbl.receipt_dt IS NULL)
-&nbsp;</PRE><P>
+<PRE CLASS="western">    DomainResultSet&lt;Order&gt; rs = query&lt;Order&gt;(session)
+      .filter_by(Order::c.total_sum &gt; Decimal(100)
+           &amp;&amp; Order::c.paid_dt == YB_NULL).all();
+    BOOST_FOREACH(Order order, rs) {
+      cout &lt;&lt; order.id.value() &lt;&lt; &quot;,&quot;;
+    }
+SQL:
+SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, 
+ order_tbl.total_sum, order_tbl.paid_sum, order_tbl.paid_dt 
+FROM order_tbl WHERE (order_tbl.total_sum &gt; ?) AND (order_tbl.paid_dt IS NULL)</PRE><P>
 Also there is method <TT CLASS="western">count()</TT> in class
 <TT CLASS="western">QueryObj</TT>. This call transforms the query
 into a sub-query then all the rows are counted in the sub-query. This
 method returns an integer number. <STRONG>Example: count the number
 of all orders for given client.</STRONG> 
 </P>
-<PRE CLASS="western">&nbsp; &nbsp; &nbsp; &nbsp; cout &lt;&lt; &quot;Order count: &quot; &lt;&lt; query&lt;Order&gt;(session)
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; .filter_by(Order::c.client_id == 32738).count() &lt;&lt; endl;
-&nbsp;SQL:
-&nbsp;SELECT COUNT(*) CNT FROM (
-&nbsp;SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum,
-&nbsp; &nbsp;order_tbl.receipt_sum, order_tbl.receipt_dt 
-&nbsp;FROM order_tbl WHERE order_tbl.client_id = ?) X
-&nbsp;</PRE><P>
+<PRE CLASS="western">    cout &lt;&lt; &quot;Order count: &quot; &lt;&lt; query&lt;Order&gt;(session)
+      .filter_by(Order::c.client_id == 32738).count() &lt;&lt; endl;
+SQL:
+SELECT COUNT(*) CNT FROM (
+SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum,
+ order_tbl.paid_sum, order_tbl.paid_dt 
+FROM order_tbl WHERE order_tbl.client_id = ?) X</PRE><P>
 Sometimes we need more complicated queries involving table joined
 using foreign keys. In YB.ORM library we may pass as a parameter to
 the template function <TT CLASS="western">query&lt;R&gt;()</TT> not
@@ -184,27 +177,24 @@ extract the orders filtered by total_sum, together with their
 respective clients. The result must be sorted by client ID, then by
 order ID.</STRONG> 
 </P>
-<PRE CLASS="western">&nbsp; &nbsp; &nbsp; &nbsp; typedef tuple&lt;Order, Client&gt; Pair; 
-&nbsp; &nbsp; &nbsp; &nbsp; DomainResultSet&lt;Pair&gt; rs = query&lt;Pair&gt;(session) 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; .filter_by(Order::c.total_sum &gt; Decimal(&quot;3.14&quot;) 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&amp;&amp; Client::c.budget != Value())
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; .order_by(ExpressionList(Client::c.id, Order::c.id)).all(); 
-&nbsp; &nbsp; &nbsp; &nbsp; BOOST_FOREACH(Pair pair, rs) { 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; cout &lt;&lt; pair.get&lt;1&gt;().name.value() 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;&lt; &quot; &quot; &lt;&lt; pair.get&lt;0&gt;().total_sum.value() &lt;&lt; endl; 
-&nbsp; &nbsp; &nbsp; &nbsp; } 
-&nbsp;SQL:
-&nbsp;SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum,
-&nbsp; &nbsp;order_tbl.receipt_sum, order_tbl.receipt_dt, 
-&nbsp; &nbsp;client.id, client.dt, client.name, client.email, client.budget 
-&nbsp;FROM order_tbl JOIN client ON (client.ID = order_tbl.client_id) 
-&nbsp;WHERE (order_tbl.total_sum &gt; ?) AND (client.budget IS NOT NULL) 
-&nbsp;ORDER BY client.id, order_tbl.id 
-&nbsp;</PRE><P>
+<PRE CLASS="western">    typedef tuple&lt;Order, Client&gt; Pair; 
+    DomainResultSet&lt;Pair&gt; rs = query&lt;Pair&gt;(session) 
+      .filter_by(Order::c.total_sum &gt; Decimal(&quot;3.14&quot;) 
+           &amp;&amp; Client::c.budget != YB_NULL)
+      .order_by(ExpressionList(Client::c.id, Order::c.id)).all(); 
+    BOOST_FOREACH(Pair pair, rs) { 
+      cout &lt;&lt; pair.get&lt;1&gt;().name.value() 
+        &lt;&lt; &quot; &quot; &lt;&lt; pair.get&lt;0&gt;().total_sum.value() &lt;&lt; endl; 
+    } 
+SQL:
+SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum,
+ order_tbl.paid_sum, order_tbl.paid_dt, 
+ client_tbl.id, client_tbl.dt, client_tbl.name, client_tbl.email, client_tbl.budget 
+FROM order_tbl JOIN client_tbl ON (client_tbl.ID = order_tbl.client_id) 
+WHERE (order_tbl.total_sum &gt; ?) AND (client_tbl.budget IS NOT NULL) 
+ORDER BY client_tbl.id, order_tbl.id </PRE><P>
 In this example the lazy collection <TT CLASS="western">rs</TT> will
 yield object pairs of Client, Order. 
-</P>
-<P STYLE="margin-bottom: 0cm"><BR>
 </P>
 </BODY>
 </HTML>

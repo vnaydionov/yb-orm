@@ -1,3 +1,9 @@
+libyborm (0.4.5-1) unstable; urgency=low
+
+  * Build new version on Precise amd64
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Thu, 19 Jun 2014 15:22:03 +0400
+
 libyborm (0.4.0-2) unstable; urgency=low
 
   * Initial build

@@ -37,7 +37,7 @@ Expression::generate_sql(Values *params, int *count) const
 
 YBORM_DECL bool
 is_number_or_object_name(const String &s) {
-    for (int i = 0; i < str_length(s); ++i) {
+    for (size_t i = 0; i < str_length(s); ++i) {
         int c = char_code(s[i]);
         if (!((c >= 'a' && c <= 'z') ||
                 (c >= 'A' && c <= 'Z') ||
@@ -55,7 +55,7 @@ is_string_constant(const String &s) {
             char_code(s[(int)(str_length(s) - 1)]) != '\'')
         return false;
     bool seen_quot = false;
-    for (int i = 1; i < str_length(s) - 1; ++i) {
+    for (size_t i = 1; i < str_length(s) - 1; ++i) {
         int c = char_code(s[i]);
         if (c == '\'')
             seen_quot = !seen_quot;
@@ -72,7 +72,7 @@ is_in_parentheses(const String &s) {
         return false;
     int level = 0;
     bool seen_quot = false;
-    for (int i = 1; i < str_length(s) - 1; ++i) {
+    for (size_t i = 1; i < str_length(s) - 1; ++i) {
         int c = char_code(s[i]);
         if (c == '\'')
             seen_quot = !seen_quot;

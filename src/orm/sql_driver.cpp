@@ -784,11 +784,15 @@ SqlConnection::~SqlConnection()
         if (activity_)
             rollback();
     }
-    catch (const std::exception &e) { err = true; }
+    catch (const std::exception &) {
+        err = true;
+    }
     try {
         backend_->close();
     }
-    catch (const std::exception &e) { err = true; }
+    catch (const std::exception &) {
+        err = true;
+    }
     if (err)
         debug(_T("error while closing connection"));
 }
@@ -935,7 +939,7 @@ find_subst_signs(const String &sql, std::vector<int> &pos_list, String &first_wo
     bool found_first_word = false;
     first_word = String();
     st = NORMAL;
-    for (size_t i = 0; i < str_length(sql);) {
+    for (int i = 0; i < (int)str_length(sql);) {
         Char c = sql[i];
         switch (st) {
         case NORMAL:

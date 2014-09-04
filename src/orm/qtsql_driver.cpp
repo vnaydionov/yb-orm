@@ -89,7 +89,7 @@ QtSqlCursorBackend::fetch_row()
                 v = Value(stmt_->value(i).toLongLong());
             else if (t == QVariant::DateTime || t == QVariant::Date)
                 v = Value(stmt_->value(i).toDateTime());
-            else if (t == QVariant::Double || t == QMetaType::Float)
+            else if (t == QVariant::Double || (int)t == (int)QMetaType::Float)
                 v = Value(stmt_->value(i).toDouble());
             else
                 v = Value(stmt_->value(i).toString());
@@ -144,7 +144,7 @@ QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
         conn_->setHostName(source.host());
     String options;
     Strings keys = source.options();
-    for (int i = 0; i < keys.size(); ++i) {
+    for (size_t i = 0; i < keys.size(); ++i) {
         if (!str_empty(options))
             options += _T(";");
         options += keys[i] + _T("=") + source[keys[i]];
