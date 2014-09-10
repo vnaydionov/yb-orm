@@ -101,17 +101,18 @@ QtSqlCursorBackend::fetch_row()
 
 QtSqlConnectionBackend::QtSqlConnectionBackend(QtSqlDriver *drv)
     : drv_(drv)
+    , own_handle_(false)
 {}
 
 void
 QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 {
-    {
-        ScopedLock lock(drv_->conn_mux_);
-        conn_name_ = dialect->get_name() + _T("_") + source.db()
-            + _T("_") + to_string(drv_->seq_);
-        ++drv_->seq_;
-    }
+    close();
+    ScopedLock lock(drv_->conn_mux_);
+    own_handle_ = true;
+    conn_name_ = dialect->get_name() + _T("_") + source.db()
+        + _T("_") + to_string(drv_->seq_);
+    ++drv_->seq_;
     String driver = source.driver();
     bool eat_slash = false;
     if (driver == _T("QTSQL"))
@@ -155,6 +156,20 @@ QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
         throw DBError(conn_->lastError().text());
 }
 
+void
+QtSqlConnectionBackend::use_raw(SqlDialect *dialect, void *raw_connection)
+{
+    close();
+    ScopedLock lock(drv_->conn_mux_);
+    conn_.reset((QSqlDatabase *)raw_connection);
+}
+
+void *
+QtSqlConnectionBackend::get_raw()
+{
+    return (void *)(conn_.get());
+}
+
 auto_ptr<SqlCursorBackend>
 QtSqlConnectionBackend::new_cursor()
 {
@@ -166,12 +181,18 @@ QtSqlConnectionBackend::new_cursor()
 void
 QtSqlConnectionBackend::close()
 {
-    conn_->close();
-    conn_.reset(NULL);
-    if (!str_empty(conn_name_)) {
-        QSqlDatabase::removeDatabase(conn_name_);
-        conn_name_ = String();
+    if (own_handle_) {
+        if (conn_.get())
+            conn_->close();
+        conn_.reset(NULL);
+        if (!str_empty(conn_name_)) {
+            QSqlDatabase::removeDatabase(conn_name_);
+            conn_name_ = String();
+        }
+        own_handle_ = false;
     }
+    else
+        conn_.release();
 }
 
 void

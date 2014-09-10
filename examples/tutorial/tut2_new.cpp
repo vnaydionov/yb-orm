@@ -3,6 +3,7 @@
 #include "orm/domain_object.h"
 #include "orm/domain_factory.h"
 #include "orm/schema_decl.h"
+//#include <soci/soci.h>
 
 class Order;
 
@@ -45,21 +46,17 @@ int main()
 {
     Yb::LogAppender appender(cerr);
     try {
-        auto_ptr<Yb::SqlConnection> conn(new Yb::SqlConnection(
-                "sqlite+sqlite://./tut2.db"));
-        Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-        engine.set_echo(true);
-        engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&appender)));
-        Yb::init_schema();
+        //soci::session soci_conn("sqlite3", "./tut2.db");
+        //Yb::Session session(Yb::init_schema(), "SOCI", "SQLITE", &soci_conn);
+        Yb::Session session(Yb::init_schema(), "sqlite+sqlite://./tut2.db");
+        session.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&appender)));
         try {
-            engine.create_schema(Yb::theSchema(), false);
+            session.create_schema();
             cerr << "Schema created\n";
         }
         catch (const Yb::DBError &e) {
             cerr << "Schema already exists\n";
         }
-        
-        Yb::Session session(Yb::theSchema(), &engine);
 
         Order::Holder order;
         string amount;

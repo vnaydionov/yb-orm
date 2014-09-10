@@ -23,7 +23,7 @@ namespace Yb {
 class YBORM_DECL EngineBase
 {
 public:
-    enum Mode { READ_ONLY = 0, READ_WRITE = 1, MANUAL = 1 }; 
+    enum Mode { READ_ONLY = 0, READ_WRITE = 1 }; 
 
     virtual ~EngineBase();
     virtual SqlConnection *get_conn() = 0;
@@ -69,13 +69,6 @@ public:
             const Table &table, bool numbered_params = false);
 };
 
-class YBORM_DECL EngineSource
-{
-public:
-    virtual ~EngineSource();
-    virtual std::auto_ptr<EngineBase> clone() = 0;
-};
-
 class YBORM_DECL EngineCloned: public EngineBase
 {
     int mode_;
@@ -98,6 +91,15 @@ public:
     SqlConnection *get_conn();
     SqlDialect *get_dialect();
     ILogger *logger();
+    void set_echo(bool echo);
+    void set_logger(ILogger *logger);
+};
+
+class YBORM_DECL EngineSource
+{
+public:
+    virtual ~EngineSource();
+    virtual std::auto_ptr<EngineCloned> clone() = 0;
 };
 
 YBORM_DECL const String env_cfg(const String &entry,
@@ -120,7 +122,7 @@ public:
     SqlConnection *get_conn();
     SqlDialect *get_dialect();
     ILogger *logger();
-    std::auto_ptr<EngineBase> clone();
+    std::auto_ptr<EngineCloned> clone();
     void set_echo(bool echo);
     void set_logger(ILogger::Ptr logger);
 private:

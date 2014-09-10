@@ -1,5 +1,4 @@
 
-#include <boost/foreach.hpp>
 #include "util/nlogger.h"
 #include "orm/domain_object.h"
 #include "orm/domain_factory.h"
@@ -54,7 +53,6 @@ int main()
         }
         
         using namespace std;
-        using namespace boost;
         using namespace Yb;
         LongInt root = -1;
         {

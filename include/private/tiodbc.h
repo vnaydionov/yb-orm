@@ -105,11 +105,13 @@ namespace tiodbc
 		HDBC conn_h;		//!< Handle of connection
 		bool b_connected;	//!< A flag if we are connected
 		bool b_autocommit;	//!< if the connection is in autocommit mode
+		bool b_own_handle;  //!< if the connection should be free in des
 
 		// Uncopiable
 		connection(const connection&);
 		connection & operator=(const connection&);
 	
+		void cleanup();
 	public:
 		//! Default constructor
 		/**
@@ -174,6 +176,8 @@ namespace tiodbc
 			const _tstring & _pass,
 			int _timeout = -1,
 			bool _autocommit = true);
+
+		bool use_raw(void *raw_connection);
 
 		//! Check if it is connected
 		/**

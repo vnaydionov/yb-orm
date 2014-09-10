@@ -166,6 +166,30 @@ namespace tiodbc
 		SQLAllocHandle(SQL_HANDLE_DBC, _env, &_conn);	
 	}
 
+	void connection::cleanup()
+	{
+		if (conn_h != NULL) {
+			// Close if already open
+			if (b_own_handle) {
+				disconnect();
+				// Close previous connection handle to be sure
+				SQLFreeHandle(SQL_HANDLE_DBC, conn_h);
+			}
+			else
+				b_connected = false;
+			conn_h = NULL;
+		}
+
+		if (env_h != NULL) {
+			if (b_own_handle) {
+				// Close enviroment
+				SQLFreeHandle(SQL_HANDLE_ENV, env_h);
+			}
+			env_h = NULL;
+		}
+		b_own_handle = false;
+	}
+
 	//! @endcond
 
 
@@ -178,12 +202,9 @@ namespace tiodbc
 		:env_h(NULL),
 		conn_h(NULL),
 		b_connected(false),
-		b_autocommit(true)
+		b_autocommit(true),
+		b_own_handle(false)
 	{
-		
-		// Allocate handles
-		__allocate_handle(env_h, conn_h);
-
 		// open connection too
 		connect(_dsn, _user, _pass, _timeout, _autocommit);
 	}
@@ -193,39 +214,26 @@ namespace tiodbc
 		:env_h(NULL),
 		conn_h(NULL),
 		b_connected(false),
-		b_autocommit(true)
+		b_autocommit(true),
+		b_own_handle(false)
 	{
-		// Allocate handles
-		__allocate_handle(env_h, conn_h);
 	}
 	
 	// Destructor
 	connection::~connection()
 	{
-		// close connection
-		disconnect();
-
-		// Close connection handle
-		SQLFreeHandle(SQL_HANDLE_DBC, conn_h);
-
-		// Close enviroment
-		SQLFreeHandle(SQL_HANDLE_ENV, env_h);
+		cleanup();
 	}
 
 	// open a connection with a data_source
 	bool connection::connect(const _tstring & _dsn,	const _tstring & _user, const _tstring & _pass,
 			int _timeout, bool _autocommit)
 	{
-		RETCODE rc;
+		cleanup();
 		
-		// Close if already open
-		disconnect();
-
-		// Close previous connection handle to be sure
-		SQLFreeHandle(SQL_HANDLE_DBC, conn_h);
-
-		// Allocate a new connection handle
-		rc = SQLAllocHandle(SQL_HANDLE_DBC, env_h, &conn_h);
+		// Allocate handles
+		b_own_handle = true;
+		__allocate_handle(env_h, conn_h);
 
 		if (_timeout != -1) {
 			// Set connection timeout
@@ -242,15 +250,28 @@ namespace tiodbc
 		SQLTCHAR_buf s_dsn = ybstring2sqltchar(_dsn, ""),
 					 s_user = ybstring2sqltchar(_user, ""),
 					 s_pass = ybstring2sqltchar(_pass, "");
-		rc = SQLConnect(conn_h,
+		RETCODE rc = SQLConnect(conn_h,
 					    s_dsn.data, SQL_NTS,
 						s_user.data, SQL_NTS,
 				        s_pass.data, SQL_NTS);
 
-		if (!TIODBC_SUCCESS_CODE(rc))
-			b_connected = false;
-		else
+		if (TIODBC_SUCCESS_CODE(rc)) {
 			b_connected = true;
+		}
+
+		return b_connected;
+	}
+
+	// use an established connection with a data_source
+	bool connection::use_raw(void *raw_connection)
+	{
+		cleanup();
+
+		// Assign an existing connection handle
+		conn_h = (HDBC)raw_connection;
+		b_connected = raw_connection != NULL;
+		b_own_handle = false;
+		b_autocommit = false; // TODO: find out from stmt_h
 
 		return b_connected;
 	}
