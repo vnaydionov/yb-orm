@@ -72,20 +72,16 @@
         { \
             Yb::Relation::AttrMap attr1, attr2; \
             attr1[_T("property")] = _T(#many_prop); \
+            attr1[_T("use-list")] = _T(#use_list); \
+            attr1[_T("order-by")] = order_by; \
             attr2[_T("property")] = _T(#one_prop); \
+            attr2[_T("key")] = key; \
             Yb::Relation::Ptr r(new Yb::Relation(Yb::Relation::ONE2MANY, \
                 _T(#one_class), attr1, _T(#many_class), attr2, cascade)); \
             rels.push_back(r); \
         }
 #define YB_CREATE_RELS_DO_YB_REL_MANY_(n, one_class, one_prop, many_class, many_prop, cascade, key, use_list, order_by, p9, p10) \
-        { \
-            Yb::Relation::AttrMap attr1, attr2; \
-            attr1[_T("property")] = _T(#many_prop); \
-            attr2[_T("property")] = _T(#one_prop); \
-            Yb::Relation::Ptr r(new Yb::Relation(Yb::Relation::ONE2MANY, \
-                _T(#one_class), attr1, _T(#many_class), attr2, cascade)); \
-            rels.push_back(r); \
-        }
+        YB_CREATE_RELS_DO_YB_REL_ONE_(n, one_class, one_prop, many_class, many_prop, cascade, key, use_list, order_by, p9, p10)
 
 
 // Root macros

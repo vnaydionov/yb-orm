@@ -185,7 +185,7 @@ Table::find_fk_for(const Relation &rel, Strings &fkey_parts) const
 {
     const String &master_tbl = rel.table(0).name();
     Strings new_fkey_parts;
-    if (rel.has_attr(1, _T("key"))) {
+    if (rel.has_attr(1, _T("key")) && !str_empty(rel.attr(1, _T("key")))) {
         Strings parts0;
         StrUtils::split_str(rel.attr(1, _T("key")), _T(","), parts0);
         Strings::const_iterator i = parts0.begin(), iend = parts0.end();

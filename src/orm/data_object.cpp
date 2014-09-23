@@ -997,7 +997,8 @@ void RelationObject::lazy_load_slaves()
     SelectExpr select_expr = SelectExpr(cols)
         .from_(Expression(slave_tbl.name()))
         .where_(KeyFilter(gen_fkey()));
-    if (relation_info_.has_attr(1, _T("order-by")))
+    if (relation_info_.has_attr(1, _T("order-by")) &&
+            !str_empty(relation_info_.attr(1, _T("order-by"))))
         select_expr.order_by_(
                 Expression(relation_info_.attr(1, _T("order-by"))));
     SqlResultSet rs = session.engine()->select_iter(select_expr);
