@@ -348,6 +348,8 @@ Value::as_date_time() const
         return get_as<DateTime>(bytes_);
     String s = as_string();
     try {
+        if (s == _T("sysdate"))
+            return now();
         DateTime x;
         return from_string(s, x);
     }

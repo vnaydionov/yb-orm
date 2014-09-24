@@ -16,13 +16,15 @@ bin_PROGRAMS=auth
 bin_SCRIPTS=auth.sh
 
 auth_SOURCES=\
-	domain/User.cpp \
-	domain/LoginSession.cpp \
 	auth.cpp \
 	tcp_socket.cpp \
 	micro_http.cpp \
 	app_class.cpp \
 	md5.c
+
+#	domain/User.cpp \
+#	domain/LoginSession.cpp \
+#
 
 auth_LDFLAGS=\
 	$(XML_LIBS) \

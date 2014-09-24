@@ -211,7 +211,7 @@ public: \
     } \
     static void create_tables_meta(Yb::Tables &tbls) \
     { \
-        Yb::Table::Ptr t(new Yb::Table(_T(table_name__), _T(table_name__), _T(#class_name__))); \
+        Yb::Table::Ptr t(new Yb::Table(_T(table_name__), _T(table_xml_name__), _T(#class_name__))); \
         t->set_seq_name(_T(seq_name__)); \
         c.fill_table(*t); \
         tbls.push_back(t); \
