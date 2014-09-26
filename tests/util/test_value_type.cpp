@@ -14,6 +14,7 @@ class TestValue : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(TestValue);
     CPPUNIT_TEST(test_type);
     CPPUNIT_TEST(test_value);
+    CPPUNIT_TEST(test_sysdate);
     CPPUNIT_TEST(test_null);
     CPPUNIT_TEST(test_equality);
     CPPUNIT_TEST(test_less);
@@ -58,6 +59,15 @@ public:
         DateTime b(dt_make(stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday,
                     stm.tm_hour, stm.tm_min, stm.tm_sec));
         CPPUNIT_ASSERT(b == Value((LongInt)t).as_date_time());
+    }
+
+    void test_sysdate()
+    {
+        DateTime d0 = now();
+        DateTime d = Value(_T("sysdate")).as_date_time();
+        CPPUNIT_ASSERT_EQUAL(dt_year(d), dt_year(d0));
+        CPPUNIT_ASSERT_EQUAL(dt_month(d), dt_month(d0));
+        CPPUNIT_ASSERT_EQUAL(dt_day(d), dt_day(d0));
     }
 
     void test_null()

@@ -27,7 +27,7 @@ class Order: public Yb::DomainObject {
 YB_DECLARE(Order, "order_tbl", "order_seq", "order",
     YB_COL_PK(id, "id")
     YB_COL_FK(client_id, "client_id", "client_tbl", "id")
-    YB_COL(dt, "dt", DATETIME, 0, 0, Yb::now(), "", "", "", "")
+    YB_COL(dt, "dt", DATETIME, 0, 0, Yb::Value("sysdate"), "", "", "", "")
     YB_COL_STR(memo, "memo", 100)
     YB_COL_DATA(total_sum, "total_sum", DECIMAL)
     YB_COL_DATA(receipt_sum, "receipt_sum", DECIMAL)
@@ -35,6 +35,10 @@ YB_DECLARE(Order, "order_tbl", "order_seq", "order",
     YB_REL_MANY(Client, owner, Order, orders, Yb::Relation::Restrict, "client_id", 1, 1)
     YB_COL_END)
 
+public:
+    const Yb::Decimal to_be_paid() {
+        return total_sum - receipt_sum.value(0);
+    }
 };
 
 YB_DEFINE(Client)
@@ -49,6 +53,8 @@ int main()
         //soci::session soci_conn("sqlite3", "./tut2.db");
         //Yb::Session session(Yb::init_schema(), "SOCI", "SQLITE", &soci_conn);
         Yb::Session session(Yb::init_schema(), "sqlite+sqlite://./tut2.db");
+        session.schema().export_xml("tut2_new.xml");
+        session.schema().export_ddl("tut2_new.sql", "SQLITE");
         session.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&appender)));
         try {
             session.create_schema();
@@ -72,6 +78,9 @@ int main()
         client->email = email;
         client->dt = Yb::now();
 
+        cout << "Order amount to be paid: " << order->to_be_paid() << endl;
+        order->receipt_sum = order->total_sum * Yb::Decimal("0.75");
+        cout << "Order amount still to be paid: " << order->to_be_paid() << endl;
         cout << "Client's info: " << client->get_info() << endl;
         cout << "Client's orders count: " << client->orders.size() << endl;
         order->owner = client;

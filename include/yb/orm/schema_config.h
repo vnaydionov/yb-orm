@@ -47,7 +47,9 @@ class YBORM_DECL MetaDataConfig
 {
 public:
     MetaDataConfig(const std::string &xml_string);
+    MetaDataConfig(const Schema &schema);
     void parse(Schema &reg);
+    const std::string save_xml();
     bool need_generation(const String &table_name) const {
         return std::find(skip_generation_.begin(), skip_generation_.end(), table_name) == skip_generation_.end();
     }
@@ -65,6 +67,11 @@ private:
     static void parse_column(ElementTree::ElementPtr node, Table &table_meta);
     static Column fill_column_meta(ElementTree::ElementPtr node);
     static void get_foreign_key_data(ElementTree::ElementPtr node, String &fk_table, String &fk_field);
+    static ElementTree::ElementPtr column_to_tree(const Column &column);
+    static ElementTree::ElementPtr table_to_tree(const Table &table);
+    static ElementTree::ElementPtr relation_to_tree(const Relation &rel);
+    static ElementTree::ElementPtr build_tree(const Schema &schema);
+
     std::vector<String> skip_generation_;
     ElementTree::ElementPtr node_;
 };

@@ -2,12 +2,15 @@
 #define YBORM_SOURCE
 
 #include <sstream>
+#include <fstream>
 #include <algorithm>
 #include "util/string_utils.h"
 #include "util/exception.h"
 #include "util/value_type.h"
 #include "util/singleton.h"
 #include "orm/schema.h"
+#include "orm/schema_config.h"
+#include "orm/code_gen.h"
 #include "orm/domain_factory.h"
 
 using namespace std;
@@ -607,6 +610,23 @@ Schema::join_expr(const Strings &tables) const
     Strings::const_iterator it = tables.begin();
     const String &tbl1 = *it;
     return make_join_expr(Expression(tbl1), tbl1, ++it, tables.end());
+}
+
+void
+Schema::export_ddl(const String &output_file, const String &dialect_name) const
+{
+    generate_ddl(*this, NARROW(output_file), NARROW(dialect_name));
+}
+
+void
+Schema::export_xml(const String &output_file) const
+{
+    MetaDataConfig cfg(*this);
+    ofstream xml_file(NARROW(output_file).c_str());
+    if (!xml_file.good())
+        throw CodeGenError(_T("Can't write to file"));
+    xml_file << cfg.save_xml();
+    xml_file.close();
 }
 
 typedef SingletonHolder<Schema> SchemaSingleton;

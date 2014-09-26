@@ -35,6 +35,7 @@ class TestXMLConfig : public CppUnit::TestFixture
     CPPUNIT_TEST(testRelationOneToMany);
     CPPUNIT_TEST(testSerialize);
     CPPUNIT_TEST(testSerialize2);
+    CPPUNIT_TEST(testSaveXML);
     CPPUNIT_TEST_SUITE_END();
 
     MetaDataConfig cfg_;
@@ -343,6 +344,55 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("qwertyasdfgzxcvb111"), NARROW(node->get_text()));
         CPPUNIT_ASSERT_EQUAL(xml, node->serialize());
     }
+
+    void testSaveXML() {
+        Schema r;
+        Table::Ptr ta(new Table(_T("A"), _T(""), _T("A")));
+        ta->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK));
+        ta->add_column(Column(_T("Y"), Value::DATETIME, 0, Column::NULLABLE,
+                    Value("sysdate"), _T(""), _T("")));
+        r.add_table(ta);
+        Table::Ptr tc(new Table(_T("C"), _T(""), _T("C")));
+        tc->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
+        tc->add_column(Column(_T("AX"), Value::LONGINT, 0, 0,
+                    Value(), _T("A"), _T("")));
+        r.add_table(tc);
+        Relation::AttrMap a1, a2;
+        a1[_T("property")] = _T("cs");
+        a2[_T("property")] = _T("a");
+        Relation::Ptr re1(new Relation(Relation::ONE2MANY,
+                    _T("A"), a1, _T("C"), a2));
+        r.add_relation(re1);
+        r.fill_fkeys();
+        // test schema serialization:
+        MetaDataConfig cfg(r);
+        CPPUNIT_ASSERT_EQUAL(string(
+            "<schema>"
+            "<table class=\"A\" name=\"A\" xml-name=\"a\">"
+                "<column name=\"X\" property=\"x\" type=\"longint\">"
+                    "<primary-key/>"
+                "</column>"
+                "<column default=\"sysdate\" name=\"Y\" "
+                        "property=\"y\" type=\"datetime\"/>"
+            "</table>"
+            "<table class=\"C\" name=\"C\" xml-name=\"c\">"
+                "<column name=\"X\" property=\"x\" type=\"longint\">"
+                    "<read-only/>"
+                    "<primary-key/>"
+                "</column>"
+                "<column name=\"AX\" null=\"false\" property=\"ax\" "
+                        "type=\"longint\">"
+                    "<foreign-key key=\"X\" table=\"A\"/>"
+                "</column>"
+            "</table>"
+            "<relation cascade=\"restrict\" type=\"one-to-many\">"
+                "<one class=\"A\" property=\"cs\"/>"
+                "<many class=\"C\" property=\"a\"/>"
+            "</relation>"
+            "</schema>\n"), cfg.save_xml());
+    }
+
+
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestXMLConfig);
