@@ -350,7 +350,7 @@ public:
         Table::Ptr ta(new Table(_T("A"), _T(""), _T("A")));
         ta->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK));
         ta->add_column(Column(_T("Y"), Value::DATETIME, 0, Column::NULLABLE,
-                    Value("sysdate"), _T(""), _T("")));
+                    Value(_T("sysdate")), _T(""), _T("")));
         r.add_table(ta);
         Table::Ptr tc(new Table(_T("C"), _T(""), _T("C")));
         tc->add_column(Column(_T("X"), Value::LONGINT, 0, Column::PK | Column::RO));
