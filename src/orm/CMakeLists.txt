@@ -41,7 +41,7 @@ endif ()
 add_library (yborm SHARED 
     ${SOURCES_CPP})
 
-add_definitions (-D YBORM_DLL)
+add_definitions (-DYBORM_DLL)
 
 target_link_libraries (
     yborm ybutil

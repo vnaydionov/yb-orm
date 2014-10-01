@@ -22,7 +22,7 @@ public:
 template <class T__> struct ValueTraits {};
 
 #define YB_MAX(x, y) ((x) > (y)? (x): (y))
-#define YB_NULL (::Yb::Value())
+#define YB_NULL ::Yb::Value()
 
 //! Variant data type for communication to the database layer
 /** Value class objects can hold NULL values.  Copying such objects
