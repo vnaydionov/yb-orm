@@ -744,6 +744,24 @@ SqlConnection::SqlConnection(const String &driver_name,
     backend_->open(dialect_, source_);
 }
 
+SqlConnection::SqlConnection(const String &driver_name,
+        const String &dialect_name, void *raw_connection)
+    : source_(SqlSource(_T("#raw_connection"), driver_name, dialect_name,
+                _T("unknown_db"), _T("unknown_user"), _T("unknown_passwd")))
+    , driver_(sql_driver(source_.driver()))
+    , dialect_(sql_dialect(source_.dialect()))
+    , activity_(false)
+    , echo_(false)
+    , conv_params_(false)
+    , bad_(false)
+    , explicit_trans_started_(false)
+    , free_since_(0)
+{
+    source_[_T("&driver")] = driver_->get_name();
+    backend_.reset(driver_->create_backend().release());
+    backend_->use_raw(dialect_, raw_connection);
+}
+
 SqlConnection::SqlConnection(const SqlSource &source)
     : source_(source)
     , driver_(sql_driver(source_.driver()))
@@ -787,11 +805,13 @@ SqlConnection::~SqlConnection()
     catch (const std::exception &) {
         err = true;
     }
-    try {
-        backend_->close();
-    }
-    catch (const std::exception &) {
-        err = true;
+    if (source_.id() != _T("#raw_connection")) {
+        try {
+            backend_->close();
+        }
+        catch (const std::exception &) {
+            err = true;
+        }
     }
     if (err)
         debug(_T("error while closing connection"));

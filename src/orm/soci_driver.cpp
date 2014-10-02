@@ -258,7 +258,7 @@ RowPtr SOCICursorBackend::fetch_row()
 }
 
 SOCIConnectionBackend::SOCIConnectionBackend(SOCIDriver *drv)
-    : conn_(NULL), drv_(drv)
+    : conn_(NULL), drv_(drv), own_handle_(false)
 {}
 
 SOCIConnectionBackend::~SOCIConnectionBackend()
@@ -286,6 +286,7 @@ SOCIConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 {
     close();
     ScopedLock lock(drv_->conn_mux_);
+    own_handle_ = true;
     try {
         String driver = source.driver();
         std::string soci_backend = "odbc";
@@ -301,6 +302,20 @@ SOCIConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
     }
 }
 
+void
+SOCIConnectionBackend::use_raw(SqlDialect *dialect, void *raw_connection)
+{
+    close();
+    ScopedLock lock(drv_->conn_mux_);
+    conn_ = (soci::session *)raw_connection;
+}
+
+void *
+SOCIConnectionBackend::get_raw()
+{
+    return (void *)conn_;
+}
+
 auto_ptr<SqlCursorBackend>
 SOCIConnectionBackend::new_cursor()
 {
@@ -313,10 +328,12 @@ void SOCIConnectionBackend::close()
 {
     ScopedLock lock(drv_->conn_mux_);
     try {
-        if (conn_) {
-            delete conn_;
-            conn_ = NULL;
+        if (own_handle_) {
+            if (conn_)
+                delete conn_;
+            own_handle_ = false;
         }
+        conn_ = NULL;
     }
     catch (const soci::soci_error &e) {
         throw DBError(WIDEN(e.what()));

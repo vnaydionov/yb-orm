@@ -307,6 +307,13 @@ public:
         YB_ASSERT(!v.is_null());
         return v.read_as<T>();
     }
+    const T value(const T &default_value) {
+        YB_ASSERT(pobj_ != NULL);
+        const Value &v = pobj_->get(ColNum);
+        if (v.is_null())
+            return default_value;
+        return v.read_as<T>();
+    }
     operator const T & () {
         return value();
     }

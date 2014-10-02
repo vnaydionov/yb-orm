@@ -252,6 +252,9 @@ public:
     void set_cascade(int cascade_mode) { cascade_ = cascade_mode; }
     const String &side(int n) const { return n == 0? side1_: side2_; }
     bool has_attr(int n, const String &name) const;
+    bool has_non_empty_attr(int n, const String &name) const {
+        return has_attr(n, name) && !str_empty(attr(n, name));
+    }
     const String &attr(int n, const String &name) const;
     const AttrMap &attr_map(int n) const { return n == 0? attr1_: attr2_; }
     void set_tables(Table *table1, Table *table2) {
@@ -325,6 +328,10 @@ public:
 
     void fill_fkeys();
     void check_cycles();
+
+    // export to text
+    void export_ddl(const String &output_file, const String &dialect_name) const;
+    void export_xml(const String &output_file) const;
 private:
     void clear_backrefs();
     void fix_backrefs();

@@ -75,6 +75,10 @@ MetaDataConfig::MetaDataConfig(const string &xml_string)
     }
 }
 
+MetaDataConfig::MetaDataConfig(const Schema &schema)
+    : node_(build_tree(schema))
+{}
+
 void MetaDataConfig::parse(Schema &reg)
 {
     if (node_->name_.compare(_T("schema")))
@@ -193,11 +197,11 @@ Relation::Ptr MetaDataConfig::parse_relation(ElementTree::ElementPtr node)
 int MetaDataConfig::string_type_to_int(const String &type, const String &field_name)
 {
     for (int type_it = 1; true; ++type_it) {
-        String type_it_name = Yb::StrUtils::str_to_lower(
+        String type_it_name = StrUtils::str_to_lower(
                 Value::get_type_name(type_it));
         if (type_it_name == _T("unknowntype"))
             break;
-        if (Yb::StrUtils::str_to_lower(type) == type_it_name)
+        if (StrUtils::str_to_lower(type) == type_it_name)
             return type_it;
     }
     throw WrongColumnType(type, field_name);
@@ -220,7 +224,7 @@ Column MetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
 {
     String name, type, fk_table, fk_field, prop_name, xml_name, index;
     int flags = 0, size = 0, col_type = 0;
-    Yb::Value default_val;
+    Value default_val;
     if (!node->has_attr(_T("name")))
         throw MandatoryAttributeAbsent(_T("column"), _T("name"));
     else
@@ -265,7 +269,7 @@ Column MetaDataConfig::fill_column_meta(ElementTree::ElementPtr node)
                 }
                 break;
             case Value::DATETIME:
-                if (Yb::StrUtils::str_to_lower(node->get_attr(_T("default"))) != String(_T("sysdate")))
+                if (StrUtils::str_to_lower(node->get_attr(_T("default"))) != String(_T("sysdate")))
                     throw ParseError(String(_T("Wrong default value for datetime element '"))+ name + _T("'"));
                 default_val = Value(_T("sysdate"));
                 break;
@@ -326,6 +330,107 @@ void MetaDataConfig::get_foreign_key_data(ElementTree::ElementPtr node, String &
     else
         fk_field = String();
 }    
+
+ElementTree::ElementPtr MetaDataConfig::column_to_tree(const Column &column)
+{
+    ElementTree::ElementPtr node = ElementTree::new_element(
+            _T("column"));
+    node->attrib_[_T("name")] = column.name();
+    node->attrib_[_T("type")] = StrUtils::str_to_lower(
+            Value::get_type_name(column.type()));
+    if (column.size())
+        node->attrib_[_T("size")] = to_string(column.size());
+    if (!str_empty(column.prop_name()) && column.prop_name() != column.name())
+        node->attrib_[_T("property")] = column.prop_name();
+    if (!str_empty(column.xml_name()) && column.xml_name() != column.prop_name())
+        node->attrib_[_T("xml-name")] = column.xml_name();
+    if (!column.default_value().is_null())
+        node->attrib_[_T("default")] = column.default_value().as_string();
+    if (!column.is_nullable() && !column.is_pk())
+        node->attrib_[_T("null")] = _T("false");
+    if (column.is_ro())
+        node->sub_element(_T("read-only"));
+    if (column.is_pk())
+        node->sub_element(_T("primary-key"));
+    if (column.has_fk()) {
+        ElementTree::ElementPtr fk_node =
+            node->sub_element(_T("foreign-key"));
+        fk_node->attrib_[_T("table")] = column.fk_table_name();
+        if (!str_empty(column.fk_name()))
+            fk_node->attrib_[_T("key")] = column.fk_name();
+    }
+    if (!str_empty(column.index_name()))
+        node->sub_element(_T("index"), column.index_name());
+    return node;
+}
+
+ElementTree::ElementPtr MetaDataConfig::table_to_tree(const Table &table)
+{
+    ElementTree::ElementPtr node = ElementTree::new_element(
+            _T("table"));
+    node->attrib_[_T("name")] = table.name();
+    if (!str_empty(table.class_name()))
+        node->attrib_[_T("class")] = table.class_name();
+    if (!str_empty(table.seq_name()))
+        node->attrib_[_T("sequence")] = table.seq_name();
+    if (!str_empty(table.xml_name()) && table.xml_name() != table.class_name())
+        node->attrib_[_T("xml-name")] = table.xml_name();
+    else if (table.autoinc())
+        node->attrib_[_T("autoinc")] = _T("true");
+    Columns::const_iterator it = table.begin(), end = table.end();
+    for (; it != end; ++it)
+        node->children_.push_back(column_to_tree(*it));
+    return node;
+}
+
+ElementTree::ElementPtr MetaDataConfig::relation_to_tree(const Relation &rel)
+{
+    ElementTree::ElementPtr node = ElementTree::new_element(
+            _T("relation"));
+    // for now just one2many is supported
+    YB_ASSERT(rel.type() == Relation::ONE2MANY);
+    node->attrib_[_T("type")] = _T("one-to-many");
+    node->attrib_[_T("cascade")] = (
+            rel.cascade() == (int)Relation::Restrict?
+            _T("restrict"): (
+                rel.cascade() == (int)Relation::Nullify?
+                _T("set-null"): _T("delete")));
+    ElementTree::ElementPtr node_one = node->sub_element(_T("one"));
+    node_one->attrib_[_T("class")] = rel.side(0);
+    if (rel.has_non_empty_attr(0, _T("property")))
+        node_one->attrib_[_T("property")] = rel.attr(0, _T("property"));
+    if (rel.has_non_empty_attr(0, _T("use-list"))
+            && (rel.attr(0, _T("use-list")) == _T("false") ||
+                rel.attr(0, _T("use-list")) == _T("0")))
+        node_one->attrib_[_T("use-list")] = _T("false");
+    ElementTree::ElementPtr node_many = node->sub_element(_T("many"));
+    node_many->attrib_[_T("class")] = rel.side(1);
+    if (rel.has_non_empty_attr(1, _T("property")))
+        node_many->attrib_[_T("property")] = rel.attr(1, _T("property"));
+    if (rel.has_non_empty_attr(1, _T("key")))
+        node_many->attrib_[_T("key")] = rel.attr(1, _T("key"));
+    if (rel.has_non_empty_attr(1, _T("order-by")))
+        node_many->attrib_[_T("order-by")] = rel.attr(1, _T("order-by"));
+    return node;
+}
+
+ElementTree::ElementPtr MetaDataConfig::build_tree(const Schema &schema)
+{
+    ElementTree::ElementPtr node = ElementTree::new_element(
+            _T("schema"));
+    Schema::TblMap::const_iterator i = schema.tbl_begin(), iend = schema.tbl_end();
+    for (; i != iend; ++i)
+        node->children_.push_back(table_to_tree(*i->second));
+    Schema::RelVect::const_iterator j = schema.rel_begin(), jend = schema.rel_end();
+    for (; j != jend; ++j)
+        node->children_.push_back(relation_to_tree(**j));
+    return node;
+}
+
+const std::string MetaDataConfig::save_xml()
+{
+    return node_->serialize();
+}
 
 } // namespace Yb
 

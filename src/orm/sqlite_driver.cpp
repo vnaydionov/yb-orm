@@ -109,7 +109,7 @@ RowPtr SQLiteCursorBackend::fetch_row()
 }
 
 SQLiteConnectionBackend::SQLiteConnectionBackend(SQLiteDriver *drv)
-    : conn_(NULL), drv_(drv)
+    : conn_(NULL), drv_(drv), own_handle_(false)
 {}
 
 SQLiteConnectionBackend::~SQLiteConnectionBackend()
@@ -122,12 +122,26 @@ SQLiteConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 {
     close();
     ScopedLock lock(drv_->conn_mux_);
+    own_handle_ = true;
     sqlite3_open(NARROW(source.db()).c_str(), &conn_);
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
-        conn_ = NULL;
         const char *err = sqlite3_errmsg(conn_);
         throw DBError(WIDEN(err));
     }
+}
+
+void
+SQLiteConnectionBackend::use_raw(SqlDialect *dialect, void *raw_connection)
+{
+    close();
+    ScopedLock lock(drv_->conn_mux_);
+    conn_ = (SQLiteDatabase *)raw_connection;
+}
+
+void *
+SQLiteConnectionBackend::get_raw()
+{
+    return (void *)conn_;
 }
 
 auto_ptr<SqlCursorBackend>
@@ -141,10 +155,12 @@ SQLiteConnectionBackend::new_cursor()
 void SQLiteConnectionBackend::close()
 {
     ScopedLock lock(drv_->conn_mux_);
-    if (conn_) {
-        sqlite3_close(conn_);
-        conn_ = NULL;
+    if (own_handle_) {
+        if (conn_)
+            sqlite3_close(conn_);
+        own_handle_ = false;
     }
+    conn_ = NULL;
 }
 
 void

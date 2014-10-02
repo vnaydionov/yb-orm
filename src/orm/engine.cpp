@@ -387,6 +387,20 @@ SqlConnection *EngineCloned::get_conn() { return conn_; }
 SqlDialect *EngineCloned::get_dialect() { return dialect_; }
 ILogger *EngineCloned::logger() { return logger_; }
 
+void EngineCloned::set_echo(bool echo)
+{
+    if (conn_)
+        conn_->set_echo(echo);
+}
+
+void EngineCloned::set_logger(ILogger *logger)
+{
+    logger_ = logger;
+    if (conn_)
+        conn_->init_logger(logger_);
+}
+
+
 YBORM_DECL const String env_cfg(const String &entry, const String &def_val)
 {
     String value = xgetenv(_T("YBORM_") + entry);
@@ -463,13 +477,13 @@ SqlConnection *Engine::get_conn()
 SqlDialect *Engine::get_dialect() { return dialect_; }
 ILogger *Engine::logger() { return logger_.get(); }
 
-auto_ptr<EngineBase> Engine::clone()
+auto_ptr<EngineCloned> Engine::clone()
 {
     if (conn_.get())
-        return auto_ptr<EngineBase>(new EngineCloned(
+        return auto_ptr<EngineCloned>(new EngineCloned(
                     mode_, conn_.get(), dialect_, logger_.get()));
     SqlConnection *conn = get_from_pool();
-    return auto_ptr<EngineBase>(new EngineCloned(
+    return auto_ptr<EngineCloned>(new EngineCloned(
                 mode_, conn, dialect_, logger_.get(), pool_.get()));
 }
 

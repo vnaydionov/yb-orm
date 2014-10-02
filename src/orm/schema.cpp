@@ -2,12 +2,15 @@
 #define YBORM_SOURCE
 
 #include <sstream>
+#include <fstream>
 #include <algorithm>
 #include "util/string_utils.h"
 #include "util/exception.h"
 #include "util/value_type.h"
 #include "util/singleton.h"
 #include "orm/schema.h"
+#include "orm/schema_config.h"
+#include "orm/code_gen.h"
 #include "orm/domain_factory.h"
 
 using namespace std;
@@ -185,7 +188,7 @@ Table::find_fk_for(const Relation &rel, Strings &fkey_parts) const
 {
     const String &master_tbl = rel.table(0).name();
     Strings new_fkey_parts;
-    if (rel.has_attr(1, _T("key"))) {
+    if (rel.has_attr(1, _T("key")) && !str_empty(rel.attr(1, _T("key")))) {
         Strings parts0;
         StrUtils::split_str(rel.attr(1, _T("key")), _T(","), parts0);
         Strings::const_iterator i = parts0.begin(), iend = parts0.end();
@@ -607,6 +610,23 @@ Schema::join_expr(const Strings &tables) const
     Strings::const_iterator it = tables.begin();
     const String &tbl1 = *it;
     return make_join_expr(Expression(tbl1), tbl1, ++it, tables.end());
+}
+
+void
+Schema::export_ddl(const String &output_file, const String &dialect_name) const
+{
+    generate_ddl(*this, NARROW(output_file), NARROW(dialect_name));
+}
+
+void
+Schema::export_xml(const String &output_file) const
+{
+    MetaDataConfig cfg(*this);
+    ofstream xml_file(NARROW(output_file).c_str());
+    if (!xml_file.good())
+        throw CodeGenError(_T("Can't write to file"));
+    xml_file << cfg.save_xml();
+    xml_file.close();
 }
 
 typedef SingletonHolder<Schema> SchemaSingleton;

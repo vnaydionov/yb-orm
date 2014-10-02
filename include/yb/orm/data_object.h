@@ -120,11 +120,12 @@ class YBORM_DECL Session: public NonCopyable
     typedef std::set<DataObjectPtr> Objects;
     typedef std::map<String, DataObject *> IdentityMap;
 
-    ILogger::Ptr logger_;
+    ILogger::Ptr logger_, engine_logger_;
     Objects objects_;
     IdentityMap identity_map_;
     const Schema &schema_;
-    std::auto_ptr<EngineBase> engine_;
+    std::auto_ptr<EngineSource> created_engine_;
+    std::auto_ptr<EngineCloned> engine_;
 
     DataObject *add_to_identity_map(DataObject *obj, bool return_found);
     void flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs);
@@ -132,12 +133,23 @@ class YBORM_DECL Session: public NonCopyable
     void flush_new();
     void flush_update(IdentityMap &idmap_copy);
     void flush_delete(IdentityMap &idmap_copy);
+    void clone_engine(EngineSource *src_engine);
 public:
+    void set_logger(ILogger::Ptr logger);
     void debug(const String &s) { if (logger_.get()) logger_->debug(NARROW(s)); }
     Session(const Schema &schema, EngineSource *engine = NULL);
+    Session(const Schema &schema, const String &connection_url);
+    Session(const Schema &schema, const String &driver_name,
+            const String &dialect_name, void *raw_connection);
     ~Session();
     void clear();
     const Schema &schema() const { return schema_; }
+    void create_schema(bool ignore_errors = false) {
+        engine_->create_schema(schema_, ignore_errors);
+    }
+    void drop_schema(bool ignore_errors = false) {
+        engine_->drop_schema(schema_, ignore_errors);
+    }
     //! Save a detached or new DataObject into Session
     void save(DataObjectPtr obj);
     //! 

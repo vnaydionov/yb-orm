@@ -36,10 +36,13 @@ class SOCIConnectionBackend: public SqlConnectionBackend
 {
     soci::session *conn_;
     SOCIDriver *drv_;
+    bool own_handle_;
 public:
     SOCIConnectionBackend(SOCIDriver *drv);
     ~SOCIConnectionBackend();
     void open(SqlDialect *dialect, const SqlSource &source);
+    void use_raw(SqlDialect *dialect, void *raw_connection);
+    void *get_raw();
     std::auto_ptr<SqlCursorBackend> new_cursor();
     void close();
     void begin_trans();

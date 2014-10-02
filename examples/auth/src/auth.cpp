@@ -16,11 +16,17 @@
 #include "md5.h"
 #include "app_class.h"
 #include "micro_http.h"
+#if 0
 #include "domain/User.h"
 #include "domain/LoginSession.h"
+using namespace Domain;
+#else
+#include "model.h"
+YB_DEFINE(User)
+YB_DEFINE(LoginSession)
+#endif
 
 using namespace std;
-using namespace Domain;
 
 #define BAD_RESP "<status>NOT</status>"
 #define OK_RESP "<status>OK</status>"

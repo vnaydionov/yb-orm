@@ -167,6 +167,21 @@ OdbcConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
         throw DBError(conn_->last_error_ex());
 }
 
+void
+OdbcConnectionBackend::use_raw(SqlDialect *dialect, void *raw_connection)
+{
+    close();
+    ScopedLock lock(drv_->conn_mux_);
+    conn_.reset(new tiodbc::connection());
+    conn_->use_raw(raw_connection);
+}
+
+void *
+OdbcConnectionBackend::get_raw()
+{
+    return (void *)conn_->native_dbc_handle();
+}
+
 auto_ptr<SqlCursorBackend>
 OdbcConnectionBackend::new_cursor()
 {

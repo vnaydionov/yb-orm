@@ -210,6 +210,8 @@ public:
     SqlConnectionBackend() {}
     virtual ~SqlConnectionBackend();
     virtual void open(SqlDialect *dialect, const SqlSource &source) = 0;
+    virtual void use_raw(SqlDialect *dialect, void *raw_connection) = 0;
+    virtual void *get_raw() = 0;
     virtual std::auto_ptr<SqlCursorBackend> new_cursor() = 0;
     virtual void close() = 0;
     virtual void begin_trans() = 0;
@@ -294,6 +296,8 @@ public:
     SqlConnection(const String &driver_name,
             const String &dialect_name, const String &db,
             const String &user = _T(""), const String &passwd = _T(""));
+    SqlConnection(const String &driver_name,
+            const String &dialect_name, void *raw_connection);
     explicit SqlConnection(const SqlSource &source);
     explicit SqlConnection(const String &url);
     ~SqlConnection();

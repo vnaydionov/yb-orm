@@ -114,14 +114,49 @@ YBORM_DECL const String key2str(const Key &key)
     return WIDEN(out.str());
 }
 
-Session::Session(const Schema &schema, EngineSource *engine)
-    : schema_(schema)
+void Session::clone_engine(EngineSource *src_engine)
 {
-    if (engine) {
-        engine_.reset(engine->clone().release());
+    if (src_engine) {
+        engine_.reset(src_engine->clone().release());
         if (engine_->logger())
             logger_.reset(engine_->logger()->new_logger("orm").release());
     }
+}
+
+void Session::set_logger(ILogger::Ptr logger)
+{
+    engine_logger_.reset(logger.release());
+    engine_->set_echo(true);
+    engine_->set_logger(engine_logger_.get());
+    logger_.reset(engine_logger_->new_logger("orm").release());
+}
+
+Session::Session(const Schema &schema, EngineSource *engine)
+    : schema_(schema)
+{
+    clone_engine(engine);
+}
+
+Session::Session(const Schema &schema, const String &connection_url)
+    : schema_(schema)
+    , created_engine_(std::auto_ptr<EngineSource>(
+                new Engine(Engine::READ_WRITE,
+                    std::auto_ptr<SqlConnection>(
+                        new SqlConnection(connection_url)))))
+{
+    clone_engine(created_engine_.get());
+}
+
+Session::Session(const Schema &schema, const String &driver_name,
+        const String &dialect_name, void *raw_connection)
+    : schema_(schema)
+    , created_engine_(std::auto_ptr<EngineSource>(
+                new Engine(Engine::READ_WRITE,
+                    std::auto_ptr<SqlConnection>(
+                        new SqlConnection(driver_name, dialect_name,
+                            raw_connection)))))
+{
+    clone_engine(created_engine_.get());
 }
 
 Session::~Session() { clear(); }
@@ -962,7 +997,8 @@ void RelationObject::lazy_load_slaves()
     SelectExpr select_expr = SelectExpr(cols)
         .from_(Expression(slave_tbl.name()))
         .where_(KeyFilter(gen_fkey()));
-    if (relation_info_.has_attr(1, _T("order-by")))
+    if (relation_info_.has_attr(1, _T("order-by")) &&
+            !str_empty(relation_info_.attr(1, _T("order-by"))))
         select_expr.order_by_(
                 Expression(relation_info_.attr(1, _T("order-by"))));
     SqlResultSet rs = session.engine()->select_iter(select_expr);

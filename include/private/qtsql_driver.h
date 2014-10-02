@@ -31,9 +31,12 @@ class QtSqlConnectionBackend: public SqlConnectionBackend
     std::auto_ptr<QSqlDatabase> conn_;
     String conn_name_;
     QtSqlDriver *drv_;
+    bool own_handle_;
 public:
     QtSqlConnectionBackend(QtSqlDriver *drv);
     void open(SqlDialect *dialect, const SqlSource &source);
+    void use_raw(SqlDialect *dialect, void *raw_connection);
+    void *get_raw();
     std::auto_ptr<SqlCursorBackend> new_cursor();
     void close();
     void begin_trans();
