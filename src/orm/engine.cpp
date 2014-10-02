@@ -22,14 +22,13 @@ SqlResultSet
 EngineBase::select_iter(const Expression &select_expr)
 {
     bool num_params = get_conn()->get_driver()->numbered_params();
-    int count = 1, *pcount = NULL;
-    if (num_params)
-        pcount = &count;
-    Values params;
-    String sql = select_expr.generate_sql(&params, pcount);
+    SqlGeneratorOptions options(NO_QUOTES,
+            get_dialect()->has_for_update(), true, num_params);
+    SqlGeneratorContext ctx;
+    String sql = select_expr.generate_sql(options, &ctx);
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
-    SqlResultSet rs = cursor->exec(params);
+    SqlResultSet rs = cursor->exec(ctx.params_);
     rs.own(cursor);
     return rs;
 }
@@ -102,8 +101,11 @@ EngineBase::update(const Table &table, const RowsData &rows)
     String sql;
     TypeCodes type_codes;
     ParamNums param_nums;
-    gen_sql_update(sql, type_codes, param_nums, table,
+    SqlGeneratorOptions options(NO_QUOTES,
+            get_dialect()->has_for_update(),
+            true,
             get_conn()->get_driver()->numbered_params());
+    gen_sql_update(sql, type_codes, param_nums, table, options);
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
     cursor->bind_params(type_codes);
@@ -129,8 +131,11 @@ EngineBase::delete_from(const Table &table, const Keys &keys)
     touch();
     String sql;
     TypeCodes type_codes;
-    gen_sql_delete(sql, type_codes, table,
+    SqlGeneratorOptions options(NO_QUOTES,
+            get_dialect()->has_for_update(),
+            true,
             get_conn()->get_driver()->numbered_params());
+    gen_sql_delete(sql, type_codes, table, options);
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
     cursor->bind_params(type_codes);
@@ -314,13 +319,11 @@ EngineBase::gen_sql_insert(String &sql, TypeCodes &type_codes_out,
 void
 EngineBase::gen_sql_update(String &sql, TypeCodes &type_codes_out,
         ParamNums &param_nums_out, const Table &table,
-        bool numbered_params)
+        const SqlGeneratorOptions &options)
 {
     if (!table.pk_fields().size())
         throw BadSQLOperation(_T("cannot build update statement: no key in table"));
-    int count = 1, *pcount = NULL;
-    if (numbered_params)
-        pcount = &count;
+    SqlGeneratorContext ctx;
     String sql_query = _T("UPDATE ") + table.name() + _T(" SET ");
     TypeCodes type_codes;
     type_codes.reserve(table.size());
@@ -332,11 +335,11 @@ EngineBase::gen_sql_update(String &sql, TypeCodes &type_codes_out,
             if (!type_codes.empty())
                 sql_query += _T(", ");
             sql_query += col.name() + _T(" = ");
-            if (pcount)
-                sql_query += _T(":") + to_string(count);
+            ++ctx.counter_;
+            if (options.numbered_params_)
+                sql_query += _T(":") + to_string(ctx.counter_);
             else
                 sql_query += _T("?");
-            ++count;
             param_nums[col.name()] = type_codes.size();
             type_codes.push_back(col.type());
         }
@@ -350,28 +353,24 @@ EngineBase::gen_sql_update(String &sql, TypeCodes &type_codes_out,
     param_nums_out.swap(param_nums);
     Key sample_key;
     table.mk_sample_key(type_codes, sample_key);
-    Values sample_params;
     sql_query += _T(" WHERE ")
-        + KeyFilter(sample_key).generate_sql(&sample_params, pcount);
+        + KeyFilter(sample_key).generate_sql(options, &ctx);
     str_swap(sql, sql_query);
 }
 
 void
 EngineBase::gen_sql_delete(String &sql, TypeCodes &type_codes_out,
-        const Table &table, bool numbered_params)
+        const Table &table, const SqlGeneratorOptions &options)
 {
     if (!table.pk_fields().size())
         throw BadSQLOperation(_T("cannot build update statement: no key in table"));
-    int count = 1, *pcount = NULL;
-    if (numbered_params)
-        pcount = &count;
+    SqlGeneratorContext ctx;
     String sql_query = _T("DELETE FROM ") + table.name();
     TypeCodes type_codes;
     Key sample_key;
     table.mk_sample_key(type_codes, sample_key);
-    Values sample_params;
     sql_query += _T(" WHERE ")
-        + KeyFilter(sample_key).generate_sql(&sample_params, pcount);
+        + KeyFilter(sample_key).generate_sql(options, &ctx);
     type_codes_out.swap(type_codes);
     str_swap(sql, sql_query);
 }

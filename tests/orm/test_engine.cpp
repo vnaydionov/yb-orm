@@ -62,52 +62,54 @@ public:
     void test_select_simple()
     {
         String sql;
-        Values params;
+        SqlGeneratorOptions options;
+        SqlGeneratorContext ctx;
         sql = SelectExpr(Expression(_T("A, B")))
-            .from_(Expression(_T("T"))).generate_sql(&params);
+            .from_(Expression(_T("T"))).generate_sql(options, &ctx);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T"), NARROW(sql));
     }
 
     void test_select_for_update()
     {
         String sql;
-        Values params;
+        SqlGeneratorOptions options; SqlGeneratorContext ctx;
         sql = SelectExpr(Expression(_T("1")))
-            .from_(Expression(_T("T"))).for_update(true).generate_sql(&params);
+            .from_(Expression(_T("T"))).for_update(true).generate_sql(options, &ctx);
         CPPUNIT_ASSERT_EQUAL(string("SELECT 1 FROM T FOR UPDATE"), NARROW(sql));
     }
 
     void test_select_where()
     {
         String sql;
-        Values params;
+        SqlGeneratorOptions options(NO_QUOTES, true, true);
+        SqlGeneratorContext ctx;
         sql = SelectExpr(Expression(_T("*")))
             .from_(Expression(_T("T")))
-            .where_(Expression(_T("ID")) == 1).generate_sql(&params);
+            .where_(Expression(_T("ID")) == 1).generate_sql(options, &ctx);
         CPPUNIT_ASSERT_EQUAL(string("SELECT * FROM T WHERE ID = ?"), NARROW(sql));
-        CPPUNIT_ASSERT_EQUAL(1, (int)params.size());
-        CPPUNIT_ASSERT_EQUAL(1, (int)params[0].as_longint());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ctx.params_.size());
+        CPPUNIT_ASSERT_EQUAL(1, (int)ctx.params_[0].as_longint());
     }
 
     void test_select_groupby()
     {
         String sql;
-        Values params;
+        SqlGeneratorOptions options; SqlGeneratorContext ctx;
         sql = SelectExpr(Expression(_T("A, B")))
             .from_(Expression(_T("T")))
             .group_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
-            .generate_sql(&params);
+            .generate_sql(options, &ctx);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T GROUP BY A, B"), NARROW(sql));
     }
 
     void test_select_having()
     {
         String sql;
-        Values params;
+        SqlGeneratorOptions options; SqlGeneratorContext ctx;
         sql = SelectExpr(Expression(_T("A, COUNT(*)")))
             .from_(Expression(_T("T")))
             .group_by_(Expression(_T("A")))
-            .having_(Expression(_T("COUNT(*) > 2"))).generate_sql(&params);
+            .having_(Expression(_T("COUNT(*) > 2"))).generate_sql(options, &ctx);
         CPPUNIT_ASSERT_EQUAL(
                 string("SELECT A, COUNT(*) FROM T GROUP BY A HAVING COUNT(*) > 2"),
                 NARROW(sql));
@@ -117,20 +119,20 @@ public:
     {
         Engine engine(Engine::READ_ONLY);
         String sql;
-        Values params;
+        SqlGeneratorOptions options; SqlGeneratorContext ctx;
         sql = SelectExpr(Expression(_T("A, B")))
             .from_(Expression(_T("T")))
-            .having_(Expression(_T("ID")) == 1).generate_sql(&params);
+            .having_(Expression(_T("ID")) == 1).generate_sql(options, &ctx);
     }
 
     void test_select_orderby()
     {
         Engine engine(Engine::READ_ONLY);
         String sql;
-        Values params;
+        SqlGeneratorOptions options; SqlGeneratorContext ctx;
         sql = SelectExpr(Expression(_T("A, B")))
             .from_(Expression(_T("T")))
-            .order_by_(Expression(_T("A"))).generate_sql(&params);
+            .order_by_(Expression(_T("A"))).generate_sql(options, &ctx);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T ORDER BY A"), NARROW(sql));
     }
 
@@ -180,7 +182,8 @@ public:
         String sql;
         TypeCodes types;
         ParamNums param_nums;
-        engine.gen_sql_update(sql, types, param_nums, t);
+        SqlGeneratorOptions options(NO_QUOTES, true, true);
+        engine.gen_sql_update(sql, types, param_nums, t, options);
         CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET A = ? WHERE T.B = ?"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL((size_t)2, types.size());
         CPPUNIT_ASSERT_EQUAL((size_t)2, param_nums.size());
@@ -202,7 +205,8 @@ public:
         String sql;
         TypeCodes types;
         ParamNums param_nums;
-        engine.gen_sql_update(sql, types, param_nums, t);
+        SqlGeneratorOptions options(NO_QUOTES, true, true);
+        engine.gen_sql_update(sql, types, param_nums, t, options);
         CPPUNIT_ASSERT_EQUAL(string("UPDATE T SET E = ?, F = ? "
                     "WHERE ((T.Q = ?) AND (T.B = ?)) AND (T.D = ?)"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL((size_t)5, types.size());
@@ -228,7 +232,8 @@ public:
         String sql;
         TypeCodes types;
         ParamNums param_nums;
-        engine.gen_sql_update(sql, types, param_nums, t);
+        SqlGeneratorOptions options;
+        engine.gen_sql_update(sql, types, param_nums, t, options);
     }
 
     void test_delete()
@@ -238,7 +243,8 @@ public:
         t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
         String sql;
         TypeCodes types;
-        engine.gen_sql_delete(sql, types, t);
+        SqlGeneratorOptions options(NO_QUOTES, true, true);
+        engine.gen_sql_delete(sql, types, t, options);
         CPPUNIT_ASSERT_EQUAL(string("DELETE FROM T WHERE T.ID = ?"), NARROW(sql));
         CPPUNIT_ASSERT_EQUAL((size_t)1, types.size());
         CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, types[0]);
@@ -250,7 +256,8 @@ public:
         Table t(_T("T"));
         String sql;
         TypeCodes types;
-        engine.gen_sql_delete(sql, types, t);
+        SqlGeneratorOptions options;
+        engine.gen_sql_delete(sql, types, t, options);
     }
 
     void test_insert_ro_mode()

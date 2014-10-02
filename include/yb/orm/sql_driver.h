@@ -146,6 +146,7 @@ public:
     virtual const String sql_value(const Value &x) = 0;
     virtual bool fk_internal();
     virtual bool commit_ddl();
+    virtual bool has_for_update();
     virtual const String type2sql(int t) = 0;
     virtual const String create_sequence(const String &seq_name) = 0;
     virtual const String drop_sequence(const String &seq_name) = 0;

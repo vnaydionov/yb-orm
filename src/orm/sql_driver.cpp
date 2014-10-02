@@ -86,6 +86,8 @@ const String SqlDialect::select_last_inserted_id(const String &table_name) {
 
 bool SqlDialect::commit_ddl() { return false; }
 
+bool SqlDialect::has_for_update() { return true; }
+
 bool SqlDialect::fk_internal() { return false; }
 
 const String SqlDialect::suffix_create_table() { return String(); }
@@ -297,6 +299,7 @@ public:
         throw SqlDialectError(_T("Bad type"));
     }
     bool fk_internal() { return true; }
+    bool has_for_update() { return false; }
     const String create_sequence(const String &seq_name) {
         throw SqlDialectError(_T("No sequences, please"));
     }

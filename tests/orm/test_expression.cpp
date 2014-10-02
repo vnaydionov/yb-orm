@@ -48,23 +48,24 @@ public:
     {
         Expression expr = Expression(_T("ID")) == 1 &&
             Expression(_T("A")) != String(_T("a"));
-        Values pvalues;
-        String sql = expr.generate_sql(&pvalues);
+        SqlGeneratorOptions options1(NO_QUOTES, true, true);
+        SqlGeneratorContext ctx1;
+        String sql = expr.generate_sql(options1, &ctx1);
         CPPUNIT_ASSERT_EQUAL(string("(ID = ?) AND (A <> ?)"),
                 NARROW(sql));
-        Values pvalues2;
-        int count = 1;
-        sql = expr.generate_sql(&pvalues2, &count);
+        SqlGeneratorOptions options2(NO_QUOTES, true, true, true);
+        SqlGeneratorContext ctx2;
+        sql = expr.generate_sql(options2, &ctx2);
         CPPUNIT_ASSERT_EQUAL(string("(ID = :1) AND (A <> :2)"),
                 NARROW(sql));
         CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A <> 'a')"),
                 NARROW(expr.get_sql()));
-        CPPUNIT_ASSERT_EQUAL((size_t)2, pvalues.size());
-        CPPUNIT_ASSERT_EQUAL(1, pvalues[0].as_integer());
-        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(pvalues[1].as_string()));
-        CPPUNIT_ASSERT_EQUAL((size_t)2, pvalues2.size());
-        CPPUNIT_ASSERT_EQUAL(1, pvalues2[0].as_integer());
-        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(pvalues2[1].as_string()));
+        CPPUNIT_ASSERT_EQUAL((size_t)2, ctx1.params_.size());
+        CPPUNIT_ASSERT_EQUAL(1, ctx1.params_[0].as_integer());
+        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(ctx1.params_[1].as_string()));
+        CPPUNIT_ASSERT_EQUAL((size_t)2, ctx2.params_.size());
+        CPPUNIT_ASSERT_EQUAL(1, ctx2.params_[0].as_integer());
+        CPPUNIT_ASSERT_EQUAL(string("a"), NARROW(ctx2.params_[1].as_string()));
     }
 
     void testExprList()
