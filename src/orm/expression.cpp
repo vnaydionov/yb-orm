@@ -159,20 +159,28 @@ ColumnExpr::alias() const {
 ConstExprBackend::ConstExprBackend(const Value &x): value_(x) {}
 
 const String
-ConstExprBackend::generate_sql(
+subst_param(const Value &value,
         const SqlGeneratorOptions &options,
-        SqlGeneratorContext *ctx) const
+        SqlGeneratorContext *ctx)
 {
     if (options.collect_params_) {
         if (ctx) {
-            ctx->params_.push_back(value_);
+            ctx->params_.push_back(value);
             ++ctx->counter_;
         }
         if (!options.numbered_params_ || !ctx)
             return _T("?");
         return _T(":") + to_string(ctx->counter_);
     }
-    return value_.sql_str();
+    return value.sql_str();
+}
+
+const String
+ConstExprBackend::generate_sql(
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx) const
+{
+    return subst_param(value_, options, ctx);
 }
 
 ConstExpr::ConstExpr()
@@ -371,6 +379,16 @@ SelectExprBackend::generate_sql(
         SqlGeneratorContext *ctx) const
 {
     String sql = _T("SELECT ");
+    if (pager_limit_) {
+        if (options.pager_model_ == PAGER_INTERBASE) {
+            sql += _T("FIRST ")
+                + subst_param(Value(pager_limit_), options, ctx);
+            if (pager_offset_)
+                sql += _T(" SKIP ")
+                    + subst_param(Value(pager_offset_), options, ctx);
+            sql += _T(" ");
+        }
+    }
     if (distinct_flag_)
         sql += _T("DISTINCT ");
     sql += select_expr_.generate_sql(options, ctx);
@@ -393,8 +411,35 @@ SelectExprBackend::generate_sql(
     if (!order_by_expr_.is_empty())
         sql += _T(" ORDER BY ")
             + order_by_expr_.generate_sql(options, ctx);
+    if (pager_limit_) {
+        if (options.pager_model_ == PAGER_POSTGRES) {
+            sql += _T(" LIMIT ")
+                + subst_param(Value(pager_limit_), options, ctx)
+                + _T(" OFFSET ")
+                + subst_param(Value(pager_offset_), options, ctx);
+        }
+        else if (options.pager_model_ == PAGER_MYSQL) {
+            sql += _T(" LIMIT ");
+            if (pager_offset_)
+                sql += subst_param(Value(pager_offset_), options, ctx)
+                    + _T(", ");
+            sql += subst_param(Value(pager_limit_), options, ctx);
+        }
+    }
     if (!str_empty(lock_mode_) && options.has_for_update_)
         sql += _T(" FOR ") + lock_mode_;
+    if (pager_limit_) {
+        if (options.pager_model_ == PAGER_ORACLE) {
+            sql = String(_T("SELECT INNER_1.* FROM ("))
+                + _T("SELECT INNER_2.*, ROWNUM AS RN_ORA FROM (")
+                + sql
+                + _T(") INNER_2 WHERE ROWNUM <= ")
+                + subst_param(Value(pager_offset_ + pager_limit_),
+                              options, ctx)
+                + _T(") INNER_1 WHERE RN_ORA > ")
+                + subst_param(Value(pager_offset_), options, ctx);
+        }
+    }
     return sql;
 }
 
@@ -449,6 +494,12 @@ SelectExpr::for_update(bool flag) {
     return with_lockmode(flag? _T("UPDATE"): _T(""));
 }
 
+SelectExpr &
+SelectExpr::pager(int limit, int offset) {
+    dynamic_cast<SelectExprBackend *>(backend_.get())->pager(limit, offset);
+    return *this;
+}
+
 const Expression &
 SelectExpr::select_expr() const {
     return dynamic_cast<SelectExprBackend *>(backend_.get())->select_expr();
@@ -492,6 +543,16 @@ SelectExpr::lock_mode() const {
 bool
 SelectExpr::for_update_flag() const {
     return lock_mode() == _T("UPDATE");
+}
+
+int
+SelectExpr::pager_limit() const {
+    return dynamic_cast<SelectExprBackend *>(backend_.get())->pager_limit();
+}
+
+int
+SelectExpr::pager_offset() const {
+    return dynamic_cast<SelectExprBackend *>(backend_.get())->pager_offset();
 }
 
 YBORM_DECL const Expression

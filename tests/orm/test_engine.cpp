@@ -26,6 +26,7 @@ class TestEngine : public CppUnit::TestFixture
     CPPUNIT_TEST(test_select_where);
     CPPUNIT_TEST(test_select_groupby);
     CPPUNIT_TEST(test_select_having);
+    CPPUNIT_TEST(test_select_pager);
     CPPUNIT_TEST(test_select_orderby);
     CPPUNIT_TEST_EXCEPTION(test_select_having_wo_groupby, BadSQLOperation);
     CPPUNIT_TEST(test_insert_simple);
@@ -115,9 +116,20 @@ public:
                 NARROW(sql));
     }
 
+    void test_select_pager()
+    {
+        String sql;
+        SqlGeneratorOptions options; SqlGeneratorContext ctx;
+        sql = SelectExpr(Expression(_T("A, B")))
+            .from_(Expression(_T("T")))
+            .order_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
+            .pager(5, 10)
+            .generate_sql(options, &ctx);
+        CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T ORDER BY A, B LIMIT 5 OFFSET 10"), NARROW(sql));
+    }
+
     void test_select_having_wo_groupby()
     {
-        Engine engine(Engine::READ_ONLY);
         String sql;
         SqlGeneratorOptions options; SqlGeneratorContext ctx;
         sql = SelectExpr(Expression(_T("A, B")))
@@ -127,7 +139,6 @@ public:
 
     void test_select_orderby()
     {
-        Engine engine(Engine::READ_ONLY);
         String sql;
         SqlGeneratorOptions options; SqlGeneratorContext ctx;
         sql = SelectExpr(Expression(_T("A, B")))

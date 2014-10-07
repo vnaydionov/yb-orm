@@ -16,21 +16,26 @@ namespace Yb {
 typedef std::map<String, int> ParamNums;
 
 enum SqlIdQuotes {NO_QUOTES, DBL_QUOTES, AUTO_DBL_QUOTES};
+enum SqlPagerModel {PAGER_POSTGRES, PAGER_MYSQL,
+                    PAGER_INTERBASE, PAGER_ORACLE};
 
 struct SqlGeneratorOptions
 {
     SqlIdQuotes quotes_;
+    SqlPagerModel pager_model_;
     bool has_for_update_;
     bool collect_params_;
     bool numbered_params_;
     SqlGeneratorOptions(SqlIdQuotes quotes = NO_QUOTES,
             bool has_for_update = true,
             bool collect_params = false,
-            bool numbered_params = false):
-        quotes_(quotes),
-        has_for_update_(has_for_update),
-        collect_params_(collect_params),
-        numbered_params_(numbered_params)
+            bool numbered_params = false,
+            SqlPagerModel pager_model = PAGER_POSTGRES)
+        : quotes_(quotes)
+        , pager_model_(pager_model)
+        , has_for_update_(has_for_update)
+        , collect_params_(collect_params)
+        , numbered_params_(numbered_params)
     {}
 };
 
@@ -42,6 +47,10 @@ struct SqlGeneratorContext
         counter_(counter)
     {}
 };
+
+const String subst_param(const Value &value,
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx);
 
 class YBORM_DECL ExpressionBackend: public RefCountBase
 {
@@ -256,10 +265,13 @@ class YBORM_DECL SelectExprBackend: public ExpressionBackend
                group_by_expr_, having_expr_, order_by_expr_;
     bool distinct_flag_;
     String lock_mode_;
+    int pager_limit_, pager_offset_;
 public:
     SelectExprBackend(const Expression &select_expr)
         : select_expr_(select_expr)
         , distinct_flag_(false)
+        , pager_limit_(0)
+        , pager_offset_(0)
     {}
     void from_(const Expression &from_expr) { from_expr_ = from_expr; }
     void where_(const Expression &where_expr) { where_expr_ = where_expr; }
@@ -268,6 +280,10 @@ public:
     void order_by_(const Expression &order_by_expr) { order_by_expr_ = order_by_expr; }
     void distinct(bool flag) { distinct_flag_ = flag; }
     void with_lockmode(const String &lock_mode) { lock_mode_ = lock_mode; }
+    void pager(int limit, int offset) {
+        pager_limit_ = limit;
+        pager_offset_ = offset;
+    }
     const Expression &select_expr() const { return select_expr_; }
     const Expression &from_expr() const { return from_expr_; }
     const Expression &where_expr() const { return where_expr_; }
@@ -279,6 +295,8 @@ public:
     const String generate_sql(
             const SqlGeneratorOptions &options,
             SqlGeneratorContext *ctx) const;
+    int pager_limit() const { return pager_limit_; }
+    int pager_offset() const { return pager_offset_; }
 };
 
 class YBORM_DECL SelectExpr: public Expression
@@ -293,6 +311,7 @@ public:
     SelectExpr &distinct(bool flag = true);
     SelectExpr &with_lockmode(const String &lock_mode);
     SelectExpr &for_update(bool flag = true);
+    SelectExpr &pager(int limit, int offset);
     const Expression &select_expr() const;
     const Expression &from_expr() const;
     const Expression &where_expr() const;
@@ -302,6 +321,8 @@ public:
     bool distinct_flag() const;
     const String &lock_mode() const;
     bool for_update_flag() const;
+    int pager_limit() const;
+    int pager_offset() const;
 };
 
 YBORM_DECL const Expression operator ! (const Expression &a);
