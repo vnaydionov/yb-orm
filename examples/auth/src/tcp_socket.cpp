@@ -119,39 +119,73 @@ TcpSocket::accept(string *ip_addr, int *ip_port)
     return s2;
 }
 
-string
+bool
+TcpSocket::read_chunk()
+{
+    if (buf_pos_ < buf_.size())
+        return true;
+    buf_pos_ = 0;
+    buf_.clear();
+    fd_set rfds, efds;
+    FD_ZERO(&rfds);
+    FD_ZERO(&efds);
+    FD_SET(s_, &rfds);
+    FD_SET(s_, &efds);
+    struct timeval t;
+    t.tv_sec = timeout_ / 1000;
+    t.tv_usec = (timeout_ % 1000) * 1000;
+    int res = ::select(s_ + 1, &rfds, NULL, &efds, &t);
+    if (!res)
+        throw SocketEx("select", "timeout");
+    if (res != 1 && res != 2)
+        throw SocketEx("select", get_last_error());
+    if (FD_ISSET(s_, &efds))
+        throw SocketEx("select", "socket exception");
+    int max_chunk = 2500;
+    buf_.resize(max_chunk);
+    res = ::recv(s_, &buf_[0], max_chunk, 0);
+    if (res < 0 || res > max_chunk)
+        throw SocketEx("read", get_last_error());
+    buf_.resize(res);
+    return buf_pos_ < buf_.size();
+}
+
+const string
 TcpSocket::readline()
 {
     string req;
+    req.reserve(40);
     while (1) {
-        char c;
-        int res = ::recv(s_, &c, 1, 0);
-        if (-1 == res)
-            throw SocketEx("read", get_last_error());
-        if (1 != res)
-            throw SocketEx("read", "no data");
-        req.push_back(c);
-        if (c == '\n')
-            break;
+        while (buf_pos_ < buf_.size()) {
+            char c = buf_[buf_pos_++];
+            req.push_back(c);
+            if (c == '\n')
+                return req;
+        }
+        if (!read_chunk())
+            return req;
     }
-    return req;
 }
 
 const string
 TcpSocket::read(size_t n)
 {
-    string r, buf;
+    string r;
     r.reserve(n);
-    buf.reserve(n);
     size_t pos = 0;
     while (pos < n) {
-        int res = ::recv(s_, &buf[0], n - pos, 0);
-        if (-1 == res)
-            throw SocketEx("read", get_last_error());
-        if (0 == res)
-            throw SocketEx("read", "short read");
-        r.append(&buf[0], res);
-        pos += res;
+        if (buf_pos_ < buf_.size()) {
+            int min_sz = buf_.size() - buf_pos_;
+            if (n - pos < min_sz)
+                min_sz = n - pos;
+            r.append(buf_, buf_pos_, min_sz);
+            buf_pos_ += min_sz;
+            pos += min_sz;
+        }
+        if (pos < n) {
+            if (!read_chunk())
+                throw SocketEx("read", "short read");
+        }
     }
     return r;
 }

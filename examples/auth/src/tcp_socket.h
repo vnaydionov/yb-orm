@@ -26,16 +26,24 @@ public: SocketEx(const std::string &ctx, const std::string &msg)
 
 class TcpSocket {
     SOCKET s_;
+    int timeout_;  // millisec
+    int buf_pos_;
+    std::string buf_;
+    bool read_chunk();
 public:
     static void init_socket_lib();
     static SOCKET create();
     static std::string get_last_error();
-    TcpSocket(SOCKET s = INVALID_SOCKET): s_(s) {};
-    bool ok() const { return INVALID_SOCKET == s_; }
+    TcpSocket(SOCKET s = INVALID_SOCKET, int timeout = 30000)
+        : s_(s)
+        , timeout_(timeout)
+        , buf_pos_(0)
+    {}
+    bool ok() const { return INVALID_SOCKET != s_; }
     void bind(int port);
     void listen();
     SOCKET accept(std::string *ip_addr = NULL, int *ip_port = NULL);
-    std::string readline();
+    const std::string readline();
     const std::string read(size_t n);
     void write(const std::string &msg);
     void close(bool shut_down = false);
