@@ -21,9 +21,11 @@ EngineSource::~EngineSource()
 SqlResultSet
 EngineBase::select_iter(const Expression &select_expr)
 {
-    bool num_params = get_conn()->get_driver()->numbered_params();
     SqlGeneratorOptions options(NO_QUOTES,
-            get_dialect()->has_for_update(), true, num_params);
+            get_dialect()->has_for_update(),
+            true,
+            get_conn()->get_driver()->numbered_params(),
+            (Yb::SqlPagerModel)get_dialect()->pager_model());
     SqlGeneratorContext ctx;
     String sql = select_expr.generate_sql(options, &ctx);
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
@@ -104,7 +106,8 @@ EngineBase::update(const Table &table, const RowsData &rows)
     SqlGeneratorOptions options(NO_QUOTES,
             get_dialect()->has_for_update(),
             true,
-            get_conn()->get_driver()->numbered_params());
+            get_conn()->get_driver()->numbered_params(),
+            (Yb::SqlPagerModel)get_dialect()->pager_model());
     gen_sql_update(sql, type_codes, param_nums, table, options);
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);
@@ -134,7 +137,8 @@ EngineBase::delete_from(const Table &table, const Keys &keys)
     SqlGeneratorOptions options(NO_QUOTES,
             get_dialect()->has_for_update(),
             true,
-            get_conn()->get_driver()->numbered_params());
+            get_conn()->get_driver()->numbered_params(),
+            (Yb::SqlPagerModel)get_dialect()->pager_model());
     gen_sql_delete(sql, type_codes, table, options);
     auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
     cursor->prepare(sql);

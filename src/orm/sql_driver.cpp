@@ -8,6 +8,7 @@
 #include "util/string_utils.h"
 #include "util/singleton.h"
 #include "orm/sql_driver.h"
+#include "orm/expression.h"
 #if defined(YB_USE_QT)
 #include "qtsql_driver.h"
 #endif
@@ -101,6 +102,11 @@ SqlDialect::sysdate_func() {
     return _T("CURRENT_TIMESTAMP");
 }
 
+int
+SqlDialect::pager_model() {
+    return (int)PAGER_POSTGRES;
+}
+
 bool
 SqlDialect::explicit_null() { return false; }
 
@@ -149,6 +155,7 @@ public:
         return _T("DROP SEQUENCE ") + seq_name;
     }
     const String sysdate_func() { return _T("SYSDATE"); }
+    int pager_model() { return (int)PAGER_ORACLE; }
 };
 
 class PostgresDialect: public SqlDialect
@@ -216,6 +223,7 @@ public:
     const String drop_sequence(const String &seq_name) {
         return _T("DROP GENERATOR ") + seq_name;
     }
+    int pager_model() { return (int)PAGER_INTERBASE; }
 };
 
 class MysqlDialect: public SqlDialect
@@ -266,6 +274,7 @@ public:
             return not_null_clause;
         return not_null_clause + _T(" ") + default_value;
     }
+    int pager_model() { return (int)PAGER_MYSQL; }
 };
 
 class SQLite3Dialect: public SqlDialect

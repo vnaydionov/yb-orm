@@ -414,8 +414,8 @@ SelectExprBackend::generate_sql(
     if (pager_limit_) {
         if (options.pager_model_ == PAGER_POSTGRES) {
             sql += _T(" LIMIT ")
-                + subst_param(Value(pager_limit_), options, ctx)
-                + _T(" OFFSET ")
+                + subst_param(Value(pager_limit_), options, ctx);
+            sql += _T(" OFFSET ")
                 + subst_param(Value(pager_offset_), options, ctx);
         }
         else if (options.pager_model_ == PAGER_MYSQL) {
@@ -430,13 +430,13 @@ SelectExprBackend::generate_sql(
         sql += _T(" FOR ") + lock_mode_;
     if (pager_limit_) {
         if (options.pager_model_ == PAGER_ORACLE) {
-            sql = String(_T("SELECT INNER_1.* FROM ("))
-                + _T("SELECT INNER_2.*, ROWNUM AS RN_ORA FROM (")
+            sql = String(_T("SELECT OUTER_2.* FROM ("))
+                + _T("SELECT OUTER_1.*, ROWNUM AS RN_ORA FROM (")
                 + sql
-                + _T(") INNER_2 WHERE ROWNUM <= ")
+                + _T(") OUTER_1 WHERE ROWNUM <= ")
                 + subst_param(Value(pager_offset_ + pager_limit_),
                               options, ctx)
-                + _T(") INNER_1 WHERE RN_ORA > ")
+                + _T(") OUTER_2 WHERE RN_ORA > ")
                 + subst_param(Value(pager_offset_), options, ctx);
         }
     }

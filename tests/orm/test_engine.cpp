@@ -27,6 +27,10 @@ class TestEngine : public CppUnit::TestFixture
     CPPUNIT_TEST(test_select_groupby);
     CPPUNIT_TEST(test_select_having);
     CPPUNIT_TEST(test_select_pager);
+    CPPUNIT_TEST(test_select_pager_params);
+    CPPUNIT_TEST(test_select_pager_ib);
+    CPPUNIT_TEST(test_select_pager_my);
+    CPPUNIT_TEST(test_select_pager_ora);
     CPPUNIT_TEST(test_select_orderby);
     CPPUNIT_TEST_EXCEPTION(test_select_having_wo_groupby, BadSQLOperation);
     CPPUNIT_TEST(test_insert_simple);
@@ -124,8 +128,64 @@ public:
             .from_(Expression(_T("T")))
             .order_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
             .pager(5, 10)
-            .generate_sql(options, &ctx);
+            .generate_sql(options, &ctx);false,
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T ORDER BY A, B LIMIT 5 OFFSET 10"), NARROW(sql));
+    }
+
+    void test_select_pager_params()
+    {
+        String sql;
+        SqlGeneratorOptions options(NO_QUOTES, true, true, true);
+        SqlGeneratorContext ctx;
+        sql = SelectExpr(Expression(_T("A, B")))
+            .from_(Expression(_T("T")))
+            .order_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
+            .pager(5, 10)
+            .generate_sql(options, &ctx);false,
+        CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T ORDER BY A, B LIMIT :1 OFFSET :2"), NARROW(sql));
+    }
+
+    void test_select_pager_ib()
+    {
+        String sql;
+        SqlGeneratorOptions options(NO_QUOTES, true, false, false, PAGER_INTERBASE);
+        SqlGeneratorContext ctx;
+        sql = SelectExpr(Expression(_T("A, B")))
+            .from_(Expression(_T("T")))
+            .order_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
+            .pager(5, 10)
+            .generate_sql(options, &ctx);
+        CPPUNIT_ASSERT_EQUAL(string("SELECT FIRST 5 SKIP 10 A, B FROM T ORDER BY A, B"), NARROW(sql));
+    }
+
+    void test_select_pager_my()
+    {
+        String sql;
+        SqlGeneratorOptions options(NO_QUOTES, true, false, false, PAGER_MYSQL);
+        SqlGeneratorContext ctx;
+        sql = SelectExpr(Expression(_T("A, B")))
+            .from_(Expression(_T("T")))
+            .order_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
+            .pager(5, 10)
+            .generate_sql(options, &ctx);
+        CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T ORDER BY A, B LIMIT 10, 5"), NARROW(sql));
+    }
+
+    void test_select_pager_ora()
+    {
+        String sql;
+        SqlGeneratorOptions options(NO_QUOTES, true, false, false, PAGER_ORACLE);
+        SqlGeneratorContext ctx;
+        sql = SelectExpr(Expression(_T("A, B")))
+            .from_(Expression(_T("T")))
+            .order_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
+            .pager(5, 10)
+            .generate_sql(options, &ctx);
+        CPPUNIT_ASSERT_EQUAL(string("SELECT OUTER_2.* FROM ("
+                    "SELECT OUTER_1.*, ROWNUM AS RN_ORA FROM ("
+                    "SELECT A, B FROM T ORDER BY A, B"
+                    ") OUTER_1 WHERE ROWNUM <= 15"
+                    ") OUTER_2 WHERE RN_ORA > 10"), NARROW(sql));
     }
 
     void test_select_having_wo_groupby()

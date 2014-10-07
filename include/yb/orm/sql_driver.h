@@ -157,6 +157,7 @@ public:
     virtual bool explicit_null();
     virtual const String not_null_default(const String &not_null_clause,
             const String &default_value);
+    virtual int pager_model();
 };
 
 YBORM_DECL SqlDialect *sql_dialect(const String &name);
