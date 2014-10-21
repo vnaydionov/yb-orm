@@ -6,13 +6,13 @@
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
 	<META NAME="CREATED" CONTENT="20130520;9345500">
-	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
-	<META NAME="CHANGED" CONTENT="20140709;11234400">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20141021;23324300">
 	<STYLE TYPE="text/css">
 	<!--
-		@page { margin: 2cm }
-		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
-		H2 { margin-bottom: 0.21cm }
+		@page { margin: 0.79in }
+		P { margin-top: 0.04in; margin-bottom: 0.04in }
+		H2 { margin-bottom: 0.08in }
 		H2.western { font-family: "Times New Roman", serif }
 		H2.cjk { font-family: "Droid Sans Fallback" }
 		H2.ctl { font-family: "Lohit Hindi" }
@@ -33,6 +33,8 @@ For native Windows users all steps are basically the same, but paths
 and compiler command line options may vary. Let's assume that the
 root of your installation of YB.ORM is pointed to by the environment
 variable <TT CLASS="western">YBORM_ROOT</TT>.</P>
+<P><STRONG>Note:</STRONG> there's a new in-line style for mapping
+declarations is available, look at <A HREF="TutorialDecl.en.html">TutorialDecl</A>.</P>
 <P>First, describe your data schema in a simple XML format and save
 it into file named <TT CLASS="western">tut1.xml</TT> in your working
 directory. In the example below we define one table <TT CLASS="western">client_tbl</TT>,
@@ -84,11 +86,8 @@ object is assigned an ID. Save the following example into <TT CLASS="western">tu
 #include &quot;domain/Client.h&quot;
 int main()
 {
-    std::auto_ptr&lt;Yb::SqlConnection&gt; conn(new Yb::SqlConnection(
-            &quot;sqlite+sqlite://./tut1.sqlite&quot;));
-    Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
     Yb::init_schema();
-    Yb::Session session(Yb::theSchema(), &amp;engine);
+    Yb::Session session(Yb::theSchema(), &quot;sqlite+sqlite://./tut1.sqlite&quot;);
     Domain::Client client;
     std::string name, email, budget;
     std::cout &lt;&lt; &quot;Enter name, email, budget:\n&quot;;
@@ -98,9 +97,8 @@ int main()
     client.budget = Yb::Decimal(budget);
     client.dt = Yb::now();
     client.save(session);
-    session.flush();
-    std::cout &lt;&lt; &quot;New client: &quot; &lt;&lt; client.id.value() &lt;&lt; std::endl;
-    engine.commit();
+    session.commit();
+    std::cout &lt;&lt; &quot;New client: &quot; &lt;&lt; client.id &lt;&lt; std::endl;
     return 0;
 }</PRE><P>
 To use YB.ORM in your program you'll need to link with libraries
@@ -112,7 +110,7 @@ their dependencies: <TT CLASS="western">-lxml2</TT>, <TT CLASS="western">-lboost
 <TT CLASS="western">-lodbc</TT>, <TT CLASS="western">-lsqlite3</TT>
 or <TT CLASS="western">-lsoci</TT>. In the simplest case the
 following command will build and link the example:</P>
-<PRE CLASS="western">$ c++ -I. -I$YBORM_ROOT/include/yb -o tut1 tut1.cpp domain/Client.cpp -L$YBORM_ROOT/lib -lybutil -lyborm</PRE><P>
+<PRE CLASS="western" STYLE="margin-bottom: 0.2in">$ c++ -I. -I$YBORM_ROOT/include/yb -o tut1 tut1.cpp domain/Client.cpp -L$YBORM_ROOT/lib -lybutil -lyborm</PRE><P>
 To make it work we need to create a database with a table. In this
 example we'll use a local database <TT CLASS="western">SQLITE</TT>.
 We can use the same utility to generate SQL DDL script for table
@@ -145,9 +143,10 @@ Sometimes it is preferred to create the tables on a program startup.
 The following call will create all the tables defined by the schema,
 in proper order. If there are tables already present in the DB an
 exception will be thrown.</P>
-<PRE CLASS="western">    Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-    Yb::init_schema();
-    <STRONG>engine.create_schema(Yb::theSchema(), false);</STRONG></PRE><P>
+<PRE CLASS="western">    Yb::init_schema();
+    Yb::Session session(Yb::theSchema(), &quot;sqlite+sqlite://./tut1.sqlite&quot;);
+ <STRONG>   session.create_schema(true);</STRONG>
+</PRE><P>
 Let's run the example and look at the result. Note, if we have used
 an YB.ORM build with dynamic libraries we may have to add the <TT CLASS="western">lib</TT>
 directory to the search path.</P>
@@ -171,13 +170,10 @@ code <TT CLASS="western">tut1.cpp</TT>:</P>
 <PRE CLASS="western">int main()
 {
 <STRONG>    Yb::LogAppender appender(std::cerr);</STRONG>
-    std::auto_ptr&lt;Yb::SqlConnection&gt; conn(new Yb::SqlConnection(
-            &quot;sqlite+sqlite://./tut1.sqlite&quot;));
-    Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-<STRONG>    engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&amp;appender)));</STRONG>
-<STRONG>    engine.set_echo(true);</STRONG>
     Yb::init_schema();
-    Yb::Session session(Yb::theSchema(), &amp;engine);</PRE><P>
+    Yb::Session session(Yb::theSchema(), &quot;sqlite+sqlite://./tut1.sqlite&quot;);
+<STRONG>    session.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&amp;appender)));</STRONG>
+</PRE><P>
 Let's compile and run it again, this must reveal the details of
 interaction with the DB, in this case it's SQLite:</P>
 <PRE CLASS="western">$ ./tut1

@@ -258,9 +258,15 @@ DataObjectResultSet Session::load_collection(
         for (; j != jend; ++j)
             cols << ColumnExpr(*i, j->name());
     }
-    SqlResultSet rs = engine_->select_iter(
+    return load_collection(tables,
             SelectExpr(cols).from_(from).where_(filter)
                 .order_by_(order_by).for_update(for_update_flag));
+}
+
+DataObjectResultSet Session::load_collection(
+        const Strings &tables, const SelectExpr &select_expr)
+{
+    SqlResultSet rs = engine_->select_iter(select_expr);
     return DataObjectResultSet(rs, *this, tables);
 }
 
