@@ -7,14 +7,12 @@
 	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
 	<META NAME="CREATED" CONTENT="20130520;10025000">
 	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
-	<META NAME="CHANGED" CONTENT="20140710;11120200">
-	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
-	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20141022;571500">
 	<STYLE TYPE="text/css">
 	<!--
-		@page { margin: 2cm }
-		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
-		H2 { margin-bottom: 0.21cm }
+		@page { margin: 0.79in }
+		P { margin-top: 0.04in; margin-bottom: 0.04in }
+		H2 { margin-bottom: 0.08in }
 		H2.western { font-family: "Times New Roman", serif }
 		H2.cjk { font-family: "Droid Sans Fallback" }
 		H2.ctl { font-family: "Lohit Hindi" }
@@ -77,7 +75,7 @@
 можно накатить стандартным клиентом
 для соответствующей БД, например <TT CLASS="western">sqlplus</TT>
 для Oracle.</P>
-<PRE CLASS="western" STYLE="margin-top: 0.1cm; margin-bottom: 0.5cm">$(YBORM_ROOT)/bin/yborm_gen --ddl tutorial/tut3.xml MYSQL script.sql</PRE><P>
+<PRE CLASS="western" STYLE="margin-top: 0.04in; margin-bottom: 0.2in">$(YBORM_ROOT)/bin/yborm_gen --ddl tutorial/tut3.xml MYSQL script.sql</PRE><P>
 Генерируем доменные классы с помощью
 той же утилиты, но с другим ключом. Если
 классы уже были созданы, но со временем
@@ -85,7 +83,7 @@
 можно использовать утилиту для обновления
 состава атрибутов в доменных классах.
 </P>
-<PRE CLASS="western" STYLE="margin-top: 0.1cm; margin-bottom: 0.5cm">$(YBORM_ROOT)/bin/yborm_gen --domain tutorial/tut3.xml domain/</PRE><P>
+<PRE CLASS="western" STYLE="margin-top: 0.04in; margin-bottom: 0.2in">$(YBORM_ROOT)/bin/yborm_gen --domain tutorial/tut3.xml domain/</PRE><P>
 Для работы с базой данных нам понадобится
 объект <TT CLASS="western">Engine</TT>, который берет
 на себя все операции с уровнем SQL. Объекту
@@ -115,6 +113,11 @@
         new SqlConnection(&quot;mysql+odbc://test1_usr:test1_pwd@test1_dsn&quot;));
     Engine engine(Engine::READ_WRITE, conn);
     Session session(init_schema(), &amp;engine);</PRE><P>
+Для краткости, в один из конструкторов
+<TT CLASS="western">Session</TT>, можно также передать
+строку параметров для подключения. 
+</P>
+<PRE CLASS="western" STYLE="margin-top: 0.04in; margin-bottom: 0.2in">    Session session(init_schema(), &quot;mysql+odbc://test1_usr:test1_pwd@test1_dsn&quot;);</PRE><P>
 Рассмотрим несколько примеров запросов.
 <STRONG>Простейший случай: выбрать объект
 по его первичному ключу</STRONG>. Для этого
@@ -196,6 +199,36 @@ SELECT COUNT(*) CNT FROM (
 SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum,
  order_tbl.paid_sum, order_tbl.paid_dt 
 FROM order_tbl WHERE order_tbl.client_id = ?) X</PRE><P>
+Часто бывает необходимо реализовать
+механизм прокрутки страниц, для этого
+нужно получить не весь результат запроса,
+в только строки для показа на определенной
+странице. У объекта <TT CLASS="western">QueryObj</TT>
+можно вызвать метод <TT CLASS="western">range()</TT>.
+Этот метод модифицирует запрос с учетом
+специфики текущего диалекта SQL. Первый
+параметр указывает начальную позицию
+диапазона (элементы нумеруются с 0),
+второй элемент — конечную позицию (не
+включается).  <STRONG>Пример: пейджер по
+пользовательским заказам, вывести
+элементы с 30 по 39.</STRONG> 
+</P>
+<PRE CLASS="western">    DomainResultSet&lt;Order&gt; rs = query&lt;Order&gt;(session)
+      .filter_by(Order::c.client_id == 32738)
+      .order_by(Order::c.dt)
+      .range(30, 40).all();
+    BOOST_FOREACH(Order order, rs) {
+      cout &lt;&lt; order.id &lt;&lt; &quot;,&quot;;
+    }
+SQL:
+SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, 
+ order_tbl.total_sum, order_tbl.paid_sum, order_tbl.paid_dt 
+FROM order_tbl WHERE (order_tbl.client_id = ?)
+ORDER BY order_tbl.dt
+LIMIT ? OFFSET ?
+params: (32738, 10, 30)
+</PRE><P>
 Иногда бывают нужны более сложные
 запросы, включающие связки таблиц по
 внешнему ключу. В YB.ORM параметром шаблонной

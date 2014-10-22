@@ -1,0 +1,170 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE>Описание ОР-проекции в коде доменного класса</TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
+	<META NAME="CREATED" CONTENT="20130520;9345500">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20141021;23585800">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { margin: 0.79in }
+		P { margin-top: 0.04in; margin-bottom: 0.04in }
+		H2 { margin-bottom: 0.08in }
+		H2.western { font-family: "Times New Roman", serif }
+		H2.cjk { font-family: "Droid Sans Fallback" }
+		H2.ctl { font-family: "Lohit Hindi" }
+		PRE.western { font-family: "Courier New", monospace }
+		PRE.cjk { font-family: "Droid Sans Fallback", monospace }
+		PRE.ctl { font-family: "Lohit Hindi", monospace }
+		TT.western { font-family: "Courier New", monospace }
+		TT.cjk { font-family: "Droid Sans Fallback", monospace }
+		TT.ctl { font-family: "Lohit Hindi", monospace }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="ru-RU" DIR="LTR">
+<H2 CLASS="western">Описание ОР-проекции в коде
+доменного класса</H2>
+<P>В этом примере предполагается
+использование встроенной СУБД Sqlite3, для
+других СУБД поменяется лишь строка
+подключения в объекте <TT CLASS="western">Yb::Session</TT>.
+Предположим, что в БД имеется таблица
+<TT CLASS="western">client_tbl</TT>, в которой есть
+суррогатный первичный ключ и несколько
+информационных полей (имя, e-mail и т.д.).</P>
+<P>Можно создать класс C++, который будет
+соответствовать этой таблице, а его
+экземпляры — отдельным записям в ней.
+При объявлении класса нужно унаследовать
+его от <TT CLASS="western">Yb::DomainObject</TT>. Описание
+проекции задается с помощью макроса
+<TT CLASS="western">YB_DECLARE</TT> и нескольких
+вспомогательных макросов, которые
+формируют описание отдельных атрибутов.
+</P>
+<P>Макросы <TT CLASS="western">YB_COL_*</TT> задают
+атрибуты указывая для них такие параметры
+как имя свойства класса, имя поля в
+таблице, тип, размер поля и пр. Отличаются
+они количеством позиционных параметров,
+<TT CLASS="western">YB_COL</TT> — наиболее общий из
+таких макросов, принимает наибольшее
+количество.</P>
+<PRE CLASS="western">#include &quot;orm/domain_object.h&quot;
+#include &quot;orm/domain_factory.h&quot;
+#include &quot;orm/schema_decl.h&quot;
+
+class Client: public Yb::DomainObject { 
+
+YB_DECLARE(Client, &quot;client_tbl&quot;, &quot;client_seq&quot;, &quot;client&quot;,
+    YB_COL_PK(id, &quot;id&quot;)
+    YB_COL_DATA(dt, &quot;dt&quot;, DATETIME)
+    YB_COL_STR(name, &quot;name&quot;, 100)
+    YB_COL_STR(email, &quot;email&quot;, 100)
+    YB_COL_DATA(budget, &quot;budget&quot;, DECIMAL)
+    YB_COL_END) 
+
+public: 
+    int get_info() const { return 42; } 
+}; </PRE><P>
+Эта описание класса можно поместить
+как в <TT CLASS="western">.cpp</TT> файле, так и в
+заголовочном файле. Еще один вызов
+макроса нужно поместить в один из ваших
+<TT CLASS="western">.cpp</TT> файлов:</P>
+<PRE CLASS="western" STYLE="margin-bottom: 0.2in">YB_DEFINE(Client)</PRE><P>
+Класс <TT CLASS="western">Client</TT> автоматически
+дополнен несколькими новыми членами
+данных и методами. В том числе, у объектов
+данного класса появились свойства (<TT CLASS="western">id</TT>,
+<TT CLASS="western">dt</TT>, <TT CLASS="western">name</TT>, …),
+через которые можно получить доступ к
+значениям атрибутов как на чтение, так
+и на запись, а также проверять атрибуты
+на пустоту (<TT CLASS="western">IS NULL</TT>).</P>
+<P>Чтобы использовать экземпляры этого
+класса понадобится вспомогательный
+объект Сессии (класс <TT CLASS="western">Yb::Session</TT>),
+который возьмет на себя вопросы
+загрузки/сохранения объектов, отслеживания
+изменений, управления связями и пр. При
+создании Сессии ей нужно передать
+актуальную схему ОР-проекции.</P>
+<PRE CLASS="western">int main() {
+    Yb::init_schema();  // собрать все декларации в одну схему
+    Yb::Session session(Yb::theSchema(), &quot;sqlite+sqlite://./tut1.db&quot;);</PRE><P>
+Для вставки нового объекта в таблицу
+создается новый экземпляр класса <TT CLASS="western">Client</TT>,
+заполняются его атрибуты, он передается
+в ведение Сессии. В конце происходит
+применение всех накопленных изменений
+(метод <TT CLASS="western">session.commit()</TT>), в нашем
+случае — вставка новой записи в таблицу
+<TT CLASS="western">T_CLIENT</TT> и последующая операция
+<TT CLASS="western">COMMIT</TT>. Первичный ключ в
+данном примере получает значение
+автоматически в момент синхронизации
+нового объекта с БД.</P>
+<PRE CLASS="western">    Client client;
+    client.name = &quot;Some Name&quot;;
+    client.email = &quot;some@email&quot;;
+    client.dt = Yb::now();
+    client.save(session);
+    session.commit();
+    return 0;
+}</PRE><P>
+Скомпилировать пример при использовании
+Unix можно приведенной ниже командной
+строкой. Предполагается, что переменная
+<TT CLASS="western">YBORM_ROOT</TT> указывает на корень
+установки YB.ORM.</P>
+<PRE CLASS="western" STYLE="margin-bottom: 0.2in">$ c++ -o tut1_new tut1_new.cpp -I ${YBORM_ROOT}/include/yb -L ${YBORM_ROOT}/lib -lybutil -lyborm </PRE><P>
+Если запустить (для запуска может
+понадобиться прописать путь до библиотек
+YB.ORM) полученный исполняемый файл без
+файла базы данных <TT CLASS="western">tut1.db</TT> в
+текущем каталоге, то будет получена
+ошибка &quot;таблица не существует&quot;.</P>
+<PRE CLASS="western">$ export LD_LIBRARY_PATH=${YBORM_ROOT}/lib:${LD_LIBRARY_PATH}
+$ ./tut1_new 
+terminate called after throwing an instance of 'Yb::DBError' 
+  what():  no such table: T_CLIENT 
+Backtrace:
+... </PRE><P>
+Если требуется, объект Сессия может
+воссоздать таблицы по описанию схемы,
+выполнив соответствующие DDL операторы
+для заданного соединения с использованием
+текущего диалекта SQL. Параметр функции
+указывает игнорировать ли ошибки при
+выполнении DDL операторов, например, если
+схема существует.</P>
+<PRE CLASS="western" STYLE="margin-bottom: 0.2in">session.create_schema(true);</PRE><P>
+У класса <TT CLASS="western">Client</TT> добавлен
+статический член данных с именем <TT CLASS="western">&quot;c&quot;</TT>,
+в котором для каждого атрибута имеются
+его метаданные в виде объекта <TT CLASS="western">Yb::Column</TT>.
+Эти метаданные удобно использовать для
+составления выражений запросов при
+выборке объектов. Вот как можно найти
+объект по значению поля:</P>
+<PRE CLASS="western">Client client = Yb::query&lt;Client&gt;(session).filter_by(
+    Client::c.name == &quot;Some Name&quot;).order_by(Client::c.dt).first();</PRE><P>
+Преимущества встроенного описания
+ОР-проекции очевидны: не требуется
+запуск утилиты генерации кода, легче
+поддерживать дополнительные методы в
+классе. При использовании YB.ORM альтернативой
+описанию ОР-проекции внутри декларации
+класса является генерация доменных
+классов по описанию схемы в XML специальной
+утилитой, как это описано в <A HREF="Tutorial1.ru.html">Tutorial1</A>.</P>
+</BODY>
+</HTML>

@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE>Declaring an OR-mapping within a class declaration</TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
+	<META NAME="CREATED" CONTENT="20130520;9345500">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20141021;23561500">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { margin: 0.79in }
+		P { margin-top: 0.04in; margin-bottom: 0.04in }
+		H2 { margin-bottom: 0.08in }
+		H2.western { font-family: "Times New Roman", serif }
+		H2.cjk { font-family: "Droid Sans Fallback" }
+		H2.ctl { font-family: "Lohit Hindi" }
+		PRE.western { font-family: "Courier New", monospace }
+		PRE.cjk { font-family: "Droid Sans Fallback", monospace }
+		PRE.ctl { font-family: "Lohit Hindi", monospace }
+		TT.western { font-family: "Courier New", monospace }
+		TT.cjk { font-family: "Droid Sans Fallback", monospace }
+		TT.ctl { font-family: "Lohit Hindi", monospace }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" DIR="LTR">
+<H2 CLASS="western">Declaring an OR-mapping within a class
+declaration</H2>
+<P>For this tutorial Sqlite3 is used, for other DB engines the
+connection string in <TT CLASS="western">Yb::Session</TT> constructor
+will have to be changed. Let's assume there is a table named
+<TT CLASS="western">client_tbl</TT> with a surrogate primary key and
+several information fields (name, e-mail, etc.).</P>
+<P>It's easy to construct a class mapped to the table, while the
+instances of the class will map to certain rows in that table. When
+declaring the class make sure to use <TT CLASS="western">Yb::DomainObject</TT>
+as a base class. The mapping itself is done via macro <TT CLASS="western">YB_DECLARE</TT>
+with help of some other macros for certain attributes.</P>
+<P>The family of macros <TT CLASS="western">YB_COL_*</TT> are helpful
+for declaring attributes, you can use them to set the class attribute
+name, the column name, data type, size etc. The macros may differ by
+name and by the number of positional parameters. <TT CLASS="western">YB_COL</TT>
+macro – is the most generic one, it accepts more parameters that
+the others.</P>
+<PRE CLASS="western">#include &quot;orm/domain_object.h&quot;
+#include &quot;orm/domain_factory.h&quot;
+#include &quot;orm/schema_decl.h&quot;
+
+class Client: public Yb::DomainObject { 
+
+YB_DECLARE(Client, &quot;client_tbl&quot;, &quot;client_seq&quot;, &quot;client&quot;,
+    YB_COL_PK(id, &quot;id&quot;)
+    YB_COL_DATA(dt, &quot;dt&quot;, DATETIME)
+    YB_COL_STR(name, &quot;name&quot;, 100)
+    YB_COL_STR(email, &quot;email&quot;, 100)
+    YB_COL_DATA(budget, &quot;budget&quot;, DECIMAL)
+    YB_COL_END) 
+
+public: 
+    int get_info() const { return 42; } 
+}; </PRE><P>
+This class declaration can be placed in a header or in a <TT CLASS="western">.cpp</TT>
+file. One more sentence is expected in your <TT CLASS="western">.cpp</TT>
+file for the magic to work:</P>
+<PRE CLASS="western" STYLE="margin-bottom: 0.2in">YB_DEFINE(Client)</PRE><P>
+Class <TT CLASS="western">Client</TT> is automatically given a few
+new data members and methods. There are now mapped properties (<TT CLASS="western">id</TT>,
+<TT CLASS="western">dt</TT>, <TT CLASS="western">name</TT>, …) at
+each object of the class. The properties can be used to access the
+column data in read and write modes, as well as to check for absent
+value (<TT CLASS="western">IS NULL</TT>).</P>
+<P>To control the instances of a mapped classes it's necessary to
+have an instance of <TT CLASS="western">Yb::Session</TT> class, which
+takes care of loading/saving the objects, keeps track of changes,
+controls the relationships, etc. On creation of Session pass a
+database scheme to it.</P>
+<PRE CLASS="western">int main() {
+    Yb::init_schema();  // gather all declarations in one schema
+    Yb::Session session(Yb::theSchema(), &quot;sqlite+sqlite://./tut1.db&quot;);</PRE><P>
+Create a new object of class <TT CLASS="western">Client</TT>, then
+fill out its attributes and register it in Session. After all changes
+made it's necessary to apply all the changes (method
+<TT CLASS="western">session.commit()</TT>). In this example there
+will be one <TT CLASS="western">INSERT</TT> and then one transaction
+<TT CLASS="western">COMMIT</TT>. The primary key value in this
+example is assigned on insertion.</P>
+<PRE CLASS="western">    Client client;
+    client.name = &quot;Some Name&quot;;
+    client.email = &quot;some@email&quot;;
+    client.dt = Yb::now();
+    client.save(session);
+    session.commit();
+    return 0;
+}</PRE><P>
+If you're using Unix you can compile and link as shown below. Here
+it's assumed that variable <TT CLASS="western">YBORM_ROOT</TT> is set
+to point to the root of installation of YB.ORM.</P>
+<PRE CLASS="western" STYLE="margin-bottom: 0.2in">$ c++ -o tut1_new tut1_new.cpp -I ${YBORM_ROOT}/include/yb -L ${YBORM_ROOT}/lib -lybutil -lyborm </PRE><P>
+Try to launch the executable (it may require to set path to library
+location for YB.ORM). If there is no database file <TT CLASS="western">tut1.db</TT>
+in the current directory, then you will get error: &quot;no such
+table&quot;.</P>
+<PRE CLASS="western">$ export LD_LIBRARY_PATH=${YBORM_ROOT}/lib:${LD_LIBRARY_PATH}
+$ ./tut1_new 
+terminate called after throwing an instance of 'Yb::DBError' 
+  what():  no such table: T_CLIENT 
+Backtrace:
+... </PRE><P>
+The Session object has the schema description and it can create
+tables in the database, by sending DDL statements produced using
+proper SQL dialect. The only method argument controls whether
+possible errors should be ignored (e.g. if the table already exists).</P>
+<PRE CLASS="western" STYLE="margin-bottom: 0.2in">session.create_schema(true);</PRE><P>
+Also, now <TT CLASS="western">Client</TT> class has got new static
+data member named <TT CLASS="western">&quot;c&quot;</TT>, which
+contains column metadata object <TT CLASS="western">Yb::Column</TT>
+for each attribute. This kind of metadata is suitable to construct
+query expressions when querying for objects. The following example
+issues a query with filter by field.</P>
+<PRE CLASS="western">Client client = Yb::query&lt;Client&gt;(session).filter_by(
+    Client::c.name == &quot;Some Name&quot;).order_by(Client::c.dt).first();</PRE><P>
+There are quite a few advantages in placing OR-mapping declaration
+within class declaration: no need to use external code generation
+tool, easier to maintain custom methods in the class. When
+considering YB.ORM the other alternative is to describe the mapping
+in form of XML-config and use a code generation tool as shown in
+<A HREF="Tutorial1.en.html">Tutorial1</A>.</P>
+</BODY>
+</HTML>

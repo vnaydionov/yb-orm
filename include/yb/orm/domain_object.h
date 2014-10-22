@@ -517,6 +517,7 @@ class QueryObj {
     Session *session_;
     Expression filter_, order_;
     bool for_update_;
+    int limit_, offset_;
 public:
     QueryObj(Session &session, const Expression &filter = Expression(),
             const Expression &order = Expression(), bool for_update = false)
@@ -524,6 +525,8 @@ public:
         , filter_(filter)
         , order_(order)
         , for_update_(for_update)
+        , limit_(0)
+        , offset_(0)
     {}
     QueryObj filter_by(const Expression &filter) {
         QueryObj q(*this);
@@ -543,26 +546,29 @@ public:
         q.for_update_ = true;
         return q;
     }
-    SelectExpr get_select() {
-        Strings tables;
+    QueryObj range(int start, int end) {
+        QueryObj q(*this);
+        q.limit_ = end - start;
+        q.offset_ = start;
+        return q;
+    }
+    SelectExpr get_select(Strings &tables) {
         QF::list_tables(tables);
         return make_select(session_->schema(),
                 session_->schema().join_expr(tables),
-                filter_, order_, for_update_);
+                filter_, order_, for_update_, limit_, offset_);
     }
     DomainResultSet<R> all() {
         Strings tables;
-        QF::list_tables(tables);
+        SelectExpr select_expr = get_select(tables);
         return DomainResultSet<R>(session_->load_collection(
-                    session_->schema().join_expr(tables),
-                    filter_, order_, for_update_));
+                    tables, select_expr));
     }
     R one() {
         Strings tables;
-        QF::list_tables(tables);
+        SelectExpr select_expr = get_select(tables);
         DomainResultSet<R> r = session_->load_collection(
-                    session_->schema().join_expr(tables),
-                    filter_, order_, for_update_);
+                tables, select_expr);
         typename DomainResultSet<R>::iterator it = r.begin();
         if (it == r.end())
             throw NoDataFound("No data");
@@ -573,17 +579,13 @@ public:
     }
     LongInt count() {
         SelectExpr select(Expression(_T("COUNT(*) CNT")));
-        select.from_(ColumnExpr(get_select(), _T("X")));
+        Strings tables;
+        select.from_(ColumnExpr(get_select(tables), _T("X")));
         SqlResultSet rs = session_->engine()->select_iter(select);
         Row r = *rs.begin(); 
         return r[0].second.as_longint();
     }
-    QueryObj range(int start, int end) {
-        int limit = end - start, offset = start;
-        QueryObj q(*this);
-        q.pager(limit, offset);
-        return q;
-    }
+    R first() { return range(0, 1).one(); }
 };
 
 template <class R>

@@ -7,13 +7,12 @@
 	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
 	<META NAME="CREATED" CONTENT="20130520;10024900">
 	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
-	<META NAME="CHANGED" CONTENT="20140710;11132600">
-	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20141022;1012200">
 	<STYLE TYPE="text/css">
 	<!--
-		@page { margin: 2cm }
-		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
-		H2 { margin-bottom: 0.21cm }
+		@page { margin: 0.79in }
+		P { margin-top: 0.04in; margin-bottom: 0.04in }
+		H2 { margin-bottom: 0.08in }
 		H2.western { font-family: "Times New Roman", serif }
 		H2.cjk { font-family: "Droid Sans Fallback" }
 		H2.ctl { font-family: "Lohit Hindi" }
@@ -71,14 +70,14 @@ the code generation tool, the following dialects are accepted:
 <TT CLASS="western">INTERBASE</TT>. Then you can apply the generated
 script using standard means of your corresponding database engine,
 e.g. for Oracle there is <TT CLASS="western">sqlplus</TT>.</P>
-<PRE CLASS="western" STYLE="margin-bottom: 0.5cm">$(YBORM_ROOT)/bin/yborm_gen --ddl tutorial/tut3.xml MYSQL script.sql</PRE><P>
+<PRE CLASS="western" STYLE="margin-top: 0.04in; margin-bottom: 0.2in">$(YBORM_ROOT)/bin/yborm_gen --ddl tutorial/tut3.xml MYSQL script.sql</PRE><P>
 Generate the domain classes using the same tool with different
 command line option. If you have already done this, but since then
 the tables have received changes to their columns, you can use the
 tool to update your domain classes' definitions to reflect the
 changes made to the schema. 
 </P>
-<PRE CLASS="western" STYLE="margin-bottom: 0.5cm">$(YBORM_ROOT)/bin/yborm_gen --domain tutorial/tut3.xml domain/</PRE><P>
+<PRE CLASS="western" STYLE="margin-top: 0.04in; margin-bottom: 0.2in">$(YBORM_ROOT)/bin/yborm_gen --domain tutorial/tut3.xml domain/</PRE><P>
 To operate on a database we will need <TT CLASS="western">Engine</TT>
 object, that will manage all the operations at the SQL level. Object
 <TT CLASS="western">Engine</TT> needs one of the following to operate
@@ -100,9 +99,11 @@ object, it performs loading and saving fro/to the database as
 necessary. 
 </P>
 <PRE CLASS="western">    auto_ptr&lt;SqlConnection&gt; conn(
-        new SqlConnection(&quot;mysql://test1_usr:test1_pwd@test1_db&quot;));
+        new SqlConnection(&quot;mysql+odbc://test1_usr:test1_pwd@test1_dsn&quot;));
     Engine engine(Engine::READ_WRITE, conn);
     Session session(init_schema(), &amp;engine);</PRE><P>
+For sake of brevity the same can be done in one step:</P>
+<PRE CLASS="western" STYLE="margin-top: 0.04in; margin-bottom: 0.2in">    Session session(init_schema(), &quot;mysql+odbc://test1_usr:test1_pwd@test1_dsn&quot;);</PRE><P>
 And now to some querying examples. <STRONG>The simplest case: fetch
 an object by its primary key.</STRONG> To do this just construct your
 domain class object with a parameter-primary key value. The domain
@@ -165,6 +166,30 @@ SELECT COUNT(*) CNT FROM (
 SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, order_tbl.total_sum,
  order_tbl.paid_sum, order_tbl.paid_dt 
 FROM order_tbl WHERE order_tbl.client_id = ?) X</PRE><P>
+Sometimes it is necessary to implement a pager over a result set, to
+achieve this we need only a slice of the original result set.
+<TT CLASS="western">QueryObj</TT> has got method <TT CLASS="western">range()</TT>
+for this purpose. It will modify the query in a way compatible with
+selected SQL dialect. The first argument sets the starting item
+position (numbered from 0), the second – ending item position (not
+included in the range). <STRONG>Example: a pager over client's
+orders, show items from 30 to 39 inclusive.</STRONG> 
+</P>
+<PRE CLASS="western">    DomainResultSet&lt;Order&gt; rs = query&lt;Order&gt;(session)
+      .filter_by(Order::c.client_id == 32738)
+      .order_by(Order::c.dt)
+      .range(30, 40).all();
+    BOOST_FOREACH(Order order, rs) {
+      cout &lt;&lt; order.id &lt;&lt; &quot;,&quot;;
+    }
+SQL:
+SELECT order_tbl.id, order_tbl.client_id, order_tbl.dt, order_tbl.memo, 
+ order_tbl.total_sum, order_tbl.paid_sum, order_tbl.paid_dt 
+FROM order_tbl WHERE (order_tbl.client_id = ?)
+ORDER BY order_tbl.dt
+LIMIT ? OFFSET ?
+params: (32738, 10, 30)
+</PRE><P>
 Sometimes we need more complicated queries involving table joined
 using foreign keys. In YB.ORM library we may pass as a parameter to
 the template function <TT CLASS="western">query&lt;R&gt;()</TT> not

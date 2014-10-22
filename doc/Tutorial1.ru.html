@@ -6,13 +6,13 @@
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="AUTHOR" CONTENT="Viacheslav Naydenov">
 	<META NAME="CREATED" CONTENT="20130520;9345500">
-	<META NAME="CHANGEDBY" CONTENT="Vaclav Naydionov">
-	<META NAME="CHANGED" CONTENT="20140709;11175900">
+	<META NAME="CHANGEDBY" CONTENT="Viacheslav Naydenov">
+	<META NAME="CHANGED" CONTENT="20141021;23355300">
 	<STYLE TYPE="text/css">
 	<!--
-		@page { margin: 2cm }
-		P { margin-top: 0.1cm; margin-bottom: 0.1cm }
-		H2 { margin-bottom: 0.21cm }
+		@page { margin: 0.79in }
+		P { margin-top: 0.04in; margin-bottom: 0.04in }
+		H2 { margin-bottom: 0.08in }
 		H2.western { font-family: "Times New Roman", serif }
 		H2.cjk { font-family: "Droid Sans Fallback" }
 		H2.ctl { font-family: "Lohit Hindi" }
@@ -37,6 +37,9 @@ FreeBSD, Mac OS X или Cygwin для Windows — подойдут.
 считать, что переменная среды <TT CLASS="western">YBORM_ROOT</TT>
 указывает на корень вашей установки
 YB.ORM.</P>
+<P><STRONG>Замечание:</STRONG> доступен новый
+встроенный формат описания отображения,
+см. <A HREF="TutorialDecl.ru.html">TutorialDecl</A>.</P>
 <P>Для начала нужно описать структуру
 таблиц в простом формате XML и сохранить
 ее под именем <TT CLASS="western">tut1.xml</TT> в вашей
@@ -103,11 +106,8 @@ yborm_gen: generation successfully finished</PRE><P>
 #include &quot;domain/Client.h&quot;
 int main()
 {
-    std::auto_ptr&lt;Yb::SqlConnection&gt; conn(new Yb::SqlConnection(
-            &quot;sqlite+sqlite://./tut1.sqlite&quot;));
-    Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
     Yb::init_schema();
-    Yb::Session session(Yb::theSchema(), &amp;engine);
+    Yb::Session session(Yb::theSchema(), &quot;sqlite+sqlite://./tut1.sqlite&quot;);
     Domain::Client client;
     std::string name, email, budget;
     std::cout &lt;&lt; &quot;Enter name, email, budget:\n&quot;;
@@ -117,9 +117,8 @@ int main()
     client.budget = Yb::Decimal(budget);
     client.dt = Yb::now();
     client.save(session);
-    session.flush();
-    std::cout &lt;&lt; &quot;New client: &quot; &lt;&lt; client.id.value() &lt;&lt; std::endl;
-    engine.commit();
+    session.commit();
+    std::cout &lt;&lt; &quot;New client: &quot; &lt;&lt; client.id &lt;&lt; std::endl;
     return 0;
 }</PRE><P>
 Для сборки программы с YB.ORM необходимо
@@ -135,7 +134,7 @@ int main()
 В простейшем случае следующей команды
 достаточно, чтобы скомпилировать и
 собрать этот пример:</P>
-<PRE CLASS="western">$ c++ -I. -I$YBORM_ROOT/include/yb -o tut1 tut1.cpp domain/Client.cpp -L$YBORM_ROOT/lib -lybutil -lyborm</PRE><P>
+<PRE CLASS="western" STYLE="margin-top: 0.04in; margin-bottom: 0.2in">$ c++ -I. -I$YBORM_ROOT/include/yb -o tut1 tut1.cpp domain/Client.cpp -L$YBORM_ROOT/lib -lybutil -lyborm</PRE><P>
 Для того, чтобы пример заработал ему
 нужно дать базу данных с таблицами.
 В&nbsp;этом простом примере создадим
@@ -173,9 +172,10 @@ sqlite&gt; </PRE><P>
 создаст все объекты, описанные в схеме,
 в правильном порядке. Если таблицы уже
 существуют в БД, будет брошено исключение.</P>
-<PRE CLASS="western">    Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-    Yb::init_schema();
-    <STRONG>engine.create_schema(Yb::theSchema(), false);</STRONG></PRE><P>
+<PRE CLASS="western">    Yb::init_schema();
+    Yb::Session session(Yb::theSchema(), &quot;sqlite+sqlite://./tut1.sqlite&quot;);
+ <STRONG>   session.create_schema(true);</STRONG>
+</PRE><P>
 Давайте запустим пример и посмотрим на
 результат. Замечание: если используется
 сборка YB.ORM в виде динамических библиотек,
@@ -204,13 +204,10 @@ sqlite&gt; </PRE><P>
 <PRE CLASS="western">int main()
 {
 <STRONG>    Yb::LogAppender appender(std::cerr);</STRONG>
-    std::auto_ptr&lt;Yb::SqlConnection&gt; conn(new Yb::SqlConnection(
-            &quot;sqlite+sqlite://./tut1.sqlite&quot;));
-    Yb::Engine engine(Yb::Engine::READ_WRITE, conn);
-<STRONG>    engine.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&amp;appender)));</STRONG>
-<STRONG>    engine.set_echo(true);</STRONG>
     Yb::init_schema();
-    Yb::Session session(Yb::theSchema(), &amp;engine);</PRE><P>
+    Yb::Session session(Yb::theSchema(), &quot;sqlite+sqlite://./tut1.sqlite&quot;);
+<STRONG>    session.set_logger(Yb::ILogger::Ptr(new Yb::Logger(&amp;appender)));</STRONG>
+</PRE><P>
 Скомпилируем и выполним опять, это
 откроет кучу подробностей взаимодействия
 с базой данных, в данном случае с SQLite:</P>

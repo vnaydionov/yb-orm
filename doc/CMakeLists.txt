@@ -6,6 +6,7 @@ install (FILES
     Tutorial2.en.html Tutorial2.ru.html
     Tutorial3.en.html Tutorial3.ru.html
     Tutorial4.en.html Tutorial4.ru.html
+    TutorialDecl.en.html TutorialDecl.ru.html
     ToDo.en.html ToDo.ru.html
     About.en.html About.ru.html
     Build.en.html Build.ru.html

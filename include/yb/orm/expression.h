@@ -424,7 +424,7 @@ class Schema;
 YBORM_DECL void find_all_tables(const Expression &expr, Strings &tables);
 YBORM_DECL SelectExpr make_select(const Schema &schema, const Expression &from_where,
         const Expression &filter, const Expression &order_by,
-        bool for_update_flag = false);
+        bool for_update_flag = false, int limit = 0, int offset = 0);
 
 } // namespace Yb
 

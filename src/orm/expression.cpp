@@ -920,7 +920,7 @@ find_all_tables(const Expression &expr, Strings &tables)
 YBORM_DECL SelectExpr
 make_select(const Schema &schema, const Expression &from_where,
         const Expression &filter, const Expression &order_by,
-        bool for_update_flag)
+        bool for_update_flag, int limit, int offset)
 {
     Strings tables;
     find_all_tables(from_where, tables);
@@ -934,6 +934,8 @@ make_select(const Schema &schema, const Expression &from_where,
     SelectExpr q(cols);
     q.from_(from_where).where_(filter).order_by_(order_by)
         .for_update(for_update_flag);
+    if (limit)
+        q.pager(limit, offset);
     return q;
 }
 

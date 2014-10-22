@@ -175,6 +175,8 @@ public:
             const Expression &tables, const Expression &filter,
             const Expression &order_by = Expression(),
             bool for_update_flag = false);
+    DataObjectResultSet load_collection(
+            const Strings &tables, const SelectExpr &select_expr);
 };
 
 enum DeletionMode { DelNormal, DelDryRun, DelUnchecked };
