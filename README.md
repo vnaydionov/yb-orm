@@ -5,23 +5,23 @@ YB.ORM tool is developed to simplify for C++ developers creation of applications
 
 Typical usage scenario is the following: 
 
-  * Describe your database schema i.e. tables with their columns and relationships between tables in [simple XML-based format](XmlFormat). 
-  * Use the code generation tool provided to produce C++ domain classes for your tables (see [Tutorial1](Tutorial1)). 
+  * Describe your database schema i.e. tables with their columns and relationships between tables in [simple XML-based format](wiki/en_XmlFormat). 
+  * Use the code generation tool provided to produce C++ domain classes for your tables (see [Tutorial1](wiki/en_Tutorial1)). 
   * Add your application-specific logic to the classes. 
   * Should you make changes to the database schema, you then use the code generation tool to synchronize previously generated C++ classes with the schema. 
   * Optionally, use the code generation tool to issue SQL statements to populate your empty database schema with tables. 
   * Now you can use the domain classes in cooperation with Session object to automate the following tasks: 
     * create new objects or delete existing objects; 
-    * query objects from database, using object-based queries (see [Tutorial3](Tutorial3)); 
+    * query objects from database, using object-based queries (see [Tutorial3](wiki/en_Tutorial3)); 
     * modify existing objects by just assignment to objects' fields; 
-    * link and unlink objects to/from each other using relations (see [Tutorial2](Tutorial2)); 
+    * link and unlink objects to/from each other using relations (see [Tutorial2](wiki/en_Tutorial2)); 
     * serialize your objects into XML and JSON. 
 
-This tool employs many ideas explained in the book "Patterns of Enterprise Application Architecture" by Martin Fawler. Such patterns as "Lazy Load", "Identity Map", "Unit of Work", etc. Also, the project development was inspired by the power of [Hibernate](http://www.hibernate.org/) framework for Java, and especially by the design of [SQLAlchemy](http://www.sqlalchemy.org/) for Python. Some details of how it works are here: [Internals](Internals). 
+This tool employs many ideas explained in the book "Patterns of Enterprise Application Architecture" by Martin Fawler. Such patterns as "Lazy Load", "Identity Map", "Unit of Work", etc. Also, the project development was inspired by the power of [Hibernate](http://www.hibernate.org/) framework for Java, and especially by the design of [SQLAlchemy](http://www.sqlalchemy.org/) for Python. Some details of how it works are here: [Internals](wiki/en_Internals). 
 
 ## STATUS
 
-At the moment, YB.ORM tool works in Linux, Mac OS X and Windows. It can be built using the following compilers: [GCC](http://gcc.gnu.org/), [CLang](http://clang.llvm.org/), [MinGW](http://mingw.org/), [MSVC 2008/2010](http://www.microsoft.com/visualstudio/), also Borland C++ Builder, see [Building Instructions](Build). 
+At the moment, YB.ORM tool works in Linux, Mac OS X and Windows. It can be built using the following compilers: [GCC](http://gcc.gnu.org/), [CLang](http://clang.llvm.org/), [MinGW](http://mingw.org/), [MSVC 2008/2010](http://www.microsoft.com/visualstudio/), also Borland C++ Builder, see [Building Instructions](wiki/en_Build). 
 
 You can build YB.ORM library against your toolkit of choice: [Boost](http://www.boost.org/), [Qt](http://qt-project.org/), or [wxWidgets](http://www.wxwidgets.org/); their native data types will be used for strings, date and time, threads, XML parsing, etc. 
 
@@ -31,9 +31,9 @@ The tool was tested to work with the following SQL databases: [MySQL](http://www
   * popular database connectivity C++ library [SOCI](http://soci.sourceforge.net/)
   * database drivers for Qt library: [QtSql](http://qt-project.org/doc/qt-4.8/qtsql.html)
   * there is native driver for SQLite. 
-Optionally, use connection pooling the library provides. Look here for details: [Connecting to database](SqlDriver). 
+Optionally, use connection pooling the library provides. Look here for details: [Connecting to database](wiki/en_SqlDriver). 
 
-The basic functionality of YB.ORM was tested on several little projects, and proved to be usable. Keep in mind, that the tool is under development and its API may change between releases. Some interesting features are still to be implemented (see [ToDo](ToDo) list). 
+The basic functionality of YB.ORM was tested on several little projects, and proved to be usable. Keep in mind, that the tool is under development and its API may change between releases. Some interesting features are still to be implemented (see [ToDo](wiki/en_ToDo) list). 
 
 ## AUTHORS
 
