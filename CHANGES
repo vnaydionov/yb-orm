@@ -1,4 +1,22 @@
 
+0.4.6
+    * New optional inline syntax for describing the mapping scheme
+      within a class declaration, based on macros.
+    * Porting tut2 and tut4 examples to the new declaration syntax
+      instead of using XML configs.
+    * Support .range() pager in queries for different SQL dialects,
+      also add .first() filter based on that pager.
+    * Updated documantation.
+    * Simple constructor for Session that accepts the connection string.
+    * It's possible now to construct the Session with a native connection,
+      for example soci::session.
+    * Logger can be set in Session, no need to explicitly create Engine
+      object, in simple cases.
+    * Schema object can export its current configuration to XML or SQL.
+    * New options object for SQL generation procedure.
+    * Many fixes to the build scripts.
+    * Auth example: Fix TcpSocket::read*() to use select() and a buffer.
+
 0.4.5
     * New source tree layout: separate public includes from private,
       the library source file names are now in lowercase.
