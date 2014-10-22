@@ -27,11 +27,13 @@ Expression::Expression(ExprBEPtr backend)
     : backend_(backend)
 {}
 
-YBORM_DECL const String
-Expression::generate_sql(Values *params, int *count) const
+const String
+Expression::generate_sql(
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx) const
 {
     if (backend_.get())
-        return backend_->generate_sql(params, count);
+        return backend_->generate_sql(options, ctx);
     return sql_;
 }
 
@@ -127,14 +129,16 @@ ColumnExprBackend::ColumnExprBackend(const String &tbl_name, const String &col_n
 {}
 
 const String
-ColumnExprBackend::generate_sql(Values *params, int *count) const
+ColumnExprBackend::generate_sql(
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx) const
 {
     String r;
     if (!str_empty(col_name_))
         r = sql_prefix(col_name_, tbl_name_);
     else
         r += sql_parentheses_as_needed(
-                expr_.generate_sql(params, count));
+                expr_.generate_sql(options, ctx));
     return sql_alias(r, alias_);
 }
 
@@ -155,17 +159,28 @@ ColumnExpr::alias() const {
 ConstExprBackend::ConstExprBackend(const Value &x): value_(x) {}
 
 const String
-ConstExprBackend::generate_sql(Values *params, int *count) const
+subst_param(const Value &value,
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx)
 {
-    if (params) {
-        params->push_back(value_);
-        if (!count)
+    if (options.collect_params_) {
+        if (ctx) {
+            ctx->params_.push_back(value);
+            ++ctx->counter_;
+        }
+        if (!options.numbered_params_ || !ctx)
             return _T("?");
-        int n = *count;
-        ++*count;
-        return _T(":") + to_string(n);
+        return _T(":") + to_string(ctx->counter_);
     }
-    return value_.sql_str();
+    return value.sql_str();
+}
+
+const String
+ConstExprBackend::generate_sql(
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx) const
+{
+    return subst_param(value_, options, ctx);
 }
 
 ConstExpr::ConstExpr()
@@ -189,13 +204,15 @@ UnaryOpExprBackend::UnaryOpExprBackend(
 {}
 
 const String
-UnaryOpExprBackend::generate_sql(Values *params, int *count) const
+UnaryOpExprBackend::generate_sql(
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx) const
 {
     if (prefix_)
         return op_ + _T(" ") + sql_parentheses_as_needed(
-                expr_.generate_sql(params, count));
+                expr_.generate_sql(options, ctx));
     return sql_parentheses_as_needed(
-            expr_.generate_sql(params, count)) + _T(" ") + op_;
+            expr_.generate_sql(options, ctx)) + _T(" ") + op_;
 }
 
 UnaryOpExpr::UnaryOpExpr(bool prefix, const String &op, const Expression &expr)
@@ -225,12 +242,14 @@ BinaryOpExprBackend::BinaryOpExprBackend(const Expression &expr1,
 {}
 
 const String
-BinaryOpExprBackend::generate_sql(Values *params, int *count) const
+BinaryOpExprBackend::generate_sql(
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx) const
 {
     String sql1 = sql_parentheses_as_needed(
-            expr1_.generate_sql(params, count));
+            expr1_.generate_sql(options, ctx));
     String sql2_nosubst = sql_parentheses_as_needed(
-            expr2_.generate_sql(NULL));
+            expr2_.generate_sql(SqlGeneratorOptions(), NULL));
     if (sql2_nosubst == _T("NULL")) {
         if (op_ == _T("="))
             return sql1 + _T(" IS NULL");
@@ -238,7 +257,7 @@ BinaryOpExprBackend::generate_sql(Values *params, int *count) const
             return sql1 + _T(" IS NOT NULL");
     }
     String sql2 = sql_parentheses_as_needed(
-            expr2_.generate_sql(params, count));
+            expr2_.generate_sql(options, ctx));
     return sql1 + _T(" ") + op_ + _T(" ") + sql2;
 }
 
@@ -263,16 +282,18 @@ BinaryOpExpr::expr2() const {
 }
 
 const String
-JoinExprBackend::generate_sql(Values *params, int *count) const
+JoinExprBackend::generate_sql(
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx) const
 {
     String sql = sql_parentheses_as_needed(
-            expr1_.generate_sql(params, count));
+            expr1_.generate_sql(options, ctx));
     sql += _T(" JOIN ");
     sql += sql_parentheses_as_needed(
-            expr2_.generate_sql(params, count));
+            expr2_.generate_sql(options, ctx));
     sql += _T(" ON ");
     sql += sql_parentheses_as_needed(
-            cond_.generate_sql(params, count));
+            cond_.generate_sql(options, ctx));
     return sql;
 }
 
@@ -297,14 +318,16 @@ JoinExpr::cond() const {
 }
 
 const String
-ExpressionListBackend::generate_sql(Values *params, int *count) const
+ExpressionListBackend::generate_sql(
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx) const
 {
     String sql;
     for (size_t i = 0; i < items_.size(); ++i) {
         if (!str_empty(sql))
             sql += _T(", ");
         sql += sql_parentheses_as_needed(
-                items_[i].generate_sql(params, count));
+                items_[i].generate_sql(options, ctx));
     }
     return sql;
 }
@@ -351,33 +374,72 @@ ExpressionList::item(int n) const {
 }
 
 const String
-SelectExprBackend::generate_sql(Values *params, int *count) const
+SelectExprBackend::generate_sql(
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx) const
 {
     String sql = _T("SELECT ");
+    if (pager_limit_) {
+        if (options.pager_model_ == PAGER_INTERBASE) {
+            sql += _T("FIRST ")
+                + subst_param(Value(pager_limit_), options, ctx);
+            if (pager_offset_)
+                sql += _T(" SKIP ")
+                    + subst_param(Value(pager_offset_), options, ctx);
+            sql += _T(" ");
+        }
+    }
     if (distinct_flag_)
         sql += _T("DISTINCT ");
-    sql += select_expr_.generate_sql(params, count);
+    sql += select_expr_.generate_sql(options, ctx);
     if (!from_expr_.is_empty())
         sql += _T(" FROM ")
-            + from_expr_.generate_sql(params, count);
+            + from_expr_.generate_sql(options, ctx);
     if (!where_expr_.is_empty())
         sql += _T(" WHERE ")
-            + where_expr_.generate_sql(params, count);
+            + where_expr_.generate_sql(options, ctx);
     if (!group_by_expr_.is_empty())
         sql += _T(" GROUP BY ")
-            + group_by_expr_.generate_sql(params, count);
+            + group_by_expr_.generate_sql(options, ctx);
     if (!having_expr_.is_empty()) {
         if (group_by_expr_.is_empty())
             throw BadSQLOperation(
                     _T("Trying to use HAVING without GROUP BY clause"));
         sql += _T(" HAVING ")
-            + having_expr_.generate_sql(params, count);
+            + having_expr_.generate_sql(options, ctx);
     }
     if (!order_by_expr_.is_empty())
         sql += _T(" ORDER BY ")
-            + order_by_expr_.generate_sql(params, count);
-    if (!str_empty(lock_mode_))
+            + order_by_expr_.generate_sql(options, ctx);
+    if (pager_limit_) {
+        if (options.pager_model_ == PAGER_POSTGRES) {
+            sql += _T(" LIMIT ")
+                + subst_param(Value(pager_limit_), options, ctx);
+            sql += _T(" OFFSET ")
+                + subst_param(Value(pager_offset_), options, ctx);
+        }
+        else if (options.pager_model_ == PAGER_MYSQL) {
+            sql += _T(" LIMIT ");
+            if (pager_offset_)
+                sql += subst_param(Value(pager_offset_), options, ctx)
+                    + _T(", ");
+            sql += subst_param(Value(pager_limit_), options, ctx);
+        }
+    }
+    if (!str_empty(lock_mode_) && options.has_for_update_)
         sql += _T(" FOR ") + lock_mode_;
+    if (pager_limit_) {
+        if (options.pager_model_ == PAGER_ORACLE) {
+            sql = String(_T("SELECT OUTER_2.* FROM ("))
+                + _T("SELECT OUTER_1.*, ROWNUM AS RN_ORA FROM (")
+                + sql
+                + _T(") OUTER_1 WHERE ROWNUM <= ")
+                + subst_param(Value(pager_offset_ + pager_limit_),
+                              options, ctx)
+                + _T(") OUTER_2 WHERE RN_ORA > ")
+                + subst_param(Value(pager_offset_), options, ctx);
+        }
+    }
     return sql;
 }
 
@@ -432,6 +494,12 @@ SelectExpr::for_update(bool flag) {
     return with_lockmode(flag? _T("UPDATE"): _T(""));
 }
 
+SelectExpr &
+SelectExpr::pager(int limit, int offset) {
+    dynamic_cast<SelectExprBackend *>(backend_.get())->pager(limit, offset);
+    return *this;
+}
+
 const Expression &
 SelectExpr::select_expr() const {
     return dynamic_cast<SelectExprBackend *>(backend_.get())->select_expr();
@@ -475,6 +543,16 @@ SelectExpr::lock_mode() const {
 bool
 SelectExpr::for_update_flag() const {
     return lock_mode() == _T("UPDATE");
+}
+
+int
+SelectExpr::pager_limit() const {
+    return dynamic_cast<SelectExprBackend *>(backend_.get())->pager_limit();
+}
+
+int
+SelectExpr::pager_offset() const {
+    return dynamic_cast<SelectExprBackend *>(backend_.get())->pager_offset();
 }
 
 YBORM_DECL const Expression
@@ -795,8 +873,11 @@ FilterBackendByPK::FilterBackendByPK(const Key &key)
 {}
 
 const String
-FilterBackendByPK::generate_sql(Values *params, int *count) const {
-    return expr_.generate_sql(params, count);
+FilterBackendByPK::generate_sql(
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx) const
+{
+    return expr_.generate_sql(options, ctx);
 }
 
 KeyFilter::KeyFilter(const Key &key)

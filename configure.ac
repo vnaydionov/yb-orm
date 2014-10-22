@@ -37,7 +37,8 @@ AM_CONDITIONAL([ODBC_PRESENT], [test x$have_odbc = xyes])
 AM_CONDITIONAL([SQLITE3_PRESENT], [test x$have_sqlite3 = xyes])
 AM_CONDITIONAL([SOCI_PRESENT], [test x$have_soci = xyes])
 YB_CHECK_UNICODE([], [])
-AM_CONDITIONAL([USING_WIDE_UNICODE], [test x$have_unicode = xyes])
+AM_CONDITIONAL([NO_STD_STRING], [test x$have_unicode = xyes ||
+                test x$have_qt = xyes || test x$have_wx = xyes])
 YB_EXECINFO([], [])
 
 YB_PATH_CPPUNIT([1.10.0],[],

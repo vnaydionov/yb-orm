@@ -8,6 +8,7 @@
 #include "util/string_utils.h"
 #include "util/singleton.h"
 #include "orm/sql_driver.h"
+#include "orm/expression.h"
 #if defined(YB_USE_QT)
 #include "qtsql_driver.h"
 #endif
@@ -86,6 +87,8 @@ const String SqlDialect::select_last_inserted_id(const String &table_name) {
 
 bool SqlDialect::commit_ddl() { return false; }
 
+bool SqlDialect::has_for_update() { return true; }
+
 bool SqlDialect::fk_internal() { return false; }
 
 const String SqlDialect::suffix_create_table() { return String(); }
@@ -97,6 +100,11 @@ const String SqlDialect::autoinc_flag() { return String(); }
 const String
 SqlDialect::sysdate_func() {
     return _T("CURRENT_TIMESTAMP");
+}
+
+int
+SqlDialect::pager_model() {
+    return (int)PAGER_POSTGRES;
 }
 
 bool
@@ -147,6 +155,7 @@ public:
         return _T("DROP SEQUENCE ") + seq_name;
     }
     const String sysdate_func() { return _T("SYSDATE"); }
+    int pager_model() { return (int)PAGER_ORACLE; }
 };
 
 class PostgresDialect: public SqlDialect
@@ -214,6 +223,7 @@ public:
     const String drop_sequence(const String &seq_name) {
         return _T("DROP GENERATOR ") + seq_name;
     }
+    int pager_model() { return (int)PAGER_INTERBASE; }
 };
 
 class MysqlDialect: public SqlDialect
@@ -264,6 +274,7 @@ public:
             return not_null_clause;
         return not_null_clause + _T(" ") + default_value;
     }
+    int pager_model() { return (int)PAGER_MYSQL; }
 };
 
 class SQLite3Dialect: public SqlDialect
@@ -297,6 +308,7 @@ public:
         throw SqlDialectError(_T("Bad type"));
     }
     bool fk_internal() { return true; }
+    bool has_for_update() { return false; }
     const String create_sequence(const String &seq_name) {
         throw SqlDialectError(_T("No sequences, please"));
     }

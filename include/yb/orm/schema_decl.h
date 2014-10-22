@@ -8,6 +8,10 @@
  * http://stackoverflow.com/questions/2361665/c-c-macro-how-to-generate-two-separate-sections-of-code-with-one-macro-boost?rq=1
  */
 
+#ifdef _MSC_VER
+#pragma warning(disable:4355)
+#endif // _MSC_VER
+
 // Generic macro for declaring a column
 #define YB_COL(prop_name, name, type, size, flags, default_value, fk_table, fk, xml_name, index_name) \
     (YB_COL_, prop_name, _T(name), type, size, flags, default_value, _T(fk_table), _T(fk), _T(xml_name), _T(index_name))
@@ -73,9 +77,9 @@
             Yb::Relation::AttrMap attr1, attr2; \
             attr1[_T("property")] = _T(#many_prop); \
             attr1[_T("use-list")] = _T(#use_list); \
-            attr1[_T("order-by")] = order_by; \
+            attr1[_T("order-by")] = _T(order_by); \
             attr2[_T("property")] = _T(#one_prop); \
-            attr2[_T("key")] = key; \
+            attr2[_T("key")] = _T(key); \
             Yb::Relation::Ptr r(new Yb::Relation(Yb::Relation::ONE2MANY, \
                 _T(#one_class), attr1, _T(#many_class), attr2, cascade)); \
             rels.push_back(r); \

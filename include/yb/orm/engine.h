@@ -64,9 +64,9 @@ public:
             bool include_pk, bool numbered_params = false);
     static void gen_sql_update(String &sql, TypeCodes &type_codes,
             ParamNums &param_nums, const Table &table, 
-            bool numbered_params = false);
+            const SqlGeneratorOptions &options);
     static void gen_sql_delete(String &sql, TypeCodes &type_codes,
-            const Table &table, bool numbered_params = false);
+            const Table &table, const SqlGeneratorOptions &options);
 };
 
 class YBORM_DECL EngineCloned: public EngineBase

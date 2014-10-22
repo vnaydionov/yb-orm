@@ -15,11 +15,49 @@ namespace Yb {
 
 typedef std::map<String, int> ParamNums;
 
+enum SqlIdQuotes {NO_QUOTES, DBL_QUOTES, AUTO_DBL_QUOTES};
+enum SqlPagerModel {PAGER_POSTGRES, PAGER_MYSQL,
+                    PAGER_INTERBASE, PAGER_ORACLE};
+
+struct SqlGeneratorOptions
+{
+    SqlIdQuotes quotes_;
+    SqlPagerModel pager_model_;
+    bool has_for_update_;
+    bool collect_params_;
+    bool numbered_params_;
+    SqlGeneratorOptions(SqlIdQuotes quotes = NO_QUOTES,
+            bool has_for_update = true,
+            bool collect_params = false,
+            bool numbered_params = false,
+            SqlPagerModel pager_model = PAGER_POSTGRES)
+        : quotes_(quotes)
+        , pager_model_(pager_model)
+        , has_for_update_(has_for_update)
+        , collect_params_(collect_params)
+        , numbered_params_(numbered_params)
+    {}
+};
+
+struct SqlGeneratorContext
+{
+    Values params_;
+    int counter_;
+    SqlGeneratorContext(int counter = 0):
+        counter_(counter)
+    {}
+};
+
+const String subst_param(const Value &value,
+        const SqlGeneratorOptions &options,
+        SqlGeneratorContext *ctx);
+
 class YBORM_DECL ExpressionBackend: public RefCountBase
 {
 public:
     virtual const String generate_sql(
-            Values *params, int *count) const = 0;
+            const SqlGeneratorOptions &options,
+            SqlGeneratorContext *ctx) const = 0;
     virtual ~ExpressionBackend();
 };
 
@@ -38,8 +76,11 @@ public:
     Expression(const Column &col);
     Expression(ExprBEPtr backend);
     const String generate_sql(
-            Values *params, int *count = NULL) const;
-    const String get_sql() const { return generate_sql(NULL); }
+            const SqlGeneratorOptions &options,
+            SqlGeneratorContext *ctx) const;
+    const String get_sql() const {
+        return generate_sql(SqlGeneratorOptions(), NULL);
+    }
     bool is_empty() const { return str_empty(sql_) && !backend_.get(); }
     ExpressionBackend *backend() const { return backend_.get(); }
 };
@@ -59,7 +100,9 @@ public:
     ColumnExprBackend(const Expression &expr, const String &alias);
     ColumnExprBackend(const String &tbl_name, const String &col_name,
             const String &alias);
-    const String generate_sql(Values *params, int *count) const;
+    const String generate_sql(
+            const SqlGeneratorOptions &options,
+            SqlGeneratorContext *ctx) const;
     const String &alias() const { return alias_; }
 };
 
@@ -77,7 +120,9 @@ class YBORM_DECL ConstExprBackend: public ExpressionBackend
     Value value_;
 public:
     ConstExprBackend(const Value &x);
-    const String generate_sql(Values *params, int *count) const;
+    const String generate_sql(
+            const SqlGeneratorOptions &options,
+            SqlGeneratorContext *ctx) const;
     const Value &const_value() const { return value_; }
 };
 
@@ -96,7 +141,9 @@ class YBORM_DECL UnaryOpExprBackend: public ExpressionBackend
     Expression expr_;
 public:
     UnaryOpExprBackend(bool prefix, const String &op, const Expression &expr);
-    const String generate_sql(Values *params, int *count) const;
+    const String generate_sql(
+            const SqlGeneratorOptions &options,
+            SqlGeneratorContext *ctx) const;
     bool prefix() const { return prefix_; }
     const String &op() const { return op_; }
     const Expression &expr() const { return expr_; }
@@ -118,7 +165,9 @@ class YBORM_DECL BinaryOpExprBackend: public ExpressionBackend
 public:
     BinaryOpExprBackend(const Expression &expr1,
             const String &op, const Expression &expr2);
-    const String generate_sql(Values *params, int *count) const;
+    const String generate_sql(
+            const SqlGeneratorOptions &options,
+            SqlGeneratorContext *ctx) const;
     const String &op() const { return op_; }
     const Expression &expr1() const { return expr1_; }
     const Expression &expr2() const { return expr2_; }
@@ -141,7 +190,9 @@ public:
     JoinExprBackend(const Expression &expr1,
             const Expression &expr2, const Expression &cond)
         : expr1_(expr1), expr2_(expr2), cond_(cond) {}
-    const String generate_sql(Values *params, int *count) const;
+    const String generate_sql(
+            const SqlGeneratorOptions &options,
+            SqlGeneratorContext *ctx) const;
     const Expression &expr1() const { return expr1_; }
     const Expression &expr2() const { return expr2_; }
     const Expression &cond() const { return cond_; }
@@ -163,7 +214,9 @@ class YBORM_DECL ExpressionListBackend: public ExpressionBackend
 public:
     ExpressionListBackend() {}
     void append(const Expression &expr) { items_.push_back(expr); }
-    const String generate_sql(Values *params, int *count) const;
+    const String generate_sql(
+            const SqlGeneratorOptions &options,
+            SqlGeneratorContext *ctx) const;
     int size() const { return items_.size(); }
     const Expression &item(int n) const {
         YB_ASSERT(n >= 0 && (size_t)n < items_.size());
@@ -212,10 +265,13 @@ class YBORM_DECL SelectExprBackend: public ExpressionBackend
                group_by_expr_, having_expr_, order_by_expr_;
     bool distinct_flag_;
     String lock_mode_;
+    int pager_limit_, pager_offset_;
 public:
     SelectExprBackend(const Expression &select_expr)
         : select_expr_(select_expr)
         , distinct_flag_(false)
+        , pager_limit_(0)
+        , pager_offset_(0)
     {}
     void from_(const Expression &from_expr) { from_expr_ = from_expr; }
     void where_(const Expression &where_expr) { where_expr_ = where_expr; }
@@ -224,6 +280,10 @@ public:
     void order_by_(const Expression &order_by_expr) { order_by_expr_ = order_by_expr; }
     void distinct(bool flag) { distinct_flag_ = flag; }
     void with_lockmode(const String &lock_mode) { lock_mode_ = lock_mode; }
+    void pager(int limit, int offset) {
+        pager_limit_ = limit;
+        pager_offset_ = offset;
+    }
     const Expression &select_expr() const { return select_expr_; }
     const Expression &from_expr() const { return from_expr_; }
     const Expression &where_expr() const { return where_expr_; }
@@ -232,7 +292,11 @@ public:
     const Expression &order_by_expr() const { return order_by_expr_; }
     bool distinct_flag() const { return distinct_flag_; }
     const String &lock_mode() const { return lock_mode_; }
-    const String generate_sql(Values *params, int *count) const;
+    const String generate_sql(
+            const SqlGeneratorOptions &options,
+            SqlGeneratorContext *ctx) const;
+    int pager_limit() const { return pager_limit_; }
+    int pager_offset() const { return pager_offset_; }
 };
 
 class YBORM_DECL SelectExpr: public Expression
@@ -247,6 +311,7 @@ public:
     SelectExpr &distinct(bool flag = true);
     SelectExpr &with_lockmode(const String &lock_mode);
     SelectExpr &for_update(bool flag = true);
+    SelectExpr &pager(int limit, int offset);
     const Expression &select_expr() const;
     const Expression &from_expr() const;
     const Expression &where_expr() const;
@@ -256,6 +321,8 @@ public:
     bool distinct_flag() const;
     const String &lock_mode() const;
     bool for_update_flag() const;
+    int pager_limit() const;
+    int pager_offset() const;
 };
 
 YBORM_DECL const Expression operator ! (const Expression &a);
@@ -337,7 +404,9 @@ class YBORM_DECL FilterBackendByPK: public ExpressionBackend
     static const Expression build_expr(const Key &key);
 public:
     FilterBackendByPK(const Key &key);
-    const String generate_sql(Values *params, int *count) const;
+    const String generate_sql(
+            const SqlGeneratorOptions &options,
+            SqlGeneratorContext *ctx) const;
     const Key &key() const { return key_; }
 };
 

@@ -4,7 +4,7 @@ include_directories (
     ${PROJECT_SOURCE_DIR}/include/yb
     ${PROJECT_SOURCE_DIR}/include/private)
 
-add_definitions (-D YBUTIL_DLL)
+add_definitions (-DYBUTIL_DLL)
 
 add_library (ybutil SHARED
     data_types.cpp

@@ -578,6 +578,12 @@ public:
         Row r = *rs.begin(); 
         return r[0].second.as_longint();
     }
+    QueryObj range(int start, int end) {
+        int limit = end - start, offset = start;
+        QueryObj q(*this);
+        q.pager(limit, offset);
+        return q;
+    }
 };
 
 template <class R>

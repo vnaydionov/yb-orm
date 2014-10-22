@@ -1,5 +1,7 @@
 #include <iostream>
+#if !defined(__BORLANDC__)
 #include <boost/foreach.hpp>
+#endif
 #include "domain/Client.h"
 #include "domain/Order.h"
 using namespace std;
@@ -36,6 +38,7 @@ int main()
         cout << client_2.name.value() << endl;
 
         cout << "Walking through the client's orders property: \n";
+#if !defined(__BORLANDC__)
         BOOST_FOREACH(Order order, client_2.orders) {
             cout << "(" << order.id 
                 << "," << order.owner->id 
@@ -43,7 +46,7 @@ int main()
                 << "," << order.total_sum 
                 << ")" << endl;
         }
-
+#endif
         string min_sum;
         cout << "Enter minimal sum: \n";
         cin >> min_sum;
@@ -51,14 +54,17 @@ int main()
             .filter_by(Order::c.total_sum > Decimal(min_sum)
                        && Order::c.paid_dt == YB_NULL).all();
         cout << "Found orders: ";
+#if !defined(__BORLANDC__)
         BOOST_FOREACH(Order order, rs_1) {
             cout << order.id << ",";
         }
+#endif
         cout << endl;
 
         cout << "Order count: " << query<Order>(session)
             .filter_by(Order::c.client_id == client_2.id).count() << endl;
 
+#if !defined(__BORLANDC__)
         typedef boost::tuple<Order, Client> Pair;
         DomainResultSet<Pair> rs = query<Pair>(session)
             .filter_by(Order::c.total_sum > Decimal(100)
@@ -68,6 +74,7 @@ int main()
             cout << pair.get<1>().name.value()
                  << " " << pair.get<0>().total_sum.value() << endl;
         }
+#endif
     }
     catch (const std::exception &ex) {
         cout << "exception: " << ex.what() << endl;

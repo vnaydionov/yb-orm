@@ -1,6 +1,8 @@
 #include <memory>
 #include <iostream>
+#if !defined(__BORLANDC__)
 #include <boost/foreach.hpp>
+#endif
 #include "domain/ProductGroup.h"
 #include "domain/Product.h"
 using namespace std;
