@@ -132,7 +132,7 @@ QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
                 && char_code(source.db()[0]) == '/')
             eat_slash = true;
     }
-    conn_.reset(new QSqlDatabase(QSqlDatabase::addDatabase(driver, conn_name_)));
+    conn_ = new QSqlDatabase(QSqlDatabase::addDatabase(driver, conn_name_));
     if (eat_slash)
         conn_->setDatabaseName(str_substr(source.db(), 1));
     else
@@ -161,20 +161,20 @@ QtSqlConnectionBackend::use_raw(SqlDialect *dialect, void *raw_connection)
 {
     close();
     ScopedLock lock(drv_->conn_mux_);
-    conn_.reset((QSqlDatabase *)raw_connection);
+    conn_ = (QSqlDatabase *)raw_connection;
 }
 
 void *
 QtSqlConnectionBackend::get_raw()
 {
-    return (void *)(conn_.get());
+    return (void *)conn_;
 }
 
 auto_ptr<SqlCursorBackend>
 QtSqlConnectionBackend::new_cursor()
 {
     auto_ptr<SqlCursorBackend> p(
-            (SqlCursorBackend *)new QtSqlCursorBackend(conn_.get()));
+            (SqlCursorBackend *)new QtSqlCursorBackend(conn_));
     return p;
 }
 
@@ -182,9 +182,9 @@ void
 QtSqlConnectionBackend::close()
 {
     if (own_handle_) {
-        if (conn_.get())
+        if (conn_)
             conn_->close();
-        conn_.reset(NULL);
+        conn_ = NULL;
         if (!str_empty(conn_name_)) {
             QSqlDatabase::removeDatabase(conn_name_);
             conn_name_ = String();
@@ -192,7 +192,7 @@ QtSqlConnectionBackend::close()
         own_handle_ = false;
     }
     else
-        conn_.release();
+        conn_ = NULL;
 }
 
 void

@@ -28,7 +28,7 @@ class QtSqlDriver;
 
 class QtSqlConnectionBackend: public SqlConnectionBackend
 {
-    std::auto_ptr<QSqlDatabase> conn_;
+    QSqlDatabase *conn_;
     String conn_name_;
     QtSqlDriver *drv_;
     bool own_handle_;
