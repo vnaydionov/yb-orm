@@ -9,6 +9,8 @@
 #include "util/singleton.h"
 #include "orm/sql_driver.h"
 #include "orm/expression.h"
+#include "orm/dialect_sqlite.h"
+//#include "orm/dialect_mysql.h"
 #if defined(YB_USE_QT)
 #include "qtsql_driver.h"
 #endif
@@ -74,14 +76,17 @@ SqlDriverError::SqlDriverError(const String &msg)
 
 SqlDialect::~SqlDialect() {}
 
-bool SqlDialect::parse_url_tail(const String &url_tail, StringDict &source)
+bool
+SqlDialect::parse_url_tail(const String &url_tail, StringDict &source)
 {
     return false;
 }
 
 bool SqlDialect::native_driver_eats_slash() { return true; }
 
-const String SqlDialect::select_last_inserted_id(const String &table_name) {
+const String
+SqlDialect::select_last_inserted_id(const String &table_name)
+{
     throw SqlDialectError(_T("No autoincrement flag"));
 }
 
@@ -156,6 +161,17 @@ public:
     }
     const String sysdate_func() { return _T("SYSDATE"); }
     int pager_model() { return (int)PAGER_ORACLE; }
+    // schema introspection
+    virtual bool table_exists(SqlConnection &conn, const String &table)
+    { return false; }
+    virtual bool view_exists(SqlConnection &conn, const String &table)
+    { return false; }
+    virtual Strings get_tables(SqlConnection &conn)
+    { return Strings(); }
+    virtual Strings get_views(SqlConnection &conn)
+    { return Strings(); }
+    virtual ColumnsInfo get_columns(SqlConnection &conn, const String &table)
+    { return ColumnsInfo(); }
 };
 
 class PostgresDialect: public SqlDialect
@@ -189,6 +205,17 @@ public:
     const String drop_sequence(const String &seq_name) {
         return _T("DROP SEQUENCE ") + seq_name;
     }
+    // schema introspection
+    virtual bool table_exists(SqlConnection &conn, const String &table)
+    { return false; }
+    virtual bool view_exists(SqlConnection &conn, const String &table)
+    { return false; }
+    virtual Strings get_tables(SqlConnection &conn)
+    { return Strings(); }
+    virtual Strings get_views(SqlConnection &conn)
+    { return Strings(); }
+    virtual ColumnsInfo get_columns(SqlConnection &conn, const String &table)
+    { return ColumnsInfo(); }
 };
 
 class InterbaseDialect: public SqlDialect
@@ -224,6 +251,17 @@ public:
         return _T("DROP GENERATOR ") + seq_name;
     }
     int pager_model() { return (int)PAGER_INTERBASE; }
+    // schema introspection
+    virtual bool table_exists(SqlConnection &conn, const String &table)
+    { return false; }
+    virtual bool view_exists(SqlConnection &conn, const String &table)
+    { return false; }
+    virtual Strings get_tables(SqlConnection &conn)
+    { return Strings(); }
+    virtual Strings get_views(SqlConnection &conn)
+    { return Strings(); }
+    virtual ColumnsInfo get_columns(SqlConnection &conn, const String &table)
+    { return ColumnsInfo(); }
 };
 
 class MysqlDialect: public SqlDialect
@@ -275,48 +313,17 @@ public:
         return not_null_clause + _T(" ") + default_value;
     }
     int pager_model() { return (int)PAGER_MYSQL; }
-};
-
-class SQLite3Dialect: public SqlDialect
-{
-public:
-    SQLite3Dialect()
-        : SqlDialect(_T("SQLITE"), _T(""), false)
-    {}
-    bool native_driver_eats_slash() { return false; }
-    const String select_curr_value(const String &seq_name)
-    { throw SqlDialectError(_T("No sequences, please")); }
-    const String select_next_value(const String &seq_name)
-    { throw SqlDialectError(_T("No sequences, please")); }
-    const String select_last_inserted_id(const String &table_name) {
-        return _T("SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = '")
-            + table_name + _T("'");
-    }
-    const String sql_value(const Value &x)
-    {
-        return x.sql_str();
-    }
-    const String type2sql(int t) {
-        switch (t) {
-            case Value::INTEGER:    return _T("INTEGER");       break;
-            case Value::LONGINT:    return _T("INTEGER");       break;
-            case Value::STRING:     return _T("VARCHAR");       break;
-            case Value::DECIMAL:    return _T("NUMERIC");       break;
-            case Value::DATETIME:   return _T("TIMESTAMP");     break;
-            case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
-        }
-        throw SqlDialectError(_T("Bad type"));
-    }
-    bool fk_internal() { return true; }
-    bool has_for_update() { return false; }
-    const String create_sequence(const String &seq_name) {
-        throw SqlDialectError(_T("No sequences, please"));
-    }
-    const String drop_sequence(const String &seq_name) {
-        throw SqlDialectError(_T("No sequences, please"));
-    }
-    const String primary_key_flag() { return _T("PRIMARY KEY"); }
-    const String autoinc_flag() { return _T("AUTOINCREMENT"); }
+    // schema introspection
+    virtual bool table_exists(SqlConnection &conn, const String &table)
+    { return false; }
+    virtual bool view_exists(SqlConnection &conn, const String &table)
+    { return false; }
+    virtual Strings get_tables(SqlConnection &conn)
+    { return Strings(); }
+    virtual Strings get_views(SqlConnection &conn)
+    { return Strings(); }
+    virtual ColumnsInfo get_columns(SqlConnection &conn, const String &table)
+    { return ColumnsInfo(); }
 };
 
 typedef SingletonHolder<ItemRegistry<SqlDialect> > theDialectRegistry;
@@ -375,51 +382,6 @@ list_sql_dialects()
     if (theDialectRegistry::instance().empty())
         register_std_dialects();
     return theDialectRegistry::instance().list_items();
-}
-
-SqlCursorBackend::~SqlCursorBackend() {}
-
-void
-SqlCursorBackend::bind_params(const TypeCodes &types) {}
-
-SqlConnectionBackend::~SqlConnectionBackend() {}
-
-SqlDriver::~SqlDriver() {}
-
-void
-SqlDriver::parse_url_tail(const String &dialect_name,
-        const String &url_tail, StringDict &source)
-{
-    if (sql_dialect(dialect_name)->parse_url_tail(url_tail, source))
-        return;
-    Yb::StrUtils::parse_url_tail(url_tail, source);
-}
-
-// the default policies
-bool
-SqlDriver::explicit_begin_trans_required()
-{ return true; }
-
-bool
-SqlDriver::numbered_params()
-{ return false; }
-
-const String
-SqlDriver::convert_to_numbered_params(
-        const String &sql)
-{
-    String first_word;
-    std::vector<int> pos_list;
-    if (!find_subst_signs(sql, pos_list, first_word))
-        throw DBError(_T("SQL syntax error"));
-    std::vector<String> parts;
-    split_by_subst_sign(sql, pos_list, parts);
-    String sql2 = parts[0];
-    for (size_t i = 1; i < parts.size(); ++i) {
-        sql2 += _T(":") + to_string(i);
-        sql2 += parts[i];
-    }
-    return sql2;
 }
 
 typedef SingletonHolder<ItemRegistry<SqlDriver> > theDriverRegistry;
@@ -487,6 +449,51 @@ list_sql_drivers()
     if (theDriverRegistry::instance().empty())
         register_std_drivers();
     return theDriverRegistry::instance().list_items();
+}
+
+SqlCursorBackend::~SqlCursorBackend() {}
+
+void
+SqlCursorBackend::bind_params(const TypeCodes &types) {}
+
+SqlConnectionBackend::~SqlConnectionBackend() {}
+
+SqlDriver::~SqlDriver() {}
+
+void
+SqlDriver::parse_url_tail(const String &dialect_name,
+        const String &url_tail, StringDict &source)
+{
+    if (sql_dialect(dialect_name)->parse_url_tail(url_tail, source))
+        return;
+    Yb::StrUtils::parse_url_tail(url_tail, source);
+}
+
+// the default policies
+bool
+SqlDriver::explicit_begin_trans_required()
+{ return true; }
+
+bool
+SqlDriver::numbered_params()
+{ return false; }
+
+const String
+SqlDriver::convert_to_numbered_params(
+        const String &sql)
+{
+    String first_word;
+    std::vector<int> pos_list;
+    if (!find_subst_signs(sql, pos_list, first_word))
+        throw DBError(_T("SQL syntax error"));
+    std::vector<String> parts;
+    split_by_subst_sign(sql, pos_list, parts);
+    String sql2 = parts[0];
+    for (size_t i = 1; i < parts.size(); ++i) {
+        sql2 += _T(":") + to_string(i);
+        sql2 += parts[i];
+    }
+    return sql2;
 }
 
 SqlSource::SqlSource()

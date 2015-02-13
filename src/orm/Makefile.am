@@ -43,9 +43,11 @@ CPP_FILES = \
 	expression.cpp \
 	schema_config.cpp \
 	schema.cpp \
+	schema_reader.cpp \
 	sql_driver.cpp \
 	sql_pool.cpp \
-	xmlizer.cpp
+	xmlizer.cpp \
+	dialect_sqlite.cpp
 
 libyborm_la_SOURCES = \
 	$(CPP_FILES) \

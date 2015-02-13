@@ -6,6 +6,7 @@ ybutilinclude_HEADERS = \
 	decimal.h \
 	element_tree.h \
 	exception.h \
+    item_registry.h \
 	nlogger.h \
 	result_set.h \
 	singleton.h \

@@ -10,79 +10,12 @@
 #include "util/utility.h"
 #include "util/thread.h"
 #include "util/result_set.h"
+#include "util/item_registry.h"
 #include "util/nlogger.h"
 #include "util/value_type.h"
 #include "orm_config.h"
 
 namespace Yb {
-
-template <class Item>
-class ItemRegistry
-{
-    ItemRegistry(const ItemRegistry &);
-    ItemRegistry &operator=(const ItemRegistry &);
-public:
-    typedef
-#if defined(__BORLANDC__)
-        SharedPtr<Item>::Type
-#else
-        typename SharedPtr<Item>::Type
-#endif
-            ItemPtr;
-    typedef std::map<String, ItemPtr> Map;
-
-    ItemRegistry() {}
-
-    Item *find_item(const String &name)
-    {
-        ScopedLock lock(mutex_);
-        typename Map::const_iterator it = map_.find(name);
-        if (it != map_.end())
-            return shptr_get(it->second);
-        return NULL;
-    }
-
-    bool register_item(const String &name, std::auto_ptr<Item> item)
-    {
-        ScopedLock lock(mutex_);
-        typename Map::const_iterator it = map_.find(name);
-        if (it != map_.end())
-            return false;
-        map_.insert(
-#if defined(__BORLANDC__)
-            Map::value_type
-#else
-            typename Map::value_type
-#endif
-            (name, ItemPtr(item.release())));
-        map_.insert(
-#if defined(__BORLANDC__)
-            Map::value_type
-#else
-            typename Map::value_type
-#endif
-            (name, ItemPtr(item.release())));
-        return true;
-    }
-
-    const Strings list_items()
-    {
-        ScopedLock lock(mutex_);
-        Strings names;
-        typename Map::const_iterator it = map_.begin(), end = map_.end();
-        for (; it != end; ++it)
-            names.push_back(it->first);
-        return names;
-    }
-
-    bool empty() {
-        ScopedLock lock(mutex_);
-        return map_.empty();
-    }
-private:
-    Map map_;
-    Mutex mutex_;
-};
 
 class YBORM_DECL DBError: public RunTimeError
 {
@@ -119,6 +52,23 @@ class YBORM_DECL SqlDriverError: public DBError
 public:
     SqlDriverError(const String &msg);
 };
+
+class SqlCursor;
+class SqlConnection;
+class SqlPool;
+
+struct ColumnInfo
+{
+    String name;
+    int type;
+    int size;
+    bool nullable;
+    bool pk;
+    String fk_table;
+    String fk;
+};
+
+typedef std::vector<ColumnInfo> ColumnsInfo;
 
 class YBORM_DECL SqlDialect: NonCopyable
 {
@@ -158,6 +108,13 @@ public:
     virtual const String not_null_default(const String &not_null_clause,
             const String &default_value);
     virtual int pager_model();
+    // schema introspection
+    virtual bool table_exists(SqlConnection &conn, const String &table) = 0;
+    virtual bool view_exists(SqlConnection &conn, const String &table) = 0;
+    virtual Strings get_tables(SqlConnection &conn) = 0;
+    virtual Strings get_views(SqlConnection &conn) = 0;
+    virtual ColumnsInfo get_columns(SqlConnection &connection,
+            const String &table) = 0;
 };
 
 YBORM_DECL SqlDialect *sql_dialect(const String &name);
@@ -242,10 +199,6 @@ public:
 YBORM_DECL SqlDriver *sql_driver(const String &name);
 YBORM_DECL bool register_sql_driver(std::auto_ptr<SqlDriver> driver);
 YBORM_DECL const Strings list_sql_drivers();
-
-class SqlCursor;
-class SqlConnection;
-class SqlPool;
 
 class YBORM_DECL SqlResultSet: public ResultSetBase<Row>
 {

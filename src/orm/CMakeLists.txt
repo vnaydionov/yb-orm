@@ -17,9 +17,11 @@ set (SOURCES_CPP
     expression.cpp
     schema_config.cpp
     schema.cpp
+    schema_reader.cpp
     sql_driver.cpp
     sql_pool.cpp
     xmlizer.cpp
+    dialect_sqlite.cpp
 )
 
 if (USE_QT4)
