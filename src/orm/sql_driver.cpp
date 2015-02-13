@@ -970,6 +970,36 @@ SqlConnection::fetch_rows(int max_rows)
     return cursor_->fetch_rows(max_rows);
 }
 
+bool
+SqlConnection::table_exists(const String &table)
+{
+    return dialect_->table_exists(*this, table);
+}
+
+bool
+SqlConnection::view_exists(const String &table)
+{
+    return dialect_->view_exists(*this, table);
+}
+
+Strings
+SqlConnection::get_tables()
+{
+    return dialect_->get_tables(*this);
+}
+
+Strings
+SqlConnection::get_views()
+{
+    return dialect_->get_views(*this);
+}
+
+ColumnsInfo
+SqlConnection::get_columns(const String &table)
+{
+    return dialect_->get_columns(*this, table);
+}
+
 YBORM_DECL bool
 find_subst_signs(const String &sql, std::vector<int> &pos_list, String &first_word)
 {

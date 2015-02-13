@@ -538,4 +538,23 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestEngineSql);
 
+class TestSqlIntrospection: public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(TestSqlIntrospection);
+    CPPUNIT_TEST(test_show_all);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void test_show_all()
+    {
+        SqlConnection conn(Engine::sql_source_from_env());
+        Strings tables = conn.get_tables();
+        sort(tables.begin(), tables.end());
+        CPPUNIT_ASSERT_EQUAL(String(_T("T_ORM_TEST")), tables[0]);
+        CPPUNIT_ASSERT_EQUAL(String(_T("T_ORM_XM")), tables[1]);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(TestSqlIntrospection);
+
 // vim:ts=4:sts=4:sw=4:et:

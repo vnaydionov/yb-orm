@@ -1,8 +1,13 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 
+#include <algorithm>
+#include "util/string_utils.h"
 #include "orm/dialect_sqlite.h"
 
 namespace Yb {
+
+using namespace std;
+using namespace Yb::StrUtils;
 
 SQLite3Dialect::SQLite3Dialect()
     : SqlDialect(_T("SQLITE"), _T(""), false)
@@ -91,34 +96,128 @@ SQLite3Dialect::autoinc_flag()
 
 // schema introspection
 
+static Strings
+really_get_tables(SqlConnection &conn, const String &type,
+        const String &name)
+{
+    Strings tables;
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String q = _T("SELECT name FROM sqlite_master WHERE type=?");
+    Values params;
+    params.push_back(Value(type));
+    if (!str_empty(name))
+    {
+        q += _T(" AND name=?");
+        params.push_back(Value(name));
+    }
+    cursor->prepare(q);
+    SqlResultSet rs = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    {
+        tables.push_back(str_to_upper((*i)[0].second.as_string()));
+    }
+    return tables;
+}
+
 bool
 SQLite3Dialect::table_exists(SqlConnection &conn, const String &table)
 {
-    return false;
+    Strings r = really_get_tables(conn, _T("table"), table);
+    return r.size() == 1;
 }
 
 bool
 SQLite3Dialect::view_exists(SqlConnection &conn, const String &table)
 {
-    return false;
+    Strings r = really_get_tables(conn, _T("view"), table);
+    return r.size() == 1;
 }
 
 Strings
 SQLite3Dialect::get_tables(SqlConnection &conn)
 {
-    return Strings();
+    return really_get_tables(conn, _T("table"), _T(""));
 }
 
 Strings
 SQLite3Dialect::get_views(SqlConnection &conn)
 {
-    return Strings();
+    return really_get_tables(conn, _T("view"), _T(""));
 }
 
 ColumnsInfo
 SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
 {
-    return ColumnsInfo();
+    ColumnsInfo ci;
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    cursor->prepare(_T("PRAGMA table_info('") + table + _T("')"));
+    Values params;
+    SqlResultSet rs = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    {
+        ColumnInfo x;
+        for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+        {
+            if (_T("NAME") == j->first)
+            {
+                x.name = j->second.as_string();
+            }
+            else if (_T("TYPE") == j->first)
+            {
+                x.type = j->second.as_string();
+                int open_par = str_find(x.type, _T('('));
+                if (-1 != open_par) {
+                    // split type size into its own field
+                    x.type = str_substr(x.type, 0, open_par);
+                    from_string(str_substr(x.type, open_par + 1,
+                                str_length(x.type) - open_par - 2), x.size);
+                }
+            }
+            else if (_T("NOTNULL") == j->first)
+            {
+                x.notnull = _T("0") != j->second;
+            }
+            else if (_T("DFLT_VALUE") == j->first)
+            {
+                x.default_value = j->second.as_string();
+            }
+            else if (_T("PK") == j->first)
+            {
+                x.pk = _T("0") != j->second;
+            }
+        }
+        ci.push_back(x);
+    }
+    cursor->prepare(_T("PRAGMA foreign_key_list('") + table + _T("')"));
+    SqlResultSet rs2 = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs2.begin(); i != rs2.end(); ++i)
+    {
+        String fk_column, fk_table, fk_table_key;
+        for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+        {
+            if (_T("TABLE") == j->first)
+            {
+                fk_table = j->second.as_string();
+            }
+            else if (_T("FROM") == j->first)
+            {
+                fk_column = j->second.as_string();
+            }
+            else if (_T("TO") == j->first)
+            {
+                fk_table_key = j->second.as_string();
+            }
+        }
+        for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
+        {
+            if (k->name == fk_column) {
+                k->fk_table = fk_table;
+                k->fk_table_key = fk_table_key;
+                break;
+            }
+        }
+    }
+    return ci;
 }
 
 } // namespace Yb

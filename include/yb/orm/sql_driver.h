@@ -60,12 +60,18 @@ class SqlPool;
 struct ColumnInfo
 {
     String name;
-    int type;
+    String type;
     int size;
-    bool nullable;
+    bool notnull;
+    String default_value;
     bool pk;
     String fk_table;
-    String fk;
+    String fk_table_key;
+    ColumnInfo()
+        : size(0)
+        , notnull(false)
+        , pk(false)
+    {}
 };
 
 typedef std::vector<ColumnInfo> ColumnsInfo;
@@ -283,6 +289,12 @@ public:
     SqlResultSet exec(const Values &params);
     RowPtr fetch_row();
     RowsPtr fetch_rows(int max_rows = -1); // -1 = all
+    // schema introspection
+    bool table_exists(const String &table);
+    bool view_exists(const String &table);
+    Strings get_tables();
+    Strings get_views();
+    ColumnsInfo get_columns(const String &table);
 };
 
 YBORM_DECL bool find_subst_signs(const String &sql,
