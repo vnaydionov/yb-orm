@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
 #include "util/string_utils.h"
@@ -542,6 +543,8 @@ class TestSqlIntrospection: public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestSqlIntrospection);
     CPPUNIT_TEST(test_show_all);
+    CPPUNIT_TEST(test_find_by_name);
+    CPPUNIT_TEST(test_table_columns);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -549,9 +552,117 @@ public:
     {
         SqlConnection conn(Engine::sql_source_from_env());
         Strings tables = conn.get_tables();
-        sort(tables.begin(), tables.end());
-        CPPUNIT_ASSERT_EQUAL(String(_T("T_ORM_TEST")), tables[0]);
-        CPPUNIT_ASSERT_EQUAL(String(_T("T_ORM_XM")), tables[1]);
+        //sort(tables.begin(), tables.end());
+        Strings::iterator i;
+        i = find(tables.begin(), tables.end(), _T("T_ORM_TEST"));
+        CPPUNIT_ASSERT(tables.end() != i);
+        i = find(tables.begin(), tables.end(), _T("T_ORM_XML"));
+        CPPUNIT_ASSERT(tables.end() != i);
+        if (conn.get_dialect()->get_name() == _T("SQLITE")) {
+            i = find(tables.begin(), tables.end(), _T("SQLITE_SEQUENCE"));
+            CPPUNIT_ASSERT(tables.end() == i);
+        }
+    }
+
+    void test_find_by_name()
+    {
+        SqlConnection conn(Engine::sql_source_from_env());
+        CPPUNIT_ASSERT(conn.table_exists(_T("T_ORM_TEST")));
+        CPPUNIT_ASSERT(conn.table_exists(_T("T_ORM_XML")));
+        if (conn.get_dialect()->get_name() == _T("SQLITE")) {
+            CPPUNIT_ASSERT(conn.table_exists(_T("SQLITE_SEQUENCE")));
+        }
+    }
+
+    void test_table_columns()
+    {
+        SqlConnection conn(Engine::sql_source_from_env());
+        ColumnsInfo t1 = conn.get_columns(_T("T_ORM_TEST"));
+        CPPUNIT_ASSERT_EQUAL(5, (int)t1.size());
+        // T_ORM_TEST.ID
+        CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(t1[0].name));
+        CPPUNIT_ASSERT_EQUAL(NARROW(conn.get_dialect()->type2sql(
+                Value::INTEGER)), NARROW(t1[0].type));
+        CPPUNIT_ASSERT_EQUAL(0, t1[0].size);
+        CPPUNIT_ASSERT_EQUAL(true, t1[0].notnull);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[0].default_value));
+        CPPUNIT_ASSERT_EQUAL(true, t1[0].pk);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[0].fk_table));
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[0].fk_table_key));
+        // T_ORM_TEST.A
+        CPPUNIT_ASSERT_EQUAL(string("A"), NARROW(t1[1].name));
+        CPPUNIT_ASSERT_EQUAL(NARROW(conn.get_dialect()->type2sql(
+                Value::STRING)), NARROW(t1[1].type));
+        CPPUNIT_ASSERT_EQUAL(200, t1[1].size);
+        CPPUNIT_ASSERT_EQUAL(false, t1[1].notnull);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[1].default_value));
+        CPPUNIT_ASSERT_EQUAL(false, t1[1].pk);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[1].fk_table));
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[1].fk_table_key));
+        // T_ORM_TEST.B
+        CPPUNIT_ASSERT_EQUAL(string("B"), NARROW(t1[2].name));
+        CPPUNIT_ASSERT_EQUAL(NARROW(conn.get_dialect()->type2sql(
+                Value::DATETIME)), NARROW(t1[2].type));
+        CPPUNIT_ASSERT_EQUAL(0, t1[2].size);
+        CPPUNIT_ASSERT_EQUAL(false, t1[2].notnull);
+        CPPUNIT_ASSERT_EQUAL(NARROW(conn.get_dialect()->sysdate_func()),
+                NARROW(t1[2].default_value));
+        CPPUNIT_ASSERT_EQUAL(false, t1[2].pk);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[2].fk_table));
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[2].fk_table_key));
+        // T_ORM_TEST.C
+        CPPUNIT_ASSERT_EQUAL(string("C"), NARROW(t1[3].name));
+        CPPUNIT_ASSERT_EQUAL(NARROW(conn.get_dialect()->type2sql(
+                Value::DECIMAL)), NARROW(t1[3].type));
+        CPPUNIT_ASSERT_EQUAL(0, t1[3].size);
+        CPPUNIT_ASSERT_EQUAL(false, t1[3].notnull);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[3].default_value));
+        CPPUNIT_ASSERT_EQUAL(false, t1[3].pk);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[3].fk_table));
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[3].fk_table_key));
+        // T_ORM_TEST.D
+        CPPUNIT_ASSERT_EQUAL(string("D"), NARROW(t1[4].name));
+        CPPUNIT_ASSERT_EQUAL(NARROW(conn.get_dialect()->type2sql(
+                Value::FLOAT)), NARROW(t1[4].type));
+        CPPUNIT_ASSERT_EQUAL(0, t1[4].size);
+        CPPUNIT_ASSERT_EQUAL(false, t1[4].notnull);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[4].default_value));
+        CPPUNIT_ASSERT_EQUAL(false, t1[4].pk);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[4].fk_table));
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t1[4].fk_table_key));
+
+        ColumnsInfo t2 = conn.get_columns(_T("T_ORM_XML"));
+        CPPUNIT_ASSERT_EQUAL(3, (int)t2.size());
+        // T_ORM_XML.ID
+        CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(t2[0].name));
+        CPPUNIT_ASSERT_EQUAL(NARROW(conn.get_dialect()->type2sql(
+                Value::INTEGER)), NARROW(t2[0].type));
+        CPPUNIT_ASSERT_EQUAL(0, t2[0].size);
+        CPPUNIT_ASSERT_EQUAL(true, t2[0].notnull);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t2[0].default_value));
+        CPPUNIT_ASSERT_EQUAL(true, t2[0].pk);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t2[0].fk_table));
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t2[0].fk_table_key));
+        // T_ORM_XML.ORM_TEST_ID
+        CPPUNIT_ASSERT_EQUAL(string("ORM_TEST_ID"), NARROW(t2[1].name));
+        CPPUNIT_ASSERT_EQUAL(NARROW(conn.get_dialect()->type2sql(
+                Value::INTEGER)), NARROW(t2[1].type));
+        CPPUNIT_ASSERT_EQUAL(0, t2[1].size);
+        CPPUNIT_ASSERT_EQUAL(false, t2[1].notnull);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t2[1].default_value));
+        CPPUNIT_ASSERT_EQUAL(false, t2[1].pk);
+        CPPUNIT_ASSERT_EQUAL(string("T_ORM_TEST"), NARROW(t2[1].fk_table));
+        CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(t2[1].fk_table_key));
+        // T_ORM_XML.B
+        CPPUNIT_ASSERT_EQUAL(string("B"), NARROW(t2[2].name));
+        CPPUNIT_ASSERT_EQUAL(NARROW(conn.get_dialect()->type2sql(
+                Value::DECIMAL)), NARROW(t2[2].type));
+        CPPUNIT_ASSERT_EQUAL(0, t2[2].size);
+        CPPUNIT_ASSERT_EQUAL(false, t2[2].notnull);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t2[2].default_value));
+        CPPUNIT_ASSERT_EQUAL(false, t2[2].pk);
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t2[2].fk_table));
+        CPPUNIT_ASSERT_EQUAL(string(), NARROW(t2[2].fk_table_key));
     }
 };
 

@@ -98,7 +98,7 @@ SQLite3Dialect::autoinc_flag()
 
 static Strings
 really_get_tables(SqlConnection &conn, const String &type,
-        const String &name)
+        const String &name, bool filter_system)
 {
     Strings tables;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
@@ -107,8 +107,13 @@ really_get_tables(SqlConnection &conn, const String &type,
     params.push_back(Value(type));
     if (!str_empty(name))
     {
-        q += _T(" AND name=?");
+        q += _T(" AND UPPER(name)=UPPER(?)");
         params.push_back(Value(name));
+    }
+    if (filter_system)
+    {
+        q += _T(" AND UPPER(name) NOT IN (?)");
+        params.push_back(Value(_T("SQLITE_SEQUENCE")));
     }
     cursor->prepare(q);
     SqlResultSet rs = cursor->exec(params);
@@ -122,27 +127,27 @@ really_get_tables(SqlConnection &conn, const String &type,
 bool
 SQLite3Dialect::table_exists(SqlConnection &conn, const String &table)
 {
-    Strings r = really_get_tables(conn, _T("table"), table);
+    Strings r = really_get_tables(conn, _T("table"), table, false);
     return r.size() == 1;
 }
 
 bool
 SQLite3Dialect::view_exists(SqlConnection &conn, const String &table)
 {
-    Strings r = really_get_tables(conn, _T("view"), table);
+    Strings r = really_get_tables(conn, _T("view"), table, false);
     return r.size() == 1;
 }
 
 Strings
 SQLite3Dialect::get_tables(SqlConnection &conn)
 {
-    return really_get_tables(conn, _T("table"), _T(""));
+    return really_get_tables(conn, _T("table"), _T(""), true);
 }
 
 Strings
 SQLite3Dialect::get_views(SqlConnection &conn)
 {
-    return really_get_tables(conn, _T("view"), _T(""));
+    return really_get_tables(conn, _T("view"), _T(""), true);
 }
 
 ColumnsInfo
@@ -160,17 +165,21 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
         {
             if (_T("NAME") == j->first)
             {
-                x.name = j->second.as_string();
+                x.name = str_to_upper(j->second.as_string());
             }
             else if (_T("TYPE") == j->first)
             {
-                x.type = j->second.as_string();
+                x.type = str_to_upper(j->second.as_string());
                 int open_par = str_find(x.type, _T('('));
                 if (-1 != open_par) {
                     // split type size into its own field
-                    x.type = str_substr(x.type, 0, open_par);
-                    from_string(str_substr(x.type, open_par + 1,
+                    String new_type = str_substr(x.type, 0, open_par);
+                    try {
+                        from_string(str_substr(x.type, open_par + 1,
                                 str_length(x.type) - open_par - 2), x.size);
+                        x.type = new_type;
+                    }
+                    catch (const std::exception &) {}
                 }
             }
             else if (_T("NOTNULL") == j->first)
@@ -179,7 +188,8 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
             }
             else if (_T("DFLT_VALUE") == j->first)
             {
-                x.default_value = j->second.as_string();
+                if (!j->second.is_null())
+                    x.default_value = j->second.as_string();
             }
             else if (_T("PK") == j->first)
             {
@@ -197,15 +207,18 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
         {
             if (_T("TABLE") == j->first)
             {
-                fk_table = j->second.as_string();
+                if (!j->second.is_null())
+                    fk_table = j->second.as_string();
             }
             else if (_T("FROM") == j->first)
             {
-                fk_column = j->second.as_string();
+                if (!j->second.is_null())
+                    fk_column = j->second.as_string();
             }
             else if (_T("TO") == j->first)
             {
-                fk_table_key = j->second.as_string();
+                if (!j->second.is_null())
+                    fk_table_key = j->second.as_string();
             }
         }
         for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
