@@ -227,8 +227,8 @@ EngineBase::create_schema(const Schema &schema, bool ignore_errors)
             try {
                 cursor->exec_direct(sql);
             }
-            catch (const DBError &) {
-                // ignore
+            catch (const DBError &e) {
+                logger()->warning(std::string("ignored DB error: ") + e.what());
             }
         }
         else

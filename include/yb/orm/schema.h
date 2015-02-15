@@ -291,6 +291,7 @@ class YBORM_DECL Schema
     typedef std::multimap<String, String> StrMap;
     Schema(const Schema &);
 public:
+    typedef SharedPtr<Schema>::Type Ptr;
     typedef std::map<String, Table::Ptr> TblMap;
     typedef std::multimap<String, Relation::Ptr> RelMap;
     typedef Relations RelVect;

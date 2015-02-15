@@ -2,21 +2,13 @@
 #ifndef YB__ORM__SCHEMA_READER__INCLUDED
 #define YB__ORM__SCHEMA_READER__INCLUDED
 
-#include "sql_driver.h"
-#include "schema.h"
+#include "orm/sql_driver.h"
+#include "orm/schema.h"
 
 namespace Yb {
 
-class SchemaReader {
-    SqlDriver &driver_;
-    SqlDialect &dialect_;
-public:
-    SchemaReader(SqlDriver &driver, SqlDialect &dialect)
-        : driver_(driver)
-        , dialect_(dialect)
-    {}
-    SharedPtr<Schema> read_from_db(SqlConnection &connection);
-};
+int get_sql_type_by_name(const String &sql_type, SqlDialect &sql_dialect);
+Schema::Ptr read_schema_from_db(SqlConnection &connection);
 
 } // namespace Yb
 
