@@ -56,6 +56,8 @@ void Document::start_element (Yb::String const & name)
         buffer_ << text_;
         text_ = std::string ();
     }
+    if (indent_ && level_)
+        buffer_ << "\n" << string(level_ * 4, ' ');
     buffer_ << "<" << armour (NARROW (name));
     open_ = true;
     ++ level_;
@@ -78,6 +80,8 @@ void Document::end_element (Yb::String const & name)
             buffer_ << text_;
             text_ = std::string ();
         }
+        if (indent_ && level_)
+            buffer_ << "\n" << string((level_ - 1) * 4, ' ');
         buffer_ << "</" << armour (NARROW (name)) << ">";
     }
     -- level_;
@@ -85,10 +89,11 @@ void Document::end_element (Yb::String const & name)
         buffer_ << "\n";
 }
 
-Document::Document (string const & xml)
+Document::Document (string const & xml, bool indent)
     :xml_ (xml)
     ,level_ (0)
     ,open_ (false)
+    ,indent_ (indent)
 {}
 
 Document::~Document ()

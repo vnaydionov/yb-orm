@@ -332,7 +332,7 @@ public:
 
     // export to text
     void export_ddl(const String &output_file, const String &dialect_name) const;
-    void export_xml(const String &output_file) const;
+    void export_xml(const String &output_file, bool indent=false) const;
 private:
     void clear_backrefs();
     void fix_backrefs();

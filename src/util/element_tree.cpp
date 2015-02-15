@@ -116,9 +116,9 @@ Element::serialize(Yb::XmlWriter::Document &doc) const
 }
 
 const std::string
-Element::serialize() const
+Element::serialize(bool indent) const
 {
-    Yb::XmlWriter::Document doc;
+    Yb::XmlWriter::Document doc("", indent);
     serialize(doc);
     return doc.end_document();
 }

@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
             conn.init_logger(root_logger.get());
             conn.set_echo(true);
             Schema::Ptr s = read_schema_from_db(conn);
-            s->export_xml(WIDEN(params.config));
+            s->export_xml(WIDEN(params.config), true);
         }
     }
     catch (exception &e) {

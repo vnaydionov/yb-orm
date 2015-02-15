@@ -344,7 +344,8 @@ ElementTree::ElementPtr MetaDataConfig::column_to_tree(const Column &column)
         node->attrib_[_T("property")] = column.prop_name();
     if (!str_empty(column.xml_name()) && column.xml_name() != column.prop_name())
         node->attrib_[_T("xml-name")] = column.xml_name();
-    if (!column.default_value().is_null())
+    if (!column.default_value().is_null()
+            && !str_empty(column.default_value().as_string()))
         node->attrib_[_T("default")] = column.default_value().as_string();
     if (!column.is_nullable() && !column.is_pk())
         node->attrib_[_T("null")] = _T("false");
@@ -427,9 +428,9 @@ ElementTree::ElementPtr MetaDataConfig::build_tree(const Schema &schema)
     return node;
 }
 
-const std::string MetaDataConfig::save_xml()
+const std::string MetaDataConfig::save_xml(bool indent)
 {
-    return node_->serialize();
+    return node_->serialize(indent);
 }
 
 } // namespace Yb

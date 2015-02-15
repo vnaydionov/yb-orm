@@ -54,7 +54,7 @@ public:
     ElementPtr find_first(const Yb::String &path);
     ElementsPtr find_all(const Yb::String &path);
     void serialize(Yb::XmlWriter::Document &doc) const;
-    const std::string serialize() const;
+    const std::string serialize(bool indent = false) const;
 
     ElementPtr add_json_array(const Yb::String &name = _T("array"))
     {

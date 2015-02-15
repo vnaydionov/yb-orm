@@ -1,8 +1,11 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 
+#include "util/string_utils.h"
 #include "orm/schema_reader.h"
 
 namespace Yb {
+
+using namespace Yb::StrUtils;
 
 int get_sql_type_by_name(const String &sql_type, SqlDialect &sql_dialect)
 {
@@ -37,7 +40,9 @@ Schema::Ptr read_schema_from_db(SqlConnection &connection)
                      get_sql_type_by_name(j->type, *connection.get_dialect()),
                      j->size,
                      flags,
-                     j->default_value,
+                     str_to_upper(j->default_value) ==
+                     str_to_upper(connection.get_dialect()->sysdate_func())?
+                     _T("SYSDATE"): j->default_value,
                      j->fk_table,
                      j->fk_table_key);
             t->add_column(c);

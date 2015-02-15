@@ -18,6 +18,7 @@ class YBUTIL_DECL Document: public NonCopyable
     std::string xml_, text_;
     int level_;
     bool open_;
+    bool indent_;
 
     void write_raw (std::string const & value);
     void write_attribute (Yb::String const & name, Yb::String const & value);
@@ -38,7 +39,7 @@ class YBUTIL_DECL Document: public NonCopyable
     }
 
 public:
-    Document (std::string const & xml = "");
+    Document (std::string const & xml = "", bool indent = false);
     ~Document ();
     void flush ();
     void insert (Document & doc);

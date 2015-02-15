@@ -619,13 +619,13 @@ Schema::export_ddl(const String &output_file, const String &dialect_name) const
 }
 
 void
-Schema::export_xml(const String &output_file) const
+Schema::export_xml(const String &output_file, bool indent) const
 {
     MetaDataConfig cfg(*this);
     ofstream xml_file(NARROW(output_file).c_str());
     if (!xml_file.good())
         throw CodeGenError(_T("Can't write to file"));
-    xml_file << cfg.save_xml();
+    xml_file << cfg.save_xml(indent);
     xml_file.close();
 }
 

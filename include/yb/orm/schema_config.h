@@ -49,7 +49,7 @@ public:
     MetaDataConfig(const std::string &xml_string);
     MetaDataConfig(const Schema &schema);
     void parse(Schema &reg);
-    const std::string save_xml();
+    const std::string save_xml(bool indent = false);
     bool need_generation(const String &table_name) const {
         return std::find(skip_generation_.begin(), skip_generation_.end(), table_name) == skip_generation_.end();
     }
