@@ -1,4 +1,5 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
 
 #include "util/string_utils.h"
 #include "orm/schema_reader.h"
@@ -7,7 +8,8 @@ namespace Yb {
 
 using namespace Yb::StrUtils;
 
-int get_sql_type_by_name(const String &sql_type, SqlDialect &sql_dialect)
+YBORM_DECL int
+get_sql_type_by_name(const String &sql_type, SqlDialect &sql_dialect)
 {
     int codes[] = { Value::INTEGER, Value::LONGINT, Value::STRING,
                     Value::DECIMAL, Value::DATETIME, Value::FLOAT };
@@ -21,7 +23,8 @@ int get_sql_type_by_name(const String &sql_type, SqlDialect &sql_dialect)
     return Value::DECIMAL;
 }
 
-Schema::Ptr read_schema_from_db(SqlConnection &connection)
+YBORM_DECL Schema::Ptr
+read_schema_from_db(SqlConnection &connection)
 {
     Schema::Ptr s(new Schema());
     Strings tables = connection.get_tables();

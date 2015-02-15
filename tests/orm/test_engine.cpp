@@ -553,11 +553,11 @@ public:
         SqlConnection conn(Engine::sql_source_from_env());
         Strings tables = conn.get_tables();
         //sort(tables.begin(), tables.end());
-        Strings::iterator i;
-        i = find(tables.begin(), tables.end(), _T("T_ORM_TEST"));
+        Strings::iterator i, j;
+        i = find(tables.begin(), tables.end(), String(_T("T_ORM_TEST")));
         CPPUNIT_ASSERT(tables.end() != i);
-        i = find(tables.begin(), tables.end(), _T("T_ORM_XML"));
-        CPPUNIT_ASSERT(tables.end() != i);
+        j = find(tables.begin(), tables.end(), String(_T("T_ORM_XML")));
+        CPPUNIT_ASSERT(tables.end() != j);
         if (conn.get_dialect()->get_name() == _T("SQLITE")) {
             i = find(tables.begin(), tables.end(), _T("SQLITE_SEQUENCE"));
             CPPUNIT_ASSERT(tables.end() == i);

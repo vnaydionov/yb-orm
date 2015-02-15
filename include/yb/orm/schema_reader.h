@@ -7,8 +7,8 @@
 
 namespace Yb {
 
-int get_sql_type_by_name(const String &sql_type, SqlDialect &sql_dialect);
-Schema::Ptr read_schema_from_db(SqlConnection &connection);
+YBORM_DECL int get_sql_type_by_name(const String &sql_type, SqlDialect &sql_dialect);
+YBORM_DECL Schema::Ptr read_schema_from_db(SqlConnection &connection);
 
 } // namespace Yb
 

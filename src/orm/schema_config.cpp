@@ -340,7 +340,8 @@ ElementTree::ElementPtr MetaDataConfig::column_to_tree(const Column &column)
             Value::get_type_name(column.type()));
     if (column.size())
         node->attrib_[_T("size")] = to_string(column.size());
-    if (!str_empty(column.prop_name()) && column.prop_name() != column.name())
+    if (!str_empty(column.prop_name()) && column.prop_name() != column.name()
+            && column.prop_name() != StrUtils::str_to_lower(column.name()))
         node->attrib_[_T("property")] = column.prop_name();
     if (!str_empty(column.xml_name()) && column.xml_name() != column.prop_name())
         node->attrib_[_T("xml-name")] = column.xml_name();
