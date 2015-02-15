@@ -24,7 +24,7 @@ set (SOURCES_CPP
     dialect_sqlite.cpp
 )
 
-if (USE_QT4)
+if (USE_QT)
     set(SOURCES_CPP ${SOURCES_CPP} qtsql_driver.cpp)
 endif ()
 

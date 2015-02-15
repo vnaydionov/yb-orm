@@ -48,14 +48,14 @@ AC_DEFUN([YB_QT],
     QT_LIBS=""
     AC_ARG_WITH([qt-includes],
         AC_HELP_STRING([--with-qt-includes=DIR],
-            [Directory where the QT4 C++ includes reside]),
+            [Directory where the Qt C++ includes reside]),
         [ac_qt_includes="$withval"])
     AC_ARG_WITH([qt-libs],
         AC_HELP_STRING([--with-qt-libs=DIR],
-            [Directory where the QT4 C++ libraries reside]),
+            [Directory where the Qt C++ libraries reside]),
         [ac_qt_libs="$withval"])
     if test "x$ac_qt_includes" != "x" || test "x$ac_qt_libs" != "x" ; then
-        AC_MSG_CHECKING([for the QT4 C++ libraries])
+        AC_MSG_CHECKING([for the Qt C++ libraries])
         if test "x$ac_qt_includes" != "x" ; then
             QT_CFLAGS="-I$ac_qt_includes -I$ac_qt_includes/QtCore -I$ac_qt_includes/QtXml -I$ac_qt_includes/QtSql"
         fi
@@ -63,6 +63,8 @@ AC_DEFUN([YB_QT],
             QT_LDFLAGS="-L$ac_qt_libs"
         fi
         QT_LIBS="$QT_LIBS -lQtCore -lQtXml -lQtSql"
+        #QT_LIBS="$QT_LIBS -lQt5Core -lQt5Xml -lQt5Sql"
+        #QT_CFLAGS="-fPIC $QT_CFLAGS"
         ac_save_cxxflags="$CXXFLAGS"
         ac_save_ldflags="$LDFLAGS"
         ac_save_libs="$LIBS"

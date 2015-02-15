@@ -184,7 +184,7 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
             }
             else if (_T("NOTNULL") == j->first)
             {
-                x.notnull = _T("0") != j->second;
+                x.notnull = _T("0") != j->second.as_string();
             }
             else if (_T("DFLT_VALUE") == j->first)
             {
@@ -193,7 +193,7 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
             }
             else if (_T("PK") == j->first)
             {
-                x.pk = _T("0") != j->second;
+                x.pk = _T("0") != j->second.as_string();
             }
         }
         ci.push_back(x);

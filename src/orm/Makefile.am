@@ -10,7 +10,7 @@ AM_CXXFLAGS = \
 	$(WX_CFLAGS) \
 	$(QT_CFLAGS)
 
-if QT4_PRESENT
+if QT_PRESENT
 QTSQL_DRV_CPP = qtsql_driver.cpp
 else
 QTSQL_DRV_CPP =

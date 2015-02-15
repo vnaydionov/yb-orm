@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 2.8)
 project (auth)
 
 
-option (USE_QT4 "YB.ORM built against QT4" OFF)
+option (USE_QT "YB.ORM built against Qt" OFF)
 
 if (UNIX)
     find_path (BOOST_INCLUDEDIR boost/lexical_cast.hpp /usr/include)
@@ -11,7 +11,7 @@ else ()
     find_path (BOOST_INCLUDEDIR boost/lexical_cast.hpp ${YBORM_ROOT}/include)
 endif ()
 
-if (NOT USE_QT4)
+if (NOT USE_QT)
 
 # find boost + libxml2
 
@@ -75,9 +75,10 @@ else ()
     find_library (LIBXML2_LIBS libxml2 ${YBORM_ROOT}/bin)
 endif ()
 
-else (USE_QT4)
+else (USE_QT)
 
 find_package (Qt4 4.4.0 REQUIRED QtCore QtXml QtSql)
+#find_package (Qt5 5.0.2 REQUIRED QtCore QtXml QtSql)
 include (${QT_USE_FILE})
 add_definitions (-DYB_USE_QT)
 

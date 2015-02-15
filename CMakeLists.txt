@@ -2,7 +2,7 @@
 cmake_minimum_required (VERSION 2.8)
 project (yborm)
 
-option (USE_QT4 "Build YB.ORM against QT4" OFF)
+option (USE_QT "Build YB.ORM against Qt" OFF)
 
 if (UNIX)
     find_path (BOOST_INCLUDEDIR boost/lexical_cast.hpp /usr/include)
@@ -10,7 +10,7 @@ else ()
     find_path (BOOST_INCLUDEDIR boost/lexical_cast.hpp c:/yborm/include)
 endif ()
 
-if (NOT USE_QT4)
+if (NOT USE_QT)
 
 # find boost + libxml2
 
@@ -74,9 +74,10 @@ else ()
     find_library (LIBXML2_LIBS libxml2 c:/yborm/bin)
 endif ()
 
-else (USE_QT4)
+else (USE_QT)
 
 find_package (Qt4 4.4.0 REQUIRED QtCore QtXml QtSql)
+#find_package (Qt5 5.0.2 REQUIRED QtCore QtXml QtSql)
 include (${QT_USE_FILE})
 add_definitions (-DYB_USE_QT)
 

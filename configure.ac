@@ -1,5 +1,5 @@
 
-AC_INIT([yb-orm], [0.4.5])
+AC_INIT([yb-orm], [0.4.6])
 AC_CONFIG_SRCDIR([src/orm/data_object.cpp])
 AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE
@@ -32,7 +32,7 @@ YB_SQLITE3([
 YB_SOCI([
     CPPFLAGS="$CPPFLAGS -DYB_USE_SOCI"
 ], [])
-AM_CONDITIONAL([QT4_PRESENT], [test x$have_qt = xyes])
+AM_CONDITIONAL([QT_PRESENT], [test x$have_qt = xyes])
 AM_CONDITIONAL([ODBC_PRESENT], [test x$have_odbc = xyes])
 AM_CONDITIONAL([SQLITE3_PRESENT], [test x$have_sqlite3 = xyes])
 AM_CONDITIONAL([SOCI_PRESENT], [test x$have_soci = xyes])
