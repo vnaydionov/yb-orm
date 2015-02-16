@@ -56,36 +56,51 @@ AC_DEFUN([YB_QT],
         [ac_qt_libs="$withval"])
     if test "x$ac_qt_includes" != "x" || test "x$ac_qt_libs" != "x" ; then
         AC_MSG_CHECKING([for the Qt C++ libraries])
+        AC_LANG_PUSH(C++)
+        ac_save_cxxflags="$CXXFLAGS"
+        ac_save_ldflags="$LDFLAGS"
+        ac_save_libs="$LIBS"
         if test "x$ac_qt_includes" != "x" ; then
             QT_CFLAGS="-I$ac_qt_includes -I$ac_qt_includes/QtCore -I$ac_qt_includes/QtXml -I$ac_qt_includes/QtSql"
         fi
         if test "x$ac_qt_libs" != "x" ; then
             QT_LDFLAGS="-L$ac_qt_libs"
         fi
-        QT_LIBS="$QT_LIBS -lQtCore -lQtXml -lQtSql"
-        ac_save_cxxflags="$CXXFLAGS"
-        ac_save_ldflags="$LDFLAGS"
-        ac_save_libs="$LIBS"
+        QT_LIBS="-lQtCore -lQtXml -lQtSql"
         CXXFLAGS="$ac_save_cxxflags $QT_CFLAGS"
         LDFLAGS="$ac_save_ldflags $QT_LDFLAGS"
         LIBS="$ac_save_libs $QT_LIBS"
-        AC_LANG_PUSH(C++)
         AC_TRY_LINK([
 #include <QtXml>
 ],
         [ QBuffer buf; buf.setData("<aaa/>", 6); QDomDocument doc("aaa"); ],
         [ have_qt="yes" ])
-        AC_LANG_POP(C++)
         if test "x$have_qt" = "xyes" ; then
             AC_MSG_RESULT([yes])
             ifelse([$1], , :, [$1])
         else
-            AC_MSG_RESULT([no])
-            ifelse([$2], , :, [$2])
+            QT_LIBS="-lQt5Core -lQt5Xml -lQt5Sql"
+            QT_CFLAGS="-fPIC $QT_CFLAGS"
+            CXXFLAGS="$ac_save_cxxflags $QT_CFLAGS"
+            LDFLAGS="$ac_save_ldflags $QT_LDFLAGS"
+            LIBS="$ac_save_libs $QT_LIBS"
+            AC_TRY_LINK([
+    #include <QtXml>
+    ],
+            [ QBuffer buf; buf.setData("<aaa/>", 6); QDomDocument doc("aaa"); ],
+            [ have_qt="yes" ])
+            if test "x$have_qt" = "xyes" ; then
+                AC_MSG_RESULT([yes])
+                ifelse([$1], , :, [$1])
+            else
+                AC_MSG_RESULT([no])
+                ifelse([$2], , :, [$2])
+            fi
         fi
         CXXFLAGS="$ac_save_cxxflags"
         LDFLAGS="$ac_save_ldflags"
         LIBS="$ac_save_libs"
+        AC_LANG_POP(C++)
     else
         ifelse([$2], , :, [$2])
     fi
