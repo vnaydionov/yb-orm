@@ -280,7 +280,7 @@ folders. Below are the prerequisites for the rebuild process.
 			</P>
 		</TD>
 		<TD STYLE="border: none; padding: 0cm">
-			<P>tested with Qt4.8, required only for Qt-enabled build, see the
+			<P>tested with Qt4.8 and Qt5.0.2, required only for Qt-enabled build, see the
 			note above, where to get the &quot;right&quot; version of MinGW. 
 			</P>
 		</TD>
@@ -319,8 +319,8 @@ build use <TT CLASS="western">--with-wx-config</TT>.
 ...
   --prefix=PREFIX         install architecture-independent files in
                           PREFIX [/usr/local]
-  --with-qt-includes=DIR  Directory where the QT4 C++ includes reside
-  --with-qt-libs=DIR      Directory where the QT4 C++ libraries reside
+  --with-qt-includes=DIR  Directory where the Qt4/Qt5 C++ includes reside
+  --with-qt-libs=DIR      Directory where the Qt4/Qt5 C++ libraries reside
   --with-wx-config=BIN    Configuration script for the wxWidgets
                           C++ library
   --with-boost=DIR        prefix of Boost 1.31.0 [guess]
@@ -419,7 +419,7 @@ on your <TT CLASS="western">PATH</TT> environment variable.
 	</TR>
 	<TR>
 		<TD STYLE="border: none; padding: 0cm">
-			<P>-D USE_QT4:BOOL=ON 
+			<P>-D USE_QT:BOOL=ON 
 			</P>
 		</TD>
 		<TD STYLE="border: none; padding: 0cm">

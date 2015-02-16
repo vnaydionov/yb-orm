@@ -25,7 +25,7 @@ void usage()
     cerr << "Usage:\n"
         << "    yborm_gen --domain config.xml output_path [include_prefix]\n"
         << "    yborm_gen --ddl config.xml dialect_name [output.sql]\n"
-        << "    yborm_gen --pupulate-schema config.xml connection_url\n"
+        << "    yborm_gen --populate-schema config.xml connection_url\n"
         << "    yborm_gen --drop-schema config.xml connection_url\n"
         << "    yborm_gen --extract-schema config.xml connection_url\n\n";
     exit(1);

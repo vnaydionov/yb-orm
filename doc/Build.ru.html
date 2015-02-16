@@ -320,7 +320,7 @@ YB.ORM, и просто нужна более свежая версия
 			</P>
 		</TD>
 		<TD STYLE="border: none; padding: 0cm">
-			<P>тестировалось с Qt4.8, требуется только
+			<P>тестировалось с Qt4.8 и Qt5.0.2, требуется только
 			для сборки с Qt, см. замечание выше о
 			&quot;правильной&quot; версии компилятора
 			MinGW. 
@@ -368,8 +368,8 @@ wxWidgets используйте опцию <TT CLASS="western">--with-wx-config
 <PRE CLASS="western">$ ./configure --help
 ...
   --prefix=PREFIX        Корень установки файлов, по умолчанию [/usr/local]
-  --with-qt-includes=DIR Директория с заголовочными файлами QT
-  --with-qt-libs=DIR     Директория с библиотеками QT
+  --with-qt-includes=DIR Директория с заголовочными файлами Qt4/Qt5
+  --with-qt-libs=DIR     Директория с библиотеками Qt4/Qt5
   --with-wx-config=BIN   Конфигурационный скрипт библиотеки wxWidgets
   --with-boost=DIR       Директория, куда установлен Boost
   --with-soci-includes=DIR
@@ -479,7 +479,7 @@ YB.ORM под Windows, хотя для окружения POSIX они
 	</TR>
 	<TR>
 		<TD STYLE="border: none; padding: 0cm">
-			<P>-D USE_QT4:BOOL=ON 
+			<P>-D USE_QT:BOOL=ON 
 			</P>
 		</TD>
 		<TD STYLE="border: none; padding: 0cm">
