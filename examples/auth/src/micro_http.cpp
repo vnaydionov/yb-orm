@@ -53,6 +53,8 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
         String cont_type;
         while (1) { // skip to request's body
             string s = cl_sock.readline();
+            if (!s.size())
+                throw HttpParserError("process", "short read");
             if (s == "\r\n" || s == "\n")
                 break;
             logger->debug(s);
