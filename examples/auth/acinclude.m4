@@ -60,42 +60,36 @@ AC_DEFUN([YB_QT],
         ac_save_cxxflags="$CXXFLAGS"
         ac_save_ldflags="$LDFLAGS"
         ac_save_libs="$LIBS"
+        QT_INC=""
         if test "x$ac_qt_includes" != "x" ; then
-            QT_CFLAGS="-I$ac_qt_includes -I$ac_qt_includes/QtCore -I$ac_qt_includes/QtXml -I$ac_qt_includes/QtSql"
+            QT_INC="-I$ac_qt_includes -I$ac_qt_includes/QtCore -I$ac_qt_includes/QtXml -I$ac_qt_includes/QtSql"
         fi
         if test "x$ac_qt_libs" != "x" ; then
             QT_LDFLAGS="-L$ac_qt_libs"
         fi
-        QT_LIBS="-lQtCore -lQtXml -lQtSql"
-        CXXFLAGS="$ac_save_cxxflags $QT_CFLAGS"
-        LDFLAGS="$ac_save_ldflags $QT_LDFLAGS"
-        LIBS="$ac_save_libs $QT_LIBS"
-        AC_TRY_LINK([
+        for QT_LIB_VER in "5" "" "4"; do
+            for FPIC_FLAG in "" "-fPIC" ; do
+                QT_LIBS="-lQt${QT_LIB_VER}Core -lQt${QT_LIB_VER}Xml -lQt${QT_LIB_VER}Sql"
+                QT_CFLAGS="$FPIC_FLAG $QT_INC"
+                CXXFLAGS="$ac_save_cxxflags $QT_CFLAGS"
+                LDFLAGS="$ac_save_ldflags $QT_LDFLAGS"
+                LIBS="$ac_save_libs $QT_LIBS"
+                AC_TRY_LINK([
 #include <QtXml>
 ],
-        [ QBuffer buf; buf.setData("<aaa/>", 6); QDomDocument doc("aaa"); ],
-        [ have_qt="yes" ])
+                [ QBuffer buf; buf.setData("<aaa/>", 6); QDomDocument doc("aaa"); ],
+                [ have_qt="yes" ])
+                if test "x$have_qt" = "xyes" ; then
+                    break 2
+                fi
+            done
+        done
         if test "x$have_qt" = "xyes" ; then
             AC_MSG_RESULT([yes])
             ifelse([$1], , :, [$1])
         else
-            QT_LIBS="-lQt5Core -lQt5Xml -lQt5Sql"
-            QT_CFLAGS="-fPIC $QT_CFLAGS"
-            CXXFLAGS="$ac_save_cxxflags $QT_CFLAGS"
-            LDFLAGS="$ac_save_ldflags $QT_LDFLAGS"
-            LIBS="$ac_save_libs $QT_LIBS"
-            AC_TRY_LINK([
-    #include <QtXml>
-    ],
-            [ QBuffer buf; buf.setData("<aaa/>", 6); QDomDocument doc("aaa"); ],
-            [ have_qt="yes" ])
-            if test "x$have_qt" = "xyes" ; then
-                AC_MSG_RESULT([yes])
-                ifelse([$1], , :, [$1])
-            else
-                AC_MSG_RESULT([no])
-                ifelse([$2], , :, [$2])
-            fi
+            AC_MSG_RESULT([no])
+            ifelse([$2], , :, [$2])
         fi
         CXXFLAGS="$ac_save_cxxflags"
         LDFLAGS="$ac_save_ldflags"
