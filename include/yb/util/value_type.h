@@ -193,15 +193,16 @@ inline void tuple_values(const boost::tuples::cons<H, T> &item, Values &values)
 #if defined(YB_USE_STDTUPLE)
 template <std::size_t I = 0, typename... Tp>
 inline typename std::enable_if<I == sizeof...(Tp), void>::type
-tuple_values(const std::tuple<Tp...> &t, Values &values)
+stdtuple_values(const std::tuple<Tp...> &t, Values &values)
 {}
 
 template <std::size_t I = 0, typename... Tp>
-inline typename std::enable_if<I < sizeof...(Tp), void>::type
-tuple_values(const std::tuple<Tp...> &t, Values &values)
+inline typename std::enable_if<I != sizeof...(Tp), void>::type
+stdtuple_values(const std::tuple<Tp...> &t, Values &values)
 {
     values.push_back(Value(std::get<I>(t)));
-    tuple_values<I + 1, Tp...>(t, values);
+    const std::size_t next_I = I + 1;
+    stdtuple_values<next_I, Tp...>(t, values);
 }
 #endif // defined(YB_USE_STDTUPLE)
 

@@ -476,16 +476,17 @@ struct QueryFunc<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> > {
 
 template <std::size_t I = 0, typename... Tp>
 inline typename std::enable_if<I == sizeof...(Tp), void>::type
-row2tuple(const ObjectList &row, std::tuple<Tp...> &t)
+row2stdtuple(const ObjectList &row, std::tuple<Tp...> &t)
 {}
 
 template <std::size_t I = 0, typename... Tp>
-inline typename std::enable_if<I < sizeof...(Tp), void>::type
-row2tuple(const ObjectList &row, std::tuple<Tp...> &t)
+inline typename std::enable_if<I != sizeof...(Tp), void>::type
+row2stdtuple(const ObjectList &row, std::tuple<Tp...> &t)
 {
     typedef typename std::remove_reference<decltype(std::get<I>(t))>::type DObj;
     std::get<I>(t) = DObj(row[I]);
-    row2tuple<I + 1, Tp...>(row, t);
+    const std::size_t next_I = I + 1;
+    row2stdtuple<next_I, Tp...>(row, t);
 }
 
 template <typename... Tp>
@@ -503,7 +504,7 @@ class DomainResultSet<std::tuple<Tp...>>
                     new DataObjectResultSet::iterator(rs_.begin()));
         if (rs_.end() == *it_)
             return false;
-        row2tuple<0, Tp...>(**it_, tp);
+        row2stdtuple<0, Tp...>(**it_, tp);
         ++*it_;
         return true;
     }
@@ -521,15 +522,16 @@ public:
 
 template <std::size_t I = 0, typename... Tp>
 typename std::enable_if<I == sizeof...(Tp), void>::type
-tuple_tables(const std::tuple<Tp...> &t, Strings &tables)
+stdtuple_tables(const std::tuple<Tp...> &t, Strings &tables)
 {}
 
 template <std::size_t I = 0, typename... Tp>
 typename std::enable_if<I < sizeof...(Tp), void>::type
-tuple_tables(const std::tuple<Tp...> &t, Strings &tables)
+stdtuple_tables(const std::tuple<Tp...> &t, Strings &tables)
 {
     tables.push_back(std::get<I>(t).get_table_name());
-    tuple_tables<I + 1, Tp...>(t, tables);
+    const std::size_t next_I = I + 1;
+    stdtuple_tables<next_I, Tp...>(t, tables);
 }
 
 template <typename... Tp>
@@ -537,7 +539,7 @@ struct QueryFunc<std::tuple<Tp...>> {
     static void list_tables(Strings &tables)
     {
         std::tuple<Tp...> tuple;
-        tuple_tables(tuple, tables);
+        stdtuple_tables(tuple, tables);
     }
 };
 #endif // defined(YB_USE_STDTUPLE)

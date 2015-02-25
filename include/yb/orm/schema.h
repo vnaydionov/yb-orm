@@ -163,7 +163,7 @@ public:
     const Expression in_(const std::tuple<Tp...> &t) const
     {
         Values v;
-        tuple_values<0, Tp...>(t, v);
+        stdtuple_values<0, Tp...>(t, v);
         return in_(ExpressionList(v));
     }
 #endif // defined(YB_USE_STDTUPLE)
