@@ -10,6 +10,9 @@
 #include "util_config.h"
 #include "data_types.h"
 #include "nlogger.h"
+#if defined(YB_USE_TUPLE)
+#include <boost/tuple/tuple.hpp>
+#endif
 
 namespace Yb {
 
@@ -171,6 +174,18 @@ inline T__ &from_variant(const Value &x, T__ &t) {
     return ValueTraits<T__>::from_variant(x, t);
 }
 //! @}
+
+#if defined(YB_USE_TUPLE)
+inline void tuple_values(const boost::tuples::null_type &, Values &values)
+{}
+
+template <class H, class T>
+inline void tuple_values(const boost::tuples::cons<H, T> &item, Values &values)
+{
+    values.push_back(Value(item.get_head()));
+    tuple_values(item.get_tail(), values);
+}
+#endif // defined(YB_USE_TUPLE)
 
 } // namespace Yb
 

@@ -1,6 +1,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
 #include "orm/expression.h"
+#include "orm/schema.h"
 
 using namespace std;
 using namespace Yb;
@@ -12,8 +13,13 @@ class TestExpression : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterEq);
     CPPUNIT_TEST(testOperatorOr);
     CPPUNIT_TEST(testOperatorAnd);
+    CPPUNIT_TEST(testLike);
+    CPPUNIT_TEST(testIn);
     CPPUNIT_TEST(testCollectParams);
     CPPUNIT_TEST(testExprList);
+#if defined(YB_USE_TUPLE)
+    CPPUNIT_TEST(testExprListTuple);
+#endif // defined(YB_USE_TUPLE)
     CPPUNIT_TEST(testSelectExpr);
     CPPUNIT_TEST(testFindAllTables);
     CPPUNIT_TEST(testParenth);
@@ -42,6 +48,30 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A <> 'a')"), 
                              NARROW((Expression(_T("ID")) == 1 &&
                                      Expression(_T("A")) != String(_T("a"))).get_sql()));
+    }
+
+    void testLike()
+    {
+        Table t(_T("a"));
+        t.add_column(Column(_T("x"), Value::STRING, 10, 0));
+        ConstExpr e(Value(_T("abc%")));
+        CPPUNIT_ASSERT_EQUAL(string("a.x LIKE 'abc%'"),
+                             NARROW(t[_T("x")].like_(ConstExpr(Value(_T("abc%")))).get_sql()));
+    }
+
+    void testIn()
+    {
+        Table t(_T("a"));
+        t.add_column(Column(_T("x"), Value::STRING, 10, 0));
+        CPPUNIT_ASSERT_EQUAL(string("a.x IN ('a', 'bb')"),
+                             NARROW(t[_T("x")].in_(ExpressionList(
+                                         ConstExpr(Value(_T("a"))),
+                                         ConstExpr(Value(_T("bb")))
+                                        )).get_sql()));
+#if defined(YB_USE_TUPLE)
+        CPPUNIT_ASSERT_EQUAL(string("a.x IN ('a', 'bb')"),
+                             NARROW(t[_T("x")].in_(boost::make_tuple(_T("a"), _T("bb"))).get_sql()));
+#endif // defined(YB_USE_TUPLE)
     }
 
     void testCollectParams()
@@ -75,6 +105,16 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("1, 2, 'three'"),
                 NARROW(expr.get_sql()));
     }
+
+#if defined(YB_USE_TUPLE)
+    void testExprListTuple()
+    {
+        ExpressionList expr(boost::make_tuple(1, 2.01, _T("three")));
+        expr << ConstExpr(Decimal(_T("4"))) << ConstExpr(Value(_T("five")));
+        CPPUNIT_ASSERT_EQUAL(string("1, 2.01, 'three', 4, 'five'"),
+                NARROW(expr.get_sql()));
+    }
+#endif // defined(YB_USE_TUPLE)
 
     void testSelectExpr()
     {

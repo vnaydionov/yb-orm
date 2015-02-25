@@ -146,6 +146,18 @@ public:
     }
     void set_table(const Table &t) { table_ = &t; }
     void set_fk_name(const String &fk_name) { fk_name_ = fk_name; }
+    const Expression like_(const Expression &b) const { return Expression(*this).like_(b); }
+    const Expression in_(const Expression &b) const { return Expression(*this).in_(b); }
+#if defined(YB_USE_TUPLE)
+    template <class T0, class T1, class T2, class T3, class T4,
+              class T5, class T6, class T7, class T8, class T9>
+    const Expression in_(const boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> &t) const
+    {
+        Values v;
+        tuple_values(t, v);
+        return in_(ExpressionList(v));
+    }
+#endif // defined(YB_USE_TUPLE)
 private:
     const Table *table_;
     int type_, flags_;
