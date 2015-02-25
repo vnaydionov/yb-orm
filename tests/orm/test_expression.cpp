@@ -20,6 +20,9 @@ class TestExpression : public CppUnit::TestFixture
 #if defined(YB_USE_TUPLE)
     CPPUNIT_TEST(testExprListTuple);
 #endif // defined(YB_USE_TUPLE)
+#if defined(YB_USE_STDTUPLE)
+    CPPUNIT_TEST(testExprListStdTuple);
+#endif // defined(YB_USE_STDTUPLE)
     CPPUNIT_TEST(testSelectExpr);
     CPPUNIT_TEST(testFindAllTables);
     CPPUNIT_TEST(testParenth);
@@ -72,6 +75,10 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("a.x IN ('a', 'bb')"),
                              NARROW(t[_T("x")].in_(boost::make_tuple(_T("a"), _T("bb"))).get_sql()));
 #endif // defined(YB_USE_TUPLE)
+#if defined(YB_USE_STDTUPLE)
+        CPPUNIT_ASSERT_EQUAL(string("a.x IN ('a', 'bb')"),
+                             NARROW(t[_T("x")].in_(std::make_tuple(_T("a"), _T("bb"))).get_sql()));
+#endif // defined(YB_USE_STDTUPLE)
     }
 
     void testCollectParams()
@@ -115,6 +122,16 @@ public:
                 NARROW(expr.get_sql()));
     }
 #endif // defined(YB_USE_TUPLE)
+
+#if defined(YB_USE_STDTUPLE)
+    void testExprListStdTuple()
+    {
+        ExpressionList expr(std::make_tuple(1, 2.01, _T("three")));
+        expr << ConstExpr(Decimal(_T("4"))) << ConstExpr(Value(_T("five")));
+        CPPUNIT_ASSERT_EQUAL(string("1, 2.01, 'three', 4, 'five'"),
+                NARROW(expr.get_sql()));
+    }
+#endif // defined(YB_USE_STDTUPLE)
 
     void testSelectExpr()
     {

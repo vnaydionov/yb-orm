@@ -158,6 +158,16 @@ public:
         return in_(ExpressionList(v));
     }
 #endif // defined(YB_USE_TUPLE)
+#if defined(YB_USE_STDTUPLE)
+    template <typename... Tp>
+    const Expression in_(const std::tuple<Tp...> &t) const
+    {
+        Values v;
+        tuple_values<0, Tp...>(t, v);
+        return in_(ExpressionList(v));
+    }
+#endif // defined(YB_USE_STDTUPLE)
+
 private:
     const Table *table_;
     int type_, flags_;

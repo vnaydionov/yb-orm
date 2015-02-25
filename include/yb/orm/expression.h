@@ -269,6 +269,16 @@ public:
         fill_from_container<Values, ConstExpr>(v);
     }
 #endif // defined(YB_USE_TUPLE)
+#if defined(YB_USE_STDTUPLE)
+    template <typename... Tp>
+    ExpressionList(const std::tuple<Tp...> &t)
+        : Expression(ExprBEPtr(new ExpressionListBackend))
+    {
+        Values v;
+        tuple_values<0, Tp...>(t, v);
+        fill_from_container<Values, ConstExpr>(v);
+    }
+#endif // defined(YB_USE_STDTUPLE)
 
     void append(const Expression &expr);
     ExpressionList &operator << (const Expression &expr) {

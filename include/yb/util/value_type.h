@@ -13,6 +13,9 @@
 #if defined(YB_USE_TUPLE)
 #include <boost/tuple/tuple.hpp>
 #endif
+#if defined(YB_USE_STDTUPLE)
+#include <tuple>
+#endif
 
 namespace Yb {
 
@@ -186,6 +189,21 @@ inline void tuple_values(const boost::tuples::cons<H, T> &item, Values &values)
     tuple_values(item.get_tail(), values);
 }
 #endif // defined(YB_USE_TUPLE)
+
+#if defined(YB_USE_STDTUPLE)
+template <std::size_t I = 0, typename... Tp>
+inline typename std::enable_if<I == sizeof...(Tp), void>::type
+tuple_values(const std::tuple<Tp...> &t, Values &values)
+{}
+
+template <std::size_t I = 0, typename... Tp>
+inline typename std::enable_if<I < sizeof...(Tp), void>::type
+tuple_values(const std::tuple<Tp...> &t, Values &values)
+{
+    values.push_back(Value(std::get<I>(t)));
+    tuple_values<I + 1, Tp...>(t, values);
+}
+#endif // defined(YB_USE_STDTUPLE)
 
 } // namespace Yb
 
