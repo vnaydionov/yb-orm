@@ -67,4 +67,5 @@ examples/auth/src/auth.sh
 examples/auth/src/domain/*.cpp
 examples/auth/src/domain/*.h
 examples/auth/src/domain/*.sql
+doc/*.md
 
