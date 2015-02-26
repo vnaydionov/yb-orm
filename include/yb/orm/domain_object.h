@@ -296,13 +296,20 @@ public:
     }
     bool operator==(const Property &prop)
     {
-        if (!pobj_ && !prop.pobj_)
-            return true;
         if (!pobj_ || !prop.pobj_)
-            return false;
+            return pobj_ == prop.pobj_;
         return pobj_->get(col_num_) == prop.pobj_->get(prop.col_num_);
     }
     bool operator!=(const Property &prop) { return !(*this == prop); }
+    bool operator<(const Property &prop)
+    {
+        if (!pobj_ || !prop.pobj_)
+            return !pobj_ && prop.pobj_;
+        return pobj_->get(col_num_) < prop.pobj_->get(prop.col_num_);
+    }
+    bool operator>=(const Property &prop) { return !(*this < prop); }
+    bool operator>(const Property &prop) { return (prop < *this); }
+    bool operator<=(const Property &prop) { return !(prop < *this); }
     template <class U>
     U as()
     {
