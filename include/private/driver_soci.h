@@ -1,5 +1,6 @@
-#ifndef YB__ORM__SOCI_DRIVER__INCLUDED
-#define YB__ORM__SOCI_DRIVER__INCLUDED
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#ifndef YB__ORM__DRIVER_SOCI__INCLUDED
+#define YB__ORM__DRIVER_SOCI__INCLUDED
 
 #include <memory>
 #include <vector>
@@ -65,4 +66,4 @@ public:
 } //namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-#endif // YB__ORM__SOCI_DRIVER__INCLUDED
+#endif // YB__ORM__DRIVER_SOCI__INCLUDED

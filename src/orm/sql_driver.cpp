@@ -9,19 +9,21 @@
 #include "util/singleton.h"
 #include "orm/sql_driver.h"
 #include "orm/expression.h"
-#include "orm/dialect_sqlite.h"
+
+#include "dialect_sqlite.h"
 //#include "orm/dialect_mysql.h"
+
 #if defined(YB_USE_QT)
-#include "qtsql_driver.h"
+#include "driver_qtsql.h"
 #endif
 #if defined(YB_USE_ODBC)
-#include "odbc_driver.h"
+#include "driver_odbc.h"
 #endif
 #if defined(YB_USE_SQLITE3)
-#include "sqlite_driver.h"
+#include "driver_sqlite.h"
 #endif
 #if defined(YB_USE_SOCI)
-#include "soci_driver.h"
+#include "driver_soci.h"
 #endif
 
 #if defined(YB_USE_QT)

@@ -25,19 +25,19 @@ set (SOURCES_CPP
 )
 
 if (USE_QT)
-    set(SOURCES_CPP ${SOURCES_CPP} qtsql_driver.cpp)
+    set(SOURCES_CPP ${SOURCES_CPP} driver_qtsql.cpp)
 endif ()
 
 if (USE_ODBC)
-    set(SOURCES_CPP ${SOURCES_CPP} tiodbc.cpp odbc_driver.cpp)
+    set(SOURCES_CPP ${SOURCES_CPP} tiodbc.cpp driver_odbc.cpp)
 endif ()
 
 if (USE_SQLITE3)
-    set(SOURCES_CPP ${SOURCES_CPP} sqlite_driver.cpp)
+    set(SOURCES_CPP ${SOURCES_CPP} driver_sqlite.cpp)
 endif ()
 
 if (USE_SOCI)
-    set(SOURCES_CPP ${SOURCES_CPP} soci_driver.cpp)
+    set(SOURCES_CPP ${SOURCES_CPP} driver_soci.cpp)
 endif ()
 
 add_library (yborm SHARED 

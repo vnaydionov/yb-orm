@@ -11,25 +11,25 @@ AM_CXXFLAGS = \
 	$(QT_CFLAGS)
 
 if QT_PRESENT
-QTSQL_DRV_CPP = qtsql_driver.cpp
+QTSQL_DRV_CPP = driver_qtsql.cpp
 else
 QTSQL_DRV_CPP =
 endif
 
 if ODBC_PRESENT
-ODBC_DRV_CPP = odbc_driver.cpp tiodbc.cpp
+ODBC_DRV_CPP = driver_odbc.cpp tiodbc.cpp
 else
 ODBC_DRV_CPP =
 endif
 
 if SQLITE3_PRESENT
-SQLITE3_DRV_CPP = sqlite_driver.cpp
+SQLITE3_DRV_CPP = driver_sqlite.cpp
 else
 SQLITE3_DRV_CPP =
 endif
 
 if SOCI_PRESENT
-SOCI_DRV_CPP = soci_driver.cpp
+SOCI_DRV_CPP = driver_soci.cpp
 else
 SOCI_DRV_CPP =
 endif

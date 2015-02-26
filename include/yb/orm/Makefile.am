@@ -15,5 +15,4 @@ yborminclude_HEADERS = \
 	sql_driver.h \
 	sql_pool.h \
 	xmlizer.h \
-	schema_decl.h \
-	dialect_sqlite.h
+	schema_decl.h
