@@ -272,7 +272,11 @@ class Property {
     DomainObject *pobj_;
     int col_num_;
 public:
-    Property(DomainObject *pobj = NULL, int col_num = 0)
+    Property()
+        : pobj_(NULL)
+        , col_num_(0)
+    {}
+    Property(DomainObject *pobj, int col_num)
         : pobj_(pobj)
         , col_num_(col_num)
     {}
