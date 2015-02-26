@@ -191,18 +191,21 @@ inline void tuple_values(const boost::tuples::cons<H, T> &item, Values &values)
 #endif // defined(YB_USE_TUPLE)
 
 #if defined(YB_USE_STDTUPLE)
-template <std::size_t I = 0, typename... Tp>
-inline typename std::enable_if<I == sizeof...(Tp), void>::type
+template <std::size_t X>
+struct SizeTValue { enum { value = X }; };
+
+template <typename I = SizeTValue<0>, typename... Tp>
+inline typename std::enable_if<I::value == sizeof...(Tp), void>::type
 stdtuple_values(const std::tuple<Tp...> &t, Values &values)
 {}
 
-template <std::size_t I = 0, typename... Tp>
-inline typename std::enable_if<I != sizeof...(Tp), void>::type
+template <typename I = SizeTValue<0>, typename... Tp>
+inline typename std::enable_if<I::value != sizeof...(Tp), void>::type
 stdtuple_values(const std::tuple<Tp...> &t, Values &values)
 {
-    values.push_back(Value(std::get<I>(t)));
-    const std::size_t next_I = I + 1;
-    stdtuple_values<next_I, Tp...>(t, values);
+    values.push_back(Value(std::get<I::value>(t)));
+    const std::size_t next_I = I::value + 1;
+    stdtuple_values<SizeTValue<next_I>, Tp...>(t, values);
 }
 #endif // defined(YB_USE_STDTUPLE)
 
