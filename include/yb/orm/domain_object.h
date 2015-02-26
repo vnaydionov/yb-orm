@@ -270,46 +270,57 @@ public:
     }
 };
 
-template <class T, int ColNum>
+template <class T>
 class Property {
     DomainObject *pobj_;
+    int col_num_;
 public:
-    Property(DomainObject *pobj = NULL)
+    Property(DomainObject *pobj = NULL, int col_num = 0)
         : pobj_(pobj)
+        , col_num_(col_num)
     {}
     Property &operator=(const Property &prop)
     {
         if (this != &prop && (pobj_ || prop.pobj_)) {
             YB_ASSERT(pobj_ != NULL);
             YB_ASSERT(prop.pobj_ != NULL);
-            pobj_->set(ColNum, prop.pobj_->get(ColNum));
+            pobj_->set(col_num_, prop.pobj_->get(prop.col_num_));
         }
         return *this;
     }
     T operator=(const T &value)
     {
         YB_ASSERT(pobj_ != NULL);
-        pobj_->set(ColNum, Value(value));
+        pobj_->set(col_num_, Value(value));
         return value;
     }
+    bool operator==(const Property &prop)
+    {
+        if (!pobj_ && !prop.pobj_)
+            return true;
+        if (!pobj_ || !prop.pobj_)
+            return false;
+        return pobj_->get(col_num_) == prop.pobj_->get(prop.col_num_);
+    }
+    bool operator!=(const Property &prop) { return !(*this == prop); }
     template <class U>
     U as()
     {
         YB_ASSERT(pobj_ != NULL);
-        const Value &v = pobj_->get(ColNum);
+        const Value &v = pobj_->get(col_num_);
         YB_ASSERT(!v.is_null());
         U u;
         return from_variant(v, u);
     }
     const T &value() {
         YB_ASSERT(pobj_ != NULL);
-        const Value &v = pobj_->get(ColNum);
+        const Value &v = pobj_->get(col_num_);
         YB_ASSERT(!v.is_null());
         return v.read_as<T>();
     }
     const T value(const T &default_value) {
         YB_ASSERT(pobj_ != NULL);
-        const Value &v = pobj_->get(ColNum);
+        const Value &v = pobj_->get(col_num_);
         if (v.is_null())
             return default_value;
         return v.read_as<T>();
@@ -320,12 +331,12 @@ public:
     operator Value ()
     {
         YB_ASSERT(pobj_ != NULL);
-        return pobj_->get(ColNum);
+        return pobj_->get(col_num_);
     }
     bool is_null()
     {
         YB_ASSERT(pobj_ != NULL);
-        return pobj_->get(ColNum).is_null();
+        return pobj_->get(col_num_).is_null();
     }
 };
 
