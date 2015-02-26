@@ -81,17 +81,25 @@ int main()
         using namespace Domain;
         using namespace Yb;
 
-#if defined(YB_USE_TUPLE)
+#if defined(YB_USE_STDTUPLE)
+        auto rs0 = query<tuple<Order, Client>>(session)
+            .filter_by(c2->id == Client::c.id)
+            .order_by(ExpressionList(Client::c.id, Order::c.id)).all();
+        cout << "(std::tuple) Order/Client IDs: " << endl;
+        for (auto &x: rs0)
+            cout << get<0>(x).id.value() << "/" << get<1>(x).id.value() << "," << endl;
+        cout << endl;
+#elif defined(YB_USE_TUPLE)
         DomainResultSet<boost::tuple<Order, Client> > rs0 =
             query<boost::tuple<Order, Client> >(session).filter_by(
-                    c2->id == Client::c.id
+                    (c2->id == Client::c.id)
+                    //&& !Client::c.name.in_(boost::make_tuple(1, 2, 3))
             ).order_by(ExpressionList(Client::c.id, Order::c.id)).all();
+        cout << "(boost::tuple) Order/Client IDs: " << endl; 
         DomainResultSet<boost::tuple<Order, Client> >
             ::iterator p = rs0.begin(), pend = rs0.end();
-        cout << "Order/Client IDs: " << endl; 
         for (; p != pend; ++p)
-            cout << p->get<0>().id.value() << "/" 
-                << p->get<1>().id.value() << ",";
+            cout << p->get<0>().id.value() << "/" << p->get<1>().id.value() << "," << endl;
         cout << endl;
 #endif
 

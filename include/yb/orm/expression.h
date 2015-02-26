@@ -64,17 +64,19 @@ public:
 typedef IntrusivePtr<ExpressionBackend> ExprBEPtr;
 
 class Column;
+class ExpressionList;
 
 class YBORM_DECL Expression
 {
 protected:
     ExprBEPtr backend_;
     String sql_;
+    bool parentheses_;
 public:
     Expression();
     explicit Expression(const String &sql);
     Expression(const Column &col);
-    Expression(ExprBEPtr backend);
+    explicit Expression(ExprBEPtr backend, bool parentheses = false);
     const String generate_sql(
             const SqlGeneratorOptions &options,
             SqlGeneratorContext *ctx) const;
@@ -83,6 +85,8 @@ public:
     }
     bool is_empty() const { return str_empty(sql_) && !backend_.get(); }
     ExpressionBackend *backend() const { return backend_.get(); }
+    const Expression like_(const Expression &b) const;
+    const Expression in_(const Expression &b) const;
 };
 
 YBORM_DECL bool is_number_or_object_name(const String &s);
@@ -226,12 +230,12 @@ public:
 
 class YBORM_DECL ExpressionList: public Expression
 {
-    template <typename T>
+    template <typename T, typename E>
     void fill_from_container(const T &cont)
     {
         typename T::const_iterator it = cont.begin(), end = cont.end();
         for (; it != end; ++it)
-            append(Expression(*it));
+            append(E(*it));
     }
 public:
     ExpressionList();
@@ -242,13 +246,40 @@ public:
     ExpressionList(const Strings &cont)
         : Expression(ExprBEPtr(new ExpressionListBackend))
     {
-        fill_from_container<Strings>(cont);
+        fill_from_container<Strings, Expression>(cont);
     }
     ExpressionList(const StringSet &cont)
         : Expression(ExprBEPtr(new ExpressionListBackend))
     {
-        fill_from_container<StringSet>(cont);
+        fill_from_container<StringSet, Expression>(cont);
     }
+    ExpressionList(const Values &cont)
+        : Expression(ExprBEPtr(new ExpressionListBackend))
+    {
+        fill_from_container<Values, ConstExpr>(cont);
+    }
+#if defined(YB_USE_TUPLE)
+    template <class T0, class T1, class T2, class T3, class T4,
+              class T5, class T6, class T7, class T8, class T9>
+    ExpressionList(const boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> &t)
+        : Expression(ExprBEPtr(new ExpressionListBackend))
+    {
+        Values v;
+        tuple_values(t, v);
+        fill_from_container<Values, ConstExpr>(v);
+    }
+#endif // defined(YB_USE_TUPLE)
+#if defined(YB_USE_STDTUPLE)
+    template <typename... Tp>
+    ExpressionList(const std::tuple<Tp...> &t)
+        : Expression(ExprBEPtr(new ExpressionListBackend))
+    {
+        Values v;
+        stdtuple_values(t, v);
+        fill_from_container<Values, ConstExpr>(v);
+    }
+#endif // defined(YB_USE_STDTUPLE)
+
     void append(const Expression &expr);
     ExpressionList &operator << (const Expression &expr) {
         append(expr);

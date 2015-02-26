@@ -26,6 +26,12 @@
 #pragma warning(disable:4251 4275)
 #endif // _MSC_VER
 
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L \
+    || (defined(_MSC_VER) && _MSC_VER >= 1600)
+// NOTE: VC++ 2010 only operates in C++0x mode; previous versions had no C++0x support
+#define YB_USE_STDTUPLE
+#endif
+
 namespace Yb {
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
