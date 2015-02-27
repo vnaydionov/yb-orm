@@ -418,7 +418,6 @@ template <class R>
 struct QueryFunc;
 
 #if defined(YB_USE_TUPLE)
-
 template <class H>
 boost::tuples::cons<H, boost::tuples::null_type>
 row2tuple(const boost::tuples::cons<H, boost::tuples::null_type> &,
@@ -495,21 +494,19 @@ struct QueryFunc<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> > {
 #endif // defined(YB_USE_TUPLE)
 
 #if defined(YB_USE_STDTUPLE)
-
-template <typename I = SizeTValue<0>, typename... Tp>
-inline typename std::enable_if<I::value == sizeof...(Tp), void>::type
-row2stdtuple(const ObjectList &row, std::tuple<Tp...> &t)
+template <int I, class T>
+inline typename std::enable_if<I == std::tuple_size<T>::value, void>::type
+row2stdtuple(const ObjectList &row, T &t)
 {}
 
-template <typename I = SizeTValue<0>, typename... Tp>
-inline typename std::enable_if<I::value != sizeof...(Tp), void>::type
-row2stdtuple(const ObjectList &row, std::tuple<Tp...> &t)
+template <int I, class T>
+inline typename std::enable_if<I != std::tuple_size<T>::value, void>::type
+row2stdtuple(const ObjectList &row, T &t)
 {
     typedef typename std::remove_reference<
-        decltype(std::get<I::value>(t))>::type DObj;
-    std::get<I::value>(t) = DObj(row[I::value]);
-    const std::size_t next_I = I::value + 1;
-    row2stdtuple<SizeTValue<next_I>, Tp...>(row, t);
+        decltype(std::get<I>(t))>::type DObj;
+    std::get<I>(t) = DObj(row[I]);
+    row2stdtuple<I + 1, T>(row, t);
 }
 
 template <typename... Tp>
@@ -527,7 +524,7 @@ class DomainResultSet<std::tuple<Tp...>>
                     new DataObjectResultSet::iterator(rs_.begin()));
         if (rs_.end() == *it_)
             return false;
-        row2stdtuple(**it_, tp);
+        row2stdtuple<0, std::tuple<Tp...>>(**it_, tp);
         ++*it_;
         return true;
     }
@@ -543,18 +540,17 @@ public:
     }
 };
 
-template <typename I = SizeTValue<0>, typename... Tp>
-inline typename std::enable_if<I::value == sizeof...(Tp), void>::type
-stdtuple_tables(const std::tuple<Tp...> &t, Strings &tables)
+template <int I, class T>
+inline typename std::enable_if<I == std::tuple_size<T>::value, void>::type
+stdtuple_tables(const T &t, Strings &tables)
 {}
 
-template <typename I = SizeTValue<0>, typename... Tp>
-inline typename std::enable_if<I::value != sizeof...(Tp), void>::type
-stdtuple_tables(const std::tuple<Tp...> &t, Strings &tables)
+template <int I, class T>
+inline typename std::enable_if<I != std::tuple_size<T>::value, void>::type
+stdtuple_tables(const T &t, Strings &tables)
 {
-    tables.push_back(std::get<I::value>(t).get_table_name());
-    const std::size_t next_I = I::value + 1;
-    stdtuple_tables<SizeTValue<next_I>, Tp...>(t, tables);
+    tables.push_back(std::get<I>(t).get_table_name());
+    stdtuple_tables<I + 1, T>(t, tables);
 }
 
 template <typename... Tp>
@@ -562,7 +558,7 @@ struct QueryFunc<std::tuple<Tp...>> {
     static void list_tables(Strings &tables)
     {
         std::tuple<Tp...> tuple;
-        stdtuple_tables(tuple, tables);
+        stdtuple_tables<0, std::tuple<Tp...>>(tuple, tables);
     }
 };
 #endif // defined(YB_USE_STDTUPLE)

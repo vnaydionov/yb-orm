@@ -275,7 +275,7 @@ public:
         : Expression(ExprBEPtr(new ExpressionListBackend))
     {
         Values v;
-        stdtuple_values(t, v);
+        stdtuple_values<0, std::tuple<Tp...>>(t, v);
         fill_from_container<Values, ConstExpr>(v);
     }
 #endif // defined(YB_USE_STDTUPLE)

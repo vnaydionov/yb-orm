@@ -19,6 +19,8 @@ endif ()
 set (Boost_USE_MULTITHREADED ON)
 set (Boost_NO_SYSTEM_PATHS ON)
 #set (Boost_DEBUG ON)
+# enable the following for MSVC 2013:
+#set (Boost_COMPILER -vc120)
 set (Boost_ADDITIONAL_VERSIONS "1.33.1" "1.38" "1.30.0" "1.46.1")
 if (UNIX)
     set (BOOST_LIBRARYDIR "/usr/lib")

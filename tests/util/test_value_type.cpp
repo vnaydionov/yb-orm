@@ -205,7 +205,8 @@ public:
     void test_stdtuple_values()
     {
         Values v;
-        stdtuple_values(std::make_tuple(1, 2.5, _T("three")), v);
+        auto t = std::make_tuple(1, 2.5, _T("three"));
+        stdtuple_values<0, decltype(t)>(t, v);
         CPPUNIT_ASSERT_EQUAL(3, (int)v.size());
         CPPUNIT_ASSERT_EQUAL((int)Value::INTEGER, v[0].get_type());
         CPPUNIT_ASSERT_EQUAL(1, v[0].as_integer());

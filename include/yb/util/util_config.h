@@ -27,8 +27,9 @@
 #endif // _MSC_VER
 
 #if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L \
-    || (defined(_MSC_VER) && _MSC_VER >= 1600)
-// NOTE: VC++ 2010 only operates in C++0x mode; previous versions had no C++0x support
+    || (defined(_MSC_VER) && _MSC_VER >= 1800)
+// NOTE: VC++ versions 2010 and newer only operate in C++0x mode,
+// but variadic templates are only supported starting from 2013.
 #define YB_USE_STDTUPLE
 #endif
 
