@@ -661,7 +661,7 @@ public:
             Engine engine;
             setup_log(engine);
             Session session(r_, &engine);
-            DataObject::Ptr d = session.get_lazy(k);
+            DataObject::Ptr d(session.get_lazy(k).release());
             CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(d->get(_T("A")).as_string()));
             CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)d->status());
             RelationObject *ro = d->get_slaves();
