@@ -39,7 +39,7 @@ string
 TcpSocket::get_last_error()
 {
     char buf[1024];
-    int buf_sz = sizeof(buf);
+    size_t buf_sz = sizeof(buf);
 #ifdef YBUTIL_WINDOWS
     int err;
     LPTSTR msg_buf;
@@ -175,7 +175,7 @@ TcpSocket::read(size_t n)
     size_t pos = 0;
     while (pos < n) {
         if (buf_pos_ < buf_.size()) {
-            int min_sz = buf_.size() - buf_pos_;
+            size_t min_sz = buf_.size() - buf_pos_;
             if (n - pos < min_sz)
                 min_sz = n - pos;
             r.append(buf_, buf_pos_, min_sz);

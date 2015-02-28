@@ -1,5 +1,5 @@
 
-AC_INIT([yb-orm], [0.4.6])
+AC_INIT([yb-orm], [0.4.7])
 AC_CONFIG_SRCDIR([src/orm/data_object.cpp])
 AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE

@@ -27,7 +27,7 @@ public: SocketEx(const std::string &ctx, const std::string &msg)
 class TcpSocket {
     SOCKET s_;
     int timeout_;  // millisec
-    int buf_pos_;
+    size_t buf_pos_;
     std::string buf_;
     bool read_chunk();
 public:

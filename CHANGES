@@ -1,4 +1,15 @@
 
+0.4.7
+    * yborm_gen tools can be used to extract database schema
+      and store it into XML format.
+    * yborm_gen can be used to manually create schema objects
+      in database as well as to drop them in correct order.
+    * Proper support for 'LIKE' and 'IN' operators.
+    * Make use of std::tuple if it's available (GCC >= 4.6, MSVC >= 12.0).
+    * Build-system fixes to allow easy selection of Boost instance.
+    * Fix Automake scripts to build YB.ORM with Qt5.
+    * Auth example: Fix possible endless loop in HTTP code.
+
 0.4.6
     * New optional inline syntax for describing the mapping scheme
       within a class declaration, based on macros.
