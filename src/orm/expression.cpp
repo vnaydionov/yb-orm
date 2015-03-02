@@ -12,19 +12,24 @@ namespace Yb {
 
 ExpressionBackend::~ExpressionBackend() {}
 
-Expression::Expression() {}
+Expression::Expression()
+    : parentheses_(false)
+{}
 
 Expression::Expression(const String &sql)
     : sql_(sql)
+    , parentheses_(false)
 {}
 
 Expression::Expression(const Column &col)
     : backend_(ExprBEPtr(new ColumnExprBackend(col.table().name(), col.name(),
         String())))
+    , parentheses_(false)
 {}
 
-Expression::Expression(ExprBEPtr backend)
+Expression::Expression(ExprBEPtr backend, bool parentheses)
     : backend_(backend)
+    , parentheses_(parentheses)
 {}
 
 const String
@@ -32,9 +37,29 @@ Expression::generate_sql(
         const SqlGeneratorOptions &options,
         SqlGeneratorContext *ctx) const
 {
-    if (backend_.get())
-        return backend_->generate_sql(options, ctx);
+    if (backend_.get()) {
+        String result = backend_->generate_sql(options, ctx);
+        if (parentheses_)
+            result = _T("(") + result + _T(")");
+        return result;
+    }
+    if (parentheses_)
+        return _T("(") + sql_ + _T(")");
     return sql_;
+}
+
+const Expression
+Expression::like_(const Expression &b) const
+{
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(*this, _T("LIKE"), b)));
+}
+
+const Expression
+Expression::in_(const Expression &b) const
+{
+    Expression new_b(b);
+    new_b.parentheses_ = true;
+    return Expression(ExprBEPtr(new BinaryOpExprBackend(*this, _T("IN"), new_b)));
 }
 
 YBORM_DECL bool

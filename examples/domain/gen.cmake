@@ -1,6 +1,6 @@
 
-message(STATUS
-    "DEBUG: SDIR=${SDIR}, BDIR=${BDIR}")
+#message(STATUS
+#    "DEBUG: SDIR=${SDIR}, BDIR=${BDIR}")
 
 if (UNIX)
     set(ENV{PATH} "${BDIR}/src/util:${BDIR}/src/orm:${BDIR}/src/yborm_gen:$ENV{PATH}")

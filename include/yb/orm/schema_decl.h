@@ -59,13 +59,13 @@
 #define YB_COL_MEMB_CONS_DO_YB_COL_(n, prop_name, name, type, size, flags, default_value, fk_table, fk, xml_name, index_name) \
     YB_COLON_OR_COMMA(n) prop_name(name, Yb::Value::type, size, flags, default_value, fk_table, fk, xml_name, _T(#prop_name), index_name)
 #define YB_PROP_DECL_DO_YB_COL_(n, prop_name, name, type, size, flags, default_value, fk_table, fk, xml_name, index_name) \
-    Yb::Property<YB_CPP_TYPE(type), n> prop_name;
+    Yb::Property<YB_CPP_TYPE(type)> prop_name;
 #define YB_PROP_DECL_DO_YB_REL_ONE_(n, one_class, one_prop, many_class, many_prop, cascade, key, use_list, order_by, p9, p10) \
     Yb::ManagedList<many_class> many_prop;
 #define YB_PROP_DECL_DO_YB_REL_MANY_(n, one_class, one_prop, many_class, many_prop, cascade, key, use_list, order_by, p9, p10) \
     one_class::Holder one_prop;
 #define YB_PROP_CONS_DO_YB_COL_(n, prop_name, name, type, size, flags, default_value, fk_table, fk, xml_name, index_name) \
-    , prop_name(this)
+    , prop_name(this, n)
 #define YB_PROP_CONS_DO_YB_REL_ONE_(n, one_class, one_prop, many_class, many_prop, cascade, key, use_list, order_by, p9, p10) \
     , many_prop(this, _T(#many_prop))
 #define YB_PROP_CONS_DO_YB_REL_MANY_(n, one_class, one_prop, many_class, many_prop, cascade, key, use_list, order_by, p9, p10) \

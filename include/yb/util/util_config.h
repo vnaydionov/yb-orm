@@ -26,6 +26,13 @@
 #pragma warning(disable:4251 4275)
 #endif // _MSC_VER
 
+#if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L \
+    || (defined(_MSC_VER) && _MSC_VER >= 1800)
+// NOTE: VC++ versions 2010 and newer only operate in C++0x mode,
+// but variadic templates are only supported starting from 2013.
+#define YB_USE_STDTUPLE
+#endif
+
 namespace Yb {
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)

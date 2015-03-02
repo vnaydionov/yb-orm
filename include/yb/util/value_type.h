@@ -10,6 +10,12 @@
 #include "util_config.h"
 #include "data_types.h"
 #include "nlogger.h"
+#if defined(YB_USE_TUPLE)
+#include <boost/tuple/tuple.hpp>
+#endif
+#if defined(YB_USE_STDTUPLE)
+#include <tuple>
+#endif
 
 namespace Yb {
 
@@ -171,6 +177,33 @@ inline T__ &from_variant(const Value &x, T__ &t) {
     return ValueTraits<T__>::from_variant(x, t);
 }
 //! @}
+
+#if defined(YB_USE_TUPLE)
+inline void tuple_values(const boost::tuples::null_type &, Values &values)
+{}
+
+template <class H, class T>
+inline void tuple_values(const boost::tuples::cons<H, T> &item, Values &values)
+{
+    values.push_back(Value(item.get_head()));
+    tuple_values(item.get_tail(), values);
+}
+#endif // defined(YB_USE_TUPLE)
+
+#if defined(YB_USE_STDTUPLE)
+template <int I, class T>
+inline typename std::enable_if<I == std::tuple_size<T>::value, void>::type
+stdtuple_values(const T &t, Values &values)
+{}
+
+template <int I, class T>
+inline typename std::enable_if<I != std::tuple_size<T>::value, void>::type
+stdtuple_values(const T &t, Values &values)
+{
+    values.push_back(Value(std::get<I>(t)));
+    stdtuple_values<I + 1, T>(t, values);
+}
+#endif // defined(YB_USE_STDTUPLE)
 
 } // namespace Yb
 

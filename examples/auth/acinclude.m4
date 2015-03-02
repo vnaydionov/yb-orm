@@ -1,3 +1,27 @@
+
+AC_DEFUN([YB_BOOST_HEADERS],
+[
+    AC_SUBST(BOOST_HEADERS_CPPFLAGS)
+    BOOST_HEADERS_CPPFLAGS=""
+    AC_MSG_CHECKING([for Boost headers])
+    AC_LANG_PUSH(C++)
+    AC_TRY_LINK([
+#include <boost/lexical_cast.hpp>
+#include <boost/tuple/tuple.hpp>
+],
+        [ boost::lexical_cast<std::string>(boost::make_tuple(1, "two", 3.0).get<0>()); ],
+        [ have_boost_headers="yes" ])
+    AC_LANG_POP(C++)
+    if test "x$have_boost_headers" = "xyes" ; then
+        BOOST_HEADERS_CPPFLAGS="-DYB_USE_TUPLE"
+        AC_MSG_RESULT([yes])
+        ifelse([$1], , :, [$1])
+    else
+        AC_MSG_RESULT([no])
+        ifelse([$2], , :, [$2])
+    fi
+])
+
 AC_DEFUN([YB_WX],
 [
     AC_SUBST(WX_CFLAGS)

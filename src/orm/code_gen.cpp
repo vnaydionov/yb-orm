@@ -497,7 +497,7 @@ void CppCodeGenerator::write_properties(ostream &out)
     for (int count = 0; it != end; ++it, ++count)
         if (!it->has_fk()) {
             out << "\tYb::Property<" << type_nc_by_handle(it->type())
-                << ", " << count << "> "
+                << "> "
                 << fix_name(NARROW(it->prop_name())) << ";\n";
         }
     out << "\t// relation properties\n";
@@ -716,7 +716,9 @@ void CppCodeGenerator::write_props_cons_calls(ostream &out)
     for (int count = 0; it != end; ++it, ++count) {
         if (!it->has_fk()) {
             out << "\t, " << fix_name(NARROW(it->prop_name()))
-                << "(this)\n";
+                << "(this"
+                << ", " << count
+                << ")\n";
         }
         else {
             map_fk.insert(MapString::value_type(

@@ -14,6 +14,5 @@ install (FILES
     sql_pool.h
     xmlizer.h
     schema_decl.h
-    dialect_sqlite.h
     DESTINATION include/yb/orm)
 

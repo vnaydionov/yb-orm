@@ -39,13 +39,15 @@ read_schema_from_db(SqlConnection &connection)
                 flags |= Column::PK;
             if (!j->notnull)
                 flags |= Column::NULLABLE;
+            SqlDialect *dialect = connection.get_dialect();
+            String def_val = j->default_value;
+            if (str_to_upper(def_val) == str_to_upper(dialect->sysdate_func()))
+                def_val = _T("SYSDATE");
             Column c(j->name,
-                     get_sql_type_by_name(j->type, *connection.get_dialect()),
+                     get_sql_type_by_name(j->type, *dialect),
                      j->size,
                      flags,
-                     str_to_upper(j->default_value) ==
-                     str_to_upper(connection.get_dialect()->sysdate_func())?
-                     _T("SYSDATE"): j->default_value,
+                     def_val,
                      j->fk_table,
                      j->fk_table_key);
             t->add_column(c);

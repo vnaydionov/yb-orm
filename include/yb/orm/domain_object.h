@@ -7,9 +7,6 @@
 #include "orm_config.h"
 #include "xmlizer.h"
 #include "data_object.h"
-#if defined(YB_USE_TUPLE)
-#include <boost/tuple/tuple.hpp>
-#endif
 
 namespace Yb {
 
@@ -270,46 +267,68 @@ public:
     }
 };
 
-template <class T, int ColNum>
+template <class T>
 class Property {
     DomainObject *pobj_;
+    int col_num_;
 public:
-    Property(DomainObject *pobj = NULL)
+    Property()
+        : pobj_(NULL)
+        , col_num_(0)
+    {}
+    Property(DomainObject *pobj, int col_num)
         : pobj_(pobj)
+        , col_num_(col_num)
     {}
     Property &operator=(const Property &prop)
     {
         if (this != &prop && (pobj_ || prop.pobj_)) {
             YB_ASSERT(pobj_ != NULL);
             YB_ASSERT(prop.pobj_ != NULL);
-            pobj_->set(ColNum, prop.pobj_->get(ColNum));
+            pobj_->set(col_num_, prop.pobj_->get(prop.col_num_));
         }
         return *this;
     }
     T operator=(const T &value)
     {
         YB_ASSERT(pobj_ != NULL);
-        pobj_->set(ColNum, Value(value));
+        pobj_->set(col_num_, Value(value));
         return value;
     }
+    bool operator==(const Property &prop)
+    {
+        if (!pobj_ || !prop.pobj_)
+            return pobj_ == prop.pobj_;
+        return pobj_->get(col_num_) == prop.pobj_->get(prop.col_num_);
+    }
+    bool operator!=(const Property &prop) { return !(*this == prop); }
+    bool operator<(const Property &prop)
+    {
+        if (!pobj_ || !prop.pobj_)
+            return !pobj_ && prop.pobj_;
+        return pobj_->get(col_num_) < prop.pobj_->get(prop.col_num_);
+    }
+    bool operator>=(const Property &prop) { return !(*this < prop); }
+    bool operator>(const Property &prop) { return (prop < *this); }
+    bool operator<=(const Property &prop) { return !(prop < *this); }
     template <class U>
     U as()
     {
         YB_ASSERT(pobj_ != NULL);
-        const Value &v = pobj_->get(ColNum);
+        const Value &v = pobj_->get(col_num_);
         YB_ASSERT(!v.is_null());
         U u;
         return from_variant(v, u);
     }
     const T &value() {
         YB_ASSERT(pobj_ != NULL);
-        const Value &v = pobj_->get(ColNum);
+        const Value &v = pobj_->get(col_num_);
         YB_ASSERT(!v.is_null());
         return v.read_as<T>();
     }
     const T value(const T &default_value) {
         YB_ASSERT(pobj_ != NULL);
-        const Value &v = pobj_->get(ColNum);
+        const Value &v = pobj_->get(col_num_);
         if (v.is_null())
             return default_value;
         return v.read_as<T>();
@@ -320,12 +339,12 @@ public:
     operator Value ()
     {
         YB_ASSERT(pobj_ != NULL);
-        return pobj_->get(ColNum);
+        return pobj_->get(col_num_);
     }
     bool is_null()
     {
         YB_ASSERT(pobj_ != NULL);
-        return pobj_->get(ColNum).is_null();
+        return pobj_->get(col_num_).is_null();
     }
 };
 
@@ -399,7 +418,6 @@ template <class R>
 struct QueryFunc;
 
 #if defined(YB_USE_TUPLE)
-
 template <class H>
 boost::tuples::cons<H, boost::tuples::null_type>
 row2tuple(const boost::tuples::cons<H, boost::tuples::null_type> &,
@@ -474,6 +492,76 @@ struct QueryFunc<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> > {
     }
 };
 #endif // defined(YB_USE_TUPLE)
+
+#if defined(YB_USE_STDTUPLE)
+template <int I, class T>
+inline typename std::enable_if<I == std::tuple_size<T>::value, void>::type
+row2stdtuple(const ObjectList &row, T &t)
+{}
+
+template <int I, class T>
+inline typename std::enable_if<I != std::tuple_size<T>::value, void>::type
+row2stdtuple(const ObjectList &row, T &t)
+{
+    typedef typename std::remove_reference<
+        decltype(std::get<I>(t))>::type DObj;
+    std::get<I>(t) = DObj(row[I]);
+    row2stdtuple<I + 1, T>(row, t);
+}
+
+template <typename... Tp>
+class DomainResultSet<std::tuple<Tp...>>
+    : public ResultSetBase<std::tuple<Tp...>>
+{
+    typedef std::tuple<Tp...> R;
+
+    DataObjectResultSet rs_;
+    std::auto_ptr<DataObjectResultSet::iterator> it_;
+
+    bool fetch(R &tp) {
+        if (!it_.get())
+            it_.reset(
+                    new DataObjectResultSet::iterator(rs_.begin()));
+        if (rs_.end() == *it_)
+            return false;
+        row2stdtuple<0, std::tuple<Tp...>>(**it_, tp);
+        ++*it_;
+        return true;
+    }
+    DomainResultSet();
+public:
+    DomainResultSet(const DataObjectResultSet &rs)
+        : rs_(rs)
+    {}
+    DomainResultSet(const DomainResultSet &obj)
+        : rs_(obj.rs_)
+    {
+        YB_ASSERT(!obj.it_.get());
+    }
+};
+
+template <int I, class T>
+inline typename std::enable_if<I == std::tuple_size<T>::value, void>::type
+stdtuple_tables(const T &t, Strings &tables)
+{}
+
+template <int I, class T>
+inline typename std::enable_if<I != std::tuple_size<T>::value, void>::type
+stdtuple_tables(const T &t, Strings &tables)
+{
+    tables.push_back(std::get<I>(t).get_table_name());
+    stdtuple_tables<I + 1, T>(t, tables);
+}
+
+template <typename... Tp>
+struct QueryFunc<std::tuple<Tp...>> {
+    static void list_tables(Strings &tables)
+    {
+        std::tuple<Tp...> tuple;
+        stdtuple_tables<0, std::tuple<Tp...>>(tuple, tables);
+    }
+};
+#endif // defined(YB_USE_STDTUPLE)
 
 template <class R>
 class DomainResultSet: public ResultSetBase<R>

@@ -24,6 +24,12 @@ class TestValue : public CppUnit::TestFixture
     CPPUNIT_TEST(test_as_float);
     CPPUNIT_TEST(test_swap);
     CPPUNIT_TEST(test_fix_type);
+#if defined(YB_USE_TUPLE)
+    CPPUNIT_TEST(test_tuple_values);
+#endif
+#if defined(YB_USE_STDTUPLE)
+    CPPUNIT_TEST(test_stdtuple_values);
+#endif
     CPPUNIT_TEST_EXCEPTION(test_value_is_null, ValueIsNull);
     CPPUNIT_TEST_EXCEPTION(test_value_bad_cast_long_long, ValueBadCast);
     CPPUNIT_TEST_EXCEPTION(test_value_bad_cast_integer, ValueBadCast);
@@ -180,6 +186,36 @@ public:
         CPPUNIT_ASSERT_EQUAL((int)Value::FLOAT, (int)b.get_type());
         CPPUNIT_ASSERT_EQUAL(12.3, b.read_as<double>());
     }
+
+#if defined(YB_USE_TUPLE)
+    void test_tuple_values()
+    {
+        Values v;
+        tuple_values(boost::make_tuple(1, 2.5, _T("three")), v);
+        CPPUNIT_ASSERT_EQUAL(3, (int)v.size());
+        CPPUNIT_ASSERT_EQUAL((int)Value::INTEGER, v[0].get_type());
+        CPPUNIT_ASSERT_EQUAL(1, v[0].as_integer());
+        CPPUNIT_ASSERT_EQUAL((int)Value::FLOAT, v[1].get_type());
+        CPPUNIT_ASSERT_EQUAL(2.5, v[1].as_float());
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, v[2].get_type());
+        CPPUNIT_ASSERT_EQUAL(string("three"), NARROW(v[2].as_string()));
+    }
+#endif
+#if defined(YB_USE_STDTUPLE)
+    void test_stdtuple_values()
+    {
+        Values v;
+        auto t = std::make_tuple(1, 2.5, _T("three"));
+        stdtuple_values<0, decltype(t)>(t, v);
+        CPPUNIT_ASSERT_EQUAL(3, (int)v.size());
+        CPPUNIT_ASSERT_EQUAL((int)Value::INTEGER, v[0].get_type());
+        CPPUNIT_ASSERT_EQUAL(1, v[0].as_integer());
+        CPPUNIT_ASSERT_EQUAL((int)Value::FLOAT, v[1].get_type());
+        CPPUNIT_ASSERT_EQUAL(2.5, v[1].as_float());
+        CPPUNIT_ASSERT_EQUAL((int)Value::STRING, v[2].get_type());
+        CPPUNIT_ASSERT_EQUAL(string("three"), NARROW(v[2].as_string()));
+    }
+#endif
 
     void test_value_is_null()
     {

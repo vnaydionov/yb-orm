@@ -1,7 +1,7 @@
 // -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 #define YBORM_SOURCE
 
-#include "odbc_driver.h"
+#include "driver_odbc.h"
 #include "util/string_utils.h"
 
 #ifdef _MSC_VER

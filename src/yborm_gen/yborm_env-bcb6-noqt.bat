@@ -1,12 +1,12 @@
 set BAT_DIR=%~dp0
 set PATH=%BAT_DIR%;%PATH%
 
-set DEP_LIBS_ROOT=%BAT_DIR%..\dep_libs_msvc12
+set DEP_LIBS_ROOT=%BAT_DIR%..\dep_libs_bcb6
 set PATH=%DEP_LIBS_ROOT%\bin;%PATH%
 
 rem set BOOST_ROOT=e:\Boost\boost_1_57_0
-set BOOST_ROOT=%BAT_DIR%..\boost_1_57_0-mini
-set BOOST_LIBS=%BOOST_ROOT%\lib32-msvc-12.0
+set BOOST_ROOT=%BAT_DIR%..\boost_1_33_1-mini
+set BOOST_LIBS=%BOOST_ROOT%\lib32-bcb-6
 set PATH=%BOOST_LIBS%;%PATH%
 
 rem set USE_QT=ON
@@ -19,12 +19,12 @@ rem set PATH=%QT_DIR%\bin;%PATH%
 rem set MINGW_ROOT=c:\QtSDK\mingw
 rem set PATH=%MINGW_ROOT%\bin;%PATH%
 
-rem set BCC_DIR=c:\borland\bcc55
-rem set PATH=%BCC_DIR%\bin;%PATH%
+set BCC_DIR=c:\borland\CBuilder6
+set PATH=%BCC_DIR%\bin;%PATH%
 
 rem Supported dialects are: MYSQL, INTERBASE, ORACLE, POSTGRES, SQLITE
 set DIALECT=SQLITE
 
-rem set YBORM_URL=sqlite+qtsql://c:/yborm-0.4.0-msvc2010/examples/test1_db
+rem set YBORM_URL=sqlite+qtsql://e:/work/yborm-0.4.7-mingw44/examples/test1_db
 set YBORM_URL=sqlite+sqlite://%BAT_DIR%..\examples\test1_db
 

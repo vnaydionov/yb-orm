@@ -2,8 +2,8 @@
 #define YBORM_SOURCE
 
 #include <algorithm>
+#include "dialect_sqlite.h"
 #include "util/string_utils.h"
-#include "orm/dialect_sqlite.h"
 
 namespace Yb {
 
