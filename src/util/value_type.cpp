@@ -123,47 +123,56 @@ Value::read_as_float() const { return get_as<double>(bytes_); }
 
 Value::Value()
     : type_(INVALID)
-{}
+{
+    memset(bytes_, 0, sizeof(bytes_));
+}
 
 Value::Value(const int &x)
     : type_(INTEGER)
 {
+    memset(bytes_, 0, sizeof(bytes_));
     copy_as<int>(bytes_, x);
 }
 
 Value::Value(const LongInt &x)
     : type_(LONGINT)
 {
+    memset(bytes_, 0, sizeof(bytes_));
     copy_as<LongInt>(bytes_, x);
 }
 
 Value::Value(const double &x)
     : type_(FLOAT)
 {
+    memset(bytes_, 0, sizeof(bytes_));
     copy_as<double>(bytes_, x);
 }
 
 Value::Value(const Decimal &x)
     : type_(DECIMAL)
 {
+    memset(bytes_, 0, sizeof(bytes_));
     copy_as<Decimal>(bytes_, x);
 }
 
 Value::Value(const DateTime &x)
     : type_(DATETIME)
 {
+    memset(bytes_, 0, sizeof(bytes_));
     copy_as<DateTime>(bytes_, x);
 }
 
 Value::Value(const String &x)
     : type_(STRING)
 {
+    memset(bytes_, 0, sizeof(bytes_));
     copy_as<String>(bytes_, x);
 }
 
 Value::Value(const Char *x)
     : type_(x != NULL? STRING: INVALID)
 {
+    memset(bytes_, 0, sizeof(bytes_));
     if (x != NULL)
         copy_as<String>(bytes_, str_from_chars(x));
 }
