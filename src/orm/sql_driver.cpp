@@ -528,9 +528,9 @@ SqlSource::SqlSource(const String &url)
     sql_driver(driver_name)->parse_url_tail(dialect_name, url_tail, *this);
     set(_T("&dialect"), dialect_name);
     set(_T("&driver"), driver_name);
-    if (empty_key(_T("&db"))) {
-        if (!empty_key(_T("&host")) &&
-                empty_key(_T("&port")) && empty_key(_T("&path")))
+    if (empty_value_by_key(_T("&db"))) {
+        if (!empty_value_by_key(_T("&host")) &&
+                empty_value_by_key(_T("&port")) && empty_value_by_key(_T("&path")))
             set(_T("&db"), pop(_T("&host"), String()));
         else
             set(_T("&db"), pop(_T("&path"), String()));

@@ -169,7 +169,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("sqlite"), NARROW(d[_T("&proto")]));
         CPPUNIT_ASSERT_EQUAL(string("C:/docs etc/file.db"),
                 NARROW(d[_T("&path")]));
-        CPPUNIT_ASSERT_EQUAL(true, d.empty_key(_T("&host")));
+        CPPUNIT_ASSERT_EQUAL(true, d.empty_value_by_key(_T("&host")));
     }
 
     void testFormatUrl()
@@ -192,6 +192,7 @@ public:
             "mysql+qtsql://usr:pwd@my.host:123/test_db?x1=a&y=bb#qw"),
                 NARROW(format_url(d, false)));
     }
+
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestMisc);
@@ -233,9 +234,9 @@ public:
         CPPUNIT_ASSERT_EQUAL(true, t.has(_T("A")));
         CPPUNIT_ASSERT_EQUAL(true, t.has(_T("B")));
         CPPUNIT_ASSERT_EQUAL(false, t.has(_T("C")));
-        CPPUNIT_ASSERT_EQUAL(false, t.empty_key(_T("A")));
-        CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("B")));
-        CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("C")));
+        CPPUNIT_ASSERT_EQUAL(false, t.empty_value_by_key(_T("A")));
+        CPPUNIT_ASSERT_EQUAL(true, t.empty_value_by_key(_T("B")));
+        CPPUNIT_ASSERT_EQUAL(true, t.empty_value_by_key(_T("C")));
         CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(t[_T("A")]));
         CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(String(_T("A"))));
         CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(String(_T("A")), 10));
@@ -328,9 +329,9 @@ public:
         CPPUNIT_ASSERT_EQUAL(true, t.has(_T("A")));
         CPPUNIT_ASSERT_EQUAL(true, t.has(_T("B")));
         CPPUNIT_ASSERT_EQUAL(false, t.has(_T("C")));
-        CPPUNIT_ASSERT_EQUAL(false, t.empty_key(_T("A")));
-        CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("B")));
-        CPPUNIT_ASSERT_EQUAL(true, t.empty_key(_T("C")));
+        CPPUNIT_ASSERT_EQUAL(false, t.empty_value_by_key(_T("A")));
+        CPPUNIT_ASSERT_EQUAL(true, t.empty_value_by_key(_T("B")));
+        CPPUNIT_ASSERT_EQUAL(true, t.empty_value_by_key(_T("C")));
         CPPUNIT_ASSERT_EQUAL(string("1"), NARROW(t[_T("A")]));
         CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(String(_T("A"))));
         CPPUNIT_ASSERT_EQUAL(1, t.get_as<int>(String(_T("A")), 10));

@@ -6,7 +6,8 @@ include_directories (
 
 add_executable (yborm_unit_tests
     test_engine.cpp test_expression.cpp test_schema.cpp
-    test_schema_config.cpp test_xmlizer.cpp test_data_object.cpp)
+    test_schema_config.cpp test_xmlizer.cpp test_data_object.cpp
+    test_domain_object.cpp)
 
 target_link_libraries (yborm_unit_tests
     testmain ybutil yborm

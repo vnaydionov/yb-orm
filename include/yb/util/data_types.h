@@ -247,7 +247,7 @@ public:
         catch (const std::exception &) {}
         return def_val;
     }
-    bool empty_key(const K__ &key) const {
+    bool empty_value_by_key(const K__ &key) const {
         if (!has(key))
             return true;
         return str_empty(to_string(get(key)));
@@ -500,7 +500,7 @@ public:
         catch (const std::exception &) {}
         return def_val;
     }
-    bool empty_key(const K__ &key) const {
+    bool empty_value_by_key(const K__ &key) const {
         size_t pos = get_basic(key, NULL);
         if (pos == a_.size())
             return true;

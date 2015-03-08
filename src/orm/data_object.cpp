@@ -277,8 +277,8 @@ DataObject::Ptr Session::get_lazy(const Key &key)
     if (i != identity_map_.end())
         return DataObject::Ptr(i->second);
     bool empty = empty_key(key);
-    //if (empty)
-    //    throw NullPK(key.first);
+    if (empty)
+        return DataObject::Ptr(NULL);
     DataObjectPtr new_obj =
         DataObject::create_new(schema_[key.first], DataObject::Ghost);
     ValueMap::const_iterator j = key.second.begin(), jend = key.second.end();
@@ -710,7 +710,8 @@ DataObject::Ptr DataObject::get_master(
     // Find FK value.
     Key fkey = obj->fk_value_for(*r);
     DataObject::Ptr master = obj->session_->get_lazy(fkey);
-    link(shptr_get(master), obj, *r);
+    if (shptr_get(master))
+        link(shptr_get(master), obj, *r);
     return master;
 }
 

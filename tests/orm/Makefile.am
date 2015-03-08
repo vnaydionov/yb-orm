@@ -19,7 +19,8 @@ unit_tests_SOURCES = \
 	test_engine.cpp \
 	test_schema_config.cpp \
 	test_xmlizer.cpp \
-	test_data_object.cpp
+	test_data_object.cpp \
+	test_domain_object.cpp
 
 unit_tests_LDFLAGS = \
 	$(top_builddir)/tests/test_main/libtestmain.la \

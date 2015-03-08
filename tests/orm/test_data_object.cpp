@@ -392,7 +392,8 @@ class TestDataObjectSaveLoad : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestDataObjectSaveLoad);
     CPPUNIT_TEST(test_lazy_load);
-    CPPUNIT_TEST_EXCEPTION(test_lazy_load_fail, ObjectNotFoundByKey);
+    //CPPUNIT_TEST_EXCEPTION(test_lazy_load_fail, ObjectNotFoundByKey);
+    CPPUNIT_TEST(test_lazy_load_fail);
     CPPUNIT_TEST(test_lazy_load_slaves);
     CPPUNIT_TEST(test_flush_dirty);
     CPPUNIT_TEST(test_flush_new);
@@ -530,8 +531,7 @@ public:
             CPPUNIT_ASSERT(Decimal(_T("0.01")) == e->get(_T("B")).as_decimal());
             CPPUNIT_ASSERT(Value() == e->get(_T("ORM_TEST_ID")));
             DataObject::Ptr d = DataObject::get_master(e, _T("orm_test"));
-            CPPUNIT_ASSERT(d->get(_T("ID")).is_null());
-            d->get(_T("A"));
+            CPPUNIT_ASSERT(!shptr_get(d));
         }
     }
 

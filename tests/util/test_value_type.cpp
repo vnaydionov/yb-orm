@@ -35,6 +35,7 @@ class TestValue : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_value_bad_cast_integer, ValueBadCast);
     CPPUNIT_TEST_EXCEPTION(test_value_bad_cast_Decimal, ValueBadCast);
     CPPUNIT_TEST_EXCEPTION(test_value_bad_cast_date_time, ValueBadCast);
+    CPPUNIT_TEST(testEmptyKey);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -242,6 +243,22 @@ public:
     void test_value_bad_cast_date_time()
     {
         Value(_T("ab")).as_date_time();
+    }
+
+    void testEmptyKey()
+    {
+        Key k1(_T("TBL1"), ValueMap());
+        CPPUNIT_ASSERT(empty_key(k1));
+        k1.second.push_back(make_pair(_T("A"), Value()));
+        CPPUNIT_ASSERT(empty_key(k1));
+        k1.second.push_back(make_pair(_T("B"), Value()));
+        CPPUNIT_ASSERT(empty_key(k1));
+        k1.second[0].second = Value(10);
+        CPPUNIT_ASSERT(empty_key(k1));
+        k1.second[1].second = Value(String());
+        CPPUNIT_ASSERT(empty_key(k1));
+        k1.second[1].second = Value(String(_T("X")));
+        CPPUNIT_ASSERT(!empty_key(k1));
     }
 };
 

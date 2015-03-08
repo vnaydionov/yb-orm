@@ -489,10 +489,14 @@ YBUTIL_DECL bool
 empty_key(const Key &key)
 {
     ValueMap::const_iterator i = key.second.begin(), iend = key.second.end();
+    if (i == iend)
+        return true;
     for (; i != iend; ++i)
-        if (i->second.is_null())
-            return false;
-    return true;
+        if (i->second.is_null() || (
+                    i->second.get_type() == Value::STRING &&
+                    str_empty(i->second.read_as_string())))
+            return true;
+    return false;
 }
 
 } // namespace Yb

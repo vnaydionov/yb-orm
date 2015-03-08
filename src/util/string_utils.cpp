@@ -445,21 +445,21 @@ YBUTIL_DECL const StringDict parse_url(const String &url)
 YBUTIL_DECL const String format_url(const StringDict &params, bool hide_passwd)
 {
     String r = params[_T("&proto")];
-    if (!params.empty_key(_T("&proto_ext")))
+    if (!params.empty_value_by_key(_T("&proto_ext")))
         r += _T("+") + params[_T("&proto_ext")];
     r += _T("://");
-    if (!params.empty_key(_T("&user"))) {
+    if (!params.empty_value_by_key(_T("&user"))) {
         r += params[_T("&user")];
-        if (!hide_passwd && !params.empty_key(_T("&passwd")))
+        if (!hide_passwd && !params.empty_value_by_key(_T("&passwd")))
             r += _T(":") + params[_T("&passwd")];
         r += _T("@");
     }
-    if (!params.empty_key(_T("&host"))) {
+    if (!params.empty_value_by_key(_T("&host"))) {
         r += params[_T("&host")];
-        if (!params.empty_key(_T("&port")))
+        if (!params.empty_value_by_key(_T("&port")))
             r += _T(":") + params[_T("&port")];
     }
-    if (!params.empty_key(_T("&path")))
+    if (!params.empty_value_by_key(_T("&path")))
         r += url_encode(NARROW(params[_T("&path")]), true);
     String q;
     Strings keys = params.keys();
@@ -472,7 +472,7 @@ YBUTIL_DECL const String format_url(const StringDict &params, bool hide_passwd)
         }
     if (!str_empty(q))
         r += _T("?") + q;
-    if (!params.empty_key(_T("&anchor")))
+    if (!params.empty_value_by_key(_T("&anchor")))
         r += _T("#") + url_encode(NARROW(params[_T("&anchor")]));
     return r;
 }
