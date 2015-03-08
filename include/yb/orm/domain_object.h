@@ -599,10 +599,14 @@ struct QueryFunc {
     }
 };
 
+typedef std::vector<std::pair<const Table *, Expression> > JoinList;
+
 template <class R>
 class QueryObj {
     typedef QueryFunc<R> QF;
     Session *session_;
+    const Table *select_from_;
+    JoinList joins_;
     Expression filter_, order_;
     bool for_update_;
     int limit_, offset_;
@@ -610,12 +614,33 @@ public:
     QueryObj(Session &session, const Expression &filter = Expression(),
             const Expression &order = Expression(), bool for_update = false)
         : session_(&session)
+        , select_from_(NULL)
         , filter_(filter)
         , order_(order)
         , for_update_(for_update)
         , limit_(0)
         , offset_(0)
     {}
+
+    template <class D>
+    QueryObj select_from()
+    {
+        QueryObj q(*this);
+        q.select_from_ = &session_->schema().table(D::get_table_name());
+        return q;
+    }
+
+    template <class D>
+    QueryObj join(const Expression &join_cond = Expression())
+    {
+        QueryObj q(*this);
+        std::pair<const Table *, Expression> new_join(
+                &session_->schema().table(D::get_table_name()),
+                join_cond);
+        q.joins_.push_back(new_join);
+        return q;
+    }
+
     QueryObj filter_by(const Expression &filter) {
         QueryObj q(*this);
         if (q.filter_.is_empty())
@@ -624,6 +649,7 @@ public:
             q.filter_ = q.filter_ && filter;
         return q;
     }
+
     QueryObj order_by(const Expression &order) {
         QueryObj q(*this);
         q.order_ = order;
