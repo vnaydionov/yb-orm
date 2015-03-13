@@ -278,6 +278,39 @@ Table::mk_key(LongInt id) const
     return key;
 }
 
+/*
+static std::string map2str(const Relation::AttrMap &m) {
+        std::string r = "{";
+        for (const auto &x: m)
+            r += x.first + ":'" + x.second + "' ";
+        return r + "}";
+}
+*/
+
+Relation::Relation(int _type,
+        const String &_side1, const AttrMap &_attr1,
+        const String &_side2, const AttrMap &_attr2,
+        int cascade_delete_action)
+    : type_(_type)
+    , cascade_(cascade_delete_action)
+    , side1_(_side1)
+    , side2_(_side2)
+    , attr1_(_attr1)
+    , attr2_(_attr2)
+    , table1_(NULL)
+    , table2_(NULL)
+{
+/*
+    std::cerr << "Relation::Relation(): "
+        << " rel=" << (int)this
+        << ", rel.side1=" << side1_
+        << ", rel.side2=" << side2_
+        << ", rel.attr1=" << map2str(attr1_)
+        << ", rel.attr2=" << map2str(attr2_)
+        << std::endl;
+*/
+}
+
 bool
 Relation::has_attr(int n, const String &name) const {
     const AttrMap &a = !n? attr1_: attr2_;
@@ -292,6 +325,21 @@ Relation::attr(int n, const String &name) const {
     if (it == a.end())
         throw BadAttributeName(_T("relation"), name);
     return it->second;
+}
+
+bool
+Relation::eq(const Relation &o) {
+    /*
+    return type_ == o.type_ && cascade_ == o.cascade_ 
+        && side1_ == o.side1_ && side2_ == o.side2_
+        && attr1_ == o.attr1_ && attr2_ == o.attr2_;
+    */
+    AttrMap::const_iterator i = attr2_.find(_T("property")),
+        oi = o.attr2_.find(_T("property"));
+    return type_ == o.type_ && 
+        side1_ == o.side1_ && side2_ == o.side2_ &&
+        (i != attr2_.end() && oi != o.attr2_.end() && 
+         i->second == oi->second);
 }
 
 Expression

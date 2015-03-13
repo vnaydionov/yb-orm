@@ -259,16 +259,7 @@ public:
     Relation(int _type,
             const String &_side1, const AttrMap &_attr1,
             const String &_side2, const AttrMap &_attr2,
-            int cascade_delete_action = Restrict)
-        : type_(_type)
-        , cascade_(cascade_delete_action)
-        , side1_(_side1)
-        , side2_(_side2)
-        , attr1_(_attr1)
-        , attr2_(_attr2)
-        , table1_(NULL)
-        , table2_(NULL)
-    {}
+            int cascade_delete_action = Restrict);
     int type() const { return type_; }
     int cascade() const { return cascade_; }
     void set_cascade(int cascade_mode) { cascade_ = cascade_mode; }
@@ -291,11 +282,7 @@ public:
                 _T("get relation's table"));
     }
     const Strings &fk_fields() const { return fk_fields_; }
-    bool eq(const Relation &o) {
-        return type_ == o.type_ && cascade_ == o.cascade_ 
-            && side1_ == o.side1_ && side2_ == o.side2_
-            && attr1_ == o.attr1_ && attr2_ == o.attr2_;
-    }
+    bool eq(const Relation &o);
     Expression join_condition() const;
 private:
     int type_, cascade_;

@@ -17,7 +17,7 @@ YB_DECLARE(OrmTest, "T_ORM_TEST", "S_ORM_TEST_ID", "orm-test",
     YB_COL_DATA(c_, "C", DECIMAL)
     YB_COL_DATA(d, "D", FLOAT)
 
-    YB_REL_ONE(OrmTest, orm_test, OrmXml, orm_xmls, Yb::Relation::Delete, "ORM_TEST_ID", 1, 1)
+    YB_REL_ONE(OrmTest, orm_test, OrmXml, orm_xmls, Yb::Relation::Delete, "ORM_TEST_ID", 1, "1")
     YB_COL_END)
 };
 
@@ -28,7 +28,7 @@ YB_DECLARE(OrmXml, "T_ORM_XML", "S_ORM_XML_ID", "orm-xml",
     YB_COL_FK_NULLABLE(orm_test_id, "ORM_TEST_ID", "T_ORM_TEST", "ID")
     YB_COL_DATA(b, "B", DECIMAL)
 
-    YB_REL_MANY(OrmTest, orm_test, OrmXml, orm_xmls, Yb::Relation::Delete, "ORM_TEST_ID", 1, 1)
+    YB_REL_MANY(OrmTest, orm_test, OrmXml, orm_xmls, Yb::Relation::Delete, "ORM_TEST_ID", 1, "1")
     YB_COL_END)
 };
 
@@ -72,6 +72,7 @@ class TestDomainObject : public CppUnit::TestFixture
     CPPUNIT_TEST(test_empty_object);
     CPPUNIT_TEST(test_null_fk_relation);
     CPPUNIT_TEST(test_holder);
+    CPPUNIT_TEST(test_link_one2many);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -205,6 +206,20 @@ public:
                 shptr_get(dh2->get_data_object()));
     }
 
+    void test_link_one2many()
+    {
+        OrmTest ot;
+        OrmXml ox1, ox2, ox3;
+        CPPUNIT_ASSERT_EQUAL(0, (int)ot.orm_xmls.size());
+        ot.orm_xmls.insert(ox1);
+        CPPUNIT_ASSERT_EQUAL(1, (int)ot.orm_xmls.size());
+        CPPUNIT_ASSERT_EQUAL(shptr_get(ox1.get_data_object()),
+                shptr_get(ot.orm_xmls.begin()->get_data_object()));
+        ot.orm_xmls.insert(ox2);
+        CPPUNIT_ASSERT_EQUAL(2, (int)ot.orm_xmls.size());
+        ox3.orm_test = OrmTest::Holder(ot);
+        CPPUNIT_ASSERT_EQUAL(3, (int)ot.orm_xmls.size());
+    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestDomainObject);

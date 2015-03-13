@@ -84,7 +84,7 @@ class TestXMLizer : public CppUnit::TestFixture
                 CreatorPtr(new DomainCreator<OrmTestDomainSimple>()));
         }
 
-        Schema &r = theSchema();
+        Schema r;
         Table::Ptr t(new Table(_T("T_ORM_TEST"), _T("orm-test"), _T("OrmTest")));
         t->set_seq_name(_T("S_ORM_TEST_ID"));
         t->add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK | Column::RO));
@@ -103,6 +103,7 @@ class TestXMLizer : public CppUnit::TestFixture
         a2[_T("property")] = _T("orm_test");
         Relation::Ptr re(new Relation(Relation::ONE2MANY, _T("OrmTest"), a1, _T("OrmXml"), a2));
         r.add_relation(re);
+        r_ = r;
     }
 
 public:
@@ -226,7 +227,7 @@ public:
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
         setup_log(engine);
-        Session session(theSchema(), &engine);
+        Session session(r_, &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize();
         CPPUNIT_ASSERT_EQUAL(string(
@@ -239,7 +240,7 @@ public:
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
         setup_log(engine);
-        Session session(theSchema(), &engine);
+        Session session(r_, &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize(1);
         CPPUNIT_ASSERT_EQUAL(string(
@@ -253,7 +254,7 @@ public:
         init_singleton_registry();
         Engine engine(Engine::READ_ONLY);
         setup_log(engine);
-        Session session(theSchema(), &engine);
+        Session session(r_, &engine);
         OrmXMLDomainSimple test(session, 10);
         ElementTree::ElementPtr node = test.xmlize(-1);
         CPPUNIT_ASSERT_EQUAL(string(
