@@ -6,6 +6,7 @@ option (DEP_LIBS_ROOT "Path where dependency liraries (libxml2, sqlite3, cppunit
         "c:/yborm/dep_libs")
 option (BOOST_ROOT "Path where Boost C++ libs are installed" "c:/boost")
 option (USE_QT "Build YB.ORM against Qt" OFF)
+option (SQLITE3_SRC "Path to SQLite3 amalgamation sources")
 
 if (UNIX)
     find_path (BOOST_INCLUDEDIR boost/lexical_cast.hpp /usr/include)
@@ -98,6 +99,12 @@ endif ()
 add_definitions (-DYB_USE_ODBC)
 set (USE_ODBC ON)
 
+if (SQLITE3_SRC)
+    find_path (SQLITE3_INCLUDEDIR sqlite3.h ${SQLITE3_SRC})
+    find_path (SQLITE3_SINGLE_SOURCE sqlite3.c ${SQLITE3_SRC})
+    set (SQLITE3_LIBS "")
+else ()
+
 if (SQLITE3_INCLUDEDIR)
     find_path (SQLITE3_INCLUDEDIR sqlite3.h ${SQLITE3_INCLUDEDIR})
 elseif (UNIX)
@@ -116,7 +123,9 @@ else ()
     find_library (SQLITE3_LIBS sqlite3 ${DEP_LIBS_ROOT}/lib ${DEP_LIBS_ROOT}/bin)
 endif ()
 
-if (SQLITE3_INCLUDEDIR AND SQLITE3_LIBS)
+endif ()
+
+if (SQLITE3_INCLUDEDIR AND (SQLITE3_LIBS OR SQLITE3_SINGLE_SOURCE))
     add_definitions (-DYB_USE_SQLITE3)
     set (USE_SQLITE3 ON)
 else ()
