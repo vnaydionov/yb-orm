@@ -182,9 +182,11 @@ void
 QtSqlConnectionBackend::close()
 {
     if (own_handle_) {
-        if (conn_)
+        if (conn_) {
             conn_->close();
-        conn_ = NULL;
+            delete conn_;
+            conn_ = NULL;
+        }
         if (!str_empty(conn_name_)) {
             QSqlDatabase::removeDatabase(conn_name_);
             conn_name_ = String();
