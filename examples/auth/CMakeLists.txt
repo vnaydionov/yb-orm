@@ -80,9 +80,42 @@ endif ()
 
 else (USE_QT)
 
-find_package (Qt4 4.4.0 REQUIRED QtCore QtXml QtSql)
-#find_package (Qt5 5.0.2 REQUIRED QtCore QtXml QtSql)
-include (${QT_USE_FILE})
+string (COMPARE EQUAL "${USE_QT}" "5" USE_QT5)
+
+if (USE_QT5)
+
+    message (STATUS "DEBUG: Qt5 requested")
+
+    cmake_policy (SET CMP0028 NEW)
+    cmake_policy (SET CMP0020 NEW)
+
+    find_package (Qt5 5.0.2 REQUIRED Core Xml Sql)
+
+    message (STATUS
+        "DEBUG: Qt5Core_INCLUDE_DIRS=${Qt5Core_INCLUDE_DIRS}")
+    message (STATUS
+        "DEBUG: Qt5Core_LIBRARIES=${Qt5Core_LIBRARIES}")
+    message (STATUS
+        "DEBUG: Qt5Core_EXECUTABLE_COMPILE_FLAGS=${Qt5Core_EXECUTABLE_COMPILE_FLAGS}")
+
+    include_directories (
+        ${Qt5Core_INCLUDE_DIRS} ${Qt5Xml_INCLUDE_DIRS}
+        ${Qt5Sql_INCLUDE_DIRS})
+
+    set (QT_LIBRARIES ${Qt5Core_LIBRARIES} ${Qt5Xml_LIBRARIES} ${Qt5Sql_LIBRARIES})
+
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Core_EXECUTABLE_COMPILE_FLAGS}")
+
+else (USE_QT5)
+
+    message (STATUS "DEBUG: Qt4 assumed")
+
+    find_package (Qt4 4.4.0 REQUIRED QtCore QtXml QtSql)
+
+    include (${QT_USE_FILE})
+
+endif ()
+
 add_definitions (-DYB_USE_QT)
 
 endif ()
