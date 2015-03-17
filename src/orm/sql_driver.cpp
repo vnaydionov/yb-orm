@@ -12,6 +12,7 @@
 
 #include "dialect_sqlite.h"
 #include "dialect_oracle.h"
+#include "dialect_postgres.h"
 //#include "orm/dialect_mysql.h"
 
 #if defined(YB_USE_QT)
@@ -129,6 +130,7 @@ SqlDialect::not_null_default(const String &not_null_clause,
     return default_value + _T(" ") + not_null_clause;
 }
 
+<<<<<<< HEAD
 class PostgresDialect: public SqlDialect
 {
 public:
@@ -141,16 +143,41 @@ public:
     { return _T("NEXTVAL('") + seq_name + _T("')"); }
     const String sql_value(const Value &x)
     {
+=======
+class OracleDialect: public SqlDialect
+{
+public:
+    OracleDialect()
+        : SqlDialect(_T("ORACLE"), _T("DUAL"), true)
+    {}
+    const String select_curr_value(const String &seq_name)
+    { return seq_name + _T(".CURRVAL"); }
+    const String select_next_value(const String &seq_name)
+    { return seq_name + _T(".NEXTVAL"); }
+    const String sql_value(const Value &x)
+    {
+        if (x.get_type() == Value::DATETIME)
+            return _T("timestamp") + x.sql_str();
+>>>>>>> hlyustov-pm-master
         return x.sql_str();
     }
     const String type2sql(int t) {
         switch (t) {
+<<<<<<< HEAD
             case Value::INTEGER:    return _T("INTEGER");       break;
             case Value::LONGINT:    return _T("BIGINT");        break;
             case Value::STRING:     return _T("VARCHAR");       break;
             case Value::DECIMAL:    return _T("DECIMAL");       break;
             case Value::DATETIME:   return _T("TIMESTAMP");     break;
             case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
+=======
+            case Value::INTEGER:    return _T("NUMBER(10)");    break;
+            case Value::LONGINT:    return _T("NUMBER(20)");    break;
+            case Value::STRING:     return _T("VARCHAR2");      break;
+            case Value::DATETIME:   return _T("DATE");          break;
+            case Value::FLOAT:
+            case Value::DECIMAL:    return _T("NUMBER");        break;
+>>>>>>> hlyustov-pm-master
         }
         throw SqlDialectError(_T("Bad type"));
     }
@@ -160,6 +187,11 @@ public:
     const String drop_sequence(const String &seq_name) {
         return _T("DROP SEQUENCE ") + seq_name;
     }
+<<<<<<< HEAD
+=======
+    const String sysdate_func() { return _T("SYSDATE"); }
+    int pager_model() { return (int)PAGER_ORACLE; }
+>>>>>>> hlyustov-pm-master
     // schema introspection
     virtual bool table_exists(SqlConnection &conn, const String &table)
     { return false; }

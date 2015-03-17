@@ -23,6 +23,7 @@ set (SOURCES_CPP
     xmlizer.cpp
     dialect_sqlite.cpp
     dialect_oracle.cpp
+    dialect_postgres.cpp
 )
 
 if (USE_QT)

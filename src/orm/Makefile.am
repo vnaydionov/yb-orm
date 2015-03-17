@@ -48,7 +48,8 @@ CPP_FILES = \
 	sql_pool.cpp \
 	xmlizer.cpp \
 	dialect_sqlite.cpp \
-	dialect_oracle.cpp
+	dialect_oracle.cpp \
+	dialect_postgres.cpp
 
 libyborm_la_SOURCES = \
 	$(CPP_FILES) \
