@@ -24,6 +24,7 @@ set (SOURCES_CPP
     dialect_sqlite.cpp
     dialect_oracle.cpp
     dialect_postgres.cpp
+    dialect_mysql.cpp
 )
 
 if (USE_QT)
@@ -36,9 +37,6 @@ endif ()
 
 if (USE_SQLITE3)
     set(SOURCES_CPP ${SOURCES_CPP} driver_sqlite.cpp)
-    if (SQLITE3_SINGLE_SOURCE)
-        set(SOURCES_CPP ${SOURCES_CPP} ${SQLITE3_SINGLE_SOURCE}/sqlite3.c)
-    endif ()
 endif ()
 
 if (USE_SOCI)
