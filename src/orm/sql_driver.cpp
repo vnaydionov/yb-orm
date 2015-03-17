@@ -11,6 +11,7 @@
 #include "orm/expression.h"
 
 #include "dialect_sqlite.h"
+#include "dialect_oracle.h"
 //#include "orm/dialect_mysql.h"
 
 #if defined(YB_USE_QT)
@@ -127,54 +128,6 @@ SqlDialect::not_null_default(const String &not_null_clause,
         return not_null_clause;
     return default_value + _T(" ") + not_null_clause;
 }
-
-class OracleDialect: public SqlDialect
-{
-public:
-    OracleDialect()
-        : SqlDialect(_T("ORACLE"), _T("DUAL"), true)
-    {}
-    const String select_curr_value(const String &seq_name)
-    { return seq_name + _T(".CURRVAL"); }
-    const String select_next_value(const String &seq_name)
-    { return seq_name + _T(".NEXTVAL"); }
-    const String sql_value(const Value &x)
-    {
-        if (x.get_type() == Value::DATETIME)
-            return _T("timestamp") + x.sql_str();
-        return x.sql_str();
-    }
-    const String type2sql(int t) {
-        switch (t) {
-            case Value::INTEGER:    return _T("NUMBER(10)");    break;
-            case Value::LONGINT:    return _T("NUMBER(20)");    break;
-            case Value::STRING:     return _T("VARCHAR2");      break;
-            case Value::DATETIME:   return _T("DATE");          break;
-            case Value::FLOAT:
-            case Value::DECIMAL:    return _T("NUMBER");        break;
-        }
-        throw SqlDialectError(_T("Bad type"));
-    }
-    const String create_sequence(const String &seq_name) {
-        return _T("CREATE SEQUENCE ") + seq_name;
-    }
-    const String drop_sequence(const String &seq_name) {
-        return _T("DROP SEQUENCE ") + seq_name;
-    }
-    const String sysdate_func() { return _T("SYSDATE"); }
-    int pager_model() { return (int)PAGER_ORACLE; }
-    // schema introspection
-    virtual bool table_exists(SqlConnection &conn, const String &table)
-    { return false; }
-    virtual bool view_exists(SqlConnection &conn, const String &table)
-    { return false; }
-    virtual Strings get_tables(SqlConnection &conn)
-    { return Strings(); }
-    virtual Strings get_views(SqlConnection &conn)
-    { return Strings(); }
-    virtual ColumnsInfo get_columns(SqlConnection &conn, const String &table)
-    { return ColumnsInfo(); }
-};
 
 class PostgresDialect: public SqlDialect
 {
