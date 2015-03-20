@@ -50,7 +50,8 @@ CPP_FILES = \
 	dialect_sqlite.cpp \
 	dialect_oracle.cpp \
 	dialect_postgres.cpp \
-	dialect_mysql.cpp
+	dialect_mysql.cpp \
+	dialect_interbase.cpp
 
 libyborm_la_SOURCES = \
 	$(CPP_FILES) \
