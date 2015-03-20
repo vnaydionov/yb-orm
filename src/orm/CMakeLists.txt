@@ -25,6 +25,7 @@ set (SOURCES_CPP
     dialect_oracle.cpp
     dialect_postgres.cpp
     dialect_mysql.cpp
+    dialect_interbase.cpp
 )
 
 if (USE_QT)

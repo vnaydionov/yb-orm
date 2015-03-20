@@ -14,6 +14,7 @@
 #include "dialect_oracle.h"
 #include "dialect_postgres.h"
 #include "dialect_mysql.h"
+#include "dialect_interbase.h"
 
 #if defined(YB_USE_QT)
 #include "driver_qtsql.h"
@@ -129,52 +130,6 @@ SqlDialect::not_null_default(const String &not_null_clause,
         return not_null_clause;
     return default_value + _T(" ") + not_null_clause;
 }
-
-class InterbaseDialect: public SqlDialect
-{
-public:
-    InterbaseDialect()
-        : SqlDialect(_T("INTERBASE"), _T("RDB$DATABASE"), true)
-    {}
-    const String select_curr_value(const String &seq_name)
-    { return _T("GEN_ID(") + seq_name + _T(", 0)"); }
-    const String select_next_value(const String &seq_name)
-    { return _T("GEN_ID(") + seq_name + _T(", 1)"); }
-    const String sql_value(const Value &x)
-    {
-        return x.sql_str();
-    }
-    bool commit_ddl() { return true; }
-    const String type2sql(int t) {
-        switch (t) {
-            case Value::INTEGER:    return _T("INTEGER");       break;
-            case Value::LONGINT:    return _T("BIGINT");        break;
-            case Value::STRING:     return _T("VARCHAR");       break;
-            case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
-            case Value::DATETIME:   return _T("TIMESTAMP");     break;
-            case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
-        }
-        throw SqlDialectError(_T("Bad type"));
-    }
-    const String create_sequence(const String &seq_name) {
-        return _T("CREATE GENERATOR ") + seq_name;
-    }
-    const String drop_sequence(const String &seq_name) {
-        return _T("DROP GENERATOR ") + seq_name;
-    }
-    int pager_model() { return (int)PAGER_INTERBASE; }
-    // schema introspection
-    virtual bool table_exists(SqlConnection &conn, const String &table)
-    { return false; }
-    virtual bool view_exists(SqlConnection &conn, const String &table)
-    { return false; }
-    virtual Strings get_tables(SqlConnection &conn)
-    { return Strings(); }
-    virtual Strings get_views(SqlConnection &conn)
-    { return Strings(); }
-    virtual ColumnsInfo get_columns(SqlConnection &conn, const String &table)
-    { return ColumnsInfo(); }
-};
 
 typedef SingletonHolder<ItemRegistry<SqlDialect> > theDialectRegistry;
 
