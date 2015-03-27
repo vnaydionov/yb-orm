@@ -73,7 +73,7 @@ MysqlDialect::suffix_create_table()
 }
 
 const String
-MysqlDialect::MysqlDialect::autoinc_flag() 
+MysqlDialect::autoinc_flag() 
 {
     return _T("AUTO_INCREMENT"); 
 }
