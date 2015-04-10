@@ -17,7 +17,7 @@ Typical usage scenario is the following:
     * link and unlink objects to/from each other using relations (see [Tutorial2](https://github.com/vnaydionov/yb-orm/wiki/en_Tutorial2)); 
     * serialize your objects into XML and JSON. 
 
-This tool employs many ideas explained in the book "Patterns of Enterprise Application Architecture" by Martin Fawler. Such patterns as "Lazy Load", "Identity Map", "Unit of Work", etc. Also, the project development was inspired by the power of [Hibernate](http://www.hibernate.org/) framework for Java, and especially by the design of [SQLAlchemy](http://www.sqlalchemy.org/) for Python. Some details of how it works are here: [Internals](https://github.com/vnaydionov/yb-orm/wiki/en_Internals). 
+This tool employs many ideas explained in the book "Patterns of Enterprise Application Architecture" by Martin Fowler. Such patterns as "Lazy Load", "Identity Map", "Unit of Work", etc. Also, the project development was inspired by the power of [Hibernate](http://www.hibernate.org/) framework for Java, and especially by the design of [SQLAlchemy](http://www.sqlalchemy.org/) for Python. Some details of how it works are here: [Internals](https://github.com/vnaydionov/yb-orm/wiki/en_Internals). 
 
 ## STATUS
 

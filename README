@@ -34,7 +34,7 @@ Typical usage scenario is the following:
       + serialize your objects into XML and JSON.
 
 This tool employs many ideas explained in the book "Patterns of Enterprise
-Application Architecture" by Martin Fawler. Such patterns as "Lazy Load",
+Application Architecture" by Martin Fowler. Such patterns as "Lazy Load",
 "Identity Map", "Unit of Work", etc. Also, the project development was
 inspired by the power of Hibernate framework (http://www.hibernate.org/)
 for Java, and especially by the design of SQLAlchemy
