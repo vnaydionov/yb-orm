@@ -133,7 +133,8 @@ MysqlDialect::get_tables(SqlConnection &conn)
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
     {
-        table.push_back(str_to_upper((*i)[0].second.as_string()));
+        // do not force upper case here:
+        table.push_back((*i)[0].second.as_string());
     }
     return table;
 }
@@ -150,8 +151,8 @@ MysqlDialect::get_columns(SqlConnection &conn, const String &table)
     ColumnsInfo ci;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
     String query = _T("SHOW COLUMNS FROM ") + table;
-    Values params;
     cursor->prepare(query);
+    Values params;
     SqlResultSet rs = cursor->exec(params);
 
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
@@ -172,12 +173,26 @@ MysqlDialect::get_columns(SqlConnection &conn, const String &table)
                 if (-1 != open_par) {
                     // split type size into its own field
                     String new_type = str_substr(x.type, 0, open_par);
-                    try {
-                        from_string(str_substr(x.type, open_par + 1,
-                                str_length(x.type) - open_par - 2), x.size);
+                    if (_T("INT") == new_type
+                            || _T("BIGINT") == new_type
+                            || _T("TIMESTAMP") == new_type
+                            || _T("DOUBLE") == new_type)
+                    {
                         x.type = new_type;
                     }
-                    catch (const std::exception &) {}
+                    else if (_T("DECIMAL") == new_type)
+                    {
+                        // do nothing
+                    }
+                    else
+                    {
+                        try {
+                            from_string(str_substr(x.type, open_par + 1,
+                                    str_length(x.type) - open_par - 2), x.size);
+                            x.type = new_type;
+                        }
+                        catch (const std::exception &) {}
+                    }
                 }
             }
             else if (_T("NULL") == j->first)
@@ -212,8 +227,8 @@ MysqlDialect::get_columns(SqlConnection &conn, const String &table)
                _T("where TABLE_SCHEMA=(select schema()from dual) and TABLE_NAME='")
                + table +
                _T("' and CONSTRAINT_NAME<> 'PRIMORY' and REFERENCED_TABLE_NAME is not null");
-    Values params2;
     cursor->prepare(q2);
+    Values params2;
     SqlResultSet rs2 = cursor->exec(params2);
     for (SqlResultSet::iterator i = rs2.begin(); i != rs2.end(); ++i)
     {
