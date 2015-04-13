@@ -159,7 +159,7 @@ register_std_dialects()
     p = dialect.get();
     theDialectRegistry::instance().register_item(
             p->get_name(), dialect);
-    //dialect.reset((SqlDialect *)new MSSQLDialect());
+    dialect.reset((SqlDialect *)new MssqlDialect());
     p = dialect.get();
     theDialectRegistry::instance().register_item(
             p->get_name(), dialect);

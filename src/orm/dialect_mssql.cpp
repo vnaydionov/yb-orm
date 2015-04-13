@@ -11,20 +11,20 @@ namespace Yb {
 using namespace std;
 using namespace Yb::StrUtils;
 
-mssqlDialect::mssqlDialect()
+MssqlDialect::MssqlDialect()
     : SqlDialect(_T("MSSQL"), _T(""), true)
 {}
 
 const String
 MssqlDialect::select_curr_value(const String &seq_name)
 {
-    throw SqlDialectError(_T("No sequences, please")); 
+    throw SqlDialectError(_T("No sequences,"));// please")); 
 }
 
 const String
 MssqlDialect::select_next_value(const String &seq_name)
 {
-    throw SqlDialectError(_T("No sequences, please")); 
+    throw SqlDialectError(_T("No sequences, plea"));//se")); 
 }
 
 const String
@@ -34,7 +34,7 @@ MssqlDialect::select_last_inserted_id(const String &table_name)
 }
 
 const String
-mssqlDialect::sql_value(const Value &x)
+MssqlDialect::sql_value(const Value &x)
 {
     return x.sql_str();
 }
@@ -57,17 +57,17 @@ MssqlDialect::type2sql(int t)
 const String 
 MssqlDialect::create_sequence(const String &seq_name)
 {
-    throw SqlDialectError(_T("No sequences, please"));
+    return _T("CREATE SEQUENCE ") + seq_name;
 }
 
 const String
 MssqlDialect::drop_sequence(const String &seq_name)
 {
-    throw SqlDialectError(_T("No sequences, please"));
+    return _T("DROP SEQUENCE ") + seq_name;
 }
 
 const String
-mssqlDialect::suffix_create_table()
+MssqlDialect::suffix_create_table()
 {
     return _T(" ENGINE=INNODB DEFAULT CHARSET=utf8");
 }
@@ -79,13 +79,13 @@ MssqlDialect::autoinc_flag()
 }
 
 bool
-mssqlDialect::explicit_null() 
+MssqlDialect::explicit_null() 
 {
     return true; 
 }
 
-/*const String 
-mssqlDialect::not_null_default(const String &not_null_clause,
+const String 
+MssqlDialect::not_null_default(const String &not_null_clause,
         const String &default_value)
 {
     if (str_empty(not_null_clause))
@@ -93,23 +93,23 @@ mssqlDialect::not_null_default(const String &not_null_clause,
     if (str_empty(default_value))
         return not_null_clause;
     return not_null_clause + _T(" ") + default_value;
-}*/
+}
 
 int
-mssqlDialect::pager_model() 
+MssqlDialect::pager_model() 
 {
-    return (int)PAGER_mssql; 
+    return 1;//(int)PAGER_mssql; 
 }
 // schema introspection
 
 bool 
-mssqlDialect::table_exists(SqlConnection &conn, const String &table)
+MssqlDialect::table_exists(SqlConnection &conn, const String &table)
 { 
     return false;
 }
 
 bool
-mssqlDialect::view_exists(SqlConnection &conn, const String &table)
+MssqlDialect::view_exists(SqlConnection &conn, const String &table)
 {
     return false; 
 }
@@ -117,19 +117,22 @@ mssqlDialect::view_exists(SqlConnection &conn, const String &table)
 Strings 
 MssqlDialect::get_tables(SqlConnection &conn)
 { 
-    return _T("SELECT * FROM information_schema.tables"); 
+    return Strings();// _T("SELECT * FROM information_schema.tables"); 
 }
 
-/*Strings 
-mssqlDialect::get_views(SqlConnection &conn)
+Strings 
+MssqlDialect::get_views(SqlConnection &conn)
 { 
     return Strings(); 
-}*/
+}
 
 ColumnsInfo 
-mssqlDialect::get_columns(SqlConnection &conn, const String &table)
+MssqlDialect::get_columns(SqlConnection &conn, const String &table)
 {
-    return _T("exec sp_columns "+ table); 
+    ColumnsInfo ci;
+    //ci.push_back(_T("exec sp_columns "+ table));
+    return ci;
+    //return //_T("exec sp_columns "+ table); 
 }
 
 /*
@@ -271,6 +274,6 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
 }
 */
 
-//} // namespace Yb
+} // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
