@@ -38,7 +38,6 @@ MysqlDialect::sql_value(const Value &x)
 {
     return x.sql_str();
 }
-
 const String
 MysqlDialect::type2sql(int t) 
 {
@@ -47,9 +46,9 @@ MysqlDialect::type2sql(int t)
         case Value::INTEGER:    return _T("INT");           break;
         case Value::LONGINT:    return _T("BIGINT");        break;
         case Value::STRING:     return _T("VARCHAR");       break;
-        case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
+        case Value::DECIMAL:    return _T("DECIMAL(16,6)"); break;
         case Value::DATETIME:   return _T("TIMESTAMP");     break;
-        case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
+        case Value::FLOAT:      return _T("DOUBLE"); break;
     }
     throw SqlDialectError(_T("Bad type"));
 }
@@ -105,7 +104,15 @@ MysqlDialect::pager_model()
 bool 
 MysqlDialect::table_exists(SqlConnection &conn, const String &table)
 { 
-    return false;
+    Strings s = get_tables(conn);
+    for (Strings::iterator i = s.begin(); i != s.end(); ++i)
+    {
+        if (*i == table)
+        {
+            return true;
+        }        
+    }
+    return false;    
 }
 
 bool
@@ -117,8 +124,22 @@ MysqlDialect::view_exists(SqlConnection &conn, const String &table)
 Strings 
 MysqlDialect::get_tables(SqlConnection &conn)
 { 
-    return Strings(); 
+    Strings table;
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String query = _T("SHOW TABLE STATUS WHERE Comment != 'VIEW'"); 
+    cursor->prepare(query);
+    Values params;
+    SqlResultSet rs = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    {    
+        table.push_back(str_to_upper((*i)[0].second.as_string()));
+    }
+    return table;
+
 }
+
+
+
 
 Strings 
 MysqlDialect::get_views(SqlConnection &conn)
@@ -129,8 +150,126 @@ MysqlDialect::get_views(SqlConnection &conn)
 ColumnsInfo 
 MysqlDialect::get_columns(SqlConnection &conn, const String &table)
 {
-    return ColumnsInfo(); 
+    ColumnsInfo ci;
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String query = _T("SHOW COLUMNS FROM ") + table;
+    Values params;
+    params.push_back(table);
+    cursor->prepare(query);
+    SqlResultSet rs = cursor->exec(params);
+   
+    
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    {//was not declared in this scope
+       
+        ColumnInfo x;
+        for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+        {
+            if (_T("FIELD") == j->first)
+            {
+                x.name = str_to_upper(j->second.as_string());
+                cout << "Field \n";
+            }
+            else if (_T("TYPE") == j->first)
+            {
+                x.type = str_to_upper(j->second.as_string());
+                int open_par = str_find(x.type, _T('('));
+                cout << "Type \n";
+                if (-1 != open_par) {
+                    // split type size into its own field
+                    String new_type = str_substr(x.type, 0, open_par);
+                    try {
+                        from_string(str_substr(x.type, open_par + 1,
+                                str_length(x.type) - open_par - 2), x.size);
+                        x.type = new_type;
+                    }
+                    catch (const std::exception &) {}
+                }
+            }
+            else if (_T("NULL") == j->first)
+            {
+                x.notnull = _T("NO") == j->second.as_string();
+                cout << "Null \n";
+            }
+            else if (_T("DEFAULT") == j->first)
+            {
+                if (!j->second.is_null())
+                    x.default_value = j->second.as_string();
+                    cout << "Default\n";
+            }
+            else if (_T("KEY") == j->first)
+            {
+                x.pk = _T("PRI") == j->second.as_string();
+                cout << "Key\n";
+            }
+            /*It is unclear how to add structure Exstra
+            else if (_T("Exstra") == j->first) 
+            {
+                x.pk = _T("0") != j->second.as_string();
+            }*/
+        }
+       
+        cout << "\nstok \n";
+        ci.push_back(x);
+    }
+    
+     
+    String q =_T("select COLUMN_NAME, REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME from information_schema.KEY_COLUMN_USAGE where TABLE_SCHEMA=(select schema()from dual) and TABLE_NAME='") + table + _T("' and CONSTRAINT_NAME<> 'PRIMORY' and REFERENCED_TABLE_NAME is not null");
+    cursor->prepare(q);
+    Values param;
+    SqlResultSet rs2 = cursor->exec(param);
+    for (SqlResultSet::iterator i = rs2.begin(); i != rs2.end(); ++i)
+    {
+        String fk_column, fk_table, fk_table_key;
+        for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+        {
+            cout << "\nkey\n";
+            if (_T("REFERENCED_TABLE_NAME") == j->first)
+            {
+                cout << "\ntable \n";
+                if (!j->second.is_null())       
+                    fk_table = j->second.as_string();
+                     cout << "\n table2 \n";
+            }
+              else if (_T("REFERENCED_COLUMN_NAME") == j->first)
+            { 
+                
+                cout << "\n name \n";
+                if (!j->second.is_null())
+                    fk_table_key = j->second.as_string();
+                    cout << "\nname2 \n";
+            
+            }   
+            else if (_T("COLUMN_NAME"== j->first))
+            {
+                if (!j->second.is_null())
+                cout << "\n non \n";
+                    fk_column = j->second.as_string();
+                      cout << "\nnon2 \n";
+            }        
+           
+        }
+        for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
+        {
+            if (k->name == fk_column)
+            {
+            
+                k->fk_table = fk_table;
+                k->fk_table_key = fk_table_key;
+                break;
+                
+            }
+        }
+    }
+    return ci;
 }
+
+}
+
+
+
+
+
 
 /*
 static Strings
@@ -159,7 +298,7 @@ really_get_tables(SqlConnection &conn, const String &type,
         tables.push_back(str_to_upper((*i)[0].second.as_string()));
     }
     return tables;
-}
+}sql коннект к базе с++
 
 bool
 SQLite3Dialect::table_exists(SqlConnection &conn, const String &table)
@@ -196,7 +335,8 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
     Values params;
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {
+    {was not declared in this scope
+
         ColumnInfo x;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
@@ -268,9 +408,11 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
         }
     }
     return ci;
+
+}
 }
 */
-
-} // namespace Yb
+ // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
+
