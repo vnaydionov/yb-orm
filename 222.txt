@@ -1,0 +1,300 @@
+Making check in include
+make[1]: Entering directory `/home/rws/yb/yb-orm/include'
+Making check in yb
+make[2]: Entering directory `/home/rws/yb/yb-orm/include/yb'
+Making check in util
+make[3]: Entering directory `/home/rws/yb/yb-orm/include/yb/util'
+make[3]: Nothing to be done for `check'.
+make[3]: Leaving directory `/home/rws/yb/yb-orm/include/yb/util'
+Making check in orm
+make[3]: Entering directory `/home/rws/yb/yb-orm/include/yb/orm'
+make[3]: Nothing to be done for `check'.
+make[3]: Leaving directory `/home/rws/yb/yb-orm/include/yb/orm'
+make[3]: Entering directory `/home/rws/yb/yb-orm/include/yb'
+make[3]: Nothing to be done for `check-am'.
+make[3]: Leaving directory `/home/rws/yb/yb-orm/include/yb'
+make[2]: Leaving directory `/home/rws/yb/yb-orm/include/yb'
+make[2]: Entering directory `/home/rws/yb/yb-orm/include'
+make[2]: Nothing to be done for `check-am'.
+make[2]: Leaving directory `/home/rws/yb/yb-orm/include'
+make[1]: Leaving directory `/home/rws/yb/yb-orm/include'
+Making check in src
+make[1]: Entering directory `/home/rws/yb/yb-orm/src'
+Making check in util
+make[2]: Entering directory `/home/rws/yb/yb-orm/src/util'
+make[2]: Nothing to be done for `check'.
+make[2]: Leaving directory `/home/rws/yb/yb-orm/src/util'
+Making check in orm
+make[2]: Entering directory `/home/rws/yb/yb-orm/src/orm'
+make[3]: Entering directory `/home/rws/yb/yb-orm'
+make[3]: Leaving directory `/home/rws/yb/yb-orm'
+make[2]: Nothing to be done for `check'.
+make[2]: Leaving directory `/home/rws/yb/yb-orm/src/orm'
+Making check in yborm_gen
+make[2]: Entering directory `/home/rws/yb/yb-orm/src/yborm_gen'
+make[2]: Nothing to be done for `check'.
+make[2]: Leaving directory `/home/rws/yb/yb-orm/src/yborm_gen'
+make[2]: Entering directory `/home/rws/yb/yb-orm/src'
+make[2]: Nothing to be done for `check-am'.
+make[2]: Leaving directory `/home/rws/yb/yb-orm/src'
+make[1]: Leaving directory `/home/rws/yb/yb-orm/src'
+Making check in tests
+make[1]: Entering directory `/home/rws/yb/yb-orm/tests'
+Making check in test_main
+make[2]: Entering directory `/home/rws/yb/yb-orm/tests/test_main'
+make[2]: Nothing to be done for `check'.
+make[2]: Leaving directory `/home/rws/yb/yb-orm/tests/test_main'
+Making check in util
+make[2]: Entering directory `/home/rws/yb/yb-orm/tests/util'
+make  unit_tests
+make[3]: Entering directory `/home/rws/yb/yb-orm/tests/util'
+make[3]: `unit_tests' is up to date.
+make[3]: Leaving directory `/home/rws/yb/yb-orm/tests/util'
+make  check-TESTS
+make[3]: Entering directory `/home/rws/yb/yb-orm/tests/util'
+TestDecimal::testDecimalInit : OK
+TestDecimal::testDecimalRounding : OK
+TestDecimal::testDecimalInitFail0 : OK
+TestDecimal::testDecimalInitFail1 : OK
+TestDecimal::testDecimalInitFail2 : OK
+TestDecimal::testDecimalInitFail3 : OK
+TestDecimal::testDecimalInitFail4 : OK
+TestDecimal::testDecimalInitFail5 : OK
+TestDecimal::testDecimalInitFail6 : OK
+TestDecimal::testDecimalInitFail7 : OK
+TestDecimal::testDecimalInitFail8 : OK
+TestDecimal::testDecimalInitFail9 : OK
+TestDecimal::testDecimalInitFail10 : OK
+TestDecimal::testDecimalInitFail11 : OK
+TestDecimal::testDecimalInitFail12 : OK
+TestDecimal::testDecimalComparison : OK
+TestDecimal::testDecimalArithmeticMembers : OK
+TestDecimal::testDecimalArithmetics : OK
+TestDecimal::testDivByZero : OK
+TestDecimal::testOverflow1 : OK
+TestDecimal::testOverflow2 : OK
+TestDecimal::testOverflow3 : OK
+TestDecimal::testSerialization : OK
+TestDecimal::testDeserialization : OK
+TestDecimal::testFailedDeserialization : OK
+TestDecimal::testCast : OK
+TestDecimal::testInvalidCast1 : OK
+TestDecimal::testInvalidCast2 : OK
+TestSingleton::testOk : OK
+TestSingleton::testFail : OK
+TestResultSet::testEnum : OK
+TestResultSet::testCopy : OK
+TestResultSet::testLimitedCopy2 : OK
+TestResultSet::testLimitedCopy0 : OK
+TestResultSet::testThrows : OK
+TestMisc::testSplitStr : OK
+TestMisc::testSplitStrEmpty : OK
+TestMisc::testSplitStrSingle : OK
+TestMisc::testSplitStrMargins : OK
+TestMisc::testSplitStrByChars : OK
+TestMisc::testSplitStrByCharsEmpty : OK
+TestMisc::testSplitStrByCharsSingle : OK
+TestMisc::testSplitStrByCharsLimit : OK
+TestMisc::testSplitPath : OK
+TestMisc::testJoinStr : OK
+TestMisc::testUrlEncode : OK
+TestMisc::testUrlDecode : OK
+TestMisc::testParseUrl : OK
+TestMisc::testFormatUrl : OK
+TestDict::testDictCons : OK
+TestDict::testDictGetAs : OK
+TestDict::testDictPop : OK
+TestDict::testDictUpdate : OK
+TestDict::testDictGetKeyError : OK
+TestDict::testDictGetAsValueError : OK
+TestDict::testDictPopKeyError : OK
+TestOrderedDict::testOrderedDictCons : OK
+TestOrderedDict::testOrderedDictGetAs : OK
+TestOrderedDict::testOrderedDictPop : OK
+TestOrderedDict::testOrderedDictUpdate : OK
+TestOrderedDict::testOrderedDictGetKeyError : OK
+TestOrderedDict::testOrderedDictGetAsValueError : OK
+TestOrderedDict::testOrderedDictPopKeyError : OK
+TestOrderedDict::testOrderedDictOrder : OK
+TestOrderedDict::testOrderedDictCmp : OK
+TestElementTree::testEtreeCons : OK
+TestElementTree::testEtreeParse : OK
+TestElementTree::testEtreeSerialize : OK
+TestElementTree::testEtreeJson : OK
+TestValue::test_type : OK
+TestValue::test_value : OK
+TestValue::test_sysdate : OK
+TestValue::test_null : OK
+TestValue::test_equality : OK
+TestValue::test_less : OK
+TestValue::test_as_sql_string : OK
+TestValue::test_as_string : OK
+TestValue::test_as_integer : OK
+TestValue::test_as_float : OK
+TestValue::test_swap : OK
+TestValue::test_fix_type : OK
+TestValue::test_tuple_values : OK
+TestValue::test_stdtuple_values : OK
+TestValue::test_value_is_null : OK
+TestValue::test_value_bad_cast_long_long : OK
+TestValue::test_value_bad_cast_integer : OK
+TestValue::test_value_bad_cast_Decimal : OK
+TestValue::test_value_bad_cast_date_time : OK
+TestValue::testEmptyKey : OK
+PASS: unit_tests
+=============
+1 test passed
+=============
+make[3]: Leaving directory `/home/rws/yb/yb-orm/tests/util'
+make[2]: Leaving directory `/home/rws/yb/yb-orm/tests/util'
+Making check in orm
+make[2]: Entering directory `/home/rws/yb/yb-orm/tests/orm'
+make  unit_tests mk_tables.sql
+make[3]: Entering directory `/home/rws/yb/yb-orm/tests/orm'
+make[3]: `unit_tests' is up to date.
+make[3]: `mk_tables.sql' is up to date.
+make[3]: Leaving directory `/home/rws/yb/yb-orm/tests/orm'
+make  check-TESTS
+make[3]: Entering directory `/home/rws/yb/yb-orm/tests/orm'
+TestExpression::testFilterAll : OK
+TestExpression::testFilterEq : OK
+TestExpression::testOperatorOr : OK
+TestExpression::testOperatorAnd : OK
+TestExpression::testLike : OK
+TestExpression::testIn : OK
+TestExpression::testCollectParams : OK
+TestExpression::testExprList : OK
+TestExpression::testExprListTuple : OK
+TestExpression::testExprListStdTuple : OK
+TestExpression::testSelectExpr : OK
+TestExpression::testFindAllTables : OK
+TestExpression::testParenth : OK
+TestMetaData::test_column : OK
+TestMetaData::test_column_ex : OK
+TestMetaData::test_table_cons : OK
+TestMetaData::test_table_columns : OK
+TestMetaData::test_table_seq : OK
+TestMetaData::test_table_surrogate_pk : OK
+TestMetaData::test_rel_join_cond : OK
+TestMetaData::test_get_fk_for : OK
+TestMetaData::test_table_bad_surrogate_pk__no_pk : OK
+TestMetaData::test_table_bad_surrogate_pk__complex : OK
+TestMetaData::test_table_bad_surrogate_pk__not_int : OK
+TestMetaData::test_meta_data_bad_column_name : OK
+TestMetaData::test_meta_data_bad_column_name2 : OK
+TestMetaData::test_meta_data_column_not_found : OK
+TestMetaData::test_md_registry : OK
+TestMetaData::test_meta_data_empty_table : OK
+TestMetaData::test_meta_data_bad_table_name : OK
+TestMetaData::test_meta_data_table_not_found : OK
+TestMetaData::test_registry_check : OK
+TestMetaData::test_registry_check_absent_fk_table : OK
+TestMetaData::test_registry_check_absent_fk_field : OK
+TestMetaData::test_registry_check_cyclic_references : OK
+TestEngine::test_strlist_one : OK
+TestEngine::test_strlist_two : OK
+TestEngine::test_select_simple : OK
+TestEngine::test_select_for_update : OK
+TestEngine::test_select_where : OK
+TestEngine::test_select_groupby : OK
+TestEngine::test_select_having : OK
+TestEngine::test_select_pager : OK
+TestEngine::test_select_pager_params : OK
+TestEngine::test_select_pager_ib : OK
+TestEngine::test_select_pager_my : OK
+TestEngine::test_select_pager_ora : OK
+TestEngine::test_select_orderby : OK
+TestEngine::test_select_having_wo_groupby : OK
+TestEngine::test_insert_simple : error
+TestEngine::test_insert_exclude : error
+TestEngine::test_update_where : error
+TestEngine::test_update_combo : error
+TestEngine::test_update_wo_clause : error
+TestEngine::test_delete : error
+TestEngine::test_delete_wo_pk : error
+TestEngine::test_insert_ro_mode : error
+TestEngine::test_update_ro_mode : error
+TestEngine::test_delete_ro_mode : error
+TestEngine::test_execpoc_ro_mode : error
+TestEngineSql::test_select_sql : error : error
+TestEngineSql::test_select_sql_max_rows : error : error
+TestEngineSql::test_insert_sql : error : error
+TestEngineSql::test_update_sql : error : error
+TestSqlIntrospection::test_show_all : error
+TestSqlIntrospection::test_find_by_name : error
+TestSqlIntrospection::test_table_columns : error
+TestXMLConfig::testBadXML : OK
+TestXMLConfig::testParseColumn : OK
+TestXMLConfig::testParseForeignKey : OK
+TestXMLConfig::testStrTypeToInt : OK
+TestXMLConfig::testInvalidCombination : OK
+TestXMLConfig::testAbsentForeignKeyField : OK
+TestXMLConfig::testAbsentForeignKeyTable : OK
+TestXMLConfig::testAbsentColumnName : OK
+TestXMLConfig::testAbsentColumnType : OK
+TestXMLConfig::testWrongColumnType : OK
+TestXMLConfig::testGetWrongNodeValue : OK
+TestXMLConfig::testParseTable : OK
+TestXMLConfig::testNoAutoInc : OK
+TestXMLConfig::testAutoInc : OK
+TestXMLConfig::testNullable : OK
+TestXMLConfig::testClassName : OK
+TestXMLConfig::testClassNameDefault : OK
+TestXMLConfig::testWrongElementTable : OK
+TestXMLConfig::testParseSchema : OK
+TestXMLConfig::testRelationSide : OK
+TestXMLConfig::testRelationSideNoClass : OK
+TestXMLConfig::testRelationOneToMany : OK
+TestXMLConfig::testSerialize : OK
+TestXMLConfig::testSerialize2 : OK
+TestXMLConfig::testSaveXML : OK
+TestXMLizer::test_xmlize_data_object : error : error
+TestXMLizer::test_replace_child_object : error : error
+TestXMLizer::test_add_node : error : error
+TestXMLizer::test_xmlize_null_value : error : error
+TestXMLizer::test_deep_xmlize1 : error : error
+TestXMLizer::test_deep_xmlize2 : error : error
+TestXMLizer::test_deep_xmlize3 : error : error
+TestDataObject::test_init_wrong_val : OK
+TestDataObject::test_init_ro : OK
+TestDataObject::test_init_long_string : OK
+TestDataObject::test_data_object_key : OK
+TestDataObject::test_data_object_save_no_id : OK
+TestDataObject::test_data_object_save_id : OK
+TestDataObject::test_data_object_already_saved : OK
+TestDataObject::test_save_or_update : OK
+TestDataObject::test_data_object_cant_change_key_if_saved : OK
+TestDataObject::test_data_object_link : OK
+TestDataObject::test_data_object_relink : OK
+TestDataObject::test_data_object_delete : OK
+TestDataObject::test_data_object_delete_cascade : OK
+TestDataObject::test_data_object_delete_set_null : OK
+TestDataObject::test_data_object_delete_restricted : OK
+TestDataObject::test_traverse_down_up : OK
+TestDataObject::test_traverse_up_down : OK
+TestDataObject::test_calc_depth : OK
+TestDataObject::test_cycle_detected : OK
+TestDataObject::test_filter_by_key : OK
+TestDataObjectSaveLoad::test_lazy_load : error : error
+TestDataObjectSaveLoad::test_lazy_load_fail : error : error
+TestDataObjectSaveLoad::test_lazy_load_slaves : error : error
+TestDataObjectSaveLoad::test_flush_dirty : error : error
+TestDataObjectSaveLoad::test_flush_new : error : error
+TestDataObjectSaveLoad::test_flush_new_with_id : error : error
+TestDataObjectSaveLoad::test_flush_new_linked : error : error
+TestDataObjectSaveLoad::test_flush_new_linked_to_existing : error : error
+TestDataObjectSaveLoad::test_flush_deleted : error : error
+TestDataObjectSaveLoad::test_domain_object : error : error
+TestDomainObject::test_lazy_load : error : error
+TestDomainObject::test_lazy_load_failed : error : error
+TestDomainObject::test_empty_object : error : error
+TestDomainObject::test_null_fk_relation : error : error
+TestDomainObject::test_holder : error : error
+TestDomainObject::test_link_one2many : error : error
+FAIL: unit_tests_wrapper.sh
+==================
+1 of 1 test failed
+==================
+make[3]: Leaving directory `/home/rws/yb/yb-orm/tests/orm'
+make[2]: Leaving directory `/home/rws/yb/yb-orm/tests/orm'
+make[1]: Leaving directory `/home/rws/yb/yb-orm/tests'
