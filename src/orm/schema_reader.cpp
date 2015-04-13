@@ -43,8 +43,12 @@ read_schema_from_db(SqlConnection &connection)
             String def_val = j->default_value;
             if (str_to_upper(def_val) == str_to_upper(dialect->sysdate_func()))
                 def_val = _T("SYSDATE");
+            int type = get_sql_type_by_name(j->type, *dialect);
+            if (type == (int)Value::INTEGER &&
+                    (j->pk || !str_empty(j->fk_table)))
+                type = Value::LONGINT;
             Column c(j->name,
-                     get_sql_type_by_name(j->type, *dialect),
+                     type,
                      j->size,
                      flags,
                      def_val,
