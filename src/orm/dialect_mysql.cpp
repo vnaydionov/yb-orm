@@ -38,6 +38,7 @@ MysqlDialect::sql_value(const Value &x)
 {
     return x.sql_str();
 }
+
 const String
 MysqlDialect::type2sql(int t)
 {

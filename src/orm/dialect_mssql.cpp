@@ -12,25 +12,25 @@ using namespace std;
 using namespace Yb::StrUtils;
 
 MssqlDialect::MssqlDialect()
-    : SqlDialect(_T("MSSQL"), _T(""), true)
+    : SqlDialect(_T("MSSQL"), _T(""), false)
 {}
 
 const String
 MssqlDialect::select_curr_value(const String &seq_name)
 {
-    throw SqlDialectError(_T("No sequences,"));// please")); 
+    throw SqlDialectError(_T("No sequences, please"));
 }
 
 const String
 MssqlDialect::select_next_value(const String &seq_name)
 {
-    throw SqlDialectError(_T("No sequences, plea"));//se")); 
+    throw SqlDialectError(_T("No sequences, please"));
 }
 
 const String
 MssqlDialect::select_last_inserted_id(const String &table_name)
 {
-    return _T("SELECT SCOPE_IDENTITY() FROM " + table_name);
+    return _T("SELECT SCOPE_IDENTITY()");
 }
 
 const String
@@ -48,8 +48,8 @@ MssqlDialect::type2sql(int t)
         case Value::LONGINT:    return _T("BIGINT");        break;
         case Value::STRING:     return _T("VARCHAR");       break;
         case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
-        case Value::DATETIME:   return _T("DATE");     break;
-        case Value::FLOAT:      return _T("FLOAT"); break;
+        case Value::DATETIME:   return _T("DATETIME");      break;
+        case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
     }
     throw SqlDialectError(_T("Bad type"));
 }
@@ -57,19 +57,19 @@ MssqlDialect::type2sql(int t)
 const String 
 MssqlDialect::create_sequence(const String &seq_name)
 {
-    return _T("CREATE SEQUENCE ") + seq_name;
+    throw SqlDialectError(_T("No sequences, please"));
 }
 
 const String
 MssqlDialect::drop_sequence(const String &seq_name)
 {
-    return _T("DROP SEQUENCE ") + seq_name;
+    throw SqlDialectError(_T("No sequences, please"));
 }
 
 const String
 MssqlDialect::suffix_create_table()
 {
-    return _T(" ENGINE=INNODB DEFAULT CHARSET=utf8");
+    return String();
 }
 
 const String
@@ -98,8 +98,9 @@ MssqlDialect::not_null_default(const String &not_null_clause,
 int
 MssqlDialect::pager_model() 
 {
-    return 1;//(int)PAGER_mssql; 
+    return (int)PAGER_MYSQL;
 }
+
 // schema introspection
 
 bool 
