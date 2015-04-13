@@ -103,20 +103,14 @@ really_get_tables(SqlConnection &conn, const String &type,
 {
     Strings tables;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String q = _T("SELECT name FROM sqlite_master WHERE type=?");
-    Values params;
-    params.push_back(Value(type));
+    String q = _T("SELECT name FROM sqlite_master WHERE type='")
+        + type + _T("'");
     if (!str_empty(name))
-    {
-        q += _T(" AND UPPER(name)=UPPER(?)");
-        params.push_back(Value(name));
-    }
+        q += _T(" AND UPPER(name)=UPPER('") + name + _T("')");
     if (filter_system)
-    {
-        q += _T(" AND UPPER(name) NOT IN (?)");
-        params.push_back(Value(_T("SQLITE_SEQUENCE")));
-    }
+        q += _T(" AND UPPER(name) NOT IN ('SQLITE_SEQUENCE')");
     cursor->prepare(q);
+    Values params;
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
     {
