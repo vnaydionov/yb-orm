@@ -18,13 +18,13 @@ MysqlDialect::MysqlDialect()
 const String
 MysqlDialect::select_curr_value(const String &seq_name)
 {
-    throw SqlDialectError(_T("No sequences, please")); 
+    throw SqlDialectError(_T("No sequences, please"));
 }
 
 const String
 MysqlDialect::select_next_value(const String &seq_name)
 {
-    throw SqlDialectError(_T("No sequences, please")); 
+    throw SqlDialectError(_T("No sequences, please"));
 }
 
 const String
@@ -39,9 +39,9 @@ MysqlDialect::sql_value(const Value &x)
     return x.sql_str();
 }
 const String
-MysqlDialect::type2sql(int t) 
+MysqlDialect::type2sql(int t)
 {
-    switch (t) 
+    switch (t)
     {
         case Value::INTEGER:    return _T("INT");           break;
         case Value::LONGINT:    return _T("BIGINT");        break;
@@ -53,7 +53,7 @@ MysqlDialect::type2sql(int t)
     throw SqlDialectError(_T("Bad type"));
 }
 
-const String 
+const String
 MysqlDialect::create_sequence(const String &seq_name)
 {
     throw SqlDialectError(_T("No sequences, please"));
@@ -72,18 +72,18 @@ MysqlDialect::suffix_create_table()
 }
 
 const String
-MysqlDialect::autoinc_flag() 
+MysqlDialect::autoinc_flag()
 {
-    return _T("AUTO_INCREMENT"); 
+    return _T("AUTO_INCREMENT");
 }
 
 bool
-MysqlDialect::explicit_null() 
+MysqlDialect::explicit_null()
 {
-    return true; 
+    return true;
 }
 
-const String 
+const String
 MysqlDialect::not_null_default(const String &not_null_clause,
         const String &default_value)
 {
@@ -95,86 +95,80 @@ MysqlDialect::not_null_default(const String &not_null_clause,
 }
 
 int
-MysqlDialect::pager_model() 
+MysqlDialect::pager_model()
 {
-    return (int)PAGER_MYSQL; 
+    return (int)PAGER_MYSQL;
 }
+
 // schema introspection
 
-bool 
+bool
 MysqlDialect::table_exists(SqlConnection &conn, const String &table)
-{ 
+{
     Strings s = get_tables(conn);
     for (Strings::iterator i = s.begin(); i != s.end(); ++i)
     {
         if (*i == table)
         {
             return true;
-        }        
+        }
     }
-    return false;    
+    return false;
 }
 
 bool
 MysqlDialect::view_exists(SqlConnection &conn, const String &table)
 {
-    return false; 
+    return false;
 }
 
-Strings 
+Strings
 MysqlDialect::get_tables(SqlConnection &conn)
-{ 
+{
     Strings table;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String query = _T("SHOW TABLE STATUS WHERE Comment != 'VIEW'"); 
+    String query = _T("SHOW TABLE STATUS WHERE Comment != 'VIEW'");
     cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {    
+    {
         table.push_back(str_to_upper((*i)[0].second.as_string()));
     }
     return table;
-
 }
 
-
-
-
-Strings 
+Strings
 MysqlDialect::get_views(SqlConnection &conn)
-{ 
-    return Strings(); 
+{
+    return Strings();
 }
 
-ColumnsInfo 
+ColumnsInfo
 MysqlDialect::get_columns(SqlConnection &conn, const String &table)
 {
     ColumnsInfo ci;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
     String query = _T("SHOW COLUMNS FROM ") + table;
     Values params;
-    params.push_back(table);
     cursor->prepare(query);
     SqlResultSet rs = cursor->exec(params);
-   
-    
+
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {//was not declared in this scope
-       
+    {
         ColumnInfo x;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
             if (_T("FIELD") == j->first)
             {
                 x.name = str_to_upper(j->second.as_string());
-                cout << "Field \n";
+                //cout << "Field \n";
             }
             else if (_T("TYPE") == j->first)
             {
                 x.type = str_to_upper(j->second.as_string());
                 int open_par = str_find(x.type, _T('('));
-                cout << "Type \n";
+                //cout << "Type \n";
                 if (-1 != open_par) {
                     // split type size into its own field
                     String new_type = str_substr(x.type, 0, open_par);
@@ -189,218 +183,74 @@ MysqlDialect::get_columns(SqlConnection &conn, const String &table)
             else if (_T("NULL") == j->first)
             {
                 x.notnull = _T("NO") == j->second.as_string();
-                cout << "Null \n";
+                //cout << "Null \n";
             }
             else if (_T("DEFAULT") == j->first)
             {
                 if (!j->second.is_null())
                     x.default_value = j->second.as_string();
-                    cout << "Default\n";
+                    //cout << "Default\n";
             }
             else if (_T("KEY") == j->first)
             {
                 x.pk = _T("PRI") == j->second.as_string();
-                cout << "Key\n";
+                //cout << "Key\n";
             }
             /*It is unclear how to add structure Exstra
-            else if (_T("Exstra") == j->first) 
+            else if (_T("Exstra") == j->first)
             {
                 x.pk = _T("0") != j->second.as_string();
             }*/
         }
-       
-        cout << "\nstok \n";
+
+        //cout << "\nstok \n";
         ci.push_back(x);
     }
-    
-     
-    String q =_T("select COLUMN_NAME, REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME from information_schema.KEY_COLUMN_USAGE where TABLE_SCHEMA=(select schema()from dual) and TABLE_NAME='") + table + _T("' and CONSTRAINT_NAME<> 'PRIMORY' and REFERENCED_TABLE_NAME is not null");
-    cursor->prepare(q);
-    Values param;
-    SqlResultSet rs2 = cursor->exec(param);
+
+    String q2 =_T("select COLUMN_NAME, REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME ")
+               _T("from information_schema.KEY_COLUMN_USAGE ")
+               _T("where TABLE_SCHEMA=(select schema()from dual) and TABLE_NAME='")
+               + table +
+               _T("' and CONSTRAINT_NAME<> 'PRIMORY' and REFERENCED_TABLE_NAME is not null");
+    Values params2;
+    cursor->prepare(q2);
+    SqlResultSet rs2 = cursor->exec(params2);
     for (SqlResultSet::iterator i = rs2.begin(); i != rs2.end(); ++i)
     {
         String fk_column, fk_table, fk_table_key;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
-            cout << "\nkey\n";
+            //cout << "\nkey\n";
             if (_T("REFERENCED_TABLE_NAME") == j->first)
             {
-                cout << "\ntable \n";
-                if (!j->second.is_null())       
+                //cout << "\ntable \n";
+                if (!j->second.is_null()) {
                     fk_table = j->second.as_string();
-                     cout << "\n table2 \n";
+                    //cout << "\n table2 \n";
+                }
             }
-              else if (_T("REFERENCED_COLUMN_NAME") == j->first)
-            { 
-                
-                cout << "\n name \n";
-                if (!j->second.is_null())
-                    fk_table_key = j->second.as_string();
-                    cout << "\nname2 \n";
-            
-            }   
-            else if (_T("COLUMN_NAME"== j->first))
+            else if (_T("REFERENCED_COLUMN_NAME") == j->first)
             {
-                if (!j->second.is_null())
-                cout << "\n non \n";
+                //cout << "\n name \n";
+                if (!j->second.is_null()) {
+                    fk_table_key = j->second.as_string();
+                    //cout << "\nname2 \n";
+                }
+            }
+            else if (_T("COLUMN_NAME") == j->first)
+            {
+                //cout << "\n non \n";
+                if (!j->second.is_null()) {
                     fk_column = j->second.as_string();
-                      cout << "\nnon2 \n";
-            }        
-           
+                    //cout << "\nnon2 \n";
+                }
+            }
         }
+
         for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
         {
             if (k->name == fk_column)
             {
-            
-                k->fk_table = fk_table;
-                k->fk_table_key = fk_table_key;
-                break;
-                
-            }
-        }
-    }
-    return ci;
-}
-
-}
-
-
-
-
-
-
-/*
-static Strings
-really_get_tables(SqlConnection &conn, const String &type,
-        const String &name, bool filter_system)
-{
-    Strings tables;
-    auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String q = _T("SELECT name FROM sqlite_master WHERE type=?");
-    Values params;
-    params.push_back(Value(type));
-    if (!str_empty(name))
-    {
-        q += _T(" AND UPPER(name)=UPPER(?)");
-        params.push_back(Value(name));
-    }
-    if (filter_system)
-    {
-        q += _T(" AND UPPER(name) NOT IN (?)");
-        params.push_back(Value(_T("SQLITE_SEQUENCE")));
-    }
-    cursor->prepare(q);
-    SqlResultSet rs = cursor->exec(params);
-    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {
-        tables.push_back(str_to_upper((*i)[0].second.as_string()));
-    }
-    return tables;
-}sql коннект к базе с++
-
-bool
-SQLite3Dialect::table_exists(SqlConnection &conn, const String &table)
-{
-    Strings r = really_get_tables(conn, _T("table"), table, false);
-    return r.size() == 1;
-}
-
-bool
-SQLite3Dialect::view_exists(SqlConnection &conn, const String &table)
-{
-    Strings r = really_get_tables(conn, _T("view"), table, false);
-    return r.size() == 1;
-}
-
-Strings
-SQLite3Dialect::get_tables(SqlConnection &conn)
-{
-    return really_get_tables(conn, _T("table"), _T(""), true);
-}
-
-Strings
-SQLite3Dialect::get_views(SqlConnection &conn)
-{
-    return really_get_tables(conn, _T("view"), _T(""), true);
-}
-
-ColumnsInfo
-SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
-{
-    ColumnsInfo ci;
-    auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    cursor->prepare(_T("PRAGMA table_info('") + table + _T("')"));
-    Values params;
-    SqlResultSet rs = cursor->exec(params);
-    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {was not declared in this scope
-
-        ColumnInfo x;
-        for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
-        {
-            if (_T("NAME") == j->first)
-            {
-                x.name = str_to_upper(j->second.as_string());
-            }
-            else if (_T("TYPE") == j->first)
-            {
-                x.type = str_to_upper(j->second.as_string());
-                int open_par = str_find(x.type, _T('('));
-                if (-1 != open_par) {
-                    // split type size into its own field
-                    String new_type = str_substr(x.type, 0, open_par);
-                    try {
-                        from_string(str_substr(x.type, open_par + 1,
-                                str_length(x.type) - open_par - 2), x.size);
-                        x.type = new_type;
-                    }
-                    catch (const std::exception &) {}
-                }
-            }
-            else if (_T("NOTNULL") == j->first)
-            {
-                x.notnull = _T("0") != j->second.as_string();
-            }
-            else if (_T("DFLT_VALUE") == j->first)
-            {
-                if (!j->second.is_null())
-                    x.default_value = j->second.as_string();
-            }
-            else if (_T("PK") == j->first)
-            {
-                x.pk = _T("0") != j->second.as_string();
-            }
-        }
-        ci.push_back(x);
-    }
-    cursor->prepare(_T("PRAGMA foreign_key_list('") + table + _T("')"));
-    SqlResultSet rs2 = cursor->exec(params);
-    for (SqlResultSet::iterator i = rs2.begin(); i != rs2.end(); ++i)
-    {
-        String fk_column, fk_table, fk_table_key;
-        for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
-        {
-            if (_T("TABLE") == j->first)
-            {
-                if (!j->second.is_null())
-                    fk_table = j->second.as_string();
-            }
-            else if (_T("FROM") == j->first)
-            {
-                if (!j->second.is_null())
-                    fk_column = j->second.as_string();
-            }
-            else if (_T("TO") == j->first)
-            {
-                if (!j->second.is_null())
-                    fk_table_key = j->second.as_string();
-            }
-        }
-        for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
-        {
-            if (k->name == fk_column) {
                 k->fk_table = fk_table;
                 k->fk_table_key = fk_table_key;
                 break;
@@ -408,11 +258,8 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
         }
     }
     return ci;
+}
 
-}
-}
-*/
- // namespace Yb
+} // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-
