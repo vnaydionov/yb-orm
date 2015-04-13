@@ -10,6 +10,7 @@
 #include "orm/sql_driver.h"
 #include "orm/expression.h"
 
+#include "dialect_mssql.h"
 #include "dialect_sqlite.h"
 #include "dialect_oracle.h"
 #include "dialect_postgres.h"
@@ -155,6 +156,10 @@ register_std_dialects()
     theDialectRegistry::instance().register_item(
             p->get_name(), dialect);
     dialect.reset((SqlDialect *)new SQLite3Dialect());
+    p = dialect.get();
+    theDialectRegistry::instance().register_item(
+            p->get_name(), dialect);
+    //dialect.reset((SqlDialect *)new MSSQLDialect());
     p = dialect.get();
     theDialectRegistry::instance().register_item(
             p->get_name(), dialect);
