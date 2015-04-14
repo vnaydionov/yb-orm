@@ -40,9 +40,9 @@ MssqlDialect::sql_value(const Value &x)
 }
 
 const String
-MssqlDialect::grant_insert_id(const String &table_name,const String &insert)
+MssqlDialect::grant_insert_id_statement(const String &table_name,bool on);
 {
-    return _T("SET IDENTITY_INSERT " + table_name + " ON " + insert + "SET IDENTITY_INSERT " + table_name + " OFF ");
+    return _T("SET IDENTITY_INSERT " + table_name + " ON " + "SET IDENTITY_INSERT " + table_name + " OFF ");
 }
 
 const String

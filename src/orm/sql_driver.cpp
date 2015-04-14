@@ -810,10 +810,12 @@ SqlConnection::get_columns(const String &table)
     return dialect_->get_columns(*this, table);
 }
 
-String
-SqlConnection::grant_insert_id(const String &table_name,const String &insert);
+void
+SqlConnection::grant_insert_id(const String &table_name,bool on);
 {
-    return dialect_->grant_insert_id(*this, table_name, insert);
+    p = dialect.get();
+    if (p->get_name() == "MSSQL")
+        dialect_->grant_insert_id_statement(*this, table_name, true);
 }
 
 YBORM_DECL bool
