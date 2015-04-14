@@ -40,7 +40,7 @@ MssqlDialect::sql_value(const Value &x)
 }
 
 const String
-MssqlDialect::insert_fix(const String insert,const String &table_name)
+MssqlDialect::grant_insert_id(const String &table_name,const String &insert)
 {
     return _T("SET IDENTITY_INSERT " + table_name + " ON " + insert + "SET IDENTITY_INSERT " + table_name + " OFF ");
 }

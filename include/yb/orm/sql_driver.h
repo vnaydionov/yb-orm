@@ -121,7 +121,7 @@ public:
     virtual Strings get_views(SqlConnection &conn) = 0;
     virtual ColumnsInfo get_columns(SqlConnection &connection,
             const String &table) = 0;
-    virtual const String grant_insert_id(const String &table_name,const String insert); 
+    virtual const String grant_insert_id(const String &table_name,const String &insert); 
 };
 
 YBORM_DECL SqlDialect *sql_dialect(const String &name);

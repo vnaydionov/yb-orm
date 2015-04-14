@@ -810,6 +810,12 @@ SqlConnection::get_columns(const String &table)
     return dialect_->get_columns(*this, table);
 }
 
+String
+SqlConnection::grant_insert_id(const String &table_name,const String &insert);
+{
+    return dialect_->grant_insert_id(*this, table_name, insert);
+}
+
 YBORM_DECL bool
 find_subst_signs(const String &sql, std::vector<int> &pos_list, String &first_word)
 {
