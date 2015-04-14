@@ -40,6 +40,12 @@ MssqlDialect::sql_value(const Value &x)
 }
 
 const String
+MssqlDialect::insert_fix(const String insert,const String &table_name)
+{
+    return _T("SET IDENTITY_INSERT " + table_name + " ON " + insert + "SET IDENTITY_INSERT " + table_name + " OFF ");
+}
+
+const String
 MssqlDialect::type2sql(int t) 
 {
     switch (t) 
@@ -57,13 +63,13 @@ MssqlDialect::type2sql(int t)
 const String 
 MssqlDialect::create_sequence(const String &seq_name)
 {
-    throw SqlDialectError(_T("No sequences, please"));
+    return _T("CREATE SEQUENCE ") + seq_name;
 }
 
 const String
 MssqlDialect::drop_sequence(const String &seq_name)
 {
-    throw SqlDialectError(_T("No sequences, please"));
+    return _T("DROP SEQUENCE ") + seq_name;
 }
 
 const String

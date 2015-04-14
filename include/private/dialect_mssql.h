@@ -19,6 +19,7 @@ public:
     virtual const String drop_sequence(const String &seq_name);
     virtual const String suffix_create_table();
     virtual const String autoinc_flag();
+    virtual const String grant_insert_id(const String insert,const String &table_name);
     virtual bool explicit_null();
     virtual const String not_null_default(const String &not_null_clause,
             const String &default_value);
