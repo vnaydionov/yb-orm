@@ -74,7 +74,15 @@ InterbaseDialect::pager_model()
 bool 
 InterbaseDialect::table_exists(SqlConnection &conn, const String &table)
 { 
-    return false; 
+    Strings t = get_tables(conn);
+    for (Strings::iterator i = t.begin(); i != t.end(); ++i)
+    {
+        if (*i == table)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool 
@@ -83,10 +91,23 @@ InterbaseDialect::view_exists(SqlConnection &conn, const String &table)
     return false; 
 }
 
+
 Strings
 InterbaseDialect::get_tables(SqlConnection &conn)
 {
-    return Strings();
+    Strings tables;
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String query = _T("SELECT RDB$RELATIONS.RDB$RELATION_NAME FROM RDB$RELATIONS ")
+                   _T("WHERE ((RDB$RELATIONS.RDB$SYSTEM_FLAG = 0) ") 
+                   _T("AND (RDB$RELATIONS.RDB$VIEW_SOURCE IS NULL))");
+    cursor->prepare(query);
+    Values params;
+    SqlResultSet rs = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i) {
+        tables.push_back((*i)[0].second.as_string());
+    }
+    cout << tables[0];
+    return tables;    
 }
 
 Strings 
@@ -98,149 +119,61 @@ InterbaseDialect::get_views(SqlConnection &conn)
 ColumnsInfo 
 InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
 { 
-    return ColumnsInfo();
-}
-
-// schema introspection
-
-/*static Strings
-really_get_tables(SqlConnection &conn, const String &type,
-        const String &name, bool filter_system)
-{
-    Strings tables;
+    ColumnsInfo col_mass;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String q = _T("SELECT name FROM sqlite_master WHERE type=?");
-    Values params;
-    params.push_back(Value(type));
-    if (!str_empty(name))
-    {
-        q += _T(" AND UPPER(name)=UPPER(?)");
-        params.push_back(Value(name));
-    }
-    if (filter_system)
-    {
-        q += _T(" AND UPPER(name) NOT IN (?)");
-        params.push_back(Value(_T("SQLITE_SEQUENCE")));
-    }
-    cursor->prepare(q);
-    SqlResultSet rs = cursor->exec(params);
-    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {
-        tables.push_back(str_to_upper((*i)[0].second.as_string()));
-    }
-    return tables;
-}
 
-bool
-SQLite3Dialect::table_exists(SqlConnection &conn, const String &table)
-{
-    Strings r = really_get_tables(conn, _T("table"), table, false);
-    return r.size() == 1;
-}
-
-bool
-SQLite3Dialect::view_exists(SqlConnection &conn, const String &table)
-{
-    Strings r = really_get_tables(conn, _T("view"), table, false);
-    return r.size() == 1;
-}
-
-Strings
-SQLite3Dialect::get_tables(SqlConnection &conn)
-{
-    return really_get_tables(conn, _T("table"), _T(""), true);
-}
-
-Strings
-SQLite3Dialect::get_views(SqlConnection &conn)
-{
-    return really_get_tables(conn, _T("view"), _T(""), true);
-}
-
-ColumnsInfo
-SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
-{
-    ColumnsInfo ci;
-    auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    cursor->prepare(_T("PRAGMA table_info('") + table + _T("')"));
+    String query = _T("SELECT RDB$RELATIONS.RDB$RELATION_NAME, RDB$RELATION_FIELDS.RDB$FIELD_NAME, ") 
+                   _T("RDB$RELATION_FIELDS.RDB$NULL_FLAG, RDB$RELATION_FIELDS.RDB$DEFAULT_SOURCE, ")
+                   _T("RDB$FIELDS.RDB$NULL_FLAG, RDB$FIELDS.RDB$FIELD_TYPE, RDB$TYPES.RDB$TYPE_NAME ")
+                   _T("FROM RDB$RELATIONS INNER JOIN RDB$RELATION_FIELDS ON ")
+                   _T("(RDB$RELATIONS.RDB$RELATION_NAME = RDB$RELATION_FIELDS.RDB$RELATION_NAME) INNER JOIN ")
+                   _T("RDB$FIELDS ON (RDB$RELATION_FIELDS.RDB$FIELD_SOURCE = RDB$FIELDS.RDB$FIELD_NAME) INNER JOIN ")
+                   _T("RDB$TYPES ON (RDB$FIELDS.RDB$FIELD_TYPE = RDB$TYPES.RDB$TYPE) ")
+                   _T("WHERE (RDB$RELATIONS.RDB$RELATION_NAME='")
+                   + table + 
+                   _T("');");
+    cout << query;
+    cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
     {
+             
         ColumnInfo x;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
-            if (_T("NAME") == j->first)
+            if (_T("RDB$FIELD_NAME") == j->first)
             {
                 x.name = str_to_upper(j->second.as_string());
+                cout << x.name << endl;
+                continue;
             }
-            else if (_T("TYPE") == j->first)
+            if (_T("RDB$TYPE_NAME") == j->first)
             {
                 x.type = str_to_upper(j->second.as_string());
-                int open_par = str_find(x.type, _T('('));
-                if (-1 != open_par) {
-                    // split type size into its own field
-                    String new_type = str_substr(x.type, 0, open_par);
-                    try {
-                        from_string(str_substr(x.type, open_par + 1,
-                                str_length(x.type) - open_par - 2), x.size);
-                        x.type = new_type;
-                    }
-                    catch (const std::exception &) {}
-                }
+                cout << x.type << endl;
+                continue;
             }
-            else if (_T("NOTNULL") == j->first)
-            {
-                x.notnull = _T("0") != j->second.as_string();
-            }
-            else if (_T("DFLT_VALUE") == j->first)
+            if (_T("RDB$DEFAULT_SOURCE") == j->first)
             {
                 if (!j->second.is_null())
                     x.default_value = j->second.as_string();
+                cout <<  x.default_value << endl;
+                continue;
             }
-            else if (_T("PK") == j->first)
+            if (_T("RDB$NULL_FLAG") == j->first)
             {
-                x.pk = _T("0") != j->second.as_string();
+                if (j->second.is_null())    
+                    x.notnull = false;
+                else
+                    x.notnull = true;
+                continue;            
             }
         }
-        ci.push_back(x);
-    }
-    cursor->prepare(_T("PRAGMA foreign_key_list('") + table + _T("')"));
-    SqlResultSet rs2 = cursor->exec(params);
-    for (SqlResultSet::iterator i = rs2.begin(); i != rs2.end(); ++i)
-    {
-        String fk_column, fk_table, fk_table_key;
-        for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
-        {
-            if (_T("TABLE") == j->first)
-            {
-                if (!j->second.is_null())
-                    fk_table = j->second.as_string();
-            }
-            else if (_T("FROM") == j->first)
-            {
-                if (!j->second.is_null())
-                    fk_column = j->second.as_string();
-            }
-            else if (_T("TO") == j->first)
-            {
-                if (!j->second.is_null())
-                    fk_table_key = j->second.as_string();
-            }
-        }
-        for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
-        {
-            if (k->name == fk_column) {
-                k->fk_table = fk_table;
-                k->fk_table_key = fk_table_key;
-                break;
-            }
-        }
-    }
-    return ci;
+        col_mass.push_back(x);
+    }   
+    return col_mass;
 }
-*/
-
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
