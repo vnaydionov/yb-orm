@@ -480,15 +480,12 @@ public:
     void test_insert_sql()
     {
         Engine engine(Engine::READ_WRITE);
-        SqlConnection conn(Engine::sql_source_from_env());
+        setup_log(engine);
         Table t(_T("T_ORM_TEST"));
-        setup_log(conn);
-        conn.grant_insert_id(_T("T_ORM_TEST"), true, true);
         t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
         t.add_column(Column(_T("A"), Value::STRING, 100, 0));
         t.add_column(Column(_T("B"), Value::DATETIME, 0, Column::RO));
         t.add_column(Column(_T("C"), Value::DECIMAL, 0, 0));
-        setup_log(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         RowsData rows;
         LongInt id = get_next_test_id(engine.get_conn());
@@ -498,8 +495,9 @@ public:
         row.push_back(now());
         row.push_back(Decimal(_T("1.1")));
         rows.push_back(&row);
+        engine.get_conn()->grant_insert_id(_T("T_ORM_TEST"), true, true);
         engine.insert(t, rows, false);
-        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
+        engine.get_conn()->grant_insert_id(_T("T_ORM_TEST"), false, true);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")),
                 Expression(t.name()),
