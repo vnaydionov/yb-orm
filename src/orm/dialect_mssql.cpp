@@ -132,16 +132,59 @@ MssqlDialect::get_tables(SqlConnection &conn)
 Strings 
 MssqlDialect::get_views(SqlConnection &conn)
 { 
-    return Strings(); 
+    String db = conn.get_db();
+    Strings tables;
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String str = _T("SELECT TABLE_NAME FROM ") + db + _T(".INFORMATION_SCHEMA.TABLES");
+    cursor->prepare(str);
+    Values params;
+    SqlResultSet rs = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    {
+        tables.push_back((*i)[0].second.as_string());
+    }
+    return tables;
 }
 
 ColumnsInfo 
 MssqlDialect::get_columns(SqlConnection &conn, const String &table)
 {
     ColumnsInfo ci;
-    //ci.push_back(_T("exec sp_columns "+ table));
+    String db = conn.get_db();
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String str = _T("SELECT COLUMN_NAME, DATA_TYPE, COLUMN_DEFAULT, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH FROM ") + db + _T(".INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + table + "'");
+    String str2 = _T("SELECT Col.Column_Name from ") + db + _T(".INFORMATION_SCHEMA.TABLE_CONSTRAINTS Tab, ") + db + _T("INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE Col WHERE Col.Constraint_Name = Tab.Constraint_Name AND Col.Table_Name = Tab.Table_Name AND Constraint_Type = 'PRIMARY KEY' AND Col.Table_Name = '") + table + _T("'");
+    cursor->prepare(str);
+    SqlResultSet rs = cursor->exec(params);
+    cursor->prepare(str2);
+    Values params;
+    SqlResultSet ones = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    {
+        ColumnInfo x;
+        x.name = str_to_upper((*i)[0].second.as_string());
+        x.type = str_to_upper((*i)[1].second.as_string());
+        x.default_value = str_to_upper((*i)[2].second.as_string());
+        if ((*i)[3].second.as_string() == _T("NO"))
+        {
+            x.notnull = false;
+        }
+        else
+        {
+            x.notnull = true;
+        }
+        x.size = (*i)[4].second;
+        ci.push_back(x);
+        if (ones.begin()->second == x.name)
+        {
+            x.ps = true;
+        }
+        else
+        {
+            x.ps = false;
+        }
+    }
     return ci;
-    //return //_T("exec sp_columns "+ table); 
 }
 
 /*
