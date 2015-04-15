@@ -9,7 +9,7 @@ namespace Yb {
 class YBORM_DECL MssqlDialect: public SqlDialect
 {
 public:
-    MssqlDialect();   
+    MssqlDialect();
     virtual const String select_curr_value(const String &seq_name);
     virtual const String select_next_value(const String &seq_name);
     virtual const String select_last_inserted_id(const String &table_name);

@@ -425,10 +425,7 @@ public:
         conn.begin_trans_if_necessary();
         record_id_ = get_next_test_id(&conn);
         //CPPUNIT_ASSERT(record_id_ > 0);
-        try {
-            conn.grant_insert_id(_T("T_ORM_TEST"), true);
-        }
-        catch (const std::exception &) {}
+        conn.grant_insert_id(_T("T_ORM_TEST"), true, true);
         Values params;
         params.push_back(Value(record_id_));
         params.push_back(Value(_T("item")));

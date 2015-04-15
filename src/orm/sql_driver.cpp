@@ -10,12 +10,12 @@
 #include "orm/sql_driver.h"
 #include "orm/expression.h"
 
-#include "dialect_mssql.h"
 #include "dialect_sqlite.h"
 #include "dialect_oracle.h"
 #include "dialect_postgres.h"
 #include "dialect_mysql.h"
 #include "dialect_interbase.h"
+#include "dialect_mssql.h"
 
 #if defined(YB_USE_QT)
 #include "driver_qtsql.h"
