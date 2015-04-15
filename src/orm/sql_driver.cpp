@@ -118,6 +118,12 @@ SqlDialect::pager_model() {
     return (int)PAGER_POSTGRES;
 }
 
+const String
+SqlDialect::grant_insert_id_statement(const String &table_name, bool on)
+{
+    return String();
+}
+
 bool
 SqlDialect::explicit_null() { return false; }
 
@@ -429,6 +435,8 @@ SqlCursor::exec_direct(const String &sql)
         throw;
     }
 }
+
+
 
 void
 SqlCursor::prepare(const String &sql)
@@ -780,6 +788,24 @@ SqlConnection::fetch_rows(int max_rows)
     return cursor_->fetch_rows(max_rows);
 }
 
+void
+SqlConnection::grant_insert_id(const String &table_name, bool on, bool ignore_errors)
+{
+    String sql = dialect_->grant_insert_id_statement(table_name, on);
+    if (!str_empty(sql))
+    {
+        if (ignore_errors)
+        {
+            try {
+                exec_direct(sql);
+            }
+            catch (const std::exception &) {}
+        }
+        else
+            exec_direct(sql);
+    }
+}
+
 bool
 SqlConnection::table_exists(const String &table)
 {
@@ -808,14 +834,6 @@ ColumnsInfo
 SqlConnection::get_columns(const String &table)
 {
     return dialect_->get_columns(*this, table);
-}
-
-void
-SqlConnection::grant_insert_id(const String &table_name,bool on);
-{
-    p = dialect.get();
-    if (p->get_name() == "MSSQL")
-        dialect_->grant_insert_id_statement(*this, table_name, true);
 }
 
 YBORM_DECL bool

@@ -129,6 +129,7 @@ public:
         conn.set_convert_params(true);
         setup_log(conn);
         conn.begin_trans_if_necessary();
+        conn.grant_insert_id(_T("T_ORM_TEST"), true, true);
         conn.prepare(
             _T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)"));
         Values params(4);
@@ -147,6 +148,8 @@ public:
         params[2] = Value(dt_make(2006, 11, 22));
         params[3] = Value(Decimal(_T("0.01")));
         conn.exec(params);
+        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
+        conn.grant_insert_id(_T("T_ORM_XML"), true, true);
         conn.prepare(
             _T("INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES (?, ?, ?)"));
         params.resize(3);
@@ -155,6 +158,7 @@ public:
         params[2] = Value(4);
         conn.exec(params);
         conn.commit();
+        conn.grant_insert_id(_T("T_ORM_XML"), false, true);
     }
 
     void tearDown()
@@ -164,6 +168,8 @@ public:
         conn.begin_trans_if_necessary();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
+        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
+        conn.grant_insert_id(_T("T_ORM_XML"), false, true);
         conn.commit();
     }
 

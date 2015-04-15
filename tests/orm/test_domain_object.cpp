@@ -82,6 +82,7 @@ public:
         conn.set_convert_params(true);
         setup_log(conn);
         conn.begin_trans_if_necessary();
+        conn.grant_insert_id(_T("T_ORM_TEST"), true, true);
         {
             String sql_str =
                 _T("INSERT INTO T_ORM_TEST(ID, A, B, C, D) VALUES(?, ?, ?, ?, ?)");
@@ -94,6 +95,8 @@ public:
             params[4] = Value(4.56);
             conn.exec(params);
         }
+        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
+        conn.grant_insert_id(_T("T_ORM_XML"), true, true);
         {
             String sql_str =
                 _T("INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES (?, ?, ?)");
@@ -118,6 +121,7 @@ public:
             params[2] = Value(Decimal(_T("42")));
             conn.exec(params);
         }
+        conn.grant_insert_id(_T("T_ORM_XML"), false, true);
         conn.commit();
 
         Yb::init_schema();
@@ -130,6 +134,8 @@ public:
         conn.begin_trans_if_necessary();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
+        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
+        conn.grant_insert_id(_T("T_ORM_XML"), false, true);
         conn.commit();
     }
 

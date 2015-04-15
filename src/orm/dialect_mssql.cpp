@@ -40,9 +40,11 @@ MssqlDialect::sql_value(const Value &x)
 }
 
 const String
-MssqlDialect::grant_insert_id_statement(const String &table_name,bool on);
+MssqlDialect::grant_insert_id_statement(const String &table_name, bool on)
 {
-    return _T("SET IDENTITY_INSERT " + table_name + " ON " + "SET IDENTITY_INSERT " + table_name + " OFF ");
+    if (on) 
+        return _T("SET IDENTITY_INSERT ") + table_name + _T(" ON");
+    return _T("SET IDENTITY_INSERT ") + table_name + _T(" OFF");
 }
 
 const String
@@ -63,13 +65,13 @@ MssqlDialect::type2sql(int t)
 const String 
 MssqlDialect::create_sequence(const String &seq_name)
 {
-    return _T("CREATE SEQUENCE ") + seq_name;
+    throw SqlDialectError(_T("No sequences, please"));
 }
 
 const String
 MssqlDialect::drop_sequence(const String &seq_name)
 {
-    return _T("DROP SEQUENCE ") + seq_name;
+    throw SqlDialectError(_T("No sequences, please"));
 }
 
 const String

@@ -114,6 +114,7 @@ public:
     virtual const String not_null_default(const String &not_null_clause,
             const String &default_value);
     virtual int pager_model();
+    virtual const String grant_insert_id_statement(const String &table_name, bool on); 
     // schema introspection
     virtual bool table_exists(SqlConnection &conn, const String &table) = 0;
     virtual bool view_exists(SqlConnection &conn, const String &table) = 0;
@@ -121,7 +122,6 @@ public:
     virtual Strings get_views(SqlConnection &conn) = 0;
     virtual ColumnsInfo get_columns(SqlConnection &connection,
             const String &table) = 0;
-    void grant_insert_id(const String &table_name,bool on); 
 };
 
 YBORM_DECL SqlDialect *sql_dialect(const String &name);
@@ -290,6 +290,7 @@ public:
     SqlResultSet exec(const Values &params);
     RowPtr fetch_row();
     RowsPtr fetch_rows(int max_rows = -1); // -1 = all
+    void grant_insert_id(const String &table_name, bool on, bool ignore_errors = false);
     // schema introspection
     bool table_exists(const String &table);
     bool view_exists(const String &table);

@@ -425,6 +425,10 @@ public:
         conn.begin_trans_if_necessary();
         record_id_ = get_next_test_id(&conn);
         //CPPUNIT_ASSERT(record_id_ > 0);
+        try {
+            conn.grant_insert_id(_T("T_ORM_TEST"), true);
+        }
+        catch (const std::exception &) {}
         Values params;
         params.push_back(Value(record_id_));
         params.push_back(Value(_T("item")));
@@ -432,6 +436,7 @@ public:
         params.push_back(Value(Decimal(_T("1.2"))));
         conn.prepare(_T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)"));
         conn.exec(params);
+        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
         conn.commit();
     }
 
@@ -442,6 +447,7 @@ public:
         conn.begin_trans_if_necessary();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
+        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
         conn.commit();
     }
 
@@ -477,7 +483,10 @@ public:
     void test_insert_sql()
     {
         Engine engine(Engine::READ_WRITE);
+        SqlConnection conn(Engine::sql_source_from_env());
         Table t(_T("T_ORM_TEST"));
+        setup_log(conn);
+        conn.grant_insert_id(_T("T_ORM_TEST"), true, true);
         t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
         t.add_column(Column(_T("A"), Value::STRING, 100, 0));
         t.add_column(Column(_T("B"), Value::DATETIME, 0, Column::RO));
@@ -493,6 +502,7 @@ public:
         row.push_back(Decimal(_T("1.1")));
         rows.push_back(&row);
         engine.insert(t, rows, false);
+        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")),
                 Expression(t.name()),
