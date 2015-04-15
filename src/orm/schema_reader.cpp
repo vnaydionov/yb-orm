@@ -23,6 +23,25 @@ get_sql_type_by_name(const String &sql_type, SqlDialect &sql_dialect)
     return Value::DECIMAL;
 }
 
+std::string get_class_name(const std::string &table_name)
+{
+    std::string result;
+    result.push_back(to_upper(table_name[2]));
+    for(size_t i = 3; i < table_name.size(); ++i)
+    {
+        if(table_name[i] == '_' && ((i+1) < table_name.size()))
+        {
+            result.push_back(to_upper(table_name[i+1]));
+            ++i;
+        }
+        else
+        {
+            result.push_back(to_lower(table_name[i]));
+        }
+    }
+    return result;
+}
+
 YBORM_DECL Schema::Ptr
 read_schema_from_db(SqlConnection &connection)
 {
@@ -56,6 +75,7 @@ read_schema_from_db(SqlConnection &connection)
                      j->fk_table_key);
             t->add_column(c);
         }
+        t->set_class_name(get_class_name(t->name()));
         s->add_table(t);
     }
     s->fill_fkeys();
