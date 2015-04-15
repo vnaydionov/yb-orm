@@ -73,6 +73,7 @@ class TestDomainObject : public CppUnit::TestFixture
     CPPUNIT_TEST(test_null_fk_relation);
     CPPUNIT_TEST(test_holder);
     CPPUNIT_TEST(test_link_one2many);
+    CPPUNIT_TEST(test_join);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -219,6 +220,17 @@ public:
         CPPUNIT_ASSERT_EQUAL(2, (int)ot.orm_xmls.size());
         ox3.orm_test = OrmTest::Holder(ot);
         CPPUNIT_ASSERT_EQUAL(3, (int)ot.orm_xmls.size());
+    }
+
+    void test_join()
+    {
+        Engine engine(Engine::READ_ONLY);
+        setup_log(engine);
+        Session session(Yb::theSchema(), &engine);
+        auto rs = Yb::query<OrmTest, OrmXml>(*session)
+                    .select_from<OrmTest>()
+                    .join<OrmXml>();
+        CPPUNIT_ASSERT_EQUAL(3, (int)rs.count());
     }
 };
 

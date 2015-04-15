@@ -656,17 +656,17 @@ public:
                 join_expr = JoinExpr(prev_expr, Expression(it->first->name()), it->second);
             else 
             {           // иначе проходим по предыдущим таблицам и пытаемся найти связь между ними и текущей
-                JoinList::reverse_iterator rev_it = it;
-                Relation *rel;
-                for (; rev_it != joins_.rend(); ++rev_it) 
+                JoinList::iterator loc_it = joins_.begin();
+                const Relation *rel;
+                for (; loc_it != it; ++loc_it) 
                 {
-                    rel = find_relation(rev_it->first->class_name(), String(), it->first->class_name());
+                    rel = session_->schema().find_relation(loc_it->first->class_name(), String(), it->first->class_name());
                     if (rel == NULL)
                         continue;
                     join_expr = JoinExpr(prev_expr, Expression(it->first->name()), rel->join_condition());
                     break;
                 }
-                rel = find_relation(select_from_->class_name(), String(), it->first->class_name());
+                rel = session_->schema().find_relation(select_from_->class_name(), String(), it->first->class_name());
 
                 if (rel == NULL) // если связей нет, то все плохо
                     return Expression();
