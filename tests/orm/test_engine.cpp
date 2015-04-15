@@ -182,11 +182,18 @@ public:
             .order_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
             .pager(5, 10)
             .generate_sql(options, &ctx);
+        /*
+        // This one is stolen from SQLAlchemy
         CPPUNIT_ASSERT_EQUAL(string("SELECT OUTER_2.* FROM ("
                     "SELECT OUTER_1.*, ROWNUM AS RN_ORA FROM ("
                     "SELECT A, B FROM T ORDER BY A, B"
                     ") OUTER_1 WHERE ROWNUM <= 15"
                     ") OUTER_2 WHERE RN_ORA > 10"), NARROW(sql));
+        */
+        CPPUNIT_ASSERT_EQUAL(string("SELECT OUTER_.* FROM ("
+                    "SELECT A, B, ROW_NUMBER() OVER (ORDER BY A, B) RN_ "
+                    "FROM T) OUTER_ "
+                    "WHERE OUTER_.RN_ > 10 AND OUTER_.RN_ <= 15"), NARROW(sql));
     }
 
     void test_select_having_wo_groupby()

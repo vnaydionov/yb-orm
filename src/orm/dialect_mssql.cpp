@@ -106,7 +106,7 @@ MssqlDialect::not_null_default(const String &not_null_clause,
 int
 MssqlDialect::pager_model()
 {
-    return (int)PAGER_MYSQL;
+    return (int)PAGER_ORACLE;
 }
 
 // schema introspection

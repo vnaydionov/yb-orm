@@ -417,6 +417,9 @@ SelectExprBackend::generate_sql(
     if (distinct_flag_)
         sql += _T("DISTINCT ");
     sql += select_expr_.generate_sql(options, ctx);
+    if (pager_offset_ && options.pager_model_ == PAGER_ORACLE)
+        sql += _T(", ROW_NUMBER() OVER (ORDER BY ")
+            + order_by_expr_.generate_sql(options, ctx) + _T(") RN_");
     if (!from_expr_.is_empty())
         sql += _T(" FROM ")
             + from_expr_.generate_sql(options, ctx);
@@ -433,7 +436,8 @@ SelectExprBackend::generate_sql(
         sql += _T(" HAVING ")
             + having_expr_.generate_sql(options, ctx);
     }
-    if (!order_by_expr_.is_empty())
+    if (!order_by_expr_.is_empty() &&
+            !(pager_limit_ && options.pager_model_ == PAGER_ORACLE))
         sql += _T(" ORDER BY ")
             + order_by_expr_.generate_sql(options, ctx);
     if (pager_limit_) {
@@ -453,17 +457,13 @@ SelectExprBackend::generate_sql(
     }
     if (!str_empty(lock_mode_) && options.has_for_update_)
         sql += _T(" FOR ") + lock_mode_;
-    if (pager_limit_) {
-        if (options.pager_model_ == PAGER_ORACLE) {
-            sql = String(_T("SELECT OUTER_2.* FROM ("))
-                + _T("SELECT OUTER_1.*, ROWNUM AS RN_ORA FROM (")
-                + sql
-                + _T(") OUTER_1 WHERE ROWNUM <= ")
-                + subst_param(Value(pager_offset_ + pager_limit_),
-                              options, ctx)
-                + _T(") OUTER_2 WHERE RN_ORA > ")
-                + subst_param(Value(pager_offset_), options, ctx);
-        }
+    if (pager_limit_ && options.pager_model_ == PAGER_ORACLE) {
+        sql = String(_T("SELECT OUTER_.* FROM (")) + sql
+            + _T(") OUTER_ WHERE OUTER_.RN_ > ")
+            + subst_param(Value(pager_offset_), options, ctx)
+            + _T(" AND OUTER_.RN_ <= ")
+            + subst_param(Value(pager_offset_ + pager_limit_),
+                    options, ctx);
     }
     return sql;
 }
