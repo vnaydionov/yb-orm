@@ -76,7 +76,7 @@ InterbaseDialect::table_exists(SqlConnection &conn, const String &table)
 {
     Strings t = get_tables(conn);
     for (Strings::iterator i = t.begin(); i != t.end(); ++i)
-    {      
+    {
         if (*i == table)
             return true;
     }
@@ -100,7 +100,7 @@ InterbaseDialect::get_tables(SqlConnection &conn)
     Values params;
     SqlResultSet rs = cursor->exec(params);
     String tmp;
-    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i) 
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
     {
         tables.push_back(str_to_upper(trim_trailing_space((*i)[0].second.as_string())));
     }
@@ -236,7 +236,7 @@ InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
         }
 
         for (ColumnsInfo::iterator k = col_mass.begin(); k != col_mass.end(); ++k)
-        {        
+        {
             if (k->name == fk_column)
             {
                 k->fk_table = fk_table;
@@ -255,7 +255,7 @@ InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
     SqlResultSet rs3 = cursor->exec(params3);
     for (ColumnsInfo::iterator k = col_mass.begin(); k != col_mass.end(); ++k)
     {
-        k->pk = false;        
+        k->pk = false;
         for (SqlResultSet::iterator i = rs3.begin(); i != rs3.end(); ++i)
         {
             for (Row::const_iterator j = i->begin(); j != i->end(); ++j)

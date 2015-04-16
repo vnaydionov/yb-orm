@@ -358,7 +358,7 @@ bool SqlSchemaGenerator::generate_next_statement(String &out_str)
             }
             if (col_it_ != col_end_) {
                 if (col_it_->has_fk()) {
-                    out_str = _T("ALTER TABLE ") + tbl_constr_it_->first + 
+                    out_str = _T("ALTER TABLE ") + tbl_constr_it_->first +
                         _T(" ADD ") + WIDEN(fk_rule(*col_it_));
                     ++col_it_;
                     need_commit_ = true;
@@ -380,7 +380,7 @@ bool SqlSchemaGenerator::generate_next_statement(String &out_str)
         }
         if (col_it_ != col_end_) {
             if (!str_empty(col_it_->index_name())) {
-                out_str = _T("CREATE INDEX ") + col_it_->index_name() + 
+                out_str = _T("CREATE INDEX ") + col_it_->index_name() +
                     _T(" ON ") + tbl_idx_it_->second->name() + _T("(") +
                     col_it_->name() + _T(")");
                 ++col_it_;

@@ -330,15 +330,15 @@ Relation::attr(int n, const String &name) const {
 bool
 Relation::eq(const Relation &o) {
     /*
-    return type_ == o.type_ && cascade_ == o.cascade_ 
+    return type_ == o.type_ && cascade_ == o.cascade_
         && side1_ == o.side1_ && side2_ == o.side2_
         && attr1_ == o.attr1_ && attr2_ == o.attr2_;
     */
     AttrMap::const_iterator i = attr2_.find(_T("property")),
         oi = o.attr2_.find(_T("property"));
-    return type_ == o.type_ && 
+    return type_ == o.type_ &&
         side1_ == o.side1_ && side2_ == o.side2_ &&
-        (i != attr2_.end() && oi != o.attr2_.end() && 
+        (i != attr2_.end() && oi != o.attr2_.end() &&
          i->second == oi->second);
 }
 
@@ -457,7 +457,7 @@ Schema::fill_fkeys()
     TblMap::iterator i = tables_.begin(), iend = tables_.end();
     for (; i != iend; ++i) {
         Table &tbl = *i->second;
-        Columns::const_iterator j = tbl.begin(), jend = tbl.end(); 
+        Columns::const_iterator j = tbl.begin(), jend = tbl.end();
         for (; j != jend; ++j) {
             if (!str_empty(j->fk_table_name()) &&
                     str_empty(j->fk_name()))
@@ -571,7 +571,7 @@ Schema::fill_map_tree_by_meta(const set<String> &unique_tables, StrMap &tree_map
             // if found a foreign key table in the set, add it with this dependent table
             if (it_col->has_fk()) {
                 String fk_field = it_col->fk_name();
-                String fk_table = it_col->fk_table_name(); 
+                String fk_table = it_col->fk_table_name();
                 check_foreign_key(t.name(), fk_table, fk_field);
                 tree_map.insert(StrMap::value_type(it_col->fk_table_name(), t.name()));
                 has_parent = true;
