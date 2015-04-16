@@ -42,9 +42,8 @@ MssqlDialect::sql_value(const Value &x)
 const String
 MssqlDialect::grant_insert_id_statement(const String &table_name, bool on)
 {
-    if (on)
-        return _T("SET IDENTITY_INSERT ") + table_name + _T(" ON");
-    return _T("SET IDENTITY_INSERT ") + table_name + _T(" OFF");
+    return _T("SET IDENTITY_INSERT ") + table_name
+        + (on? _T(" ON"): _T(" OFF"));
 }
 
 const String
@@ -92,17 +91,6 @@ MssqlDialect::explicit_null()
     return true;
 }
 
-const String
-MssqlDialect::not_null_default(const String &not_null_clause,
-        const String &default_value)
-{
-    if (str_empty(not_null_clause))
-        return default_value;
-    if (str_empty(default_value))
-        return not_null_clause;
-    return not_null_clause + _T(" ") + default_value;
-}
-
 int
 MssqlDialect::pager_model()
 {
@@ -114,31 +102,43 @@ MssqlDialect::pager_model()
 bool
 MssqlDialect::table_exists(SqlConnection &conn, const String &table)
 {
-    Strings s = get_tables(conn);
-    for (Strings::iterator i = s.begin(); i != s.end(); ++i)
-    {
-        if (*i == table)
-        {
-            return true;
-        }
-    }
-    return false;
+    return really_get_tables(conn, table, false, true).size() != 0;
 }
 
 bool
 MssqlDialect::view_exists(SqlConnection &conn, const String &table)
 {
-    return false;
+    return really_get_tables(conn, table, true, true).size() != 0;
 }
 
 Strings
 MssqlDialect::get_tables(SqlConnection &conn)
 {
-    String db = conn.get_db();
-    Strings tables;
+    return really_get_tables(conn, String(), false, false);
+}
+
+Strings
+MssqlDialect::get_views(SqlConnection &conn)
+{
+    return really_get_tables(conn, String(), true, false);
+}
+
+Strings
+MssqlDialect::really_get_tables(SqlConnection &conn,
+        const String &table, bool view, bool show_system)
+{
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String str = _T("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES");
-    cursor->prepare(str);
+    String query = _T("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE 1=1");
+    /*
+    if (!view)
+        query += _T(" AND Comment != 'VIEW'");
+    else
+        query += _T(" AND Comment = 'VIEW'");
+    */
+    if (!str_empty(table))
+        query += _T(" AND UPPER(TABLE_NAME) = UPPER('") + table + _T("')");
+    Strings tables;
+    cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
@@ -148,25 +148,22 @@ MssqlDialect::get_tables(SqlConnection &conn)
     return tables;    
 }
 
-Strings
-MssqlDialect::get_views(SqlConnection &conn)
-{ 
-        return Strings();// _T("SELECT * FROM information_schema.tables");
-}
-
 ColumnsInfo
 MssqlDialect::get_columns(SqlConnection &conn, const String &table)
 {
     ColumnsInfo ci;
     String db = conn.get_db();
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String str = _T("SELECT COLUMN_NAME, DATA_TYPE, COLUMN_DEFAULT, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '") + table + _T("'"); 
+    String str = _T("SELECT COLUMN_NAME, DATA_TYPE, COLUMN_DEFAULT,")
+        _T(" IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH")
+        _T(" FROM INFORMATION_SCHEMA.COLUMNS")
+        _T(" WHERE TABLE_NAME = '") + table + _T("'");
     Values params;
     cursor->prepare(str);
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
     {
-        String str2 = _T("");
+        String str2;
         ColumnInfo x;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
@@ -177,7 +174,7 @@ MssqlDialect::get_columns(SqlConnection &conn, const String &table)
                 else
                     x.pk = false;
             }
-            if (_T("COLUMN_NAME") == trim_trailing_space(j->first)) 
+            if (_T("COLUMN_NAME") == j->first) 
             {
                 x.name = str_to_upper(j->second.as_string());
             }
@@ -187,8 +184,10 @@ MssqlDialect::get_columns(SqlConnection &conn, const String &table)
                 if (x.type == _T("VARCHAR") && !j->second.is_null())
                     x.size = j->second.as_integer();
             }
-            if (_T("COLUMN_DEFAULT") == j->first)x.default_value = str_to_upper(j->second.as_string());
-            if (_T("IS_NULLABLE") == j->first) x.notnull = (j->second.as_string() == "YES");
+            if (_T("COLUMN_DEFAULT") == j->first)
+                x.default_value = str_to_upper(j->second.as_string());
+            if (_T("IS_NULLABLE") == j->first)
+                x.notnull = (j->second.as_string() == _T("YES"));
         }
         ci.push_back(x);
     }
@@ -208,6 +207,7 @@ MssqlDialect::get_columns(SqlConnection &conn, const String &table)
                 }
             }
     }
+    /*
     String str4 = _T(""); 
     Values params4;
     cursor->prepare(str4);
@@ -216,6 +216,7 @@ MssqlDialect::get_columns(SqlConnection &conn, const String &table)
     {
         
     }
+    */
     return ci;
 }
 

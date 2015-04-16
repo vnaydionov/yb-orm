@@ -74,7 +74,7 @@ class TestDomainObject : public CppUnit::TestFixture
     CPPUNIT_TEST(test_holder);
     CPPUNIT_TEST(test_link_one2many);
 #if defined(YB_USE_TUPLE)
-    //CPPUNIT_TEST(test_join);
+    CPPUNIT_TEST(test_join);
 #endif // defined(YB_USE_TUPLE)
     CPPUNIT_TEST_SUITE_END();
 
@@ -229,7 +229,7 @@ public:
         ox3.orm_test = OrmTest::Holder(ot);
         CPPUNIT_ASSERT_EQUAL(3, (int)ot.orm_xmls.size());
     }
-/*
+
 #if defined(YB_USE_TUPLE)
     void test_join()
     {
@@ -247,7 +247,7 @@ public:
                     .join<OrmXml>();
         CPPUNIT_ASSERT_EQUAL(2, (int)q2.count());
     }
-#endif // defined(YB_USE_TUPLE)*/
+#endif // defined(YB_USE_TUPLE)
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestDomainObject);

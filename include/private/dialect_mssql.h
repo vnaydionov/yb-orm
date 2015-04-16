@@ -10,6 +10,8 @@ class YBORM_DECL MssqlDialect: public SqlDialect
 {
 public:
     MssqlDialect();
+    Strings really_get_tables(SqlConnection &conn,
+            const String &table, bool view, bool show_system);
     virtual const String select_curr_value(const String &seq_name);
     virtual const String select_next_value(const String &seq_name);
     virtual const String select_last_inserted_id(const String &table_name);
@@ -21,8 +23,6 @@ public:
     virtual const String autoinc_flag();
     virtual const String grant_insert_id_statement(const String &table_name, bool on);
     virtual bool explicit_null();
-    virtual const String not_null_default(const String &not_null_clause,
-            const String &default_value);
     virtual int pager_model();
     // schema introspection
     virtual bool table_exists(SqlConnection &conn, const String &table);
