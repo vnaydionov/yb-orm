@@ -563,6 +563,7 @@ public:
     void test_show_all()
     {
         SqlConnection conn(Engine::sql_source_from_env());
+        setup_log(conn);        
         Strings tables = conn.get_tables();
         //sort(tables.begin(), tables.end());
         Strings::iterator i, j;
@@ -579,6 +580,7 @@ public:
     void test_find_by_name()
     {
         SqlConnection conn(Engine::sql_source_from_env());
+        setup_log(conn);        
         CPPUNIT_ASSERT(conn.table_exists(_T("T_ORM_TEST")));
         CPPUNIT_ASSERT(conn.table_exists(_T("T_ORM_XML")));
         if (conn.get_dialect()->get_name() == _T("SQLITE")) {
@@ -589,7 +591,8 @@ public:
     void test_table_columns()
     {
         SqlConnection conn(Engine::sql_source_from_env());
-        ColumnsInfo t1 = conn.get_columns(_T("T_ORM_TEST"));
+        setup_log(conn);
+        ColumnsInfo t1 = conn.get_columns(_T("T_ORM_TEST"));        
         CPPUNIT_ASSERT_EQUAL(5, (int)t1.size());
         // T_ORM_TEST.ID
         CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(t1[0].name));

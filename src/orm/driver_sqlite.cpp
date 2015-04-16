@@ -58,7 +58,7 @@ SQLiteCursorBackend::exec(const Values &params)
     ++exec_count_;
     vector<string> str_params(params.size());
     for (size_t i = 0; i < params.size(); ++i) {
-        if (params[i].get_type() == Value::INTEGER 
+        if (params[i].get_type() == Value::INTEGER
                 || params[i].get_type() == Value::LONGINT)
         {
             sqlite3_bind_int(stmt_, i + 1, params[i].as_integer());

@@ -106,44 +106,49 @@ MysqlDialect::pager_model()
 bool
 MysqlDialect::table_exists(SqlConnection &conn, const String &table)
 {
-    Strings s = get_tables(conn);
-    for (Strings::iterator i = s.begin(); i != s.end(); ++i)
-    {
-        if (*i == table)
-        {
-            return true;
-        }
-    }
-    return false;
+    return really_get_tables(conn, table, false, true).size() != 0;
 }
 
 bool
 MysqlDialect::view_exists(SqlConnection &conn, const String &table)
 {
-    return false;
+    return really_get_tables(conn, table, true, true).size() != 0;
 }
 
 Strings
 MysqlDialect::get_tables(SqlConnection &conn)
 {
-    Strings table;
+    return really_get_tables(conn, String(), false, false);
+}
+
+Strings
+MysqlDialect::get_views(SqlConnection &conn)
+{
+    return really_get_tables(conn, String(), true, false);
+}
+
+Strings
+MysqlDialect::really_get_tables(SqlConnection &conn,
+        const String &table, bool view, bool show_system)
+{
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String query = _T("SHOW TABLE STATUS WHERE Comment != 'VIEW'");
+    String query = _T("SHOW TABLE STATUS WHERE 1=1");
+    if (!view)
+        query += _T(" AND Comment != 'VIEW'");
+    else
+        query += _T(" AND Comment = 'VIEW'");
+    if (!str_empty(table))
+        query += _T(" AND UPPER(NAME) = UPPER('") + table + _T("')");
+    Strings tables;
     cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
     {
         // do not force upper case here:
-        table.push_back((*i)[0].second.as_string());
+        tables.push_back((*i)[0].second.as_string());
     }
-    return table;
-}
-
-Strings
-MysqlDialect::get_views(SqlConnection &conn)
-{
-    return Strings();
+    return tables;
 }
 
 ColumnsInfo

@@ -48,7 +48,7 @@ BadTypeCast::BadTypeCast(const String &table_name,
 StringTooLong::StringTooLong(
         const String &table_name, const String &column_name,
         int max_len, const String &value)
-    : ORMError(_T("Can't set value of ") + table_name + 
+    : ORMError(_T("Can't set value of ") + table_name +
                _T(".") + column_name +
                _T(" with '") + value + _T("', having max length ") +
                to_string(max_len))
@@ -231,7 +231,7 @@ void Session::detach(DataObjectPtr obj)
 
 void Session::load_collection(ObjectList &out,
                               const Expression &from,
-                              const Filter &filter, 
+                              const Filter &filter,
                               const Expression &order_by,
                               bool for_update_flag)
 {
@@ -553,7 +553,7 @@ void DataObject::touch()
     if (status_ == Sync)
         status_ = Dirty;
 }
-    
+
 void DataObject::set(int i, const Value &v)
 {
     const Column &c = table_[i];
@@ -1063,7 +1063,7 @@ void RelationObject::dump_tree(std::ostream &out, int level)
     for (int i = 0; i < level*4; ++i)
         out << " ";
     out << "(cascade:" << relation_info_.cascade()
-        << ", status:" << status_ 
+        << ", status:" << status_
         << ", in_session:" << (master_object_->session() != NULL)
         << ")[\n";
     SlaveObjects::iterator i = slave_objects_.begin(),

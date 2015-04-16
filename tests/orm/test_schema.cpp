@@ -1,6 +1,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
 #include "orm/schema.h"
+#include "orm/schema_reader.h"
 #include "util/value_type.h"
 
 using namespace std;
@@ -31,6 +32,7 @@ class TestMetaData : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_registry_check_absent_fk_table, IntegrityCheckFailed);
     CPPUNIT_TEST_EXCEPTION(test_registry_check_absent_fk_field, IntegrityCheckFailed);
     CPPUNIT_TEST_EXCEPTION(test_registry_check_cyclic_references, IntegrityCheckFailed);
+    CPPUNIT_TEST(test_class_name);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -364,6 +366,28 @@ public:
         }
         *t1 << Column(_T("BX"), Value::LONGINT, 0, 0, Value(), _T("B"), _T("X"));
         r.check_cycles();
+    }
+
+    void test_class_name()
+    {
+        const String t1 = _T("T_TEST");
+        CPPUNIT_ASSERT_EQUAL(string("Test"), NARROW(guess_class_name(t1)));
+        const String t2 = _T("T_te_sT");
+        CPPUNIT_ASSERT_EQUAL(string("TeSt"), NARROW(guess_class_name(t2)));
+        const String t3 = _T("T_tEST_tEst_TEst");
+        CPPUNIT_ASSERT_EQUAL(string("TestTestTest"), NARROW(guess_class_name(t3)));
+        const String t4 = _T("T_t");
+        CPPUNIT_ASSERT_EQUAL(string("T"), NARROW(guess_class_name(t4)));
+        const String t5 = _T("T_te_te_TE_sT");
+        CPPUNIT_ASSERT_EQUAL(string("TeTeTeSt"), NARROW(guess_class_name(t5)));
+        const String t6 = _T("CLIENT_HIST_TBL");
+        CPPUNIT_ASSERT_EQUAL(string("ClientHist"), NARROW(guess_class_name(t6)));
+        const String t7 = _T("TBL_CLIENT_HIST");
+        CPPUNIT_ASSERT_EQUAL(string("ClientHist"), NARROW(guess_class_name(t7)));
+        const String t8 = _T("tbl_client_hist_tbl");
+        CPPUNIT_ASSERT_EQUAL(string("ClientHist"), NARROW(guess_class_name(t8)));
+        const String t9 = _T("CLIENT_hist");
+        CPPUNIT_ASSERT_EQUAL(string("ClientHist"), NARROW(guess_class_name(t9)));
     }
 };
 

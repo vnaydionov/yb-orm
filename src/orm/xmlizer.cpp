@@ -78,7 +78,7 @@ deep_xmlize(Session &session, DataObject::Ptr d,
                         (!j->second->has_attr(1, _T("key")) ||
                          j->second->attr(1, _T("key")) == it->name()))
                     {
-                        DomainObjectPtr domain_obj = 
+                        DomainObjectPtr domain_obj =
                             theDomainFactory().create_object(
                                 session, fk_table.name(), fk_v.as_longint());
                         ElementTree::ElementPtr ref_node = domain_obj->xmlize(

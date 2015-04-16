@@ -26,7 +26,7 @@ CouldNotSaveEmptyObject::CouldNotSaveEmptyObject()
 
 OutOfManagedList::OutOfManagedList(int pos, int sz)
     : ORMError(_T("Trying to access index ") +
-            to_string(pos) + 
+            to_string(pos) +
             _T(" that falls out of ManagedList of size ") +
             to_string(sz))
 {}
@@ -45,7 +45,7 @@ void *DomainObject::pending_ = NULL;
 bool DomainObject::register_table_meta(Table::Ptr tbl)
 {
 #ifdef YB_DEBUG_DOMAIN_REG
-    std::cerr << "register_table_meta(" << tbl->name() 
+    std::cerr << "register_table_meta(" << tbl->name()
               << "), init_flag_=" << init_flag_ << std::endl;
 #endif
     if (init_flag_)
