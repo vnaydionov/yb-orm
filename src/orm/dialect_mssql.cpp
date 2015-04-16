@@ -114,6 +114,14 @@ MssqlDialect::pager_model()
 bool
 MssqlDialect::table_exists(SqlConnection &conn, const String &table)
 {
+    Strings s = get_tables(conn);
+    for (Strings::iterator i = s.begin(); i != s.end(); ++i)
+    {
+        if (*i == table)
+        {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -126,25 +134,108 @@ MssqlDialect::view_exists(SqlConnection &conn, const String &table)
 Strings
 MssqlDialect::get_tables(SqlConnection &conn)
 {
-    return Strings();// _T("SELECT * FROM information_schema.tables");
+    String db = conn.get_db();
+    Strings tables;
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String str = _T("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES");
+    cursor->prepare(str);
+    Values params;
+    SqlResultSet rs = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    {
+        tables.push_back((*i)[0].second.as_string());
+    }
+    return tables;    
 }
 
 Strings
 MssqlDialect::get_views(SqlConnection &conn)
-{
-    return Strings();
+{ 
+        return Strings();// _T("SELECT * FROM information_schema.tables");
 }
 
 ColumnsInfo
 MssqlDialect::get_columns(SqlConnection &conn, const String &table)
 {
     ColumnsInfo ci;
-    //ci.push_back(_T("exec sp_columns "+ table));
+    String db = conn.get_db();
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String str = _T("SELECT COLUMN_NAME, DATA_TYPE, COLUMN_DEFAULT, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '") + table + _T("'"); 
+    Values params;
+    cursor->prepare(str);
+    SqlResultSet rs = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    {
+        String str2 = _T("");
+        ColumnInfo x;
+        for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+        {
+            if (_T("K") == j->first)
+            {
+                if (x.name == j->second)
+                    x.pk = true;
+                else
+                    x.pk = false;
+            }
+            if (_T("COLUMN_NAME") == trim_trailing_space(j->first)) 
+            {
+                x.name = str_to_upper(j->second.as_string());
+            }
+            if (_T("DATA_TYPE") == j->first)
+            {
+                x.type = str_to_upper(j->second.as_string());
+                if (x.type == _T("VARCHAR") && !j->second.is_null())
+                    x.size = j->second.as_integer();
+            }
+            if (_T("COLUMN_DEFAULT") == j->first)x.default_value = str_to_upper(j->second.as_string());
+            if (_T("IS_NULLABLE") == j->first) x.notnull = (j->second.as_string() == "YES");
+        }
+        ci.push_back(x);
+    }
+    String que = _T("SELECT Col.Column_Name as K from INFORMATION_SCHEMA.TABLE_CONSTRAINTS Tab, INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE Col WHERE Col.Constraint_Name = Tab.Constraint_Name AND Col.Table_Name = Tab.Table_Name AND Constraint_Type = 'PRIMARY KEY' AND Col.Table_Name = '") + table + _T("'");
+    cursor->prepare(que);
+    Values params3;
+    SqlResultSet rs3 = cursor->exec(params3);
+    for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
+    {
+        k->pk = false;
+        for (SqlResultSet::iterator i = rs3.begin(); i != rs3.end(); ++i)
+            {
+                for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+                {
+                    if (k->name == trim_trailing_space(j->second.as_string()))
+                        k->pk = true;
+                }
+            }
+    }
+    String str4 = _T(""); 
+    Values params4;
+    cursor->prepare(str4);
+    SqlResultSet fk = cursor->exec(params4);
+    for (int t;t<ci.size();++i)
+    {
+        
+    }
     return ci;
-    //return //_T("exec sp_columns "+ table);
 }
 
 /*
+
+SELECT RC.CONSTRAINT_NAME FK_Name
+, KF.TABLE_SCHEMA FK_Schema
+, KF.TABLE_NAME FK_Table
+, KF.COLUMN_NAME FK_Column
+, RC.UNIQUE_CONSTRAINT_NAME PK_Name
+, KP.TABLE_SCHEMA PK_Schema
+, KP.TABLE_NAME PK_Table
+, KP.COLUMN_NAME PK_Column
+, RC.MATCH_OPTION MatchOption
+, RC.UPDATE_RULE UpdateRule
+, RC.DELETE_RULE DeleteRule
+FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS RC
+JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE KF ON RC.CONSTRAINT_NAME = KF.CONSTRAINT_NAME
+JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE KP ON RC.UNIQUE_CONSTRAINT_NAME = KP.CONSTRAINT_NAME
+
 static Strings
 really_get_tables(SqlConnection &conn, const String &type,
         const String &name, bool filter_system)
