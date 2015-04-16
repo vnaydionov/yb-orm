@@ -195,16 +195,18 @@ InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
         }
         col_mass.push_back(x);
     }
-    String query2 = _T("SELECT s.RDB$FIELD_NAME  AS COLUMN_NAME, rc.RDB$CONSTRAINT_TYPE, i2.RDB$RELATION_NAME, ")
-                    _T("s2.RDB$FIELD_NAME,(s.RDB$FIELD_POSITION + 1) FROM RDB$INDEX_SEGMENTS s ")
+    String query2 = _T("SELECT s.RDB$FIELD_NAME COLUMN_NAME, ")
+                    _T("rc.RDB$CONSTRAINT_TYPE CON_TYPE, i2.RDB$RELATION_NAME FK_TABLE, ")
+                    _T("s2.RDB$FIELD_NAME FK_TABLE_KEY,(s.RDB$FIELD_POSITION + 1) ")
+                    _T("FROM RDB$INDEX_SEGMENTS s ")
                     _T("LEFT JOIN RDB$INDICES i ON i.RDB$INDEX_NAME = s.RDB$INDEX_NAME ")
                     _T("LEFT JOIN RDB$RELATION_CONSTRAINTS rc ON rc.RDB$INDEX_NAME = s.RDB$INDEX_NAME ")
                     _T("LEFT JOIN RDB$REF_CONSTRAINTS refc ON rc.RDB$CONSTRAINT_NAME = refc.RDB$CONSTRAINT_NAME ")
                     _T("LEFT JOIN RDB$RELATION_CONSTRAINTS rc2 ON rc2.RDB$CONSTRAINT_NAME = refc.RDB$CONST_NAME_UQ ")
                     _T("LEFT JOIN RDB$INDICES i2 ON i2.RDB$INDEX_NAME = rc2.RDB$INDEX_NAME ")
                     _T("LEFT JOIN RDB$INDEX_SEGMENTS s2 ON i2.RDB$INDEX_NAME = s2.RDB$INDEX_NAME ")
-                    _T("WHERE i.RDB$RELATION_NAME='") + table + _T("' ")
-                    _T("AND rc.RDB$CONSTRAINT_TYPE='FOREIGN KEY'");
+                    _T("WHERE i.RDB$RELATION_NAME = '") + table + _T("' ")
+                    _T("AND rc.RDB$CONSTRAINT_TYPE = 'FOREIGN KEY'");
     cursor->prepare(query2);
     Values params2;
     SqlResultSet rs2 = cursor->exec(params2);
@@ -213,26 +215,23 @@ InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
         String fk_column, fk_table, fk_table_key;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
-            if (_T("RDB$RELATION_NAME") == j->first)
+            if (_T("FK_TABLE") == j->first)
             {
                 if (!j->second.is_null()) {
                     fk_table = trim_trailing_space(j->second.as_string());
                 }
-                continue;
             }
-            if (_T("RDB$FIELD_NAME") == j->first)
+            else if (_T("FK_TABLE_KEY") == j->first)
             {
                 if (!j->second.is_null()) {
                     fk_table_key = trim_trailing_space(j->second.as_string());
                 }
-                continue;
             }
-            if (_T("COLUMN_NAME") == j->first)
+            else if (_T("COLUMN_NAME") == j->first)
             {
                 if (!j->second.is_null()) {
                     fk_column = trim_trailing_space(j->second.as_string());
                 }
-                continue;
             }
         }
 
@@ -246,13 +245,11 @@ InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
             }
         }
     }
-    String query3 = _T("SELECT RDB$INDEX_SEGMENTS.RDB$FIELD_NAME ")
-                    _T("FROM RDB$RELATION_CONSTRAINTS INNER JOIN RDB$INDEX_SEGMENTS ON ")
-                    _T("RDB$RELATION_CONSTRAINTS.RDB$INDEX_NAME=RDB$INDEX_SEGMENTS.RDB$INDEX_NAME ")
-                    _T("WHERE RDB$RELATION_CONSTRAINTS.RDB$CONSTRAINT_TYPE='PRIMARY KEY' ")
-                    _T("AND RDB$RELATION_CONSTRAINTS.RDB$RELATION_NAME='")
-                    + table +
-                    _T("';");
+    String query3 = _T("SELECT i.RDB$FIELD_NAME ")
+                    _T("FROM RDB$RELATION_CONSTRAINTS rc INNER JOIN RDB$INDEX_SEGMENTS i ")
+                    _T("ON rc.RDB$INDEX_NAME = i.RDB$INDEX_NAME ")
+                    _T("WHERE rc.RDB$CONSTRAINT_TYPE='PRIMARY KEY' ")
+                    _T("AND rc.RDB$RELATION_NAME = '") + table + _T("';");
     cursor->prepare(query3);
     Values params3;
     SqlResultSet rs3 = cursor->exec(params3);
