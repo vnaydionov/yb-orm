@@ -114,6 +114,14 @@ MssqlDialect::pager_model()
 bool
 MssqlDialect::table_exists(SqlConnection &conn, const String &table)
 {
+    Strings s = get_tables(conn);
+    for (Strings::iterator i = s.begin(); i != s.end(); ++i)
+    {
+        if (*i == table)
+        {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -126,16 +134,10 @@ MssqlDialect::view_exists(SqlConnection &conn, const String &table)
 Strings
 MssqlDialect::get_tables(SqlConnection &conn)
 {
-    return Strings();// _T("SELECT * FROM information_schema.tables");
-}
-
-Strings
-MssqlDialect::get_views(SqlConnection &conn)
-{ 
     String db = conn.get_db();
     Strings tables;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String str = _T("SELECT TABLE_NAME FROM ") + db + _T(".INFORMATION_SCHEMA.TABLES");
+    String str = _T("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES");
     cursor->prepare(str);
     Values params;
     SqlResultSet rs = cursor->exec(params);
@@ -143,7 +145,13 @@ MssqlDialect::get_views(SqlConnection &conn)
     {
         tables.push_back((*i)[0].second.as_string());
     }
-    return tables;
+    return tables;    
+}
+
+Strings
+MssqlDialect::get_views(SqlConnection &conn)
+{ 
+        return Strings();// _T("SELECT * FROM information_schema.tables");
 }
 
 ColumnsInfo
@@ -152,37 +160,57 @@ MssqlDialect::get_columns(SqlConnection &conn, const String &table)
     ColumnsInfo ci;
     String db = conn.get_db();
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String str = _T("SELECT COLUMN_NAME, DATA_TYPE, COLUMN_DEFAULT, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH FROM ") + db + _T(".INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '") + table + _T("'");
-    String str2 = _T("SELECT Col.Column_Name from ") + db + _T(".INFORMATION_SCHEMA.TABLE_CONSTRAINTS Tab, ") + db + _T("INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE Col WHERE Col.Constraint_Name = Tab.Constraint_Name AND Col.Table_Name = Tab.Table_Name AND Constraint_Type = 'PRIMARY KEY' AND Col.Table_Name = '") + table + _T("'");
+    String str = _T("SELECT COLUMN_NAME, DATA_TYPE, COLUMN_DEFAULT, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '") + table + _T("'"); 
     Values params;
     cursor->prepare(str);
     SqlResultSet rs = cursor->exec(params);
-    cursor->prepare(str2);
-    SqlResultSet ones = cursor->exec(params);
+    //cursor->prepare(str2);
+    //SqlResultSet ones = cursor->exec(params);
+    //Row::const_iterator one = (ones.begin())->begin();
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
     {
+        String str2 = _T("");
         ColumnInfo x;
-        x.name = str_to_upper((*i)[0].second.as_string());
-        x.type = str_to_upper((*i)[1].second.as_string());
-        x.default_value = str_to_upper((*i)[2].second.as_string());
-        if ((*i)[3].second.as_string() == _T("NO"))
+        for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
-            x.notnull = false;
+            if (_T("K") == j->first)
+            {
+                if (x.name == j->second)
+                    x.pk = true;
+                else
+                    x.pk = false;
+            }
+            if (_T("COLUMN_NAME") == trim_trailing_space(j->first)) 
+            {
+                x.name = str_to_upper(j->second.as_string());
+                cout<<x.name << "!"<<endl<<endl;
+            }
+            if (_T("DATA_TYPE") == j->first)
+            {
+                x.type = str_to_upper(j->second.as_string());
+                if (x.type == _T("VARCHAR") && !j->second.is_null())
+                    x.size = j->second.as_integer();
+            }
+            if (_T("COLUMN_DEFAULT") == j->first)x.default_value = str_to_upper(j->second.as_string());
+            if (_T("IS_NULLABLE") == j->first) x.notnull = (j->second.as_string() == "YES");
         }
-        else
-        {
-            x.notnull = true;
-        }
-        x.size = (*i)[4].second;
         ci.push_back(x);
-        if (ones.begin()->second == x.name)
-        {
-            x.pk = true;
-        }
-        else
-        {
-            x.pk = false;
-        }
+    }
+    String que = _T("SELECT Col.Column_Name as K from INFORMATION_SCHEMA.TABLE_CONSTRAINTS Tab, INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE Col WHERE Col.Constraint_Name = Tab.Constraint_Name AND Col.Table_Name = Tab.Table_Name AND Constraint_Type = 'PRIMARY KEY' AND Col.Table_Name = '") + table + _T("'");
+    cursor->prepare(que);
+    Values params3;
+    SqlResultSet rs3 = cursor->exec(params3);
+    for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
+    {
+        k->pk = false;
+        for (SqlResultSet::iterator i = rs3.begin(); i != rs3.end(); ++i)
+            {
+                for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+                {
+                    if (k->name == trim_trailing_space(j->second.as_string()))
+                        k->pk = true;
+                }
+            }
     }
     return ci;
 }
