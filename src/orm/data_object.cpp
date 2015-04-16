@@ -323,7 +323,13 @@ void Session::flush_tbl_new_keyed(const Table &tbl, Objects &keyed_objs)
         add_to_identity_map(shptr_get(*i), true);
     }
     engine_->get_conn()->grant_insert_id(tbl.name(), true, true);
-    engine_->insert(tbl, rows, false);
+    try {
+        engine_->insert(tbl, rows, false);
+    }
+    catch (const std::exception &) {
+        engine_->get_conn()->grant_insert_id(tbl.name(), false, true);
+        throw;
+    }
     engine_->get_conn()->grant_insert_id(tbl.name(), false, true);
 }
 

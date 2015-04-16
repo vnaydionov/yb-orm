@@ -182,11 +182,18 @@ public:
             .order_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
             .pager(5, 10)
             .generate_sql(options, &ctx);
+        /*
+        // This one is stolen from SQLAlchemy
         CPPUNIT_ASSERT_EQUAL(string("SELECT OUTER_2.* FROM ("
                     "SELECT OUTER_1.*, ROWNUM AS RN_ORA FROM ("
                     "SELECT A, B FROM T ORDER BY A, B"
                     ") OUTER_1 WHERE ROWNUM <= 15"
                     ") OUTER_2 WHERE RN_ORA > 10"), NARROW(sql));
+        */
+        CPPUNIT_ASSERT_EQUAL(string("SELECT OUTER_.* FROM ("
+                    "SELECT A, B, ROW_NUMBER() OVER (ORDER BY A, B) RN_ "
+                    "FROM T) OUTER_ "
+                    "WHERE OUTER_.RN_ > 10 AND OUTER_.RN_ <= 15"), NARROW(sql));
     }
 
     void test_select_having_wo_groupby()
@@ -425,10 +432,7 @@ public:
         conn.begin_trans_if_necessary();
         record_id_ = get_next_test_id(&conn);
         //CPPUNIT_ASSERT(record_id_ > 0);
-        try {
-            conn.grant_insert_id(_T("T_ORM_TEST"), true);
-        }
-        catch (const std::exception &) {}
+        conn.grant_insert_id(_T("T_ORM_TEST"), true, true);
         Values params;
         params.push_back(Value(record_id_));
         params.push_back(Value(_T("item")));
@@ -483,15 +487,12 @@ public:
     void test_insert_sql()
     {
         Engine engine(Engine::READ_WRITE);
-        SqlConnection conn(Engine::sql_source_from_env());
+        setup_log(engine);
         Table t(_T("T_ORM_TEST"));
-        setup_log(conn);
-        conn.grant_insert_id(_T("T_ORM_TEST"), true, true);
         t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
         t.add_column(Column(_T("A"), Value::STRING, 100, 0));
         t.add_column(Column(_T("B"), Value::DATETIME, 0, Column::RO));
         t.add_column(Column(_T("C"), Value::DECIMAL, 0, 0));
-        setup_log(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         RowsData rows;
         LongInt id = get_next_test_id(engine.get_conn());
@@ -501,8 +502,9 @@ public:
         row.push_back(now());
         row.push_back(Decimal(_T("1.1")));
         rows.push_back(&row);
+        engine.get_conn()->grant_insert_id(_T("T_ORM_TEST"), true, true);
         engine.insert(t, rows, false);
-        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
+        engine.get_conn()->grant_insert_id(_T("T_ORM_TEST"), false, true);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")),
                 Expression(t.name()),

@@ -42,15 +42,15 @@ MssqlDialect::sql_value(const Value &x)
 const String
 MssqlDialect::grant_insert_id_statement(const String &table_name, bool on)
 {
-    if (on) 
+    if (on)
         return _T("SET IDENTITY_INSERT ") + table_name + _T(" ON");
     return _T("SET IDENTITY_INSERT ") + table_name + _T(" OFF");
 }
 
 const String
-MssqlDialect::type2sql(int t) 
+MssqlDialect::type2sql(int t)
 {
-    switch (t) 
+    switch (t)
     {
         case Value::INTEGER:    return _T("INT");           break;
         case Value::LONGINT:    return _T("BIGINT");        break;
@@ -62,7 +62,7 @@ MssqlDialect::type2sql(int t)
     throw SqlDialectError(_T("Bad type"));
 }
 
-const String 
+const String
 MssqlDialect::create_sequence(const String &seq_name)
 {
     throw SqlDialectError(_T("No sequences, please"));
@@ -81,18 +81,18 @@ MssqlDialect::suffix_create_table()
 }
 
 const String
-MssqlDialect::autoinc_flag() 
+MssqlDialect::autoinc_flag()
 {
-    return _T("IDENTITY(1,1)"); 
+    return _T("IDENTITY(1,1)");
 }
 
 bool
-MssqlDialect::explicit_null() 
+MssqlDialect::explicit_null()
 {
-    return true; 
+    return true;
 }
 
-const String 
+const String
 MssqlDialect::not_null_default(const String &not_null_clause,
         const String &default_value)
 {
@@ -104,32 +104,32 @@ MssqlDialect::not_null_default(const String &not_null_clause,
 }
 
 int
-MssqlDialect::pager_model() 
+MssqlDialect::pager_model()
 {
-    return (int)PAGER_MYSQL;
+    return (int)PAGER_ORACLE;
 }
 
 // schema introspection
 
-bool 
+bool
 MssqlDialect::table_exists(SqlConnection &conn, const String &table)
-{ 
+{
     return false;
 }
 
 bool
 MssqlDialect::view_exists(SqlConnection &conn, const String &table)
 {
-    return false; 
+    return false;
 }
 
-Strings 
+Strings
 MssqlDialect::get_tables(SqlConnection &conn)
-{ 
-    return Strings();// _T("SELECT * FROM information_schema.tables"); 
+{
+    return Strings();// _T("SELECT * FROM information_schema.tables");
 }
 
-Strings 
+Strings
 MssqlDialect::get_views(SqlConnection &conn)
 { 
     String db = conn.get_db();
@@ -146,7 +146,7 @@ MssqlDialect::get_views(SqlConnection &conn)
     return tables;
 }
 
-ColumnsInfo 
+ColumnsInfo
 MssqlDialect::get_columns(SqlConnection &conn, const String &table)
 {
     ColumnsInfo ci;

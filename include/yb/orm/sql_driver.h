@@ -114,7 +114,7 @@ public:
     virtual const String not_null_default(const String &not_null_clause,
             const String &default_value);
     virtual int pager_model();
-    virtual const String grant_insert_id_statement(const String &table_name, bool on); 
+    virtual const String grant_insert_id_statement(const String &table_name, bool on);
     // schema introspection
     virtual bool table_exists(SqlConnection &conn, const String &table) = 0;
     virtual bool view_exists(SqlConnection &conn, const String &table) = 0;
