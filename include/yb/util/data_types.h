@@ -31,6 +31,7 @@ inline const std::string to_stdstring(const T &x)
     out << x;
     return out.str();
 }
+//inline const std::vector<char> *to_stdstring(const std::vector<char> *x) { return x; }
 #if defined(YB_STRING_NOSTD)
 inline const std::string to_stdstring(const String &x) { return str2std(x); }
 #endif
@@ -42,6 +43,7 @@ inline const String to_string(const T &x) { return WIDEN(to_stdstring(x)); }
 inline const String to_string(const std::string &x) { return std2str(x); }
 #endif
 inline const String &to_string(const String &x) { return x; }
+//inline const std::vector<char> *to_string(const std::vector<char> *x) {return x; }
 
 template <class T>
 inline T &from_stdstring(const std::string &s, T &x)
@@ -54,7 +56,13 @@ inline T &from_stdstring(const std::string &s, T &x)
         throw ValueBadCast(WIDEN(s), _T("value error: extra characters left"));
     return x;
 }
+
 YBUTIL_DECL double &from_stdstring(const std::string &s, double &x);
+
+typedef std::vector<char> Blob;
+
+YBUTIL_DECL Blob &from_stdstring(const std::string &s, Blob &x);
+
 #if defined(YB_STRING_NOSTD)
 inline String &from_stdstring(const std::string &s, String &x)
 {
@@ -85,6 +93,7 @@ inline String &from_string(const String &s, String &x)
     x = s;
     return x;
 }
+//inline std::vector<char> &from_string(const String &s, std::vector<char> &x) { x = s; return x; }
 
 #if defined(YB_USE_WX)
 typedef wxDateTime DateTime;

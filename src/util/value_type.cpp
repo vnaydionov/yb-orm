@@ -54,6 +54,9 @@ Value::init()
     case DATETIME:
         cons_as<DateTime>(bytes_);
         break;
+    case BLOB:
+        cons_as<Blob>(bytes_);
+        break;
     }
 }
 
@@ -69,6 +72,9 @@ Value::destroy()
         break;
     case DATETIME:
         des_as<DateTime>(bytes_);
+        break;
+    case BLOB:
+        des_as<Blob>(bytes_);
         break;
     }
 }
@@ -100,6 +106,9 @@ Value::assign(const Value &other)
     case FLOAT:
         get_as<double>(bytes_) = get_as<double>(other.bytes_);
         break;
+    case BLOB:
+        get_as<Blob>(bytes_) = get_as<Blob>(other.bytes_);
+        break;
     }
 }
 
@@ -120,6 +129,9 @@ Value::read_as_datetime() const { return get_as<DateTime>(bytes_); }
 
 const double &
 Value::read_as_float() const { return get_as<double>(bytes_); }
+
+const Blob &
+Value::read_as_blob() const { return get_as<Blob>(bytes_); }
 
 Value::Value()
     : type_(INVALID)
@@ -175,6 +187,13 @@ Value::Value(const Char *x)
     memset(bytes_, 0, sizeof(bytes_));
     if (x != NULL)
         copy_as<String>(bytes_, str_from_chars(x));
+}
+
+Value::Value(const Blob &x)
+    : type_(BLOB)
+{
+    memset(bytes_, 0, sizeof(bytes_));
+    copy_as<Blob>(bytes_, x);
 }
 
 Value::Value(const Value &other)
@@ -275,6 +294,15 @@ Value::fix_type(int type)
             destroy();
             type_ = type;
             get_as<double>(bytes_) = t;
+        }
+        break;
+    case Value::BLOB:
+        {
+            Blob t = as_blob();
+            destroy();
+            type_ = type;
+            init();
+            get_as<Blob>(bytes_) = t;
         }
         break;
     }
@@ -389,6 +417,23 @@ Value::as_float() const
     }
 }
 
+const Blob
+Value::as_blob() const
+{
+    if (type_ == BLOB)
+        return get_as<Blob>(bytes_);
+    String s = as_string();
+    try {
+        Blob x;
+        std::string t = NARROW(s);
+        std::copy(t.begin(), t.end(), std::back_inserter(x));
+        return x;
+    }
+    catch (const std::exception &) {
+        throw ValueBadCast(s, _T("Blob"));
+    }
+}
+
 const String
 Value::as_string() const
 {
@@ -407,6 +452,15 @@ Value::as_string() const
         return to_string(get_as<DateTime>(bytes_));
     case FLOAT:
         return to_string(get_as<double>(bytes_));
+    case BLOB:
+        {
+            //Blob x = get_as<Blob>(bytes_);
+            std::string s;
+            const Blob &b = read_as_blob();
+            std::copy(b.begin(), b.end(), std::back_inserter(s));
+            return WIDEN(s);
+        }
+        //return to_string(get_as<Blob>(bytes_));
     }
     throw ValueBadCast(_T("UnknownType"), _T("Value::as_string()"));
 }
@@ -471,6 +525,11 @@ Value::cmp(const Value &x) const
         const double &a = get_as<double>(bytes_), &b = get_as<double>(x.bytes_);
         return a < b? -1: (a > b? 1: 0);
     }
+    if (type_ == BLOB && x.type_ == BLOB)
+    {
+        const Blob &a = get_as<Blob>(bytes_), &b = get_as<Blob>(x.bytes_);
+        return a < b? -1: (a > b? 1: 0);
+    }
     return as_string().compare(x.as_string());
 }
 
@@ -479,7 +538,7 @@ Value::get_type_name(int type)
 {
     static const char *type_names[] =
         { "Invalid", "Integer", "LongInt",
-          "String", "Decimal", "DateTime", "Float" };
+          "String", "Decimal", "DateTime", "Float", "Blob" };
     if (type < 0 || type >= sizeof(type_names)/sizeof(const char *))
         return WIDEN("UnknownType");
     return WIDEN(type_names[type]);
