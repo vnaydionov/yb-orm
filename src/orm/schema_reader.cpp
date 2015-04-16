@@ -78,8 +78,25 @@ read_schema_from_db(SqlConnection &connection)
         t->set_class_name(get_class_name(t->name()));
         s->add_table(t);
     }
+
     s->fill_fkeys();
     s->check_cycles();
+    for(Schema::TblMap::const_iterator i = s->tbl_begin(); i != s->tbl_end(); ++i)
+    {
+        const Table &t = *i->second;
+        for(Columns::const_iterator j = t.begin(); j != t.end(); ++j)
+        {
+            const Column &c = *j;
+            if (c.has_fk())
+            {
+                const std::string side1 = get_class_name(t.name());
+                const std::string side2 = get_class_name(c.fk_table_name());
+                Relation::AttrMap a1, a2;
+                Relation::Ptr r(new Relation(Relation::ONE2MANY, side1, a1, side2, a2));
+                s->add_relation(r);
+            }
+        }
+    }
     return s;
 }
 
