@@ -164,9 +164,6 @@ MssqlDialect::get_columns(SqlConnection &conn, const String &table)
     Values params;
     cursor->prepare(str);
     SqlResultSet rs = cursor->exec(params);
-    //cursor->prepare(str2);
-    //SqlResultSet ones = cursor->exec(params);
-    //Row::const_iterator one = (ones.begin())->begin();
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
     {
         String str2 = _T("");
@@ -183,7 +180,6 @@ MssqlDialect::get_columns(SqlConnection &conn, const String &table)
             if (_T("COLUMN_NAME") == trim_trailing_space(j->first)) 
             {
                 x.name = str_to_upper(j->second.as_string());
-                cout<<x.name << "!"<<endl<<endl;
             }
             if (_T("DATA_TYPE") == j->first)
             {
@@ -212,10 +208,34 @@ MssqlDialect::get_columns(SqlConnection &conn, const String &table)
                 }
             }
     }
+    String str4 = _T(""); 
+    Values params4;
+    cursor->prepare(str4);
+    SqlResultSet fk = cursor->exec(params4);
+    for (int t;t<ci.size();++i)
+    {
+        
+    }
     return ci;
 }
 
 /*
+
+SELECT RC.CONSTRAINT_NAME FK_Name
+, KF.TABLE_SCHEMA FK_Schema
+, KF.TABLE_NAME FK_Table
+, KF.COLUMN_NAME FK_Column
+, RC.UNIQUE_CONSTRAINT_NAME PK_Name
+, KP.TABLE_SCHEMA PK_Schema
+, KP.TABLE_NAME PK_Table
+, KP.COLUMN_NAME PK_Column
+, RC.MATCH_OPTION MatchOption
+, RC.UPDATE_RULE UpdateRule
+, RC.DELETE_RULE DeleteRule
+FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS RC
+JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE KF ON RC.CONSTRAINT_NAME = KF.CONSTRAINT_NAME
+JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE KP ON RC.UNIQUE_CONSTRAINT_NAME = KP.CONSTRAINT_NAME
+
 static Strings
 really_get_tables(SqlConnection &conn, const String &type,
         const String &name, bool filter_system)
