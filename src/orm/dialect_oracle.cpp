@@ -99,7 +99,7 @@ OracleDialect::get_tables(SqlConnection &conn)
 {
     Strings table;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String query = _T("SELECT table_name FROM dba_tables");
+    String query = _T("SELECT table_name FROM all_tables where owner = 'TEST1'");
     cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
