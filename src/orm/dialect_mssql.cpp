@@ -56,7 +56,7 @@ MssqlDialect::type2sql(int t)
         case Value::STRING:     return _T("VARCHAR");       break;
         case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
         case Value::DATETIME:   return _T("DATETIME");      break;
-        case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
+        case Value::FLOAT:      return _T("FLOAT"); break;
     }
     throw SqlDialectError(_T("Bad type"));
 }
@@ -129,12 +129,10 @@ MssqlDialect::really_get_tables(SqlConnection &conn,
 {
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
     String query = _T("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE 1=1");
-    /*
     if (!view)
-        query += _T(" AND Comment != 'VIEW'");
+        query += _T(" AND TABLE_TYPE <> 'VIEW'");
     else
-        query += _T(" AND Comment = 'VIEW'");
-    */
+        query += _T(" AND TABLE_TYPE = 'VIEW'");
     if (!str_empty(table))
         query += _T(" AND UPPER(TABLE_NAME) = UPPER('") + table + _T("')");
     Strings tables;
@@ -145,235 +143,112 @@ MssqlDialect::really_get_tables(SqlConnection &conn,
     {
         tables.push_back((*i)[0].second.as_string());
     }
-    return tables;    
+    return tables;
 }
 
 ColumnsInfo
 MssqlDialect::get_columns(SqlConnection &conn, const String &table)
 {
     ColumnsInfo ci;
-    String db = conn.get_db();
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String str = _T("SELECT COLUMN_NAME, DATA_TYPE, COLUMN_DEFAULT,")
-        _T(" IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH")
+    String q1 = _T("SELECT COLUMN_NAME, DATA_TYPE, COLUMN_DEFAULT,")
+        _T(" IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH SZ,")
+        _T(" NUMERIC_PRECISION PREC, NUMERIC_SCALE SCALE")
         _T(" FROM INFORMATION_SCHEMA.COLUMNS")
         _T(" WHERE TABLE_NAME = '") + table + _T("'");
-    Values params;
-    cursor->prepare(str);
-    SqlResultSet rs = cursor->exec(params);
-    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    cursor->prepare(q1);
+    Values params1;
+    SqlResultSet rs1 = cursor->exec(params1);
+    for (SqlResultSet::iterator i = rs1.begin(); i != rs1.end(); ++i)
     {
-        String str2;
         ColumnInfo x;
+        int prec = 0, scale = 0;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
-            if (_T("K") == j->first)
-            {
-                if (x.name == j->second)
-                    x.pk = true;
-                else
-                    x.pk = false;
-            }
-            if (_T("COLUMN_NAME") == j->first) 
+            if (_T("COLUMN_NAME") == j->first)
             {
                 x.name = str_to_upper(j->second.as_string());
             }
-            if (_T("DATA_TYPE") == j->first)
+            else if (_T("DATA_TYPE") == j->first)
             {
                 x.type = str_to_upper(j->second.as_string());
-                if (x.type == _T("VARCHAR") && !j->second.is_null())
+            }
+            else if (_T("SZ") == j->first && !j->second.is_null())
+            {
+                if (x.type == _T("VARCHAR"))
                     x.size = j->second.as_integer();
             }
-            if (_T("COLUMN_DEFAULT") == j->first)
-                x.default_value = str_to_upper(j->second.as_string());
-            if (_T("IS_NULLABLE") == j->first)
-                x.notnull = (j->second.as_string() == _T("YES"));
-        }
-        ci.push_back(x);
-    }
-    String que = _T("SELECT Col.Column_Name as K from INFORMATION_SCHEMA.TABLE_CONSTRAINTS Tab, INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE Col WHERE Col.Constraint_Name = Tab.Constraint_Name AND Col.Table_Name = Tab.Table_Name AND Constraint_Type = 'PRIMARY KEY' AND Col.Table_Name = '") + table + _T("'");
-    cursor->prepare(que);
-    Values params3;
-    SqlResultSet rs3 = cursor->exec(params3);
-    for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
-    {
-        k->pk = false;
-        for (SqlResultSet::iterator i = rs3.begin(); i != rs3.end(); ++i)
+            else if (_T("COLUMN_DEFAULT") == j->first && !j->second.is_null())
             {
-                for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+                x.default_value = j->second.as_string();
+                while (_T("(") == str_substr(x.default_value, 0, 1)
+                        && _T(")") == str_substr(x.default_value,
+                        str_length(x.default_value) - 1, 1))
                 {
-                    if (k->name == trim_trailing_space(j->second.as_string()))
-                        k->pk = true;
+                    x.default_value = str_substr(
+                            x.default_value, 1, str_length(x.default_value) - 2);
                 }
+                if (x.type == _T("DATETIME") && x.default_value == _T("getdate()"))
+                    x.default_value = _T("CURRENT_TIMESTAMP");
             }
-    }
-    /*
-    String str4 = _T(""); 
-    Values params4;
-    cursor->prepare(str4);
-    SqlResultSet fk = cursor->exec(params4);
-    for (int t;t<ci.size();++i)
-    {
-        
-    }
-    */
-    return ci;
-}
-
-/*
-
-SELECT RC.CONSTRAINT_NAME FK_Name
-, KF.TABLE_SCHEMA FK_Schema
-, KF.TABLE_NAME FK_Table
-, KF.COLUMN_NAME FK_Column
-, RC.UNIQUE_CONSTRAINT_NAME PK_Name
-, KP.TABLE_SCHEMA PK_Schema
-, KP.TABLE_NAME PK_Table
-, KP.COLUMN_NAME PK_Column
-, RC.MATCH_OPTION MatchOption
-, RC.UPDATE_RULE UpdateRule
-, RC.DELETE_RULE DeleteRule
-FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS RC
-JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE KF ON RC.CONSTRAINT_NAME = KF.CONSTRAINT_NAME
-JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE KP ON RC.UNIQUE_CONSTRAINT_NAME = KP.CONSTRAINT_NAME
-
-static Strings
-really_get_tables(SqlConnection &conn, const String &type,
-        const String &name, bool filter_system)
-{
-    Strings tables;
-    auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String q = _T("SELECT name FROM sqlite_master WHERE type=?");
-    Values params;
-    params.push_back(Value(type));
-    if (!str_empty(name))
-    {
-        q += _T(" AND UPPER(name)=UPPER(?)");
-        params.push_back(Value(name));
-    }
-    if (filter_system)
-    {
-        q += _T(" AND UPPER(name) NOT IN (?)");
-        params.push_back(Value(_T("SQLITE_SEQUENCE")));
-    }
-    cursor->prepare(q);
-    SqlResultSet rs = cursor->exec(params);
-    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {
-        tables.push_back(str_to_upper((*i)[0].second.as_string()));
-    }
-    return tables;
-}
-
-bool
-SQLite3Dialect::table_exists(SqlConnection &conn, const String &table)
-{
-    Strings r = really_get_tables(conn, _T("table"), table, false);
-    return r.size() == 1;
-}
-
-bool
-SQLite3Dialect::view_exists(SqlConnection &conn, const String &table)
-{
-    Strings r = really_get_tables(conn, _T("view"), table, false);
-    return r.size() == 1;
-}
-
-Strings
-SQLite3Dialect::get_tables(SqlConnection &conn)
-{
-    return really_get_tables(conn, _T("table"), _T(""), true);
-}
-
-Strings
-SQLite3Dialect::get_views(SqlConnection &conn)
-{
-    return really_get_tables(conn, _T("view"), _T(""), true);
-}
-
-ColumnsInfo
-SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
-{
-    ColumnsInfo ci;
-    auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    cursor->prepare(_T("PRAGMA table_info('") + table + _T("')"));
-    Values params;
-    SqlResultSet rs = cursor->exec(params);
-    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {
-        ColumnInfo x;
-        for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
-        {
-            if (_T("NAME") == j->first)
+            else if (_T("IS_NULLABLE") == j->first && !j->second.is_null())
             {
-                x.name = str_to_upper(j->second.as_string());
+                x.notnull = (j->second.as_string() != _T("YES"));
             }
-            else if (_T("TYPE") == j->first)
-            {
-                x.type = str_to_upper(j->second.as_string());
-                int open_par = str_find(x.type, _T('('));
-                if (-1 != open_par) {
-                    // split type size into its own field
-                    String new_type = str_substr(x.type, 0, open_par);
-                    try {
-                        from_string(str_substr(x.type, open_par + 1,
-                                str_length(x.type) - open_par - 2), x.size);
-                        x.type = new_type;
-                    }
-                    catch (const std::exception &) {}
-                }
-            }
-            else if (_T("NOTNULL") == j->first)
-            {
-                x.notnull = _T("0") != j->second.as_string();
-            }
-            else if (_T("DFLT_VALUE") == j->first)
+            else if (_T("PREC") == j->first)
             {
                 if (!j->second.is_null())
-                    x.default_value = j->second.as_string();
+                    prec = j->second.as_integer();
             }
-            else if (_T("PK") == j->first)
+            else if (_T("SCALE") == j->first)
             {
-                x.pk = _T("0") != j->second.as_string();
+                if (!j->second.is_null())
+                    scale = j->second.as_integer();
             }
+        }
+        if (_T("DECIMAL") == x.type && prec && scale) {
+            x.type = _T("DECIMAL(") + to_string(prec) + _T(", ")
+                + to_string(scale) + _T(")");
         }
         ci.push_back(x);
     }
-    cursor->prepare(_T("PRAGMA foreign_key_list('") + table + _T("')"));
-    SqlResultSet rs2 = cursor->exec(params);
+    String q2 = _T("SELECT Col.Column_Name, Tab.CONSTRAINT_TYPE, RC2.TABLE_NAME")
+        _T(" from INFORMATION_SCHEMA.TABLE_CONSTRAINTS Tab")
+        _T(" JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE Col")
+        _T(" ON (Col.Constraint_Name = Tab.Constraint_Name")
+        _T(" AND Col.Table_Name = Tab.Table_Name)")
+        _T(" LEFT JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS RC")
+        _T(" ON Col.CONSTRAINT_NAME = RC.CONSTRAINT_NAME")
+        _T(" LEFT JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS RC2")
+        _T(" ON RC.UNIQUE_CONSTRAINT_NAME = RC2.CONSTRAINT_NAME")
+        _T(" WHERE Tab.Constraint_Type IN ('PRIMARY KEY', 'FOREIGN KEY')")
+        _T(" AND Col.Table_Name = '") + table + _T("'");
+    cursor->prepare(q2);
+    Values params2;
+    SqlResultSet rs2 = cursor->exec(params2);
     for (SqlResultSet::iterator i = rs2.begin(); i != rs2.end(); ++i)
     {
-        String fk_column, fk_table, fk_table_key;
-        for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+        String key_name = str_to_upper((*i)[0].second.as_string()),
+            key_type = str_to_upper((*i)[1].second.as_string()),
+            fk_table = (*i)[2].second.nvl(String()).as_string();
+        for (ColumnsInfo::iterator j = ci.begin(); j != ci.end(); ++j)
         {
-            if (_T("TABLE") == j->first)
+            if (j->name == key_name)
             {
-                if (!j->second.is_null())
-                    fk_table = j->second.as_string();
-            }
-            else if (_T("FROM") == j->first)
-            {
-                if (!j->second.is_null())
-                    fk_column = j->second.as_string();
-            }
-            else if (_T("TO") == j->first)
-            {
-                if (!j->second.is_null())
-                    fk_table_key = j->second.as_string();
-            }
-        }
-        for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
-        {
-            if (k->name == fk_column) {
-                k->fk_table = fk_table;
-                k->fk_table_key = fk_table_key;
+                if (_T("PRIMARY KEY") == key_type)
+                {
+                    j->pk = true;
+                }
+                else if (_T("FOREIGN KEY") == key_type)
+                {
+                    j->fk_table = fk_table;
+                }
                 break;
             }
         }
     }
     return ci;
 }
-*/
 
 } // namespace Yb
 

@@ -263,15 +263,16 @@ InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
     cursor->prepare(query3);
     Values params3;
     SqlResultSet rs3 = cursor->exec(params3);
-    for (ColumnsInfo::iterator k = col_mass.begin(); k != col_mass.end(); ++k)
+    for (SqlResultSet::iterator i = rs3.begin(); i != rs3.end(); ++i)
     {
-        k->pk = false;
-        for (SqlResultSet::iterator i = rs3.begin(); i != rs3.end(); ++i)
+        String key_name = str_to_upper(
+                trim_trailing_space((*i)[0].second.as_string()));
+        for (ColumnsInfo::iterator k = col_mass.begin(); k != col_mass.end(); ++k)
         {
-            for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+            if (key_name == k->name)
             {
-                if (k->name == trim_trailing_space(j->second.as_string()))
-                    k->pk = true;
+                k->pk = true;
+                break;
             }
         }
     }

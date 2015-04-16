@@ -667,7 +667,8 @@ public:
         CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t2[1].default_value));
         CPPUNIT_ASSERT_EQUAL(false, t2[1].pk);
         CPPUNIT_ASSERT_EQUAL(string("T_ORM_TEST"), NARROW(t2[1].fk_table));
-        CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(t2[1].fk_table_key));
+        CPPUNIT_ASSERT(string("ID") == NARROW(t2[1].fk_table_key)
+                || str_empty(t2[1].fk_table_key));
         // T_ORM_XML.B
         CPPUNIT_ASSERT_EQUAL(string("B"), NARROW(t2[2].name));
         CPPUNIT_ASSERT_EQUAL(NARROW(conn.get_dialect()->type2sql(
