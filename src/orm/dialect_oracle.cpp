@@ -15,19 +15,19 @@ OracleDialect::OracleDialect()
     : SqlDialect(_T("ORACLE"), _T("DUAL"), true)
 {}
 
-const String 
+const String
 OracleDialect::select_curr_value(const String &seq_name)
 {
     return seq_name + _T(".CURRVAL");
 }
 
-const String 
+const String
 OracleDialect::select_next_value(const String &seq_name)
 {
-    return seq_name + _T(".NEXTVAL"); 
+    return seq_name + _T(".NEXTVAL");
 }
 
-const String 
+const String
 OracleDialect::sql_value(const Value &x)
 {
     if (x.get_type() == Value::DATETIME)
@@ -35,48 +35,48 @@ OracleDialect::sql_value(const Value &x)
     return x.sql_str();
 }
 
-const String 
+const String
 OracleDialect::type2sql(int t) {
     switch (t) {
         case Value::INTEGER:    return _T("NUMBER");    break;
         case Value::LONGINT:    return _T("NUMBER");    break;
-        case Value::STRING:     return _T("VARCHAR2");      break;
-        case Value::DATETIME:   return _T("DATE");          break;
+        case Value::STRING:     return _T("VARCHAR2");  break;
+        case Value::DATETIME:   return _T("DATE");      break;
         case Value::FLOAT:
-        case Value::DECIMAL:    return _T("NUMBER");        break;
+        case Value::DECIMAL:    return _T("NUMBER");    break;
     }
     throw SqlDialectError(_T("Bad type"));
 }
 
-const String 
-OracleDialect::create_sequence(const String &seq_name) 
+const String
+OracleDialect::create_sequence(const String &seq_name)
 {
     return _T("CREATE SEQUENCE ") + seq_name;
 }
 
-const String 
-OracleDialect::drop_sequence(const String &seq_name) 
+const String
+OracleDialect::drop_sequence(const String &seq_name)
 {
     return _T("DROP SEQUENCE ") + seq_name;
 }
 
-const String 
-OracleDialect::sysdate_func() 
+const String
+OracleDialect::sysdate_func()
 {
-    return _T("SYSDATE"); 
+    return _T("SYSDATE");
 }
 
-int 
-OracleDialect::pager_model() 
+int
+OracleDialect::pager_model()
 {
     return (int)PAGER_ORACLE;
 }
 
 // schema introspection
 
-bool 
+bool
 OracleDialect::table_exists(SqlConnection &conn, const String &table)
-{ 
+{
     Strings s = get_tables(conn);
     for (Strings::iterator i = s.begin(); i != s.end(); ++i)
     {
@@ -85,21 +85,21 @@ OracleDialect::table_exists(SqlConnection &conn, const String &table)
             return true;
         }
     }
-    return false; 
+    return false;
 }
 
-bool 
+bool
 OracleDialect::view_exists(SqlConnection &conn, const String &table)
-{ 
-    return false; 
+{
+    return false;
 }
 
-Strings 
+Strings
 OracleDialect::get_tables(SqlConnection &conn)
 {
     Strings table;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String query = _T("SELECT table_name FROM all_tables where owner = 'TEST1'");
+    String query = _T("SELECT table_name FROM all_tables where owner = (SELECT USER FROM DUAL)");
     cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
@@ -110,18 +110,18 @@ OracleDialect::get_tables(SqlConnection &conn)
     return table;
 }
 
-Strings 
+Strings
 OracleDialect::get_views(SqlConnection &conn)
-{ 
-    return Strings(); 
+{
+    return Strings();
 }
 
-ColumnsInfo 
+ColumnsInfo
 OracleDialect::get_columns(SqlConnection &conn, const String &table)
-{ 
+{
     ColumnsInfo ci;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String query = _T("SELECT col.column_name, col.data_type, col.data_length, col.nullable, col.data_default FROM ALL_TAB_COLUMNS col WHERE col.TABLE_NAME = '") +table+ ("'");
+    String query = _T("SELECT col.column_name, col.data_type, col.data_length, col.nullable, col.data_default FROM ALL_TAB_COLUMNS col WHERE col.TABLE_NAME = '") +table+ ("' AND col.OWNER = (SELECT USER FROM DUAL)");
     cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
@@ -146,8 +146,7 @@ OracleDialect::get_columns(SqlConnection &conn, const String &table)
                         x.size = atoi(tmp.c_str());
                     }
                 }
-            }  
-            else if (_T("NULLABLE") == j->first)
+            }            else if (_T("NULLABLE") == j->first)
             {
                 x.notnull = _T("N") == j->second.as_string();
             }
@@ -164,20 +163,20 @@ OracleDialect::get_columns(SqlConnection &conn, const String &table)
     Values paramspk;
     SqlResultSet rspk = cursor->exec(paramspk);
     for (SqlResultSet::iterator i = rspk.begin(); i != rspk.end(); ++i)
-    {   
+    {
         Row::const_iterator j = i->begin();
         if(j != i-> end())
         {
             string tmp = j->second.as_string();
             ci[atoi(tmp.c_str()) - 1].pk = _T("P");
-        }  
-    }    
+        }
+    }
 
     String q2 =_T("SELECT substr(c_src.COLUMN_NAME, 1, 20) as SRC_COLUMN, c_dest.TABLE_NAME as DEST_TABLE, substr(c_dest.COLUMN_NAME, 1, 20) as DEST_COLUMN FROM ALL_CONSTRAINTS c_list, ALL_CONS_COLUMNS c_src, ALL_CONS_COLUMNS c_dest WHERE c_list.CONSTRAINT_NAME = c_src.CONSTRAINT_NAME AND c_list.R_CONSTRAINT_NAME = c_dest.CONSTRAINT_NAME AND c_list.CONSTRAINT_TYPE = 'R' AND c_src.TABLE_NAME = '")
-    + table + ("'");   
-    cursor->prepare(q2); 
-    Values params2;  
-    SqlResultSet rs2 = cursor->exec(params2);   
+    + table + ("'");
+    cursor->prepare(q2);
+    Values params2;
+    SqlResultSet rs2 = cursor->exec(params2);
     for (SqlResultSet::iterator i = rs2.begin(); i != rs2.end(); ++i)
     {
         String fk_column, fk_table, fk_table_key;
@@ -185,21 +184,21 @@ OracleDialect::get_columns(SqlConnection &conn, const String &table)
         {
             if (_T("DEST_TABLE") == j->first)
             {
-                if (!j->second.is_null()) 
+                if (!j->second.is_null())
                 {
                     fk_table = j->second.as_string();
                 }
             }
             else if (_T("DEST_COLUMN") == j->first)
             {
-                if (!j->second.is_null()) 
+                if (!j->second.is_null())
                 {
                     fk_table_key = j->second.as_string();
                 }
             }
             else if (_T("SRC_COLUMN") == j->first)
             {
-                if (!j->second.is_null()) 
+                if (!j->second.is_null())
                 {
                     fk_column = j->second.as_string();
                 }
@@ -216,7 +215,7 @@ OracleDialect::get_columns(SqlConnection &conn, const String &table)
         }
     }
     return ci;
-}    
+}
 
 } // namespace Yb
 
