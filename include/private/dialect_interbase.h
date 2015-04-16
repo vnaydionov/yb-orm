@@ -21,7 +21,6 @@ public:
     // schema introspection
     virtual bool table_exists(SqlConnection &conn, const String &table);
     virtual bool view_exists(SqlConnection &conn, const String &table);
-    String code2type(int code);
     virtual Strings get_tables(SqlConnection &conn);
     virtual Strings get_views(SqlConnection &conn);
     virtual ColumnsInfo get_columns(SqlConnection &conn, const String &table);

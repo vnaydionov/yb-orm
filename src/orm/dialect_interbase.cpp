@@ -15,64 +15,63 @@ InterbaseDialect::InterbaseDialect()
     : SqlDialect(_T("INTERBASE"), _T("RDB$DATABASE"), true)
 {}
 
-const String 
+const String
 InterbaseDialect::select_curr_value(const String &seq_name)
 { 
     return _T("GEN_ID(") + seq_name + _T(", 0)"); 
 }
 
-const String 
+const String
 InterbaseDialect::select_next_value(const String &seq_name)
 { 
     return _T("GEN_ID(") + seq_name + _T(", 1)"); 
 }
 
-const String 
+const String
 InterbaseDialect::sql_value(const Value &x)
 {
     return x.sql_str();
 }
 
-bool 
+bool
 InterbaseDialect::commit_ddl() 
 { 
     return true;
 }
 
-const String 
-InterbaseDialect::type2sql(int t) 
+const String
+InterbaseDialect::type2sql(int t)
 {
     switch (t) {
         case Value::INTEGER:    return _T("INTEGER");       break;
         case Value::LONGINT:    return _T("BIGINT");        break;
         case Value::STRING:     return _T("VARCHAR");       break;
-        //case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
-        case Value::DECIMAL:    return _T("BIGINT");        break;
+        case Value::DECIMAL:    return _T("DECIMAL(16, 6)"); break;
         case Value::DATETIME:   return _T("TIMESTAMP");     break;
         case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
     }
     throw SqlDialectError(_T("Bad type"));
 }
 
-const String InterbaseDialect::create_sequence(const String &seq_name) 
+const String InterbaseDialect::create_sequence(const String &seq_name)
 {
     return _T("CREATE GENERATOR ") + seq_name;
 }
 
-const String 
-InterbaseDialect::drop_sequence(const String &seq_name) 
+const String
+InterbaseDialect::drop_sequence(const String &seq_name)
 {
     return _T("DROP GENERATOR ") + seq_name;
 }
 
-int 
-InterbaseDialect::pager_model() 
+int
+InterbaseDialect::pager_model()
 { 
     return (int)PAGER_INTERBASE; 
 }
 
 // schema introspection
-bool 
+bool
 InterbaseDialect::table_exists(SqlConnection &conn, const String &table)
 { 
     Strings t = get_tables(conn);
@@ -84,33 +83,10 @@ InterbaseDialect::table_exists(SqlConnection &conn, const String &table)
     return false;
 }
 
-bool 
+bool
 InterbaseDialect::view_exists(SqlConnection &conn, const String &table)
 { 
     return false; 
-}
-
-String
-InterbaseDialect::code2type(int code)
-{   
-    switch(code)
-    {
-        case 16: return _T("BIGINT"); break;
-        case 8:  return _T("INTEGER"); break;
-        case 37: return _T("VARCHAR"); break;
-        case 14: return _T("CHAR"); break;
-        case 35: return _T("TIMESTAMP"); break;
-        case 27: return _T("DOUBLE PRECISION"); break;
-        default: return _T("UNKNOW TYPE");
-    }
-}
-
-String corrector_string(String str)
-{
-    for (int i = 0; i < str.size(); ++i)
-        if (str[i] == ' ')
-            str.resize(i);
-    return str;
 }
 
 Strings
@@ -118,21 +94,20 @@ InterbaseDialect::get_tables(SqlConnection &conn)
 {
     Strings tables;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String query = _T("SELECT RDB$RELATIONS.RDB$RELATION_NAME FROM RDB$RELATIONS ")
-                   _T("WHERE ((RDB$RELATIONS.RDB$SYSTEM_FLAG = 0) ") 
-                   _T("AND (RDB$RELATIONS.RDB$VIEW_SOURCE IS NULL))");
+    String query = _T("SELECT R.RDB$RELATION_NAME FROM RDB$RELATIONS R")
+                   _T(" WHERE R.RDB$SYSTEM_FLAG = 0 AND R.RDB$VIEW_SOURCE IS NULL");
     cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
     String tmp;
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i) 
     {
-        tables.push_back(str_to_upper(corrector_string((*i)[0].second.as_string())));
+        tables.push_back(str_to_upper(trim_trailing_space((*i)[0].second.as_string())));
     }
-    return tables;    
+    return tables;
 }
 
-Strings 
+Strings
 InterbaseDialect::get_views(SqlConnection &conn)
 {
     return Strings();
@@ -144,62 +119,82 @@ InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
     ColumnsInfo col_mass;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
 
-    String query = _T("SELECT RDB$RELATIONS.RDB$RELATION_NAME, RDB$RELATION_FIELDS.RDB$FIELD_NAME, ")
-                   _T("RDB$FIELDS.RDB$FIELD_LENGTH, ")
-                   _T("RDB$RELATION_FIELDS.RDB$NULL_FLAG, RDB$RELATION_FIELDS.RDB$DEFAULT_SOURCE, ")
-                   _T("RDB$FIELDS.RDB$FIELD_TYPE FROM RDB$RELATIONS INNER JOIN RDB$RELATION_FIELDS ON ")
-                   _T("(RDB$RELATIONS.RDB$RELATION_NAME = RDB$RELATION_FIELDS.RDB$RELATION_NAME) ")
-                   _T("INNER JOIN RDB$FIELDS ON (RDB$RELATION_FIELDS.RDB$FIELD_SOURCE = ")
-                   _T("RDB$FIELDS.RDB$FIELD_NAME) WHERE RDB$RELATIONS.RDB$RELATION_NAME = '") 
-                    + table + 
-                   _T("';");
+    String query =
+        _T("SELECT RF.RDB$FIELD_NAME NAME, T1.RDB$TYPE_NAME TYPE_NAME,")
+        _T(" RF.RDB$DEFAULT_SOURCE DFLT, F.RDB$FIELD_LENGTH SZ,")
+        _T(" F.RDB$FIELD_PRECISION PREC, F.RDB$FIELD_SCALE SCALE,")
+        _T(" RF.RDB$NULL_FLAG NOT_NULL")
+        _T(" FROM RDB$RELATIONS R")
+        _T(" JOIN RDB$RELATION_FIELDS RF")
+        _T(" ON R.RDB$RELATION_NAME = RF.RDB$RELATION_NAME")
+        _T(" JOIN RDB$FIELDS F ON RF.RDB$FIELD_SOURCE = F.RDB$FIELD_NAME")
+        _T(" JOIN RDB$TYPES T1 ON F.RDB$FIELD_TYPE = T1.RDB$TYPE")
+        _T(" AND T1.RDB$FIELD_NAME = 'RDB$FIELD_TYPE'")
+        _T(" WHERE R.RDB$RELATION_NAME='") + table + _T("'")
+        _T(" ORDER BY RF.RDB$FIELD_POSITION");
     cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
     {
         ColumnInfo x;
-        String tmp;
+        int prec = 0, scale = 0;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
-            if (_T("RDB$FIELD_NAME") == j->first)
+            if (_T("NAME") == j->first)
             {
-                x.name = str_to_upper(corrector_string(j->second.as_string()));
-                continue;
+                x.name = str_to_upper(trim_trailing_space(j->second.as_string()));
             }
-            if (_T("RDB$FIELD_TYPE") == j->first)
+            else if (_T("TYPE_NAME") == j->first)
             {
-                x.type = str_to_upper(code2type(j->second.as_integer()));
-                continue;
+                x.type = str_to_upper(trim_trailing_space(j->second.as_string()));
+                if (_T("VARYING") == x.type)
+                    x.type = _T("VARCHAR");
+                else if (_T("LONG") == x.type)
+                    x.type = _T("INTEGER");
+                else if (_T("INT64") == x.type)
+                    x.type = _T("BIGINT");
+                else if (_T("DOUBLE") == x.type)
+                    x.type = _T("DOUBLE PRECISION");
             }
-            if (_T("RDB$DEFAULT_SOURCE") == j->first)
+            else if (_T("DFLT") == j->first)
+            {
+                if (!j->second.is_null()) {
+                    x.default_value = trim_trailing_space(j->second.as_string());
+                    if (starts_with(x.default_value, _T("DEFAULT ")))
+                        x.default_value = str_substr(x.default_value,
+                                str_length(_T("DEFAULT ")));
+                }
+            }
+            else if (_T("SZ") == j->first)
+            {
+                if (!j->second.is_null() && _T("VARCHAR") == x.type)
+                    x.size = j->second.as_integer();
+            }
+            else if (_T("PREC") == j->first)
             {
                 if (!j->second.is_null())
-                {   
-                    x.default_value = corrector_string(j->second.as_string().substr(8, j->second.as_string().size()));                
-                }
-                continue;
+                    prec = j->second.as_integer();
             }
-            if (_T("RDB$NULL_FLAG") == j->first)
+            else if (_T("SCALE") == j->first)
             {
-                if (j->second.is_null())    
+                if (!j->second.is_null())
+                    scale = -j->second.as_integer();
+            }
+            else if (_T("NOT_NULL") == j->first)
+            {
+                if (j->second.is_null())
                     x.notnull = false;
                 else
-                    x.notnull = true;
-                continue;            
+                    x.notnull = j->second.as_integer() != 0;
             }
-            /*if (_T("RDB$FIELD_LENGTH") == j->first)
-            {
-                x.size = j->second.as_integer();
-                continue;
-            }*/
+        }
+        if (_T("BIGINT") == x.type && prec && scale) {
+            x.type = _T("DECIMAL(") + to_string(prec) + _T(", ")
+                + to_string(scale) + _T(")");
         }
         col_mass.push_back(x);
     }
-    cout << "\n\n\n\nSTART TEST:\n";
-    cout << "len col mass: " << col_mass.size() << endl;
-    cout << "len col[1].size" << col_mass[1].size <<  endl;
-    cout << "\n\nEND TEST\n\n";
     String query2 = _T("SELECT s.RDB$FIELD_NAME  AS COLUMN_NAME, rc.RDB$CONSTRAINT_TYPE, i2.RDB$RELATION_NAME, ")
                     _T("s2.RDB$FIELD_NAME,(s.RDB$FIELD_POSITION + 1) FROM RDB$INDEX_SEGMENTS s ")
                     _T("LEFT JOIN RDB$INDICES i ON i.RDB$INDEX_NAME = s.RDB$INDEX_NAME ")
@@ -221,21 +216,21 @@ InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
             if (_T("RDB$RELATION_NAME") == j->first)
             {
                 if (!j->second.is_null()) {
-                    fk_table = corrector_string(j->second.as_string());
+                    fk_table = trim_trailing_space(j->second.as_string());
                 }
                 continue;
             }
             if (_T("RDB$FIELD_NAME") == j->first)
             {
                 if (!j->second.is_null()) {
-                    fk_table_key = corrector_string(j->second.as_string());
+                    fk_table_key = trim_trailing_space(j->second.as_string());
                 }
                 continue;
             }
             if (_T("COLUMN_NAME") == j->first)
             {
                 if (!j->second.is_null()) {
-                    fk_column = corrector_string(j->second.as_string());
+                    fk_column = trim_trailing_space(j->second.as_string());
                 }
                 continue;
             }
@@ -268,7 +263,7 @@ InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
         {
             for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
             {
-                if (k->name == corrector_string(j->second.as_string()))
+                if (k->name == trim_trailing_space(j->second.as_string()))
                     k->pk = true;
             }
         }
