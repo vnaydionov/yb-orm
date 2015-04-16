@@ -17,14 +17,14 @@ InterbaseDialect::InterbaseDialect()
 
 const String
 InterbaseDialect::select_curr_value(const String &seq_name)
-{ 
-    return _T("GEN_ID(") + seq_name + _T(", 0)"); 
+{
+    return _T("GEN_ID(") + seq_name + _T(", 0)");
 }
 
 const String
 InterbaseDialect::select_next_value(const String &seq_name)
-{ 
-    return _T("GEN_ID(") + seq_name + _T(", 1)"); 
+{
+    return _T("GEN_ID(") + seq_name + _T(", 1)");
 }
 
 const String
@@ -34,8 +34,8 @@ InterbaseDialect::sql_value(const Value &x)
 }
 
 bool
-InterbaseDialect::commit_ddl() 
-{ 
+InterbaseDialect::commit_ddl()
+{
     return true;
 }
 
@@ -66,14 +66,14 @@ InterbaseDialect::drop_sequence(const String &seq_name)
 
 int
 InterbaseDialect::pager_model()
-{ 
-    return (int)PAGER_INTERBASE; 
+{
+    return (int)PAGER_INTERBASE;
 }
 
 // schema introspection
 bool
 InterbaseDialect::table_exists(SqlConnection &conn, const String &table)
-{ 
+{
     Strings t = get_tables(conn);
     for (Strings::iterator i = t.begin(); i != t.end(); ++i)
     {      
@@ -85,8 +85,8 @@ InterbaseDialect::table_exists(SqlConnection &conn, const String &table)
 
 bool
 InterbaseDialect::view_exists(SqlConnection &conn, const String &table)
-{ 
-    return false; 
+{
+    return false;
 }
 
 Strings
@@ -113,9 +113,9 @@ InterbaseDialect::get_views(SqlConnection &conn)
     return Strings();
 }
 
-ColumnsInfo 
+ColumnsInfo
 InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
-{ 
+{
     ColumnsInfo col_mass;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
 
@@ -267,6 +267,7 @@ InterbaseDialect::get_columns(SqlConnection &conn, const String &table)
     }
     return col_mass;
 }
+
 } // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
