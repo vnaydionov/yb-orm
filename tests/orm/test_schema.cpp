@@ -1,6 +1,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestAssert.h>
 #include "orm/schema.h"
+#include "orm/schema_reader.h"
 #include "util/value_type.h"
 
 using namespace std;
@@ -31,6 +32,7 @@ class TestMetaData : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_registry_check_absent_fk_table, IntegrityCheckFailed);
     CPPUNIT_TEST_EXCEPTION(test_registry_check_absent_fk_field, IntegrityCheckFailed);
     CPPUNIT_TEST_EXCEPTION(test_registry_check_cyclic_references, IntegrityCheckFailed);
+    CPPUNIT_TEST(test_class_name);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -364,6 +366,20 @@ public:
         }
         *t1 << Column(_T("BX"), Value::LONGINT, 0, 0, Value(), _T("B"), _T("X"));
         r.check_cycles();
+    }
+
+    void test_class_name()
+    {
+        const string t1 = "T_TEST";
+        CPPUNIT_ASSERT_EQUAL(string("Test"), string(get_class_name(t1)));
+        const string t2 = "T_te_sT";
+        CPPUNIT_ASSERT_EQUAL(string("TeSt"), string(get_class_name(t2)));
+        const string t3 = "T_tEST_tEst_TEst";
+        CPPUNIT_ASSERT_EQUAL(string("TestTestTest"), string(get_class_name(t3)));
+        const string t4 = "T_t";
+        CPPUNIT_ASSERT_EQUAL(string("T"), string(get_class_name(t4)));
+        const string t5 = "T_te_te_TE_sT";
+        CPPUNIT_ASSERT_EQUAL(string("TeTeTeSt"), string(get_class_name(t5)));
     }
 };
 

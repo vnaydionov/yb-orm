@@ -23,6 +23,25 @@ get_sql_type_by_name(const String &sql_type, SqlDialect &sql_dialect)
     return Value::DECIMAL;
 }
 
+std::string get_class_name(const std::string &table_name)
+{
+    std::string result;
+    result.push_back(to_upper(table_name[2]));
+    for(size_t i = 3; i < table_name.size(); ++i)
+    {
+        if(table_name[i] == '_' && ((i+1) < table_name.size()))
+        {
+            result.push_back(to_upper(table_name[i+1]));
+            ++i;
+        }
+        else
+        {
+            result.push_back(to_lower(table_name[i]));
+        }
+    }
+    return result;
+}
+
 YBORM_DECL Schema::Ptr
 read_schema_from_db(SqlConnection &connection)
 {
@@ -56,10 +75,28 @@ read_schema_from_db(SqlConnection &connection)
                      j->fk_table_key);
             t->add_column(c);
         }
+        t->set_class_name(get_class_name(t->name()));
         s->add_table(t);
     }
+
     s->fill_fkeys();
     s->check_cycles();
+    for(Schema::TblMap::const_iterator i = s->tbl_begin(); i != s->tbl_end(); ++i)
+    {
+        const Table &t = *i->second;
+        for(Columns::const_iterator j = t.begin(); j != t.end(); ++j)
+        {
+            const Column &c = *j;
+            if (c.has_fk())
+            {
+                const std::string side1 = get_class_name(t.name());
+                const std::string side2 = get_class_name(c.fk_table_name());
+                Relation::AttrMap a1, a2;
+                Relation::Ptr r(new Relation(Relation::ONE2MANY, side1, a1, side2, a2));
+                s->add_relation(r);
+            }
+        }
+    }
     return s;
 }
 
