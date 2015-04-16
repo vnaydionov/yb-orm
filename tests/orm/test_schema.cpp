@@ -370,16 +370,24 @@ public:
 
     void test_class_name()
     {
-        const string t1 = "T_TEST";
-        CPPUNIT_ASSERT_EQUAL(string("Test"), string(get_class_name(t1)));
-        const string t2 = "T_te_sT";
-        CPPUNIT_ASSERT_EQUAL(string("TeSt"), string(get_class_name(t2)));
-        const string t3 = "T_tEST_tEst_TEst";
-        CPPUNIT_ASSERT_EQUAL(string("TestTestTest"), string(get_class_name(t3)));
-        const string t4 = "T_t";
-        CPPUNIT_ASSERT_EQUAL(string("T"), string(get_class_name(t4)));
-        const string t5 = "T_te_te_TE_sT";
-        CPPUNIT_ASSERT_EQUAL(string("TeTeTeSt"), string(get_class_name(t5)));
+        const String t1 = _T("T_TEST");
+        CPPUNIT_ASSERT_EQUAL(string("Test"), NARROW(guess_class_name(t1)));
+        const String t2 = _T("T_te_sT");
+        CPPUNIT_ASSERT_EQUAL(string("TeSt"), NARROW(guess_class_name(t2)));
+        const String t3 = _T("T_tEST_tEst_TEst");
+        CPPUNIT_ASSERT_EQUAL(string("TestTestTest"), NARROW(guess_class_name(t3)));
+        const String t4 = _T("T_t");
+        CPPUNIT_ASSERT_EQUAL(string("T"), NARROW(guess_class_name(t4)));
+        const String t5 = _T("T_te_te_TE_sT");
+        CPPUNIT_ASSERT_EQUAL(string("TeTeTeSt"), NARROW(guess_class_name(t5)));
+        const String t6 = _T("CLIENT_HIST_TBL");
+        CPPUNIT_ASSERT_EQUAL(string("ClientHist"), NARROW(guess_class_name(t6)));
+        const String t7 = _T("TBL_CLIENT_HIST");
+        CPPUNIT_ASSERT_EQUAL(string("ClientHist"), NARROW(guess_class_name(t7)));
+        const String t8 = _T("tbl_client_hist_tbl");
+        CPPUNIT_ASSERT_EQUAL(string("ClientHist"), NARROW(guess_class_name(t8)));
+        const String t9 = _T("CLIENT_hist");
+        CPPUNIT_ASSERT_EQUAL(string("ClientHist"), NARROW(guess_class_name(t9)));
     }
 };
 

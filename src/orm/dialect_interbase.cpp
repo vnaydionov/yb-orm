@@ -71,46 +71,56 @@ InterbaseDialect::pager_model()
 }
 
 // schema introspection
+
 bool
 InterbaseDialect::table_exists(SqlConnection &conn, const String &table)
 {
-    Strings t = get_tables(conn);
-    for (Strings::iterator i = t.begin(); i != t.end(); ++i)
-    {
-        if (*i == table)
-            return true;
-    }
-    return false;
+    return really_get_tables(conn, table, false, true).size() != 0;
 }
 
 bool
 InterbaseDialect::view_exists(SqlConnection &conn, const String &table)
 {
-    return false;
+    return really_get_tables(conn, table, true, true).size() != 0;
 }
 
 Strings
 InterbaseDialect::get_tables(SqlConnection &conn)
 {
-    Strings tables;
-    auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String query = _T("SELECT R.RDB$RELATION_NAME FROM RDB$RELATIONS R")
-                   _T(" WHERE R.RDB$SYSTEM_FLAG = 0 AND R.RDB$VIEW_SOURCE IS NULL");
-    cursor->prepare(query);
-    Values params;
-    SqlResultSet rs = cursor->exec(params);
-    String tmp;
-    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {
-        tables.push_back(str_to_upper(trim_trailing_space((*i)[0].second.as_string())));
-    }
-    return tables;
+    return really_get_tables(conn, String(), false, false);
 }
 
 Strings
 InterbaseDialect::get_views(SqlConnection &conn)
 {
-    return Strings();
+    return really_get_tables(conn, String(), true, false);
+}
+
+Strings
+InterbaseDialect::really_get_tables(SqlConnection &conn,
+        const String &table, bool view, bool show_system)
+{
+    Strings tables;
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String query = _T("SELECT R.RDB$RELATION_NAME FROM RDB$RELATIONS R")
+                   _T(" WHERE 1=1");
+    if (!show_system)
+        query += _T(" AND R.RDB$SYSTEM_FLAG = 0");
+    if (!view)
+        query += _T(" AND R.RDB$VIEW_SOURCE IS NULL");
+    else
+        query += _T(" AND R.RDB$VIEW_SOURCE IS NOT NULL");
+    if (!str_empty(table))
+        query += _T(" AND UPPER(R.RDB$RELATION_NAME) = UPPER('")
+            + table + _T("')");
+    cursor->prepare(query);
+    Values params;
+    SqlResultSet rs = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    {
+        tables.push_back(trim_trailing_space((*i)[0].second.as_string()));
+    }
+    return tables;
 }
 
 ColumnsInfo

@@ -121,7 +121,8 @@ OracleDialect::get_columns(SqlConnection &conn, const String &table)
 {
     ColumnsInfo ci;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String query = _T("SELECT col.column_name, col.data_type, col.data_length, col.nullable, col.data_default FROM ALL_TAB_COLUMNS col WHERE col.TABLE_NAME = '") +table+ ("' AND col.OWNER = (SELECT USER FROM DUAL)");
+    String query = _T("SELECT col.column_name, col.data_type, col.data_length, col.nullable, col.data_default FROM ALL_TAB_COLUMNS col WHERE col.TABLE_NAME = '") +table
+        + _T("' AND col.OWNER = (SELECT USER FROM DUAL)");
     cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
@@ -137,16 +138,16 @@ OracleDialect::get_columns(SqlConnection &conn, const String &table)
             else if (_T("DATA_TYPE") == j->first)
             {
                 x.type = str_to_upper(j->second.as_string());
-                if (_T("VARCHAR2") == j->second)
+                if (_T("VARCHAR2") == x.type)
                 {
                     ++j;
                     if (_T("DATA_LENGTH") == j->first)
                     {
-                        string tmp = j->second.as_string();
-                        x.size = atoi(tmp.c_str());
+                        x.size = j->second.as_integer();
                     }
                 }
-            }            else if (_T("NULLABLE") == j->first)
+            }
+            else if (_T("NULLABLE") == j->first)
             {
                 x.notnull = _T("N") == j->second.as_string();
             }
@@ -158,22 +159,21 @@ OracleDialect::get_columns(SqlConnection &conn, const String &table)
         }
         ci.push_back(x);
     }
-    String querypk = _T("SELECT cols.position FROM all_constraints cons, all_cons_columns cols WHERE cols.table_name = '") +table+ ("' AND cons.constraint_type = 'P' AND cons.constraint_name = cols.constraint_name AND cons.owner = cols.owner");
+    String querypk = _T("SELECT cols.position FROM all_constraints cons, all_cons_columns cols WHERE cols.table_name = '") +table+ _T("' AND cons.constraint_type = 'P' AND cons.constraint_name = cols.constraint_name AND cons.owner = cols.owner");
     cursor->prepare(querypk);
     Values paramspk;
     SqlResultSet rspk = cursor->exec(paramspk);
     for (SqlResultSet::iterator i = rspk.begin(); i != rspk.end(); ++i)
     {
         Row::const_iterator j = i->begin();
-        if(j != i-> end())
+        if (j != i-> end())
         {
-            string tmp = j->second.as_string();
-            ci[atoi(tmp.c_str()) - 1].pk = _T("P");
+            ci[j->second.as_integer() - 1].pk = true;
         }
     }
 
     String q2 =_T("SELECT substr(c_src.COLUMN_NAME, 1, 20) as SRC_COLUMN, c_dest.TABLE_NAME as DEST_TABLE, substr(c_dest.COLUMN_NAME, 1, 20) as DEST_COLUMN FROM ALL_CONSTRAINTS c_list, ALL_CONS_COLUMNS c_src, ALL_CONS_COLUMNS c_dest WHERE c_list.CONSTRAINT_NAME = c_src.CONSTRAINT_NAME AND c_list.R_CONSTRAINT_NAME = c_dest.CONSTRAINT_NAME AND c_list.CONSTRAINT_TYPE = 'R' AND c_src.TABLE_NAME = '")
-    + table + ("'");
+    + table + _T("'");
     cursor->prepare(q2);
     Values params2;
     SqlResultSet rs2 = cursor->exec(params2);

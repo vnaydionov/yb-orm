@@ -23,20 +23,37 @@ get_sql_type_by_name(const String &sql_type, SqlDialect &sql_dialect)
     return Value::DECIMAL;
 }
 
-std::string get_class_name(const std::string &table_name)
+YBORM_DECL const String
+guess_class_name(const String &table_name)
 {
-    std::string result;
-    result.push_back(to_upper(table_name[2]));
-    for(size_t i = 3; i < table_name.size(); ++i)
+    String result;
+    size_t start = 0, end = str_length(table_name);
+    if (starts_with(str_to_upper(table_name), _T("T_")))
     {
-        if(table_name[i] == '_' && ((i+1) < table_name.size()))
+        start += 2;
+    }
+    else if (starts_with(str_to_upper(table_name), _T("TBL_")))
+    {
+        start += 4;
+    }
+    if (ends_with(str_to_upper(table_name), _T("_TBL")))
+    {
+        end -= 4;
+    }
+    str_append(result, to_upper(table_name[start]));
+    for (size_t i = start + 1; i < end; ++i)
+    {
+        if (table_name[i] == _T('_'))
         {
-            result.push_back(to_upper(table_name[i+1]));
             ++i;
+            if (i < end)
+            {
+                str_append(result, to_upper(table_name[i]));
+            }
         }
         else
         {
-            result.push_back(to_lower(table_name[i]));
+            str_append(result, to_lower(table_name[i]));
         }
     }
     return result;
@@ -75,7 +92,7 @@ read_schema_from_db(SqlConnection &connection)
                      j->fk_table_key);
             t->add_column(c);
         }
-        t->set_class_name(get_class_name(t->name()));
+        t->set_class_name(guess_class_name(t->name()));
         s->add_table(t);
     }
 
@@ -89,8 +106,8 @@ read_schema_from_db(SqlConnection &connection)
             const Column &c = *j;
             if (c.has_fk())
             {
-                const std::string side1 = get_class_name(t.name());
-                const std::string side2 = get_class_name(c.fk_table_name());
+                const String side1 = guess_class_name(c.fk_table_name());
+                const String side2 = guess_class_name(t.name());
                 Relation::AttrMap a1, a2;
                 Relation::Ptr r(new Relation(Relation::ONE2MANY, side1, a1, side2, a2));
                 s->add_relation(r);
