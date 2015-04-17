@@ -30,7 +30,7 @@
 #ifndef _TIODBC_HPP_DEFINED_
 #define _TIODBC_HPP_DEFINED_
 
-#include "util/string_type.h"
+#include "util/data_types.h"
 #include "util/utility.h"
 
 // System headers
@@ -44,6 +44,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <stdexcept>
 
 //! The only one namespace of TinyODBC
 /**
@@ -61,6 +62,14 @@ namespace tiodbc
 	class field_impl;
 	class param_impl;
 	class statement;	
+
+	class bind_error: public std::runtime_error
+	{
+	public:
+		bind_error(int par_num):
+			runtime_error("param bind error, N " + Yb::to_stdstring(par_num))
+		{}
+	};
 
 	//! @name Library Version
 	//! @{

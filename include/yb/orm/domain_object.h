@@ -660,14 +660,14 @@ public:
             else 
             {           // иначе проходим по предыдущим таблицам и пытаемся найти связь между ними и текущей
                 JoinList::iterator loc_it = joins_.begin();
-                const Relation *rel;
+                const Relation *rel = NULL;
                 for (; loc_it != it; ++loc_it) 
                 {
                     rel = session_->schema().find_relation(loc_it->first->class_name(), String(), it->first->class_name());
                     if (rel != NULL)
                         break;
                 }
-                if (rel == NULL) {
+                if (!rel) {
                     rel = session_->schema().find_relation(select_from_->class_name(), String(), it->first->class_name());
                     //if (rel == NULL) // если связей нет, то все плохо
                         //return Expression();

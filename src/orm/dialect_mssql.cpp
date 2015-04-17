@@ -43,7 +43,7 @@ const String
 MssqlDialect::grant_insert_id_statement(const String &table_name, bool on)
 {
     return _T("SET IDENTITY_INSERT ") + table_name
-        + (on? _T(" ON"): _T(" OFF"));
+        + (on? _T(" ON"): _T(" OFF")) + _T(";");
 }
 
 const String

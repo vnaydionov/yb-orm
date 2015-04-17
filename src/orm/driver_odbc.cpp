@@ -38,6 +38,17 @@ OdbcCursorBackend::prepare(const String &sql)
 void
 OdbcCursorBackend::exec(const Values &params)
 {
+    try {
+        really_exec(params);
+    }
+    catch (const tiodbc::bind_error &) {
+        throw DBError(stmt_->last_error_ex());
+    }
+}
+
+void
+OdbcCursorBackend::really_exec(const Values &params)
+{
     for (size_t i = 0; i < params.size(); ++i) {
         switch (params[i].get_type()) {
             case Value::INVALID: {

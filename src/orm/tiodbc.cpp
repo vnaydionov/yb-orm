@@ -523,6 +523,8 @@ namespace tiodbc
 			(SQLPOINTER *)dst_buf,
 			buf_sz,
 			&StrLenOrInPoint);
+		if (!TIODBC_SUCCESS_CODE(rc))
+			throw bind_error(_parnum);
 	}
 
 	//! @endcond
@@ -558,7 +560,7 @@ namespace tiodbc
 				bind_buf = _int_string;
 			}
 			__bind_param(stmt_h, par_num, SQL_C_TCHAR, SQL_CHAR,
-					bind_buf, _int_SLOIP, 0, bound_sz);
+					bind_buf, _int_SLOIP, bound_sz - 1, bound_sz);
 					//bind_buf, _int_SLOIP, bound_sz / sizeof(SQLTCHAR) - 1, bound_sz);
 					//bind_buf, _int_SLOIP, _str.size(), bound_sz);
 		}

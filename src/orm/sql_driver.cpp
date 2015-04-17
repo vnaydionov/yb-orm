@@ -799,7 +799,9 @@ SqlConnection::grant_insert_id(const String &table_name, bool on, bool ignore_er
             try {
                 exec_direct(sql);
             }
-            catch (const std::exception &) {}
+            catch (const std::exception &e) {
+                debug(String(_T("exception is ignored: ")) + WIDEN(e.what()));
+            }
         }
         else
             exec_direct(sql);
