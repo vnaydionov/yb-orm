@@ -146,9 +146,9 @@ public:
         DateTime a(dt_make(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT_EQUAL(string("'2006-11-16 15:05:10'"), NARROW(Value(a).sql_str()));
         CPPUNIT_ASSERT_EQUAL(string("123.45"), NARROW(Value(123.45).sql_str()));
-        std::string str = "abc";
+        std::string str = "'abc'";
         Blob data(str.begin(), str.end());
-        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(Value(data).sql_str()));
+        CPPUNIT_ASSERT_EQUAL(string("'abc'"), NARROW(Value(data).sql_str()));
     }
 
     void test_as_string()
