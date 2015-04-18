@@ -530,7 +530,7 @@ Value::cmp(const Value &x) const
         const Blob &a = get_as<Blob>(bytes_), &b = get_as<Blob>(x.bytes_);
         return a < b? -1: (a > b? 1: 0);
     }
-    return as_string().compare(x.as_string());
+    return as_string().compare(x.as_string()); 
 }
 
 const String
