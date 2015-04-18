@@ -49,6 +49,9 @@ public:
         CPPUNIT_ASSERT(Value::DECIMAL == Value(Decimal(_T("1"))).get_type());
         CPPUNIT_ASSERT(Value::DATETIME == Value(now()).get_type());
         CPPUNIT_ASSERT(Value::FLOAT == Value(1.5).get_type());
+        std::string str = "abc";
+        Blob data(str.begin(), str.end());
+        CPPUNIT_ASSERT(Value::BLOB == Value(data).get_type());
     }
 
     void test_value()
@@ -66,6 +69,9 @@ public:
         DateTime b(dt_make(stm.tm_year + 1900, stm.tm_mon + 1, stm.tm_mday,
                     stm.tm_hour, stm.tm_min, stm.tm_sec));
         CPPUNIT_ASSERT(b == Value((LongInt)t).as_date_time());
+        std::string str = "abc";
+        Blob data(str.begin(), str.end());
+        CPPUNIT_ASSERT(data == Value(data).as_blob());
     }
 
     void test_sysdate()
@@ -84,6 +90,9 @@ public:
         CPPUNIT_ASSERT(!Value(_T("ab")).is_null());
         CPPUNIT_ASSERT(!Value(Decimal(1)).is_null());
         CPPUNIT_ASSERT(!Value(now()).is_null());
+        std::string str = "abc";
+        Blob data(str.begin(), str.end());
+        CPPUNIT_ASSERT(!Value(str).is_null());
     }
 
     void test_equality()
@@ -120,6 +129,11 @@ public:
         DateTime a(dt_from_time_t(t)), b(dt_from_time_t(t + 1));
         CPPUNIT_ASSERT(Value(a) < Value(b));
         CPPUNIT_ASSERT(!(Value(a) < Value(a)));
+        std::string str1 = "abc";
+        Blob data1(str1.begin(), str1.end());
+        std::string str2 = "abcd";
+        Blob data2(str2.begin(), str2.end());
+        CPPUNIT_ASSERT(Value(data1) < Value(data2));
     }
 
     void test_as_sql_string()
@@ -132,6 +146,9 @@ public:
         DateTime a(dt_make(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT_EQUAL(string("'2006-11-16 15:05:10'"), NARROW(Value(a).sql_str()));
         CPPUNIT_ASSERT_EQUAL(string("123.45"), NARROW(Value(123.45).sql_str()));
+        std::string str = "abc";
+        Blob data(str.begin(), str.end());
+        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(Value(data).sql_str()));
     }
 
     void test_as_string()

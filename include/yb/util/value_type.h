@@ -96,7 +96,7 @@ private:
     int type_;
     char bytes_[YB_MAX(sizeof(int), YB_MAX(sizeof(LongInt),
                 YB_MAX(sizeof(String), YB_MAX(sizeof(Decimal),
-                YB_MAX(sizeof(DateTime), YB_MAX(sizeof(double), sizeof(BLOB)))))))];
+                YB_MAX(sizeof(DateTime), YB_MAX(sizeof(double), sizeof(Blob)))))))];
 };
 
 template <> struct ValueTraits<int> {

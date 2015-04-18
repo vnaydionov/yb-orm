@@ -18,17 +18,6 @@ YBUTIL_DECL double &from_stdstring(const std::string &s, double &x)
     return x;
 }
 
-/*YBUTIL_DECL Blob &from_stdstring(const std::string &s, Blob &x)
-{
-    std::string t;
-    //from_s
-    char *end = NULL;
-    x = strtod(s.c_str(), &end);
-    if (!end || *end)
-        throw ValueBadCast(WIDEN(s), _T("value error: extra characters left"));
-    return x;
-}*/
-
 #if defined(YB_USE_WX)
 
 YBUTIL_DECL const DateTime dt_make(int year, int month, int day,
