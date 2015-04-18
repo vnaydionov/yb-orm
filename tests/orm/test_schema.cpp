@@ -33,6 +33,7 @@ class TestMetaData : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_registry_check_absent_fk_field, IntegrityCheckFailed);
     CPPUNIT_TEST_EXCEPTION(test_registry_check_cyclic_references, IntegrityCheckFailed);
     CPPUNIT_TEST(test_class_name);
+    CPPUNIT_TEST(test_property);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -388,6 +389,28 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("ClientHist"), NARROW(guess_class_name(t8)));
         const String t9 = _T("CLIENT_hist");
         CPPUNIT_ASSERT_EQUAL(string("ClientHist"), NARROW(guess_class_name(t9)));
+    }
+
+    void test_property()
+    {
+        const String t1 = _T("TEST");
+        CPPUNIT_ASSERT_EQUAL(string("test"), NARROW(guess_property(t1)));
+        const String t2 = _T("te_sT");
+        CPPUNIT_ASSERT_EQUAL(string("te_st"), NARROW(guess_property(t2)));
+        const String t3 = _T("tEST_tEst_TEst");
+        CPPUNIT_ASSERT_EQUAL(string("test_test_test"), NARROW(guess_property(t3)));
+        const String t4 = _T("t");
+        CPPUNIT_ASSERT_EQUAL(string("t"), NARROW(guess_property(t4)));
+        const String t5 = _T("te_te_TE_sT");
+        CPPUNIT_ASSERT_EQUAL(string("te_te_te_st"), NARROW(guess_property(t5)));
+        const String t6 = _T("CLIENT_HIST_ID");
+        CPPUNIT_ASSERT_EQUAL(string("client_hist"), NARROW(guess_property(t6)));
+        const String t7 = _T("ID_CLIENT_HIST");
+        CPPUNIT_ASSERT_EQUAL(string("client_hist"), NARROW(guess_property(t7)));
+        const String t8 = _T("ID_client_hist_ID");
+        CPPUNIT_ASSERT_EQUAL(string("client_hist"), NARROW(guess_property(t8)));
+        const String t9 = _T("CLIENT_hist");
+        CPPUNIT_ASSERT_EQUAL(string("client_hist"), NARROW(guess_property(t9)));
     }
 };
 
