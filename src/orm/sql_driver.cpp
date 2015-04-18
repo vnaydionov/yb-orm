@@ -15,6 +15,7 @@
 #include "dialect_postgres.h"
 #include "dialect_mysql.h"
 #include "dialect_interbase.h"
+#include "dialect_mssql.h"
 
 #if defined(YB_USE_QT)
 #include "driver_qtsql.h"
@@ -117,6 +118,12 @@ SqlDialect::pager_model() {
     return (int)PAGER_POSTGRES;
 }
 
+const String
+SqlDialect::grant_insert_id_statement(const String &table_name, bool on)
+{
+    return String();
+}
+
 bool
 SqlDialect::explicit_null() { return false; }
 
@@ -155,6 +162,10 @@ register_std_dialects()
     theDialectRegistry::instance().register_item(
             p->get_name(), dialect);
     dialect.reset((SqlDialect *)new SQLite3Dialect());
+    p = dialect.get();
+    theDialectRegistry::instance().register_item(
+            p->get_name(), dialect);
+    dialect.reset((SqlDialect *)new MssqlDialect());
     p = dialect.get();
     theDialectRegistry::instance().register_item(
             p->get_name(), dialect);
@@ -424,6 +435,8 @@ SqlCursor::exec_direct(const String &sql)
         throw;
     }
 }
+
+
 
 void
 SqlCursor::prepare(const String &sql)
@@ -773,6 +786,26 @@ SqlConnection::fetch_rows(int max_rows)
 {
     YB_ASSERT(cursor_.get());
     return cursor_->fetch_rows(max_rows);
+}
+
+void
+SqlConnection::grant_insert_id(const String &table_name, bool on, bool ignore_errors)
+{
+    String sql = dialect_->grant_insert_id_statement(table_name, on);
+    if (!str_empty(sql))
+    {
+        if (ignore_errors)
+        {
+            try {
+                exec_direct(sql);
+            }
+            catch (const std::exception &e) {
+                debug(String(_T("exception is ignored: ")) + WIDEN(e.what()));
+            }
+        }
+        else
+            exec_direct(sql);
+    }
 }
 
 bool

@@ -640,6 +640,45 @@ public:
         q.joins_.push_back(new_join);
         return q;
     }
+    
+    Expression make_join() 
+    {
+        YB_ASSERT(joins_.size());
+        YB_ASSERT(select_from_ != NULL);
+        //if (!joins_.size()) // пустой joinlist
+        //    return Expression();
+        //if (select_from_ == NULL)
+        //    return Expression(); // либо брать первую таблицу
+            
+        JoinList::iterator it = joins_.begin(); 
+        Expression prev_expr = Expression(select_from_->name());
+        Expression join_expr;
+        for (; it != joins_.end(); ++it) {  // прохожу про joinlist
+            if (!it->second.is_empty()) {  // если есть выражение соединения, то все ок 
+                join_expr = JoinExpr(prev_expr, Expression(it->first->name()), it->second);
+            }
+            else 
+            {           // иначе проходим по предыдущим таблицам и пытаемся найти связь между ними и текущей
+                JoinList::iterator loc_it = joins_.begin();
+                const Relation *rel = NULL;
+                for (; loc_it != it; ++loc_it) 
+                {
+                    rel = session_->schema().find_relation(loc_it->first->class_name(), String(), it->first->class_name());
+                    if (rel != NULL)
+                        break;
+                }
+                if (!rel) {
+                    rel = session_->schema().find_relation(select_from_->class_name(), String(), it->first->class_name());
+                    //if (rel == NULL) // если связей нет, то все плохо
+                        //return Expression();
+                }
+                YB_ASSERT(rel != NULL);
+                join_expr = JoinExpr(prev_expr, Expression(it->first->name()), rel->join_condition());
+            }
+            prev_expr = join_expr;
+        }
+        return join_expr;
+    }
 
     QueryObj filter_by(const Expression &filter) {
         QueryObj q(*this);
@@ -669,8 +708,11 @@ public:
     SelectExpr get_select(Strings &tables) {
         QF::list_tables(tables);
         return make_select(session_->schema(),
-                session_->schema().join_expr(tables),
+                make_join(),
                 filter_, order_, for_update_, limit_, offset_);
+        //return make_select(session_->schema(),
+        //        session_->schema().join_expr(tables),
+        //        filter_, order_, for_update_, limit_, offset_);
     }
     DomainResultSet<R> all() {
         Strings tables;

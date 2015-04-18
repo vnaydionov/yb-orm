@@ -182,11 +182,18 @@ public:
             .order_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
             .pager(5, 10)
             .generate_sql(options, &ctx);
+        /*
+        // This one is stolen from SQLAlchemy
         CPPUNIT_ASSERT_EQUAL(string("SELECT OUTER_2.* FROM ("
                     "SELECT OUTER_1.*, ROWNUM AS RN_ORA FROM ("
                     "SELECT A, B FROM T ORDER BY A, B"
                     ") OUTER_1 WHERE ROWNUM <= 15"
                     ") OUTER_2 WHERE RN_ORA > 10"), NARROW(sql));
+        */
+        CPPUNIT_ASSERT_EQUAL(string("SELECT OUTER_.* FROM ("
+                    "SELECT A, B, ROW_NUMBER() OVER (ORDER BY A, B) RN_ "
+                    "FROM T) OUTER_ "
+                    "WHERE OUTER_.RN_ > 10 AND OUTER_.RN_ <= 15"), NARROW(sql));
     }
 
     void test_select_having_wo_groupby()
@@ -425,6 +432,7 @@ public:
         conn.begin_trans_if_necessary();
         record_id_ = get_next_test_id(&conn);
         //CPPUNIT_ASSERT(record_id_ > 0);
+        conn.grant_insert_id(_T("T_ORM_TEST"), true, true);
         Values params;
         params.push_back(Value(record_id_));
         params.push_back(Value(_T("item")));
@@ -432,6 +440,7 @@ public:
         params.push_back(Value(Decimal(_T("1.2"))));
         conn.prepare(_T("INSERT INTO T_ORM_TEST(ID, A, B, C) VALUES(?, ?, ?, ?)"));
         conn.exec(params);
+        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
         conn.commit();
     }
 
@@ -442,6 +451,7 @@ public:
         conn.begin_trans_if_necessary();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
+        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
         conn.commit();
     }
 
@@ -477,12 +487,12 @@ public:
     void test_insert_sql()
     {
         Engine engine(Engine::READ_WRITE);
+        setup_log(engine);
         Table t(_T("T_ORM_TEST"));
         t.add_column(Column(_T("ID"), Value::LONGINT, 0, Column::PK));
         t.add_column(Column(_T("A"), Value::STRING, 100, 0));
         t.add_column(Column(_T("B"), Value::DATETIME, 0, Column::RO));
         t.add_column(Column(_T("C"), Value::DECIMAL, 0, 0));
-        setup_log(engine);
         CPPUNIT_ASSERT_EQUAL(false, engine.activity());
         RowsData rows;
         LongInt id = get_next_test_id(engine.get_conn());
@@ -492,7 +502,9 @@ public:
         row.push_back(now());
         row.push_back(Decimal(_T("1.1")));
         rows.push_back(&row);
+        engine.get_conn()->grant_insert_id(_T("T_ORM_TEST"), true, true);
         engine.insert(t, rows, false);
+        engine.get_conn()->grant_insert_id(_T("T_ORM_TEST"), false, true);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")),
                 Expression(t.name()),
@@ -551,6 +563,7 @@ public:
     void test_show_all()
     {
         SqlConnection conn(Engine::sql_source_from_env());
+        setup_log(conn);        
         Strings tables = conn.get_tables();
         //sort(tables.begin(), tables.end());
         Strings::iterator i, j;
@@ -567,6 +580,7 @@ public:
     void test_find_by_name()
     {
         SqlConnection conn(Engine::sql_source_from_env());
+        setup_log(conn);        
         CPPUNIT_ASSERT(conn.table_exists(_T("T_ORM_TEST")));
         CPPUNIT_ASSERT(conn.table_exists(_T("T_ORM_XML")));
         if (conn.get_dialect()->get_name() == _T("SQLITE")) {
@@ -577,7 +591,8 @@ public:
     void test_table_columns()
     {
         SqlConnection conn(Engine::sql_source_from_env());
-        ColumnsInfo t1 = conn.get_columns(_T("T_ORM_TEST"));
+        setup_log(conn);
+        ColumnsInfo t1 = conn.get_columns(_T("T_ORM_TEST"));        
         CPPUNIT_ASSERT_EQUAL(5, (int)t1.size());
         // T_ORM_TEST.ID
         CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(t1[0].name));
@@ -652,7 +667,8 @@ public:
         CPPUNIT_ASSERT_EQUAL(string(""), NARROW(t2[1].default_value));
         CPPUNIT_ASSERT_EQUAL(false, t2[1].pk);
         CPPUNIT_ASSERT_EQUAL(string("T_ORM_TEST"), NARROW(t2[1].fk_table));
-        CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(t2[1].fk_table_key));
+        CPPUNIT_ASSERT(string("ID") == NARROW(t2[1].fk_table_key)
+                || str_empty(t2[1].fk_table_key));
         // T_ORM_XML.B
         CPPUNIT_ASSERT_EQUAL(string("B"), NARROW(t2[2].name));
         CPPUNIT_ASSERT_EQUAL(NARROW(conn.get_dialect()->type2sql(

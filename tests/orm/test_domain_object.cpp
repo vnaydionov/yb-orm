@@ -73,6 +73,9 @@ class TestDomainObject : public CppUnit::TestFixture
     CPPUNIT_TEST(test_null_fk_relation);
     CPPUNIT_TEST(test_holder);
     CPPUNIT_TEST(test_link_one2many);
+#if defined(YB_USE_TUPLE)
+    CPPUNIT_TEST(test_join);
+#endif // defined(YB_USE_TUPLE)
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -82,6 +85,7 @@ public:
         conn.set_convert_params(true);
         setup_log(conn);
         conn.begin_trans_if_necessary();
+        conn.grant_insert_id(_T("T_ORM_TEST"), true, true);
         {
             String sql_str =
                 _T("INSERT INTO T_ORM_TEST(ID, A, B, C, D) VALUES(?, ?, ?, ?, ?)");
@@ -94,6 +98,8 @@ public:
             params[4] = Value(4.56);
             conn.exec(params);
         }
+        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
+        conn.grant_insert_id(_T("T_ORM_XML"), true, true);
         {
             String sql_str =
                 _T("INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES (?, ?, ?)");
@@ -118,6 +124,7 @@ public:
             params[2] = Value(Decimal(_T("42")));
             conn.exec(params);
         }
+        conn.grant_insert_id(_T("T_ORM_XML"), false, true);
         conn.commit();
 
         Yb::init_schema();
@@ -130,6 +137,8 @@ public:
         conn.begin_trans_if_necessary();
         conn.exec_direct(_T("DELETE FROM T_ORM_XML"));
         conn.exec_direct(_T("DELETE FROM T_ORM_TEST"));
+        conn.grant_insert_id(_T("T_ORM_TEST"), false, true);
+        conn.grant_insert_id(_T("T_ORM_XML"), false, true);
         conn.commit();
     }
 
@@ -220,6 +229,25 @@ public:
         ox3.orm_test = OrmTest::Holder(ot);
         CPPUNIT_ASSERT_EQUAL(3, (int)ot.orm_xmls.size());
     }
+
+#if defined(YB_USE_TUPLE)
+    void test_join()
+    {
+        Engine engine(Engine::READ_ONLY);
+        setup_log(engine);
+        Session session(Yb::theSchema(), &engine);
+        QueryObj<boost::tuple<OrmTest, OrmXml> > q1 =
+            Yb::query<boost::tuple<OrmTest, OrmXml> >(session)
+                    .select_from<OrmTest>()
+                    .join<OrmXml>(OrmTest::c.id == OrmXml::c.orm_test_id);
+        CPPUNIT_ASSERT_EQUAL(2, (int)q1.count());
+        QueryObj<boost::tuple<OrmTest, OrmXml> > q2 =
+            Yb::query<boost::tuple<OrmTest, OrmXml> >(session)
+                    .select_from<OrmTest>()
+                    .join<OrmXml>();
+        CPPUNIT_ASSERT_EQUAL(2, (int)q2.count());
+    }
+#endif // defined(YB_USE_TUPLE)
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestDomainObject);

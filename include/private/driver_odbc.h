@@ -13,6 +13,7 @@ class OdbcCursorBackend: public SqlCursorBackend
 {
     tiodbc::connection *conn_;
     std::auto_ptr<tiodbc::statement> stmt_;
+    void really_exec(const Values &params);
 public:
     OdbcCursorBackend(tiodbc::connection *conn);
     void exec_direct(const String &sql);

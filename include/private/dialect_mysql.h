@@ -10,6 +10,8 @@ class YBORM_DECL MysqlDialect: public SqlDialect
 {
 public:
     MysqlDialect();   
+    Strings really_get_tables(SqlConnection &conn,
+            const String &table, bool view, bool show_system);
     virtual const String select_curr_value(const String &seq_name);
     virtual const String select_next_value(const String &seq_name);
     virtual const String select_last_inserted_id(const String &table_name);

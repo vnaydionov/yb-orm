@@ -82,7 +82,7 @@ MetaDataConfig::MetaDataConfig(const Schema &schema)
 void MetaDataConfig::parse(Schema &reg)
 {
     if (node_->name_.compare(_T("schema")))
-        throw ParseError(String(_T("Unknown element '")) + node_->name_ + 
+        throw ParseError(String(_T("Unknown element '")) + node_->name_ +
                 _T("' found during parse of root element, 'schema' expected"));
 
     ElementTree::Elements::const_iterator child = node_->children_.begin(),
@@ -144,7 +144,7 @@ void MetaDataConfig::parse_relation_side(ElementTree::ElementPtr node,
     Relation::AttrMap new_attrs;
     for (size_t i = 0; i < attr_count; ++i)
         if (node->has_attr(std2str(attr_names[i])))
-            new_attrs[std2str(attr_names[i])] = 
+            new_attrs[std2str(attr_names[i])] =
                 node->get_attr(std2str(attr_names[i]));
     attrs.swap(new_attrs);
 }
@@ -329,7 +329,7 @@ void MetaDataConfig::get_foreign_key_data(ElementTree::ElementPtr node, String &
         fk_field = node->get_attr(_T("key"));
     else
         fk_field = String();
-}    
+}
 
 ElementTree::ElementPtr MetaDataConfig::column_to_tree(const Column &column)
 {

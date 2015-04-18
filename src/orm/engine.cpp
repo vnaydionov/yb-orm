@@ -313,7 +313,7 @@ EngineBase::gen_sql_insert(String &sql, TypeCodes &type_codes_out,
             names.push_back(col.name());
         }
     }
-    sql_query += ExpressionList(names).get_sql() + _T(") VALUES (") + 
+    sql_query += ExpressionList(names).get_sql() + _T(") VALUES (") +
         ExpressionList(pholders).get_sql() + _T(")");
     str_swap(sql, sql_query);
     type_codes_out.swap(type_codes);

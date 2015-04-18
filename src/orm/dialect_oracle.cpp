@@ -15,19 +15,19 @@ OracleDialect::OracleDialect()
     : SqlDialect(_T("ORACLE"), _T("DUAL"), true)
 {}
 
-const String 
+const String
 OracleDialect::select_curr_value(const String &seq_name)
 {
     return seq_name + _T(".CURRVAL");
 }
 
-const String 
+const String
 OracleDialect::select_next_value(const String &seq_name)
 {
-    return seq_name + _T(".NEXTVAL"); 
+    return seq_name + _T(".NEXTVAL");
 }
 
-const String 
+const String
 OracleDialect::sql_value(const Value &x)
 {
     if (x.get_type() == Value::DATETIME)
@@ -35,136 +35,95 @@ OracleDialect::sql_value(const Value &x)
     return x.sql_str();
 }
 
-const String 
+const String
 OracleDialect::type2sql(int t) {
     switch (t) {
-        case Value::INTEGER:    return _T("NUMBER(10)");    break;
-        case Value::LONGINT:    return _T("NUMBER(20)");    break;
-        case Value::STRING:     return _T("VARCHAR2");      break;
-        case Value::DATETIME:   return _T("DATE");          break;
+        case Value::INTEGER:    return _T("NUMBER");    break;
+        case Value::LONGINT:    return _T("NUMBER");    break;
+        case Value::STRING:     return _T("VARCHAR2");  break;
+        case Value::DATETIME:   return _T("DATE");      break;
         case Value::FLOAT:
-        case Value::DECIMAL:    return _T("NUMBER");        break;
+        case Value::DECIMAL:    return _T("NUMBER");    break;
     }
     throw SqlDialectError(_T("Bad type"));
 }
 
-const String 
-OracleDialect::create_sequence(const String &seq_name) 
+const String
+OracleDialect::create_sequence(const String &seq_name)
 {
     return _T("CREATE SEQUENCE ") + seq_name;
 }
 
-const String 
-OracleDialect::drop_sequence(const String &seq_name) 
+const String
+OracleDialect::drop_sequence(const String &seq_name)
 {
     return _T("DROP SEQUENCE ") + seq_name;
 }
 
-const String 
-OracleDialect::sysdate_func() 
+const String
+OracleDialect::sysdate_func()
 {
-    return _T("SYSDATE"); 
+    return _T("SYSDATE");
 }
 
-int 
-OracleDialect::pager_model() 
+int
+OracleDialect::pager_model()
 {
     return (int)PAGER_ORACLE;
 }
 
 // schema introspection
 
-bool 
+bool
 OracleDialect::table_exists(SqlConnection &conn, const String &table)
-{ 
-    return false; 
+{
+    Strings s = get_tables(conn);
+    for (Strings::iterator i = s.begin(); i != s.end(); ++i)
+    {
+        if (*i == table)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
-bool 
+bool
 OracleDialect::view_exists(SqlConnection &conn, const String &table)
-{ 
-    return false; 
+{
+    return false;
 }
 
-Strings 
+Strings
 OracleDialect::get_tables(SqlConnection &conn)
+{
+    Strings table;
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String query = _T("SELECT table_name FROM all_tables where owner = (SELECT USER FROM DUAL)");
+    cursor->prepare(query);
+    Values params;
+    SqlResultSet rs = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    {
+        table.push_back((*i)[0].second.as_string());
+    }
+    return table;
+}
+
+Strings
+OracleDialect::get_views(SqlConnection &conn)
 {
     return Strings();
 }
 
-Strings 
-OracleDialect::get_views(SqlConnection &conn)
-{ 
-    return Strings(); 
-}
-ColumnsInfo 
-OracleDialect::get_columns(SqlConnection &conn, const String &table)
-{ 
-    return ColumnsInfo(); 
-}
-
-// schema introspection
-
-/*static Strings
-really_get_tables(SqlConnection &conn, const String &type,
-        const String &name, bool filter_system)
-{
-    Strings tables;
-    auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String q = _T("SELECT name FROM sqlite_master WHERE type=?");
-    Values params;
-    params.push_back(Value(type));
-    if (!str_empty(name))
-    {
-        q += _T(" AND UPPER(name)=UPPER(?)");
-        params.push_back(Value(name));
-    }
-    if (filter_system)
-    {
-        q += _T(" AND UPPER(name) NOT IN (?)");
-        params.push_back(Value(_T("SQLITE_SEQUENCE")));
-    }
-    cursor->prepare(q);
-    SqlResultSet rs = cursor->exec(params);
-    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {
-        tables.push_back(str_to_upper((*i)[0].second.as_string()));
-    }
-    return tables;
-}
-
-bool
-SQLite3Dialect::table_exists(SqlConnection &conn, const String &table)
-{
-    Strings r = really_get_tables(conn, _T("table"), table, false);
-    return r.size() == 1;
-}
-
-bool
-SQLite3Dialect::view_exists(SqlConnection &conn, const String &table)
-{
-    Strings r = really_get_tables(conn, _T("view"), table, false);
-    return r.size() == 1;
-}
-
-Strings
-SQLite3Dialect::get_tables(SqlConnection &conn)
-{
-    return really_get_tables(conn, _T("table"), _T(""), true);
-}
-
-Strings
-SQLite3Dialect::get_views(SqlConnection &conn)
-{
-    return really_get_tables(conn, _T("view"), _T(""), true);
-}
-
 ColumnsInfo
-SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
+OracleDialect::get_columns(SqlConnection &conn, const String &table)
 {
     ColumnsInfo ci;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    cursor->prepare(_T("PRAGMA table_info('") + table + _T("')"));
+    String query = _T("SELECT col.column_name, col.data_type, col.data_length, col.nullable, col.data_default FROM ALL_TAB_COLUMNS col WHERE col.TABLE_NAME = '") +table
+        + _T("' AND col.OWNER = (SELECT USER FROM DUAL)");
+    cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
@@ -172,67 +131,83 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
         ColumnInfo x;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
-            if (_T("NAME") == j->first)
+            if (_T("COLUMN_NAME") == j->first)
             {
                 x.name = str_to_upper(j->second.as_string());
             }
-            else if (_T("TYPE") == j->first)
+            else if (_T("DATA_TYPE") == j->first)
             {
                 x.type = str_to_upper(j->second.as_string());
-                int open_par = str_find(x.type, _T('('));
-                if (-1 != open_par) {
-                    // split type size into its own field
-                    String new_type = str_substr(x.type, 0, open_par);
-                    try {
-                        from_string(str_substr(x.type, open_par + 1,
-                                str_length(x.type) - open_par - 2), x.size);
-                        x.type = new_type;
+                if (_T("VARCHAR2") == x.type)
+                {
+                    ++j;
+                    if (_T("DATA_LENGTH") == j->first)
+                    {
+                        x.size = j->second.as_integer();
                     }
-                    catch (const std::exception &) {}
                 }
             }
-            else if (_T("NOTNULL") == j->first)
+            else if (_T("NULLABLE") == j->first)
             {
-                x.notnull = _T("0") != j->second.as_string();
+                x.notnull = _T("N") == j->second.as_string();
             }
-            else if (_T("DFLT_VALUE") == j->first)
+            else if (_T("DATA_DEFAULT") == j->first)
             {
                 if (!j->second.is_null())
                     x.default_value = j->second.as_string();
             }
-            else if (_T("PK") == j->first)
-            {
-                x.pk = _T("0") != j->second.as_string();
-            }
         }
         ci.push_back(x);
     }
-    cursor->prepare(_T("PRAGMA foreign_key_list('") + table + _T("')"));
-    SqlResultSet rs2 = cursor->exec(params);
+    String querypk = _T("SELECT cols.position FROM all_constraints cons, all_cons_columns cols WHERE cols.table_name = '") +table+ _T("' AND cons.constraint_type = 'P' AND cons.constraint_name = cols.constraint_name AND cons.owner = cols.owner");
+    cursor->prepare(querypk);
+    Values paramspk;
+    SqlResultSet rspk = cursor->exec(paramspk);
+    for (SqlResultSet::iterator i = rspk.begin(); i != rspk.end(); ++i)
+    {
+        Row::const_iterator j = i->begin();
+        if (j != i-> end())
+        {
+            ci[j->second.as_integer() - 1].pk = true;
+        }
+    }
+
+    String q2 =_T("SELECT substr(c_src.COLUMN_NAME, 1, 20) as SRC_COLUMN, c_dest.TABLE_NAME as DEST_TABLE, substr(c_dest.COLUMN_NAME, 1, 20) as DEST_COLUMN FROM ALL_CONSTRAINTS c_list, ALL_CONS_COLUMNS c_src, ALL_CONS_COLUMNS c_dest WHERE c_list.CONSTRAINT_NAME = c_src.CONSTRAINT_NAME AND c_list.R_CONSTRAINT_NAME = c_dest.CONSTRAINT_NAME AND c_list.CONSTRAINT_TYPE = 'R' AND c_src.TABLE_NAME = '")
+    + table + _T("'");
+    cursor->prepare(q2);
+    Values params2;
+    SqlResultSet rs2 = cursor->exec(params2);
     for (SqlResultSet::iterator i = rs2.begin(); i != rs2.end(); ++i)
     {
         String fk_column, fk_table, fk_table_key;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
-            if (_T("TABLE") == j->first)
+            if (_T("DEST_TABLE") == j->first)
             {
                 if (!j->second.is_null())
+                {
                     fk_table = j->second.as_string();
+                }
             }
-            else if (_T("FROM") == j->first)
+            else if (_T("DEST_COLUMN") == j->first)
             {
                 if (!j->second.is_null())
-                    fk_column = j->second.as_string();
-            }
-            else if (_T("TO") == j->first)
-            {
-                if (!j->second.is_null())
+                {
                     fk_table_key = j->second.as_string();
+                }
+            }
+            else if (_T("SRC_COLUMN") == j->first)
+            {
+                if (!j->second.is_null())
+                {
+                    fk_column = j->second.as_string();
+                }
             }
         }
         for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
         {
-            if (k->name == fk_column) {
+            if (k->name == fk_column)
+            {
                 k->fk_table = fk_table;
                 k->fk_table_key = fk_table_key;
                 break;
@@ -240,7 +215,7 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
         }
     }
     return ci;
-}*/
+}
 
 } // namespace Yb
 

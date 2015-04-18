@@ -51,6 +51,7 @@ CPP_FILES = \
 	dialect_oracle.cpp \
 	dialect_postgres.cpp \
 	dialect_mysql.cpp \
+	dialect_mssql.cpp \
 	dialect_interbase.cpp
 
 libyborm_la_SOURCES = \

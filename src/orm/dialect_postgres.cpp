@@ -53,16 +53,16 @@ PostgresDialect::select_last_inserted_id(const String &table_name)
 }
 
 
-const String 
+const String
 PostgresDialect::select_curr_value(const String &seq_name)
 {
-    return _T("CURRVAL('") + seq_name + _T("')"); 
+    return _T("CURRVAL('") + seq_name + _T("')");
 }
 
 const String
 PostgresDialect::select_next_value(const String &seq_name)
 {
-    return _T("NEXTVAL('") + seq_name + _T("')"); 
+    return _T("NEXTVAL('") + seq_name + _T("')");
 }
 
 const String
@@ -72,9 +72,9 @@ PostgresDialect::sql_value(const Value &x)
 }
 
 const String
-PostgresDialect::type2sql(int t) 
+PostgresDialect::type2sql(int t)
 {
-    switch (t) 
+    switch (t)
     {
         case Value::INTEGER:    return _T("INTEGER");       break;
         case Value::LONGINT:    return _T("BIGINT");        break;
@@ -100,7 +100,7 @@ PostgresDialect::drop_sequence(const String &seq_name) {
 bool
 PostgresDialect::table_exists(SqlConnection &conn, const String &table)
 {
-    return false; 
+    return false;
 }
 
 bool
@@ -109,7 +109,7 @@ PostgresDialect::view_exists(SqlConnection &conn, const String &table)
     return false;
 }
 
-Strings 
+Strings
 PostgresDialect::get_tables(SqlConnection &conn)
 {
     return Strings();
@@ -118,7 +118,7 @@ PostgresDialect::get_tables(SqlConnection &conn)
 Strings
 PostgresDialect::get_views(SqlConnection &conn)
 {
-    return Strings(); 
+    return Strings();
 }
 
 ColumnsInfo
