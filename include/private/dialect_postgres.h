@@ -10,18 +10,12 @@ class YBORM_DECL PostgresDialect: public SqlDialect
 {
 public:
     PostgresDialect();
-    virtual bool native_driver_eats_slash();
     virtual const String select_curr_value(const String &seq_name);
     virtual const String select_next_value(const String &seq_name);
-    virtual const String select_last_inserted_id(const String &table_name);
     virtual const String sql_value(const Value &x);
     virtual const String type2sql(int t);
-    virtual bool fk_internal();
-    virtual bool has_for_update();
     virtual const String create_sequence(const String &seq_name);
     virtual const String drop_sequence(const String &seq_name);
-    virtual const String primary_key_flag();
-    virtual const String autoinc_flag();
     // schema introspection
     virtual bool table_exists(SqlConnection &conn, const String &table);
     virtual bool view_exists(SqlConnection &conn, const String &table);
