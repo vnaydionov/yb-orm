@@ -37,16 +37,15 @@ PostgresDialect::sql_value(const Value &x)
 const String
 PostgresDialect::type2sql(int t)
 {
-
-     switch (t) {
-            case Value::INTEGER:    return _T("INTEGER");       break;
-            case Value::LONGINT:    return _T("INTEGER");        break;
-            case Value::STRING:     return _T("CHARACTER VARYING");       break;
-            case Value::DECIMAL:    return _T("NUMERIC");       break;
-            case Value::DATETIME:   return _T("TIMESTAMP");     break;
-            case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
-        }
-
+    switch (t) 
+    {
+        case Value::INTEGER:    return _T("INTEGER");       break;
+        case Value::LONGINT:    return _T("INTEGER");        break;
+        case Value::STRING:     return _T("CHARACTER VARYING");       break;
+        case Value::DECIMAL:    return _T("NUMERIC");       break;
+        case Value::DATETIME:   return _T("TIMESTAMP");     break;
+        case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
+    }
     throw SqlDialectError(_T("Bad type"));
 }
 
@@ -129,7 +128,6 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
     {
-    
         ColumnInfo x;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
@@ -143,11 +141,6 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
                 {
                     x.type = _T("TIMESTAMP");
                 }
-                else if (str_to_upper(j->second.as_string()) == _T("BIGINT"))
-                {
-                    x.type = _T("INTEGER");
-                }
-            
                 else
                 {
                     x.type = str_to_upper(j->second.as_string());
@@ -178,8 +171,6 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
                     {
                         x.default_value = "";
                     }
-
-
                     else if (str_to_upper(j->second.as_string()) == _T("NOW()"))
                     {
                         x.default_value = _T("CURRENT_TIMESTAMP");
@@ -194,25 +185,24 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
                 if (!j->second.is_null())
                     x.size = j->second.as_integer();
             }
-
+            cursor2->prepare(queryPk);
+            Values paramsPk;  
+            SqlResultSet rsPk = cursor2->exec(paramsPk);
+            for (SqlResultSet::iterator i = rsPk.begin(); i != rsPk.end(); ++i)
+            {
+                for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+                {
+                    if (_T("COLUMN_NAME") ==  str_to_upper(j->first))
+                    {
+                        if (str_to_upper(j->second.as_string()) == x.name)
+                            x.pk = 1;
+                        else
+                            x.pk = 0;
+                    }
+                }
+            }
         }
-        cursor2->prepare(queryPk);
-        Values paramsPk;  
-        SqlResultSet rsPk = cursor2->exec(paramsPk);
-        for (SqlResultSet::iterator i = rsPk.begin(); i != rsPk.end(); ++i)
-        {
-             for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
-             {
-                        if (_T("COLUMN_NAME") ==  str_to_upper(j->first))
-                        {
-                            if (str_to_upper(j->second.as_string()) == x.name)
-                                x.pk = 1;
-                            else
-                                x.pk = 0;
-                        }
-              }
-         }
-         ci.push_back(x);
+        ci.push_back(x);
     }
     String qFk = _T(
              "SELECT tc.constraint_name, tc.table_name, kcu.column_name, ccu.table_name foreign_table_name, ccu.column_name foreign_column_name "
@@ -220,7 +210,6 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
              "JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name "
              "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name "
              "WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name= '") + str_to_lower(table) + "';";
-
     Values paramFk;
     cursor3->prepare(qFk);    
     SqlResultSet rsFk = cursor3->exec(paramFk);
@@ -233,10 +222,9 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
             {
                if (!j->second.is_null())       
                     fk_table = str_to_upper(j->second.as_string());
-                    cout << "\n table2 \n";
             }
             else if (_T("FOREIGN_COLUMN_NAME") == str_to_upper(j->first))
-            { 
+            {
                if (!j->second.is_null())
                     fk_table_key = str_to_upper(j->second.as_string());
             }   
@@ -250,24 +238,14 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
         {
             if (k->name == fk_column)
             {
-            
                 k->fk_table = fk_table;
                 k->fk_table_key = fk_table_key;
                 break;
-                
             }
         }
     }
-
-
-     
-  
     return ci;
 }
-
-
-
-
 }
 
 // vim:ts=4:sts=4:sw=4:et:
