@@ -148,7 +148,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("123.45"), NARROW(Value(123.45).sql_str()));
         std::string str = "abc";
         Blob data(str.begin(), str.end());
-        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(Value(data).sql_str()));
+        CPPUNIT_ASSERT_EQUAL(string("'abc'"), NARROW(Value(data).sql_str()));
     }
 
     void test_as_string()
@@ -161,6 +161,9 @@ public:
         String s = str_to_lower(Value(1E30).as_string());
         CPPUNIT_ASSERT(starts_with(s, _T("1e")));
         CPPUNIT_ASSERT(ends_with(s, _T("30")));
+        std::string str = "abc";
+        Blob data(str.begin(), str.end());
+        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(Value(data).as_string));
     }
 
     void test_as_integer()
