@@ -31,6 +31,7 @@ inline const std::string to_stdstring(const T &x)
     out << x;
     return out.str();
 }
+
 #if defined(YB_STRING_NOSTD)
 inline const std::string to_stdstring(const String &x) { return str2std(x); }
 #endif
@@ -54,7 +55,11 @@ inline T &from_stdstring(const std::string &s, T &x)
         throw ValueBadCast(WIDEN(s), _T("value error: extra characters left"));
     return x;
 }
+
 YBUTIL_DECL double &from_stdstring(const std::string &s, double &x);
+
+typedef std::vector<char> Blob;
+
 #if defined(YB_STRING_NOSTD)
 inline String &from_stdstring(const std::string &s, String &x)
 {

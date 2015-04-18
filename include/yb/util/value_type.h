@@ -46,7 +46,7 @@ class YBUTIL_DECL Value
 
 public:
     enum Type {
-        INVALID = 0, INTEGER, LONGINT, STRING, DECIMAL, DATETIME, FLOAT
+        INVALID = 0, INTEGER, LONGINT, STRING, DECIMAL, DATETIME, FLOAT, BLOB
     };
     Value();
     Value(const int &x);
@@ -56,6 +56,7 @@ public:
     Value(const DateTime &x);
     Value(const String &x);
     Value(const Char *x);
+    Value(const Blob &x);
     Value(const Value &other);
     Value &operator=(const Value &other);
     ~Value();
@@ -68,6 +69,7 @@ public:
     const Decimal as_decimal() const;
     const DateTime as_date_time() const;
     double as_float() const;
+    const Blob as_blob() const;
     const String sql_str() const;
     const Value nvl(const Value &def_value) const;
     int cmp(const Value &x) const;
@@ -82,6 +84,7 @@ public:
     const Decimal &read_as_decimal() const;
     const DateTime &read_as_datetime() const;
     const String &read_as_string() const;
+    const Blob &read_as_blob() const;
 
     template <class T__>
     const T__ &read_as() const {
@@ -93,7 +96,7 @@ private:
     int type_;
     char bytes_[YB_MAX(sizeof(int), YB_MAX(sizeof(LongInt),
                 YB_MAX(sizeof(String), YB_MAX(sizeof(Decimal),
-                YB_MAX(sizeof(DateTime), sizeof(double))))))];
+                YB_MAX(sizeof(DateTime), YB_MAX(sizeof(double), sizeof(Blob)))))))];
 };
 
 template <> struct ValueTraits<int> {
@@ -147,6 +150,16 @@ template <> struct ValueTraits<double> {
         { return x.read_as_float(); }
     static double &from_variant(const Value &x, double &t) {
         t = x.as_float();
+        return t;
+    }
+};
+
+template <> struct ValueTraits<Blob> {
+    enum { TYPE_CODE = (int)Value::BLOB };
+    static const Blob &read(const Value &x)
+        { return x.read_as_blob(); }
+    static Blob &from_variant(const Value &x, Blob &t) {
+        t = x.as_blob();
         return t;
     }
 };
