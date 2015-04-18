@@ -163,7 +163,7 @@ public:
         CPPUNIT_ASSERT(ends_with(s, _T("30")));
         std::string str = "abc";
         Blob data(str.begin(), str.end());
-        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(Value(data).as_string));
+        CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(Value(data).as_string()));
     }
 
     void test_as_integer()
