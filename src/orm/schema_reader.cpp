@@ -109,6 +109,11 @@ read_schema_from_db(SqlConnection &connection)
                 const String side1 = guess_class_name(c.fk_table_name());
                 const String side2 = guess_class_name(t.name());
                 Relation::AttrMap a1, a2;
+                std::string a2_name = c.fk_table_name();
+                std::string a2_result;
+                for (int k = 2; k < a2_name.size(); ++k)
+                    a2_result.push_back(to_lower(a2_name[k]));
+                a2.insert(std::pair <std::string, std::string>("property", a2_result));
                 Relation::Ptr r(new Relation(Relation::ONE2MANY, side1, a1, side2, a2));
                 s->add_relation(r);
             }
