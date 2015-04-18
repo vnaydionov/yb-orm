@@ -59,6 +59,26 @@ guess_class_name(const String &table_name)
     return result;
 }
 
+YBORM_DECL const String
+guess_property(const String &column_name)
+{
+    String result;
+    size_t start = 0, end = str_length(column_name);
+    if (starts_with(str_to_upper(column_name), _T("ID_")))
+    {
+        start += 3;
+    }
+    if (ends_with(str_to_upper(column_name), _T("_ID")))
+    {
+        end -= 3;
+    }
+    for(size_t i = start; i < end; ++i)
+    {
+        str_append(result, to_lower(column_name[i]));
+    }
+    return result;
+}
+
 YBORM_DECL Schema::Ptr
 read_schema_from_db(SqlConnection &connection)
 {
@@ -109,6 +129,7 @@ read_schema_from_db(SqlConnection &connection)
                 const String side1 = guess_class_name(c.fk_table_name());
                 const String side2 = guess_class_name(t.name());
                 Relation::AttrMap a1, a2;
+                a2.insert(std::pair <std::string, std::string>("property", guess_property(c.name())));
                 Relation::Ptr r(new Relation(Relation::ONE2MANY, side1, a1, side2, a2));
                 s->add_relation(r);
             }
