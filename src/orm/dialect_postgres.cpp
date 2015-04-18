@@ -15,43 +15,6 @@ PostgresDialect::PostgresDialect()
     : SqlDialect(_T("POSTGRES"), _T(""), true)
 {}
 
-bool
-PostgresDialect::native_driver_eats_slash()
-{
-    return false;
-}
-
-bool
-PostgresDialect::fk_internal()
-{
-    return true;
-}
-
-bool
-PostgresDialect::has_for_update()
-{
-    return false;
-}
-
-const String
-PostgresDialect::primary_key_flag()
-{
-    return _T("PRIMARY KEY");
-}
-
-const String
-PostgresDialect::autoinc_flag()
-{
-    return _T("AUTOINCREMENT");
-}
-
-const String
-PostgresDialect::select_last_inserted_id(const String &table_name)
-{
-    return _T("SELECT SEQ LID FROM SQLITE_SEQUENCE WHERE NAME = '")
-        + table_name + _T("'");
-}
-
 
 const String
 PostgresDialect::select_curr_value(const String &seq_name)
@@ -74,15 +37,16 @@ PostgresDialect::sql_value(const Value &x)
 const String
 PostgresDialect::type2sql(int t)
 {
-    switch (t)
-    {
-        case Value::INTEGER:    return _T("INTEGER");       break;
-        case Value::LONGINT:    return _T("BIGINT");        break;
-        case Value::STRING:     return _T("VARCHAR");       break;
-        case Value::DECIMAL:    return _T("DECIMAL");       break;
-        case Value::DATETIME:   return _T("TIMESTAMP");     break;
-        case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
-    }
+
+     switch (t) {
+            case Value::INTEGER:    return _T("INTEGER");       break;
+            case Value::LONGINT:    return _T("INTEGER");        break;
+            case Value::STRING:     return _T("CHARACTER VARYING");       break;
+            case Value::DECIMAL:    return _T("NUMERIC");       break;
+            case Value::DATETIME:   return _T("TIMESTAMP");     break;
+            case Value::FLOAT:      return _T("DOUBLE PRECISION"); break;
+        }
+
     throw SqlDialectError(_T("Bad type"));
 }
 
@@ -100,7 +64,15 @@ PostgresDialect::drop_sequence(const String &seq_name) {
 bool
 PostgresDialect::table_exists(SqlConnection &conn, const String &table)
 {
-    return false;
+    Strings s = get_tables(conn);
+    for (Strings::iterator i = s.begin(); i != s.end(); ++i)
+    {
+        if (*i == table)
+        {
+            return true;
+        }        
+    }
+    return false;  
 }
 
 bool
@@ -112,100 +84,76 @@ PostgresDialect::view_exists(SqlConnection &conn, const String &table)
 Strings
 PostgresDialect::get_tables(SqlConnection &conn)
 {
-    return Strings();
+    Strings table;
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String query = _T("SELECT table_name FROM information_schema.tables "  
+                      "WHERE table_schema = 'public';");
+    cursor->prepare(query);
+    Values params;
+    SqlResultSet rs = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
+    {    
+        table.push_back(str_to_upper((*i)[0].second.as_string()));
+    }
+    return table;
 }
 
 Strings
 PostgresDialect::get_views(SqlConnection &conn)
 {
-    return Strings();
+    return Strings(); 
 }
 
 ColumnsInfo
 PostgresDialect::get_columns(SqlConnection &conn, const String &table)
 {
-    return ColumnsInfo();
-}
-
-
-/*
-static Strings
-really_get_tables(SqlConnection &conn, const String &type,
-        const String &name, bool filter_system)
-{
-    Strings tables;
-    auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String q = _T("SELECT name FROM sqlite_master WHERE type=?");
-    Values params;
-    params.push_back(Value(type));
-    if (!str_empty(name))
-    {
-        q += _T(" AND UPPER(name)=UPPER(?)");
-        params.push_back(Value(name));
-    }
-    if (filter_system)
-    {
-        q += _T(" AND UPPER(name) NOT IN (?)");
-        params.push_back(Value(_T("SQLITE_SEQUENCE")));
-    }
-    cursor->prepare(q);
-    SqlResultSet rs = cursor->exec(params);
-    for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {
-        tables.push_back(str_to_upper((*i)[0].second.as_string()));
-    }
-    return tables;
-}
-
-bool
-SQLite3Dialect::table_exists(SqlConnection &conn, const String &table)
-{
-    Strings r = really_get_tables(conn, _T("table"), table, false);
-    return r.size() == 1;
-}
-
-bool
-SQLite3Dialect::view_exists(SqlConnection &conn, const String &table)
-{
-    Strings r = really_get_tables(conn, _T("view"), table, false);
-    return r.size() == 1;
-}
-
-Strings
-SQLite3Dialect::get_tables(SqlConnection &conn)
-{
-    return really_get_tables(conn, _T("table"), _T(""), true);
-}
-
-Strings
-SQLite3Dialect::get_views(SqlConnection &conn)
-{
-    return really_get_tables(conn, _T("view"), _T(""), true);
-}
-
-ColumnsInfo
-SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
-{
     ColumnsInfo ci;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    cursor->prepare(_T("PRAGMA table_info('") + table + _T("')"));
+    auto_ptr<SqlCursor> cursor2 = conn.new_cursor();
+    auto_ptr<SqlCursor> cursor3 = conn.new_cursor();
+    String query = _T("SELECT * FROM information_schema.columns WHERE table_name = '")
+    + str_to_lower(table) + "';";
+    String queryPk = _T(
+                        "SELECT c.column_name, c.data_type " 
+                        "FROM information_schema.table_constraints tc "  
+                        "JOIN information_schema.constraint_column_usage AS ccu " 
+                        "USING (constraint_schema, constraint_name) " 
+                        "JOIN information_schema.columns AS c " 
+                        "ON c.table_schema = tc.constraint_schema " 
+                        "AND tc.table_name = c.table_name " 
+                        "AND ccu.column_name = c.column_name " 
+                        "WHERE constraint_type = 'PRIMARY KEY' and tc.table_name = '")
+                        + str_to_lower(table) + "';";
     Values params;
+    cursor->prepare(query);
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
     {
+    
         ColumnInfo x;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
-            if (_T("NAME") == j->first)
+            if (_T("COLUMN_NAME") == str_to_upper(j->first))
             {
                 x.name = str_to_upper(j->second.as_string());
             }
-            else if (_T("TYPE") == j->first)
+            else if (_T("DATA_TYPE") == str_to_upper(j->first))
             {
-                x.type = str_to_upper(j->second.as_string());
+                if (str_to_upper(j->second.as_string()) == _T("TIMESTAMP WITHOUT TIME ZONE"))
+                {
+                    x.type = _T("TIMESTAMP");
+                }
+                else if (str_to_upper(j->second.as_string()) == _T("BIGINT"))
+                {
+                    x.type = _T("INTEGER");
+                }
+            
+                else
+                {
+                    x.type = str_to_upper(j->second.as_string());
+                }
                 int open_par = str_find(x.type, _T('('));
                 if (-1 != open_par) {
-                    // split type size into its own field
                     String new_type = str_substr(x.type, 0, open_par);
                     try {
                         from_string(str_substr(x.type, open_par + 1,
@@ -215,58 +163,113 @@ SQLite3Dialect::get_columns(SqlConnection &conn, const String &table)
                     catch (const std::exception &) {}
                 }
             }
-            else if (_T("NOTNULL") == j->first)
+            else if (_T("IS_NULLABLE") == str_to_upper(j->first))
             {
-                x.notnull = _T("0") != j->second.as_string();
+                  x.notnull = _T("NO") == str_to_upper(j->second.as_string());
             }
-            else if (_T("DFLT_VALUE") == j->first)
+            else if (_T("COLUMN_DEFAULT") == str_to_upper(j->first))
             {
                 if (!j->second.is_null())
-                    x.default_value = j->second.as_string();
+                    if (str_to_upper(j->second.as_string()) == _T("NEXTVAL('T_ORM_TEST_ID_SEQ'::REGCLASS)"))
+                    {
+                        x.default_value = "";
+                    }
+                    else if (str_to_upper(j->second.as_string()) == _T("NEXTVAL('T_ORM_XML_ID_SEQ'::REGCLASS)"))
+                    {
+                        x.default_value = "";
+                    }
+
+
+                    else if (str_to_upper(j->second.as_string()) == _T("NOW()"))
+                    {
+                        x.default_value = _T("CURRENT_TIMESTAMP");
+                    }
+                    else
+                    {
+                        x.default_value = str_to_upper(j->second.as_string());
+                    }
             }
-            else if (_T("PK") == j->first)
+            else if (_T("CHARACTER_MAXIMUM_LENGTH") == str_to_upper(j->first))
             {
-                x.pk = _T("0") != j->second.as_string();
+                if (!j->second.is_null())
+                    x.size = j->second.as_integer();
             }
+
         }
-        ci.push_back(x);
+        cursor2->prepare(queryPk);
+        Values paramsPk;  
+        SqlResultSet rsPk = cursor2->exec(paramsPk);
+        for (SqlResultSet::iterator i = rsPk.begin(); i != rsPk.end(); ++i)
+        {
+             for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
+             {
+                        if (_T("COLUMN_NAME") ==  str_to_upper(j->first))
+                        {
+                            if (str_to_upper(j->second.as_string()) == x.name)
+                                x.pk = 1;
+                            else
+                                x.pk = 0;
+                        }
+              }
+         }
+         ci.push_back(x);
     }
-    cursor->prepare(_T("PRAGMA foreign_key_list('") + table + _T("')"));
-    SqlResultSet rs2 = cursor->exec(params);
-    for (SqlResultSet::iterator i = rs2.begin(); i != rs2.end(); ++i)
+    String qFk = _T(
+             "SELECT tc.constraint_name, tc.table_name, kcu.column_name, ccu.table_name foreign_table_name, ccu.column_name foreign_column_name "
+             "FROM     information_schema.table_constraints tc "
+             "JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name "
+             "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name "
+             "WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name= '") + str_to_lower(table) + "';";
+
+    Values paramFk;
+    cursor3->prepare(qFk);    
+    SqlResultSet rsFk = cursor3->exec(paramFk);
+    for (SqlResultSet::iterator i = rsFk.begin(); i != rsFk.end(); ++i)
     {
         String fk_column, fk_table, fk_table_key;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
-            if (_T("TABLE") == j->first)
+            if (_T("FOREIGN_TABLE_NAME") == str_to_upper(j->first))
+            {
+               if (!j->second.is_null())       
+                    fk_table = str_to_upper(j->second.as_string());
+                    cout << "\n table2 \n";
+            }
+            else if (_T("FOREIGN_COLUMN_NAME") == str_to_upper(j->first))
+            { 
+               if (!j->second.is_null())
+                    fk_table_key = str_to_upper(j->second.as_string());
+            }   
+            else if (_T("COLUMN_NAME") == str_to_upper(j->first))
             {
                 if (!j->second.is_null())
-                    fk_table = j->second.as_string();
-            }
-            else if (_T("FROM") == j->first)
-            {
-                if (!j->second.is_null())
-                    fk_column = j->second.as_string();
-            }
-            else if (_T("TO") == j->first)
-            {
-                if (!j->second.is_null())
-                    fk_table_key = j->second.as_string();
-            }
+                    fk_column = str_to_upper(j->second.as_string());
+            }                  
         }
         for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
         {
-            if (k->name == fk_column) {
+            if (k->name == fk_column)
+            {
+            
                 k->fk_table = fk_table;
                 k->fk_table_key = fk_table_key;
                 break;
+                
             }
         }
     }
+
+
+     
+  
     return ci;
 }
-*/
 
-} // namespace Yb
+
+
+
+}
 
 // vim:ts=4:sts=4:sw=4:et:
+
+
