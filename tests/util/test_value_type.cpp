@@ -92,7 +92,7 @@ public:
         CPPUNIT_ASSERT(!Value(now()).is_null());
         std::string str = "abc";
         Blob data(str.begin(), str.end());
-        CPPUNIT_ASSERT(!Value(str).is_null());
+        CPPUNIT_ASSERT(!Value(data).is_null());
     }
 
     void test_equality()
@@ -131,8 +131,8 @@ public:
         CPPUNIT_ASSERT(!(Value(a) < Value(a)));
         std::string str1 = "abc";
         Blob data1(str1.begin(), str1.end());
-        std::string str2 = "abcd";
-        Blob data2(str2.begin(), str2.end());
+        const char *str2 = "abcd";
+        Blob data2(str2, strchr(str2, 0));
         CPPUNIT_ASSERT(Value(data1) < Value(data2));
     }
 
@@ -146,7 +146,7 @@ public:
         DateTime a(dt_make(2006, 11, 16, 15, 5, 10));
         CPPUNIT_ASSERT_EQUAL(string("'2006-11-16 15:05:10'"), NARROW(Value(a).sql_str()));
         CPPUNIT_ASSERT_EQUAL(string("123.45"), NARROW(Value(123.45).sql_str()));
-        std::string str = "'abc'";
+        std::string str = "abc";
         Blob data(str.begin(), str.end());
         CPPUNIT_ASSERT_EQUAL(string("'abc'"), NARROW(Value(data).sql_str()));
     }
@@ -161,8 +161,8 @@ public:
         String s = str_to_lower(Value(1E30).as_string());
         CPPUNIT_ASSERT(starts_with(s, _T("1e")));
         CPPUNIT_ASSERT(ends_with(s, _T("30")));
-        std::string str = "abc";
-        Blob data(str.begin(), str.end());
+        const char *str = "abc";
+        Blob data(str, strchr(str, 0));
         CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(Value(data).as_string()));
     }
 

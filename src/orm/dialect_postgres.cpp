@@ -37,7 +37,7 @@ PostgresDialect::sql_value(const Value &x)
 const String
 PostgresDialect::type2sql(int t)
 {
-    switch (t) 
+    switch (t)
     {
         case Value::INTEGER:    return _T("INTEGER");       break;
         case Value::LONGINT:    return _T("INTEGER");        break;
@@ -69,9 +69,9 @@ PostgresDialect::table_exists(SqlConnection &conn, const String &table)
         if (*i == table)
         {
             return true;
-        }        
+        }
     }
-    return false;  
+    return false;
 }
 
 bool
@@ -85,13 +85,13 @@ PostgresDialect::get_tables(SqlConnection &conn)
 {
     Strings table;
     auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    String query = _T("SELECT table_name FROM information_schema.tables "  
+    String query = _T("SELECT table_name FROM information_schema.tables "
                       "WHERE table_schema = 'public';");
     cursor->prepare(query);
     Values params;
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
-    {    
+    {
         table.push_back(str_to_upper((*i)[0].second.as_string()));
     }
     return table;
@@ -100,30 +100,17 @@ PostgresDialect::get_tables(SqlConnection &conn)
 Strings
 PostgresDialect::get_views(SqlConnection &conn)
 {
-    return Strings(); 
+    return Strings();
 }
 
 ColumnsInfo
 PostgresDialect::get_columns(SqlConnection &conn, const String &table)
 {
     ColumnsInfo ci;
-    auto_ptr<SqlCursor> cursor = conn.new_cursor();
-    auto_ptr<SqlCursor> cursor2 = conn.new_cursor();
-    auto_ptr<SqlCursor> cursor3 = conn.new_cursor();
-    String query = _T("SELECT * FROM information_schema.columns WHERE table_name = '")
-    + str_to_lower(table) + "';";
-    String queryPk = _T(
-                        "SELECT c.column_name, c.data_type " 
-                        "FROM information_schema.table_constraints tc "  
-                        "JOIN information_schema.constraint_column_usage AS ccu " 
-                        "USING (constraint_schema, constraint_name) " 
-                        "JOIN information_schema.columns AS c " 
-                        "ON c.table_schema = tc.constraint_schema " 
-                        "AND tc.table_name = c.table_name " 
-                        "AND ccu.column_name = c.column_name " 
-                        "WHERE constraint_type = 'PRIMARY KEY' and tc.table_name = '")
-                        + str_to_lower(table) + "';";
     Values params;
+    auto_ptr<SqlCursor> cursor = conn.new_cursor();
+    String query = _T("SELECT * FROM information_schema.columns WHERE table_name = '")
+        + str_to_lower(table) + _T("'");
     cursor->prepare(query);
     SqlResultSet rs = cursor->exec(params);
     for (SqlResultSet::iterator i = rs.begin(); i != rs.end(); ++i)
@@ -137,7 +124,8 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
             }
             else if (_T("DATA_TYPE") == str_to_upper(j->first))
             {
-                if (str_to_upper(j->second.as_string()) == _T("TIMESTAMP WITHOUT TIME ZONE"))
+                if (starts_with(str_to_upper(j->second.as_string()),
+                            _T("TIMESTAMP")))
                 {
                     x.type = _T("TIMESTAMP");
                 }
@@ -165,11 +153,11 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
                 if (!j->second.is_null())
                     if (str_to_upper(j->second.as_string()) == _T("NEXTVAL('T_ORM_TEST_ID_SEQ'::REGCLASS)"))
                     {
-                        x.default_value = "";
+                        x.default_value = String();
                     }
                     else if (str_to_upper(j->second.as_string()) == _T("NEXTVAL('T_ORM_XML_ID_SEQ'::REGCLASS)"))
                     {
-                        x.default_value = "";
+                        x.default_value = String();
                     }
                     else if (str_to_upper(j->second.as_string()) == _T("NOW()"))
                     {
@@ -185,54 +173,67 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
                 if (!j->second.is_null())
                     x.size = j->second.as_integer();
             }
-            cursor2->prepare(queryPk);
-            Values paramsPk;  
-            SqlResultSet rsPk = cursor2->exec(paramsPk);
-            for (SqlResultSet::iterator i = rsPk.begin(); i != rsPk.end(); ++i)
-            {
-                for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
-                {
-                    if (_T("COLUMN_NAME") ==  str_to_upper(j->first))
-                    {
-                        if (str_to_upper(j->second.as_string()) == x.name)
-                            x.pk = 1;
-                        else
-                            x.pk = 0;
-                    }
-                }
-            }
         }
         ci.push_back(x);
     }
-    String qFk = _T(
-             "SELECT tc.constraint_name, tc.table_name, kcu.column_name, ccu.table_name foreign_table_name, ccu.column_name foreign_column_name "
-             "FROM     information_schema.table_constraints tc "
-             "JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name "
-             "JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name "
-             "WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name= '") + str_to_lower(table) + "';";
-    Values paramFk;
-    cursor3->prepare(qFk);    
-    SqlResultSet rsFk = cursor3->exec(paramFk);
-    for (SqlResultSet::iterator i = rsFk.begin(); i != rsFk.end(); ++i)
+    cursor.reset(NULL);
+    cursor.reset(conn.new_cursor().release());
+    String queryPk =
+        _T("SELECT c.column_name")
+        _T(" FROM information_schema.table_constraints tc")
+        _T(" JOIN information_schema.constraint_column_usage AS ccu")
+        _T(" USING (constraint_schema, constraint_name)")
+        _T(" JOIN information_schema.columns AS c")
+        _T(" ON c.table_schema = tc.constraint_schema")
+        _T(" AND tc.table_name = c.table_name")
+        _T(" AND ccu.column_name = c.column_name")
+        _T(" WHERE constraint_type = 'PRIMARY KEY' and tc.table_name = '")
+        + str_to_lower(table) + _T("'");
+    cursor->prepare(queryPk);
+    SqlResultSet rs2 = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs2.begin(); i != rs2.end(); ++i)
+    {
+        String pk_name = (*i)[0].second.as_string();
+        for (ColumnsInfo::iterator j = ci.begin(); j != ci.end(); ++j)
+            if (pk_name == j->name) {
+                j->pk = true;
+                break;
+            }
+    }
+    cursor.reset(NULL);
+    cursor.reset(conn.new_cursor().release());
+    String qFk =
+        _T("SELECT tc.constraint_name, tc.table_name, kcu.column_name,")
+        _T(" ccu.table_name foreign_table_name, ccu.column_name foreign_column_name")
+        _T(" FROM information_schema.table_constraints tc")
+        _T(" JOIN information_schema.key_column_usage kcu")
+        _T(" ON tc.constraint_name = kcu.constraint_name")
+        _T(" JOIN information_schema.constraint_column_usage ccu")
+        _T(" ON ccu.constraint_name = tc.constraint_name")
+        _T(" WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name= '")
+        + str_to_lower(table) + _T("'");
+    cursor->prepare(qFk);
+    SqlResultSet rs3 = cursor->exec(params);
+    for (SqlResultSet::iterator i = rs3.begin(); i != rs3.end(); ++i)
     {
         String fk_column, fk_table, fk_table_key;
         for (Row::const_iterator j = i->begin(); j != i->end(); ++j)
         {
             if (_T("FOREIGN_TABLE_NAME") == str_to_upper(j->first))
             {
-               if (!j->second.is_null())       
+               if (!j->second.is_null())
                     fk_table = str_to_upper(j->second.as_string());
             }
             else if (_T("FOREIGN_COLUMN_NAME") == str_to_upper(j->first))
             {
                if (!j->second.is_null())
                     fk_table_key = str_to_upper(j->second.as_string());
-            }   
+            }
             else if (_T("COLUMN_NAME") == str_to_upper(j->first))
             {
                 if (!j->second.is_null())
                     fk_column = str_to_upper(j->second.as_string());
-            }                  
+            }
         }
         for (ColumnsInfo::iterator k = ci.begin(); k != ci.end(); ++k)
         {
@@ -246,8 +247,7 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
     }
     return ci;
 }
-}
+
+} // namespace Yb
 
 // vim:ts=4:sts=4:sw=4:et:
-
-

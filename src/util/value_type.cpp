@@ -472,6 +472,8 @@ Value::sql_str() const
         return _T("NULL");
     if (type_ == STRING)
         return quote(sql_string_escape(get_as<String>(bytes_)));
+    if (type_ == BLOB)
+        return quote(sql_string_escape(as_string()));
     else if (type_ == DATETIME) {
         String t(to_string(get_as<DateTime>(bytes_)));
         int pos = str_find(t, _T('T'));
