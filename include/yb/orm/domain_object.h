@@ -707,12 +707,13 @@ public:
     }
     SelectExpr get_select(Strings &tables) {
         QF::list_tables(tables);
+        if (!joins_.size())
+            return make_select(session_->schema(),
+                    session_->schema().join_expr(tables),
+                    filter_, order_, for_update_, limit_, offset_);
         return make_select(session_->schema(),
                 make_join(),
                 filter_, order_, for_update_, limit_, offset_);
-        //return make_select(session_->schema(),
-        //        session_->schema().join_expr(tables),
-        //        filter_, order_, for_update_, limit_, offset_);
     }
     DomainResultSet<R> all() {
         Strings tables;

@@ -246,6 +246,10 @@ public:
                     .select_from<OrmTest>()
                     .join<OrmXml>();
         CPPUNIT_ASSERT_EQUAL(2, (int)q2.count());
+        // and the old style:
+        QueryObj<boost::tuple<OrmTest, OrmXml> > q3 =
+            Yb::query<boost::tuple<OrmTest, OrmXml> >(session);
+        CPPUNIT_ASSERT_EQUAL(2, (int)q3.count());
     }
 #endif // defined(YB_USE_TUPLE)
 };
