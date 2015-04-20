@@ -40,10 +40,10 @@ int main()
         cout << "Walking through the client's orders property: \n";
 #if !defined(__BORLANDC__)
         BOOST_FOREACH(Order order, client_2.orders) {
-            cout << "(" << order.id 
-                << "," << order.owner->id 
+            cout << "(" << order.id
+                << "," << order.owner->id
                 << "," << order.dt
-                << "," << order.total_sum 
+                << "," << order.total_sum
                 << ")" << endl;
         }
 #endif

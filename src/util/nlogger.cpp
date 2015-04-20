@@ -53,7 +53,7 @@ get_thread_id()
     return syscall(SYS_gettid);
 #elif defined(__FreeBSD__)
     if (pthread_main_np() == 0)
-        return pthread_getthreadid_np(); 
+        return pthread_getthreadid_np();
     return getpid();
 #elif defined(__unix__)
     // dirty hack

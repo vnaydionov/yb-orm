@@ -9,7 +9,7 @@ namespace Yb {
 class YBORM_DECL MysqlDialect: public SqlDialect
 {
 public:
-    MysqlDialect();   
+    MysqlDialect();
     Strings really_get_tables(SqlConnection &conn,
             const String &table, bool view, bool show_system);
     virtual const String select_curr_value(const String &seq_name);

@@ -10,7 +10,7 @@ namespace XmlWriter {
 using namespace std;
 
 static
-string const  
+string const
 armour (string const & s)
 {
     string r;

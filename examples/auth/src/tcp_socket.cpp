@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void 
+void
 TcpSocket::init_socket_lib()
 {
 #ifdef YBUTIL_WINDOWS

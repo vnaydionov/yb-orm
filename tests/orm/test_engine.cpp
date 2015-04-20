@@ -346,7 +346,7 @@ public:
         t.add_column(Column(_T("Q"), Value::LONGINT, 0, Column::PK));
         engine.insert(t, RowsData(), false);
     }
-    
+
     void test_update_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
@@ -354,7 +354,7 @@ public:
         t.add_column(Column(_T("Q"), Value::LONGINT, 0, Column::PK));
         engine.update(t, RowsData());
     }
-    
+
     void test_delete_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
@@ -362,7 +362,7 @@ public:
         t.add_column(Column(_T("Q"), Value::LONGINT, 0, Column::PK));
         engine.delete_from(t, Keys());
     }
-    
+
     void test_execpoc_ro_mode()
     {
         Engine engine(Engine::READ_ONLY);
@@ -563,7 +563,7 @@ public:
     void test_show_all()
     {
         SqlConnection conn(Engine::sql_source_from_env());
-        setup_log(conn);        
+        setup_log(conn);
         Strings tables = conn.get_tables();
         //sort(tables.begin(), tables.end());
         Strings::iterator i, j;
@@ -580,7 +580,7 @@ public:
     void test_find_by_name()
     {
         SqlConnection conn(Engine::sql_source_from_env());
-        setup_log(conn);        
+        setup_log(conn);
         CPPUNIT_ASSERT(conn.table_exists(_T("T_ORM_TEST")));
         CPPUNIT_ASSERT(conn.table_exists(_T("T_ORM_XML")));
         if (conn.get_dialect()->get_name() == _T("SQLITE")) {
@@ -592,7 +592,7 @@ public:
     {
         SqlConnection conn(Engine::sql_source_from_env());
         setup_log(conn);
-        ColumnsInfo t1 = conn.get_columns(_T("T_ORM_TEST"));        
+        ColumnsInfo t1 = conn.get_columns(_T("T_ORM_TEST"));
         CPPUNIT_ASSERT_EQUAL(5, (int)t1.size());
         // T_ORM_TEST.ID
         CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(t1[0].name));

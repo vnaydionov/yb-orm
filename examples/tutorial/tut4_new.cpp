@@ -51,7 +51,7 @@ int main()
         catch (const Yb::DBError &e) {
             cerr << "Schema already exists\n";
         }
-        
+
         using namespace std;
         using namespace Yb;
         LongInt root = -1;

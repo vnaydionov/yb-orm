@@ -61,7 +61,7 @@ private:
     Relation::Ptr parse_relation(ElementTree::ElementPtr node);
     template <typename T>
     static void get_node_ptr_value(ElementTree::ElementPtr node, T &t);
-    template <typename T> 
+    template <typename T>
     static bool get_value_of(ElementTree::ElementPtr node, const String &field, T &t);
     static int string_type_to_int(const String &type, const String &field_name);
     static void parse_column(ElementTree::ElementPtr node, Table &table_meta);
@@ -75,19 +75,19 @@ private:
     std::vector<String> skip_generation_;
     ElementTree::ElementPtr node_;
 };
- 
+
 template <typename T>
 void MetaDataConfig::get_node_ptr_value(ElementTree::ElementPtr node, T &t) {
     String str = node->get_text();
     try {
         from_string(str, t);
-    } 
+    }
     catch (const std::exception &) {
         throw ParseError(_T("Wrong element value for '") + node->name_ + _T("'"));
     }
 }
 
-template <typename T> 
+template <typename T>
 bool MetaDataConfig::get_value_of(ElementTree::ElementPtr node, const String &field, T &t)
 {
     if (node->name_ == field) {

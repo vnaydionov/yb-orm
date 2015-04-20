@@ -640,8 +640,8 @@ public:
         q.joins_.push_back(new_join);
         return q;
     }
-    
-    Expression make_join() 
+
+    Expression make_join()
     {
         YB_ASSERT(joins_.size());
         YB_ASSERT(select_from_ != NULL);
@@ -649,19 +649,19 @@ public:
         //    return Expression();
         //if (select_from_ == NULL)
         //    return Expression(); // либо брать первую таблицу
-            
-        JoinList::iterator it = joins_.begin(); 
+
+        JoinList::iterator it = joins_.begin();
         Expression prev_expr = Expression(select_from_->name());
         Expression join_expr;
         for (; it != joins_.end(); ++it) {  // прохожу про joinlist
-            if (!it->second.is_empty()) {  // если есть выражение соединения, то все ок 
+            if (!it->second.is_empty()) {  // если есть выражение соединения, то все ок
                 join_expr = JoinExpr(prev_expr, Expression(it->first->name()), it->second);
             }
-            else 
+            else
             {           // иначе проходим по предыдущим таблицам и пытаемся найти связь между ними и текущей
                 JoinList::iterator loc_it = joins_.begin();
                 const Relation *rel = NULL;
-                for (; loc_it != it; ++loc_it) 
+                for (; loc_it != it; ++loc_it)
                 {
                     rel = session_->schema().find_relation(loc_it->first->class_name(), String(), it->first->class_name());
                     if (rel != NULL)
@@ -738,7 +738,7 @@ public:
         Strings tables;
         select.from_(ColumnExpr(get_select(tables), _T("X")));
         SqlResultSet rs = session_->engine()->select_iter(select);
-        Row r = *rs.begin(); 
+        Row r = *rs.begin();
         return r[0].second.as_longint();
     }
     R first() { return range(0, 1).one(); }

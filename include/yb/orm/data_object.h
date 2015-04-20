@@ -152,7 +152,7 @@ public:
     }
     //! Save a detached or new DataObject into Session
     void save(DataObjectPtr obj);
-    //! 
+    //!
     DataObjectPtr save_or_update(DataObjectPtr obj);
     //! Tell session to release a DataObject
     void detach(DataObjectPtr obj);
@@ -168,7 +168,7 @@ public:
     EngineBase *engine() { return engine_.get(); }
     void load_collection(ObjectList &out,
                          const Expression &tables,
-                         const Expression &filter, 
+                         const Expression &filter,
                          const Expression &order_by = Expression(),
                          bool for_update_flag = false);
     DataObjectResultSet load_collection(
@@ -244,7 +244,7 @@ public:
     }
     ~DataObject();
     const Table &table() const { return table_; }
-    
+
     Status status() const { return status_; }
     Session *session() const { return session_; }
     void set_session(Session *session);

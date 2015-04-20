@@ -41,14 +41,14 @@ public:
 
     void testOperatorOr()
     {
-        CPPUNIT_ASSERT_EQUAL(string("(ID = 1) OR (A <= 'a')"), 
+        CPPUNIT_ASSERT_EQUAL(string("(ID = 1) OR (A <= 'a')"),
                              NARROW((Expression(_T("ID")) == 1 ||
                                      Expression(_T("A")) <= String(_T("a"))).get_sql()));
     }
 
     void testOperatorAnd()
     {
-        CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A <> 'a')"), 
+        CPPUNIT_ASSERT_EQUAL(string("(ID = 1) AND (A <> 'a')"),
                              NARROW((Expression(_T("ID")) == 1 &&
                                      Expression(_T("A")) != String(_T("a"))).get_sql()));
     }

@@ -34,7 +34,7 @@ template <class T__> struct ValueTraits {};
 /** Value class objects can hold NULL values.  Copying such objects
  * is cheap because of shared pointer.
  * Value class also supports casting to several strict types.
- * 
+ *
  * @remark Value class should not be implemented upon boost::any because of massive
  * copying of Value objects here and there.
  */

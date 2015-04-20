@@ -18,7 +18,7 @@ public:
     void serve();
 protected:
     virtual bool has_uri(const Yb::String &uri) = 0;
-    virtual const std::string call_uri(const Yb::String &uri, 
+    virtual const std::string call_uri(const Yb::String &uri,
             const Yb::StringDict &request) = 0;
 private:
     int port_;
@@ -51,7 +51,7 @@ protected:
     virtual bool has_uri(const Yb::String &uri) {
         return handlers_.has(uri);
     }
-    virtual const std::string call_uri(const Yb::String &uri, 
+    virtual const std::string call_uri(const Yb::String &uri,
             const Yb::StringDict &request) {
         Handler func_ptr = handlers_.get(uri);
         return func_ptr(request);

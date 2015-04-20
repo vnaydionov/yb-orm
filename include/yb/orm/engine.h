@@ -23,7 +23,7 @@ namespace Yb {
 class YBORM_DECL EngineBase
 {
 public:
-    enum Mode { READ_ONLY = 0, READ_WRITE = 1 }; 
+    enum Mode { READ_ONLY = 0, READ_WRITE = 1 };
 
     virtual ~EngineBase();
     virtual SqlConnection *get_conn() = 0;
@@ -63,7 +63,7 @@ public:
             ParamNums &param_nums, const Table &table,
             bool include_pk, bool numbered_params = false);
     static void gen_sql_update(String &sql, TypeCodes &type_codes,
-            ParamNums &param_nums, const Table &table, 
+            ParamNums &param_nums, const Table &table,
             const SqlGeneratorOptions &options);
     static void gen_sql_delete(String &sql, TypeCodes &type_codes,
             const Table &table, const SqlGeneratorOptions &options);

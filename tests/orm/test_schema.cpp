@@ -316,7 +316,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(3, depths[_T("B")]);
         CPPUNIT_ASSERT_EQUAL(2, depths[_T("C")]);
 
-        r.set_absolute_depths(depths);    
+        r.set_absolute_depths(depths);
         CPPUNIT_ASSERT_EQUAL(1, r.table(_T("A")).get_depth());
         CPPUNIT_ASSERT_EQUAL(3, r.table(_T("B")).get_depth());
         CPPUNIT_ASSERT_EQUAL(2, r.table(_T("C")).get_depth());
@@ -331,7 +331,7 @@ public:
         r << t;
         r.check_cycles();
     }
-    
+
     void test_registry_check_absent_fk_field()
     {
         Table::Ptr t1(new Table(_T("A")));
@@ -343,7 +343,7 @@ public:
         r << t1 << t2;
         r.check_cycles();
     }
-    
+
     void test_registry_check_cyclic_references()
     {
         Table::Ptr t1(new Table(_T("A")));

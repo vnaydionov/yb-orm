@@ -44,7 +44,7 @@ public:
 
     void testParseSchema()
     {
-        string xml = 
+        string xml =
             "<schema>"
             "<table name='A'>"
             "<column type='string' name='AA' size='10' />"
@@ -74,7 +74,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(1, (int)reg.rel_count());
         CPPUNIT_ASSERT_EQUAL((int)Relation::ONE2MANY, (*reg.rel_begin())->type());
     }
-    
+
     void testWrongElementTable()
     {
         string xml =  "<table name='A' sequence='S'><col></col></table>";
@@ -84,7 +84,7 @@ public:
 
     void testParseTable()
     {
-        string xml = 
+        string xml =
             "<table name='A' sequence='S'>"
             "<column type='string' name='ASTR' size='10' default='zzz'/>"
             "<column type='longint' name='B_ID'>"
@@ -104,7 +104,7 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("B_ID"), NARROW(it->name()));
         CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(it->fk_name()));
         CPPUNIT_ASSERT_EQUAL(string("T_B"), NARROW(it->fk_table_name()));
-        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, it->type()); 
+        CPPUNIT_ASSERT_EQUAL((int)Value::LONGINT, it->type());
     }
 
     void testNoAutoInc()
@@ -189,7 +189,7 @@ public:
         MetaDataConfig::get_node_ptr_value(
                 ElementTree::parse("<size>a</size>"), a);
     }
-    
+
     void testStrTypeToInt()
     {
         String a;
@@ -206,13 +206,13 @@ public:
         CPPUNIT_ASSERT_EQUAL((int)Value::FLOAT,
                 MetaDataConfig::string_type_to_int(String(_T("FLOAT")),a));
     }
-    
+
     void testWrongColumnType()
     {
         string xml = "<column type='long' name='ID'></column>";
         Column col = MetaDataConfig::fill_column_meta(ElementTree::parse(xml));
     }
-    
+
     void testParseColumn()
     {
         string xml = "<column type='longint' name='ID' xml-name='i-d'>"
@@ -235,9 +235,9 @@ public:
         CPPUNIT_ASSERT_EQUAL(string("T_INVOICE"), NARROW(fk_table));
         CPPUNIT_ASSERT_EQUAL(string("ID"), NARROW(fk_field));
     }
-    
+
     void testInvalidCombination()
-    {      
+    {
         string xml = "<column type='longint' name='ID' size='10' />";
         ElementTree::ElementPtr node(ElementTree::parse(xml));
         Column col = MetaDataConfig::fill_column_meta(node);
@@ -259,7 +259,7 @@ public:
         MetaDataConfig::get_foreign_key_data(ElementTree::parse(xml),
                 fk_table, fk_field);
     }
-    
+
     void testAbsentColumnName()
     {
         string xml = "<column type='longint'></column>";

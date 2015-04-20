@@ -39,13 +39,13 @@ class YBORM_DECL DomainFactory
 {
 public:
     void register_creator(const String &name, CreatorPtr creator);
-    DomainObjectPtr create_object(Session &session, 
+    DomainObjectPtr create_object(Session &session,
             const String &entity_name, LongInt id);
 private:
     static bool add_pending_reg(const String &name, CreatorPtr creator);
     void process_pending();
     void do_register_creator(const String &name, CreatorPtr creator);
-    typedef std::map<String, CreatorPtr> Map; 
+    typedef std::map<String, CreatorPtr> Map;
     Map creator_map_;
     static int init_flag_;
     static void *pending_;

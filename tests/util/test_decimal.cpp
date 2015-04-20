@@ -50,7 +50,7 @@ class TestDecimal: public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(testInvalidCast2, boost::bad_lexical_cast);
 #endif
 
-    CPPUNIT_TEST_SUITE_END();   
+    CPPUNIT_TEST_SUITE_END();
 
 public:
     void testDecimalInit()
@@ -142,7 +142,7 @@ public:
     void testDecimalInitFail11() { Decimal m(_T("123.2356.11")); (void)m.is_positive(); }
     void testDecimalInitFail12() { Decimal m(_T(".")); (void)m.is_positive(); }
 
-    void testDecimalComparison() 
+    void testDecimalComparison()
     {
         Decimal m1(25);
         Decimal m2(1020, 2);
@@ -202,7 +202,7 @@ public:
         CPPUNIT_ASSERT(m4 == Decimal(_T("20.1")));
     }
 
-    void testDecimalArithmetics() 
+    void testDecimalArithmetics()
     {
         Decimal m1(25);
         Decimal m2(1020, 2);
@@ -256,7 +256,7 @@ public:
         Decimal x = Decimal(_T("123456789.123456789")) * 9;
     }
 
-    void testSerialization() 
+    void testSerialization()
     {
         Decimal m1(25);
         Decimal m2(1020, 2);
@@ -298,7 +298,7 @@ public:
         }
     }
 
-    void testDeserialization() 
+    void testDeserialization()
     {
         std::stringstream s("1000000.11");
         Decimal d;
@@ -306,7 +306,7 @@ public:
         CPPUNIT_ASSERT(Decimal(_T("1000000.11")) == d);
     }
 
-    void testFailedDeserialization() 
+    void testFailedDeserialization()
     {
         std::stringstream s("qwelkfjwoefijw");
         std::string str;
@@ -317,7 +317,7 @@ public:
     }
 
 #if !defined(YB_USE_QT) && !defined(YB_USE_WX)
-    void testCast() 
+    void testCast()
     {
         Decimal r = boost::lexical_cast<Decimal>(_T("-32410.20")),
                 d = boost::lexical_cast<Decimal>(
@@ -326,12 +326,12 @@ public:
         CPPUNIT_ASSERT(d == Decimal(_T("10.23")));
     }
 
-    void testInvalidCast1() 
+    void testInvalidCast1()
     {
         Decimal r = boost::lexical_cast<Decimal>(_T(""));
     }
 
-    void testInvalidCast2() 
+    void testInvalidCast2()
     {
         Decimal r = boost::lexical_cast<Decimal>(_T("wefojhweofihwoe"));
     }

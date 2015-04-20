@@ -29,7 +29,7 @@ class TestMisc: public CppUnit::TestFixture
     CPPUNIT_TEST(testParseUrl);
     CPPUNIT_TEST(testFormatUrl);
 
-    CPPUNIT_TEST_SUITE_END();   
+    CPPUNIT_TEST_SUITE_END();
 
 public:
     void testSplitStr()
@@ -174,7 +174,7 @@ public:
 
     void testFormatUrl()
     {
-        StringDict d; 
+        StringDict d;
         d[_T("&proto")] = _T("mysql");
         d[_T("&proto_ext")] = _T("qtsql");
         d[_T("&user")] = _T("usr");
@@ -210,7 +210,7 @@ class TestDict: public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(testDictGetAsValueError, ValueError);
     CPPUNIT_TEST_EXCEPTION(testDictPopKeyError, KeyError);
 
-    CPPUNIT_TEST_SUITE_END();   
+    CPPUNIT_TEST_SUITE_END();
 
 public:
     void testDictCons()
@@ -305,7 +305,7 @@ class TestOrderedDict: public CppUnit::TestFixture
     CPPUNIT_TEST(testOrderedDictOrder);
     CPPUNIT_TEST(testOrderedDictCmp);
 
-    CPPUNIT_TEST_SUITE_END();   
+    CPPUNIT_TEST_SUITE_END();
 
 public:
     void testOrderedDictCons()

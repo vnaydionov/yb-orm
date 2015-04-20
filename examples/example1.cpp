@@ -30,7 +30,7 @@ int main()
         order->dt = Yb::now();
         Domain::Order::Holder o2(order);
         session.flush();
-        Yb::LongInt cid = client->id; 
+        Yb::LongInt cid = client->id;
         cout << "client created: " << cid << endl;
         cout << "order created: " << order->id.value() << endl;
         cout << "order dt: " << NARROW(order->dt.as<Yb::String>()) << endl;

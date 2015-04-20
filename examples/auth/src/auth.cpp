@@ -83,7 +83,7 @@ get_checked_session_by_token(Yb::Session &session,
     return ls.id;
 }
 
-std::string 
+std::string
 check(const Yb::StringDict &params)
 {
     return get_checked_session_by_token(*theApp::instance().new_session(),
@@ -94,7 +94,7 @@ check(const Yb::StringDict &params)
 #pragma warning(disable:4996)
 #endif // _MSC_VER
 
-Yb::String 
+Yb::String
 md5_hash(const Yb::String &str0)
 {
     std::string str = NARROW(str0);
@@ -111,7 +111,7 @@ md5_hash(const Yb::String &str0)
     return WIDEN(rez);
 }
 
-std::string 
+std::string
 registration(const Yb::StringDict &params)
 {
     auto_ptr<Yb::Session> session = theApp::instance().new_session();
@@ -148,7 +148,7 @@ get_checked_user_by_creds(Yb::Session &session, const Yb::StringDict &params)
     return q->id;
 }
 
-std::string 
+std::string
 login(const Yb::StringDict &params)
 {
     auto_ptr<Yb::Session> session = theApp::instance().new_session();
@@ -173,7 +173,7 @@ login(const Yb::StringDict &params)
 
 std::string
 session_info(const Yb::StringDict &params)
-{ 
+{
     auto_ptr<Yb::Session> session = theApp::instance().new_session();
     Yb::LongInt sid = get_checked_session_by_token(*session, params);
     if (-1 == sid)

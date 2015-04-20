@@ -66,7 +66,7 @@ int main()
             cout << order.xmlize(1)->serialize() << endl;
             engine.commit();
         }
-        
+
         Domain::Client::Holder c2(session, client->id.value());
         cout << "c2.orders size: " << c2->orders.size() << endl;
         Yb::ManagedList<Domain::Order> &lst = c2->orders;
@@ -95,7 +95,7 @@ int main()
                     (c2->id == Client::c.id)
                     //&& !Client::c.name.in_(boost::make_tuple(1, 2, 3))
             ).order_by(ExpressionList(Client::c.id, Order::c.id)).all();
-        cout << "(boost::tuple) Order/Client IDs: " << endl; 
+        cout << "(boost::tuple) Order/Client IDs: " << endl;
         DomainResultSet<boost::tuple<Order, Client> >
             ::iterator p = rs0.begin(), pend = rs0.end();
         for (; p != pend; ++p)
@@ -110,7 +110,7 @@ int main()
         Yb::DomainResultSet<Domain::Order> rs =
             Yb::query<Domain::Order>(session, Order::c.client_id == c2->id).all();
         Yb::DomainResultSet<Domain::Order>::iterator q = rs.begin(), qend = rs.end();
-        cout << "Order/Client IDs: " << endl; 
+        cout << "Order/Client IDs: " << endl;
         for (; q != qend; ++q)
             cout << q->id.value() << ",";
         cout << endl;

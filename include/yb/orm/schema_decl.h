@@ -199,7 +199,7 @@ class_name__::Registrator class_name__::registrator;
 
 
 #define YB_COLON_OR_COMMA_0 :
-#define YB_EMPTY_OR_COMMA_0 
+#define YB_EMPTY_OR_COMMA_0
 #define YB_COLON_OR_COMMA_1 ,
 #define YB_EMPTY_OR_COMMA_1 ,
 #define YB_COLON_OR_COMMA_2 ,

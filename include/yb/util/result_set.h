@@ -96,7 +96,7 @@ public:
             return *this;
         }
 
-        bool operator ==(const iterator &other) const { 
+        bool operator ==(const iterator &other) const {
             lazy_fetch();
             other.lazy_fetch();
             return (flag_end_ == other.flag_end_
