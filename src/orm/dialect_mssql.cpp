@@ -30,7 +30,7 @@ MssqlDialect::select_next_value(const String &seq_name)
 const String
 MssqlDialect::select_last_inserted_id(const String &table_name)
 {
-    return _T("SELECT SCOPE_IDENTITY()");
+    return _T("SELECT @@IDENTITY");
 }
 
 const String
