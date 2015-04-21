@@ -33,6 +33,8 @@ YBUTIL_DECL bool is_symbol_of_id(Yb::Char c);
 
 YBUTIL_DECL bool is_id(const Yb::String &s);
 
+YBUTIL_DECL bool is_sql_id(const Yb::String &s);
+
 YBUTIL_DECL bool look_like_absolute_path(const String &s);
 
 YBUTIL_DECL bool starts_with(const Yb::String &s, const Yb::String &subs);

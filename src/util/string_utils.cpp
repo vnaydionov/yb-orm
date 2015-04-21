@@ -64,6 +64,19 @@ YBUTIL_DECL bool is_id(const Yb::String &s)
     return true;
 }
 
+YBUTIL_DECL bool is_sql_id(const Yb::String &s)
+{
+    if (str_empty(s))
+        return false;
+    Yb::String::const_iterator it = s.begin(), end = s.end();
+    if (!is_start_symbol_of_id(*it))
+        return false;
+    for (++it; it != end; ++it)
+        if (!(is_symbol_of_id(*it) || *it == _T('$') || *it == _T('#')))
+            return false;
+    return true;
+}
+
 YBUTIL_DECL bool look_like_absolute_path(const Yb::String &s)
 {
     return !str_empty(s) && (

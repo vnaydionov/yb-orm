@@ -85,6 +85,10 @@ static
 Char
 underscore_to_dash(Char c) { return c == _T('_')? _T('-'): c; }
 
+static
+Char
+fix_spec_symbols(Char c) { return c == _T('$')? _T('s'): (c == _T('#')? _T('n'): c); }
+
 YBORM_DECL const String
 mk_xml_name(const String &name, const String &xml_name)
 {
@@ -92,7 +96,9 @@ mk_xml_name(const String &name, const String &xml_name)
         return _T("");
     if (!str_empty(xml_name))
         return xml_name;
-    return translate(str_to_lower(name), underscore_to_dash);
+    return translate(
+            translate(str_to_lower(name), underscore_to_dash),
+            fix_spec_symbols);
 }
 
 Column::Column(const String &name, int type, size_t size, int flags)
@@ -136,7 +142,7 @@ Table::Table(const String &name, const String &xml_name,
 void
 Table::add_column(const Column &column)
 {
-    if (!is_id(column.name()))
+    if (!is_sql_id(column.name()))
         throw BadColumnName(name(), column.name());
     String col_uname = str_to_upper(column.name());
     IndexMap::const_iterator it = indicies_.find(col_uname);
@@ -405,7 +411,7 @@ Schema::operator=(Schema &x)
 void
 Schema::add_table(Table::Ptr table)
 {
-    if (!is_id(table->name()))
+    if (!is_sql_id(table->name()))
         throw BadTableName(table->name());
     if (table->size() == 0)
         throw TableWithoutColumns(table->name());

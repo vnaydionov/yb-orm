@@ -45,8 +45,15 @@ const char *kwords[] = { "and", "and_eq", "asm", "auto", "bitand", "bitor",
     "typename", "union", "unsigned", "using", "virtual", "void", "volatile",
     "wchar_t", "while", "xor", "xor_eq", NULL };
 
-string fix_name(const string &name)
+string fix_name(const string &name0)
 {
+    string name = name0;
+    for (int i = 0; i < name.size(); ++i) {
+        if (name[i] == '$')
+            name[i] = 's';
+        if (name[i] == '#')
+            name[i] = 'n';
+    }
     for (int i = 0; kwords[i]; ++i)
         if (!name.compare(kwords[i]))
             return name + "_";
