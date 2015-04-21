@@ -1,13 +1,25 @@
 
 0.4.7
-    * yborm_gen tools can be used to extract database schema
-      and store it into XML format.
+    * New SQL dialect supported: MSSQL. Tested on Linux (TDS)
+      and Windows (Native Client 10).
+    * Explicit .select_from<>() and .join<>() modifiers for QueryObj.
     * yborm_gen can be used to manually create schema objects
-      in database as well as to drop them in correct order.
+      in database (--populate-schema) as well as to drop them
+      (--drop-schema) in a correct order.
+    * yborm_gen tools can help to extract database schema
+      and store it into XML format (--extract-schema),
+      there are still limited support for type mapping.
+    * New layout for SqlDialect descendant classes.
     * Proper support for 'LIKE' and 'IN' operators.
-    * Make use of std::tuple if it's available (GCC >= 4.6, MSVC >= 12.0).
-    * Build-system fixes to allow easy selection of Boost instance.
-    * Fix Automake scripts to build YB.ORM with Qt5.
+    * Fix comparison of Property instances.
+    * Make use of std::tuple if it's available (GCC >= 4.6, MSVC >= 2013).
+    * CMake: build-system fixes to allow easy selection of Boost instance.
+    * Windows: move third party components (Boost, CppUnit, LibXML2, SQLite)
+      into separate folders, pack up prebuilt third party libraries
+      for certain versions of MSVC and MinGW.
+    * Allow to compile in SQLite3 sources into YB.ORM dll.
+    * Fix Automake/CMake scripts to support building YB.ORM with Qt5
+      on Linux and Windows.
     * Auth example: Fix possible endless loop in HTTP code.
 
 0.4.6
