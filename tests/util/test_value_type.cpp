@@ -131,8 +131,8 @@ public:
         CPPUNIT_ASSERT(!(Value(a) < Value(a)));
         std::string str1 = "abc";
         Blob data1(str1.begin(), str1.end());
-        const char *str2 = "abcd";
-        Blob data2(str2, strchr(str2, 0));
+        std::string str2 = "abcd";
+        Blob data2(str2.begin(), str2.end());
         CPPUNIT_ASSERT(Value(data1) < Value(data2));
     }
 
@@ -161,8 +161,8 @@ public:
         String s = str_to_lower(Value(1E30).as_string());
         CPPUNIT_ASSERT(starts_with(s, _T("1e")));
         CPPUNIT_ASSERT(ends_with(s, _T("30")));
-        const char *str = "abc";
-        Blob data(str, strchr(str, 0));
+        std::string str = "abc";
+        Blob data(str.begin(), str.end());
         CPPUNIT_ASSERT_EQUAL(string("abc"), NARROW(Value(data).as_string()));
     }
 

@@ -67,7 +67,7 @@ namespace tiodbc
 	{
 	public:
 		bind_error(int par_num):
-			runtime_error("param bind error, N " + Yb::to_stdstring(par_num))
+			std::runtime_error("param bind error, N " + Yb::to_stdstring(par_num))
 		{}
 	};
 
