@@ -1,4 +1,4 @@
-// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+// -*- Mode: C++; c-basic-offset: 6; tab-width: 4; indent-tabs-mode: nil; -*-
 #define YBORM_SOURCE
 
 #ifdef _MSC_VER
@@ -159,7 +159,17 @@ Session::Session(const Schema &schema, const String &driver_name,
     clone_engine(created_engine_.get());
 }
 
-Session::~Session() { clear(); }
+Session::~Session() {
+    try {
+        clear();
+    }
+    catch (const std::exception &e) {
+        try {
+            debug(String(_T("Session::clear(): ")) + WIDEN(e.what()));
+        }
+        catch (...) {}
+    }
+}
 
 void Session::clear()
 {
