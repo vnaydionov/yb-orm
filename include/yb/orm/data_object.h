@@ -23,6 +23,7 @@
 
 class TestDataObject;
 class TestDataObjectSaveLoad;
+class TestDomainObject;
 
 namespace Yb {
 
@@ -117,6 +118,7 @@ class YBORM_DECL Session: public NonCopyable
 {
     friend class ::TestDataObject;
     friend class ::TestDataObjectSaveLoad;
+    friend class ::TestDomainObject;
     typedef std::set<DataObjectPtr> Objects;
     typedef std::map<String, DataObject *> IdentityMap;
 

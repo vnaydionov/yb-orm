@@ -6,6 +6,11 @@
 #include "orm/domain_factory.h"
 #include "orm/schema_decl.h"
 
+#define ORM_TEST_ID1 -10
+#define ORM_XML_ID2 -20
+#define ORM_XML_ID3 -30
+#define ORM_XML_ID4 -40
+
 class OrmXml;
 
 class OrmTest: public Yb::DomainObject {
@@ -63,7 +68,6 @@ static void setup_log(SqlConnection &c)
     c.set_echo(true);
 }
 
-
 class TestDomainObject : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(TestDomainObject);
@@ -76,6 +80,8 @@ class TestDomainObject : public CppUnit::TestFixture
 #if defined(YB_USE_TUPLE)
     CPPUNIT_TEST(test_join);
 #endif // defined(YB_USE_TUPLE)
+    CPPUNIT_TEST(test_explicit_join1);
+    CPPUNIT_TEST(test_explicit_join2);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -91,7 +97,7 @@ public:
                 _T("INSERT INTO T_ORM_TEST(ID, A, B, C, D) VALUES(?, ?, ?, ?, ?)");
             conn.prepare(sql_str);
             Values params(5);
-            params[0] = Value(-10);
+            params[0] = Value(ORM_TEST_ID1);
             params[1] = Value(_T("item"));
             params[2] = Value(now());
             params[3] = Value(Decimal(_T("1.2")));
@@ -105,12 +111,12 @@ public:
                 _T("INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES (?, ?, ?)");
             conn.prepare(sql_str);
             Values params(3);
-            params[0] = Value(-20);
-            params[1] = Value(-10);
+            params[0] = Value(ORM_XML_ID2);
+            params[1] = Value(ORM_TEST_ID1);
             params[2] = Value(Decimal(_T("3.14")));
             conn.exec(params);
-            params[0] = Value(-30);
-            params[1] = Value(-10);
+            params[0] = Value(ORM_XML_ID3);
+            params[1] = Value(ORM_TEST_ID1);
             params[2] = Value(Decimal(_T("2.7")));
             conn.exec(params);
         }
@@ -119,7 +125,7 @@ public:
                 _T("INSERT INTO T_ORM_XML(ID, ORM_TEST_ID, B) VALUES (?, ?, ?)");
             conn.prepare(sql_str);
             Values params(3);
-            params[0] = Value(-40);
+            params[0] = Value(ORM_XML_ID4);
             params[1] = Value();
             params[2] = Value(Decimal(_T("42")));
             conn.exec(params);
@@ -147,7 +153,7 @@ public:
         Engine engine(Engine::READ_ONLY);
         setup_log(engine);
         Session session(Yb::theSchema(), &engine);
-        OrmTest dobj(session, -10);
+        OrmTest dobj(session, ORM_TEST_ID1);
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)dobj.get_data_object()->status());
         CPPUNIT_ASSERT_EQUAL(string("item"), NARROW(dobj.a.value()));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)dobj.get_data_object()->status());
@@ -161,7 +167,7 @@ public:
         Engine engine(Engine::READ_ONLY);
         setup_log(engine);
         Session session(Yb::theSchema(), &engine);
-        OrmTest dobj(session, -20);
+        OrmTest dobj(session, ORM_XML_ID2);
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)dobj.get_data_object()->status());
         String x = dobj.a;
     }
@@ -181,7 +187,7 @@ public:
         Engine engine(Engine::READ_ONLY);
         setup_log(engine);
         Session session(Yb::theSchema(), &engine);
-        OrmXml dobj(session, -40);
+        OrmXml dobj(session, ORM_XML_ID4);
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)dobj.get_data_object()->status());
         Decimal x = dobj.b;
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Sync, (int)dobj.get_data_object()->status());
@@ -208,7 +214,7 @@ public:
         Engine engine(Engine::READ_ONLY);
         setup_log(engine);
         Session session(Yb::theSchema(), &engine);
-        OrmXml dobj(session, -40);
+        OrmXml dobj(session, ORM_XML_ID4);
         OrmXml::Holder dh2(dobj);
         CPPUNIT_ASSERT(dh2._get_p() != NULL);
         CPPUNIT_ASSERT_EQUAL(shptr_get(dobj.get_data_object()),
@@ -252,6 +258,44 @@ public:
         CPPUNIT_ASSERT_EQUAL(2, (int)q3.count());
     }
 #endif // defined(YB_USE_TUPLE)
+
+    void test_explicit_join1()
+    {
+        Engine engine(Engine::READ_ONLY);
+        setup_log(engine);
+        Session session(Yb::theSchema(), &engine);
+        DomainResultSet<OrmTest> rs = Yb::query<OrmTest>(session)
+            .select_from<OrmTest>()
+            .join<OrmXml>()
+            .filter_by(OrmTest::c.id == ORM_TEST_ID1)
+            .all();
+        vector<OrmTest> out;
+        copy(rs.begin(), rs.end(), back_inserter(out));
+        CPPUNIT_ASSERT_EQUAL(2, (int)out.size());
+        CPPUNIT_ASSERT(out[0] == out[1]);
+        ///
+        CPPUNIT_ASSERT_EQUAL(3, (int)session.objects_.size());
+        CPPUNIT_ASSERT_EQUAL(3, (int)session.identity_map_.size());
+    }
+
+    void test_explicit_join2()
+    {
+        Engine engine(Engine::READ_ONLY);
+        setup_log(engine);
+        Session session(Yb::theSchema(), &engine);
+        DomainResultSet<OrmXml> rs = Yb::query<OrmXml>(session)
+            .select_from<OrmTest>()
+            .join<OrmXml>()
+            .filter_by(OrmTest::c.id == ORM_TEST_ID1)
+            .all();
+        vector<OrmXml> out;
+        copy(rs.begin(), rs.end(), back_inserter(out));
+        CPPUNIT_ASSERT_EQUAL(2, (int)out.size());
+        CPPUNIT_ASSERT(out[0] != out[1]);
+        ///
+        CPPUNIT_ASSERT_EQUAL(3, (int)session.objects_.size());
+        CPPUNIT_ASSERT_EQUAL(3, (int)session.identity_map_.size());
+    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestDomainObject);
