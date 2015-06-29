@@ -119,10 +119,10 @@ public: \
             const Yb::Expression &filter, const Yb::Expression &order_by = Yb::Expression()) \
     { \
         class_name__::ListPtr lst(new class_name__::List()); \
-        Yb::ObjectList rows; \
+        Yb::DataObjectList rows; \
         session.load_collection(rows, Yb::Expression(_T(table_name__)), filter, order_by); \
         if (rows.size()) { \
-            Yb::ObjectList::iterator it = rows.begin(), end = rows.end(); \
+            Yb::DataObjectList::iterator it = rows.begin(), end = rows.end(); \
             for (; it != end; ++it) \
                 lst->push_back(class_name__(*it)); \
         } \
@@ -199,7 +199,7 @@ class_name__::Registrator class_name__::registrator;
 
 
 #define YB_COLON_OR_COMMA_0 :
-#define YB_EMPTY_OR_COMMA_0
+#define YB_EMPTY_OR_COMMA_0 
 #define YB_COLON_OR_COMMA_1 ,
 #define YB_EMPTY_OR_COMMA_1 ,
 #define YB_COLON_OR_COMMA_2 ,

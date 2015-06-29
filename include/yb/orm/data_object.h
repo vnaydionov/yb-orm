@@ -88,18 +88,18 @@ typedef IntrusivePtr<DataObject> DataObjectPtr;
 typedef IntrusivePtr<RelationObject> RelationObjectPtr;
 inline DataObject *shptr_get(DataObjectPtr p) { return p.get(); }
 inline RelationObject *shptr_get(RelationObjectPtr p) { return p.get(); }
-typedef std::vector<DataObjectPtr> ObjectList;
+typedef std::vector<DataObjectPtr> DataObjectList;
 
 class Session;
 
-class YBORM_DECL DataObjectResultSet: public ResultSetBase<ObjectList>
+class YBORM_DECL DataObjectResultSet: public ResultSetBase<DataObjectList>
 {
     SqlResultSet rs_;
     std::auto_ptr<SqlResultSet::iterator> it_;
     std::vector<const Table *> tables_;
     Session &session_;
 
-    bool fetch(ObjectList &row);
+    bool fetch(DataObjectList &row);
     DataObjectResultSet();
 public:
     DataObjectResultSet(const SqlResultSet &rs, Session &session,
@@ -168,7 +168,7 @@ public:
     void commit();
     void rollback();
     EngineBase *engine() { return engine_.get(); }
-    void load_collection(ObjectList &out,
+    void load_collection(DataObjectList &out,
                          const Expression &tables,
                          const Expression &filter,
                          const Expression &order_by = Expression(),

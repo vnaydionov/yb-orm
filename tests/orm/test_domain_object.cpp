@@ -82,6 +82,9 @@ class TestDomainObject : public CppUnit::TestFixture
 #endif // defined(YB_USE_TUPLE)
     CPPUNIT_TEST(test_explicit_join1);
     CPPUNIT_TEST(test_explicit_join2);
+#if defined(YB_USE_TUPLE)
+    CPPUNIT_TEST(test_explicit_join3);
+#endif // defined(YB_USE_TUPLE)
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -291,11 +294,34 @@ public:
         vector<OrmXml> out;
         copy(rs.begin(), rs.end(), back_inserter(out));
         CPPUNIT_ASSERT_EQUAL(2, (int)out.size());
+        ///
+        CPPUNIT_ASSERT_EQUAL(3, (int)session.objects_.size());
+        CPPUNIT_ASSERT_EQUAL(3, (int)session.identity_map_.size());
         CPPUNIT_ASSERT(out[0] != out[1]);
+    }
+
+#if defined(YB_USE_TUPLE)
+    void test_explicit_join3()
+    {
+        Engine engine(Engine::READ_ONLY);
+        setup_log(engine);
+        Session session(Yb::theSchema(), &engine);
+        DomainResultSet<boost::tuple<OrmTest, OrmXml> > rs =
+            Yb::query<boost::tuple<OrmTest, OrmXml> >(session)
+            .select_from<OrmXml>()
+            .join<OrmTest>(OrmTest::c.id == OrmXml::c.orm_test_id)
+            .filter_by(OrmTest::c.id == ORM_TEST_ID1)
+            .all();
+        vector<boost::tuple<OrmTest, OrmXml> > out;
+        copy(rs.begin(), rs.end(), back_inserter(out));
+        CPPUNIT_ASSERT_EQUAL(2, (int)out.size());
+        CPPUNIT_ASSERT(out[0].get<0>() == out[1].get<0>());
+        CPPUNIT_ASSERT(out[0].get<1>() != out[1].get<1>());
         ///
         CPPUNIT_ASSERT_EQUAL(3, (int)session.objects_.size());
         CPPUNIT_ASSERT_EQUAL(3, (int)session.identity_map_.size());
     }
+#endif // defined(YB_USE_TUPLE)
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TestDomainObject);

@@ -60,13 +60,13 @@ DataObjectAlreadyInSession::DataObjectAlreadyInSession(
                   "in the identity map: ") + key2str(key))
 {}
 
-bool DataObjectResultSet::fetch(ObjectList &row)
+bool DataObjectResultSet::fetch(DataObjectList &row)
 {
     if (!it_.get())
         it_.reset(new SqlResultSet::iterator(rs_.begin()));
     if (rs_.end() == *it_)
         return false;
-    ObjectList new_row;
+    DataObjectList new_row;
     Row &cur = **it_;
     size_t pos = 0;
     for (size_t i = 0; i < tables_.size(); ++i) {
@@ -239,7 +239,7 @@ void Session::detach(DataObjectPtr obj)
     }
 }
 
-void Session::load_collection(ObjectList &out,
+void Session::load_collection(DataObjectList &out,
                               const Expression &from,
                               const Filter &filter,
                               const Expression &order_by,

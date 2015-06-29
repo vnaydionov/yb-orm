@@ -164,10 +164,10 @@ public: \
             const Yb::Expression &filter, const Yb::Expression &order_by = Yb::Expression()) \
     { \
         class_name__::ListPtr lst(new class_name__::List()); \
-        Yb::ObjectList rows; \
+        Yb::DataObjectList rows; \
         session.load_collection(rows, Yb::Expression(_T(table_name__)), filter, order_by); \
         if (rows.size()) { \
-            Yb::ObjectList::iterator it = rows.begin(), end = rows.end(); \
+            Yb::DataObjectList::iterator it = rows.begin(), end = rows.end(); \
             for (; it != end; ++it) \
                 lst->push_back(class_name__(*it)); \
         } \

@@ -417,22 +417,43 @@ class DomainResultSet;
 template <class R>
 struct QueryFunc;
 
+inline int find_data_obj_in_row_by_table(const DataObjectList &row,
+        const String &table_name, int nth)
+{
+    for (size_t pos = 0; pos < row.size(); ++pos)
+    {
+        if (row[pos]->table().name() == table_name)
+        {
+            --nth;
+            if (!nth)
+                return (int)pos;
+        }
+    }
+    return -1;
+}
+
 #if defined(YB_USE_TUPLE)
 template <class H>
 boost::tuples::cons<H, boost::tuples::null_type>
 row2tuple(const boost::tuples::cons<H, boost::tuples::null_type> &,
-    const ObjectList &row, int pos)
+    const DataObjectList &row, int pos)
 {
     boost::tuples::null_type tail;
-    return boost::tuples::cons<H, boost::tuples::null_type>(H(row[pos]), tail);
+    // TODO: for now, search only for the first occurrence of the table
+    int tpos = find_data_obj_in_row_by_table(row, H::get_table_name(), 1);
+    YB_ASSERT(tpos >= 0);
+    return boost::tuples::cons<H, boost::tuples::null_type>(H(row[tpos]), tail);
 }
 
 template <class H, class T>
 boost::tuples::cons<H, T>
 row2tuple(const boost::tuples::cons<H, T> &item,
-    const ObjectList &row, int pos)
+    const DataObjectList &row, int pos)
 {
-    return boost::tuples::cons<H, T>(H(row[pos]),
+    // TODO: for now, search only for the first occurrence of the table
+    int tpos = find_data_obj_in_row_by_table(row, H::get_table_name(), 1);
+    YB_ASSERT(tpos >= 0);
+    return boost::tuples::cons<H, T>(H(row[tpos]),
         row2tuple(item.get_tail(), row, pos + 1));
 }
 
@@ -496,16 +517,19 @@ struct QueryFunc<boost::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> > {
 #if defined(YB_USE_STDTUPLE)
 template <int I, class T>
 inline typename std::enable_if<I == std::tuple_size<T>::value, void>::type
-row2stdtuple(const ObjectList &row, T &t)
+row2stdtuple(const DataObjectList &row, T &t)
 {}
 
 template <int I, class T>
 inline typename std::enable_if<I != std::tuple_size<T>::value, void>::type
-row2stdtuple(const ObjectList &row, T &t)
+row2stdtuple(const DataObjectList &row, T &t)
 {
     typedef typename std::remove_reference<
         decltype(std::get<I>(t))>::type DObj;
-    std::get<I>(t) = DObj(row[I]);
+    // TODO: for now, search only for the first occurrence of the table
+    int tpos = find_data_obj_in_row_by_table(row, DObj::get_table_name(), 1);
+    YB_ASSERT(tpos >= 0);
+    std::get<I>(t) = DObj(row[tpos]);
     row2stdtuple<I + 1, T>(row, t);
 }
 
@@ -575,7 +599,10 @@ class DomainResultSet: public ResultSetBase<R>
                     new DataObjectResultSet::iterator(rs_.begin()));
         if (rs_.end() == *it_)
             return false;
-        row = R((**it_)[0]);
+        // TODO: for now, search only for the first occurrence of the table
+        int tpos = find_data_obj_in_row_by_table(**it_, R::get_table_name(), 1);
+        YB_ASSERT(tpos >= 0);
+        row = R((**it_)[tpos]);
         ++*it_;
         return true;
     }
@@ -641,41 +668,56 @@ public:
         return q;
     }
 
-    Expression make_join()
+    Expression make_join(Strings &tables)
     {
+        // collect the tables mentioned
+
         YB_ASSERT(joins_.size());
         YB_ASSERT(select_from_ != NULL);
-        //if (!joins_.size()) // пустой joinlist
-        //    return Expression();
-        //if (select_from_ == NULL)
-        //    return Expression(); // либо брать первую таблицу
 
-        JoinList::iterator it = joins_.begin();
-        Expression prev_expr = Expression(select_from_->name());
-        Expression join_expr;
-        for (; it != joins_.end(); ++it) {  // прохожу про joinlist
-            if (!it->second.is_empty()) {  // если есть выражение соединения, то все ок
-                join_expr = JoinExpr(prev_expr, Expression(it->first->name()), it->second);
+        Expression join_expr(select_from_->name());
+        tables.push_back(select_from_->name());
+        JoinList::iterator it = joins_.begin(), end = joins_.end();
+        for (; it != end; ++it) {
+            // iterate over items of joins_
+            if (!it->second.is_empty()) {
+                // if there's a join condition - use it
+                join_expr = JoinExpr(join_expr,
+                        Expression(it->first->name()), it->second);
             }
             else
-            {           // иначе проходим по предыдущим таблицам и пытаемся найти связь между ними и текущей
-                JoinList::iterator loc_it = joins_.begin();
+            {
+                // otherwise - walk over previous tables
+                // trying to find the relationship between each
+                // of them and the current table.
                 const Relation *rel = NULL;
+                JoinList::iterator loc_it = joins_.begin();
                 for (; loc_it != it; ++loc_it)
                 {
-                    rel = session_->schema().find_relation(loc_it->first->class_name(), String(), it->first->class_name());
+                    rel = session_->schema().find_relation(
+                            loc_it->first->class_name(),
+                            _T(""),
+                            it->first->class_name()
+                            );
+                    // TODO: really ensure that the relationship found
+                    // is the only one between the two tables
                     if (rel != NULL)
                         break;
                 }
                 if (!rel) {
-                    rel = session_->schema().find_relation(select_from_->class_name(), String(), it->first->class_name());
-                    //if (rel == NULL) // если связей нет, то все плохо
-                        //return Expression();
+                    // try the very first table
+                    rel = session_->schema().find_relation(
+                            select_from_->class_name(),
+                            _T(""),
+                            it->first->class_name()
+                            );
                 }
                 YB_ASSERT(rel != NULL);
-                join_expr = JoinExpr(prev_expr, Expression(it->first->name()), rel->join_condition());
+                join_expr = JoinExpr(join_expr,
+                        Expression(it->first->name()),
+                        rel->join_condition());
             }
-            prev_expr = join_expr;
+            tables.push_back(it->first->name());
         }
         return join_expr;
     }
@@ -694,33 +736,39 @@ public:
         q.order_ = order;
         return q;
     }
+
     QueryObj for_update() {
         QueryObj q(*this);
         q.for_update_ = true;
         return q;
     }
+
     QueryObj range(int start, int end) {
         QueryObj q(*this);
         q.limit_ = end - start;
         q.offset_ = start;
         return q;
     }
+
     SelectExpr get_select(Strings &tables) {
-        QF::list_tables(tables);
-        if (!joins_.size())
+        if (!joins_.size()) {
+            QF::list_tables(tables);
             return make_select(session_->schema(),
                     session_->schema().join_expr(tables),
                     filter_, order_, for_update_, limit_, offset_);
+        }
         return make_select(session_->schema(),
-                make_join(),
+                make_join(tables),
                 filter_, order_, for_update_, limit_, offset_);
     }
+
     DomainResultSet<R> all() {
         Strings tables;
         SelectExpr select_expr = get_select(tables);
         return DomainResultSet<R>(session_->load_collection(
                     tables, select_expr));
     }
+
     R one() {
         Strings tables;
         SelectExpr select_expr = get_select(tables);
@@ -734,6 +782,7 @@ public:
             throw NoDataFound("More than one row");
         return result;
     }
+
     LongInt count() {
         SelectExpr select(Expression(_T("COUNT(*) CNT")));
         Strings tables;
@@ -742,6 +791,7 @@ public:
         Row r = *rs.begin();
         return r[0].second.as_longint();
     }
+
     R first() { return range(0, 1).one(); }
 };
 
