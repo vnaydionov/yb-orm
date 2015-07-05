@@ -6,7 +6,7 @@
 #include <vector>
 #include "util/thread.h"
 #include "orm/sql_driver.h"
-#include <soci.h>
+#include <soci/soci.h>
 
 namespace Yb {
 

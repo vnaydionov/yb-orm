@@ -11,8 +11,10 @@
 #else
 #include <libxml/tree.h>
 #include <libxml/parser.h>
+#include <libxml/xinclude.h>
 #endif
 #include <sstream>
+#include <fstream>
 
 namespace Yb {
 
@@ -79,22 +81,43 @@ Element::get_attr(const Yb::String &name) const
 }
 
 ElementPtr
-Element::find_first(const Yb::String &path)
+Element::find_child(const Yb::String &name)
 {
     for (size_t i = 0; i < children_.size(); ++i)
-        if (path == children_[i]->name_)
+        if (name == children_[i]->name_ || _T("*") == name)
             return children_[i];
-    throw ElementNotFound(path);
+    throw ElementNotFound(name);
+}
+
+ElementsPtr
+Element::find_children(const Yb::String &name)
+{
+    ElementsPtr elems(new Elements);
+    for (size_t i = 0; i < children_.size(); ++i)
+        if (name == children_[i]->name_ || _T("*") == name)
+            elems->push_back(children_[i]);
+    return elems;
+}
+
+ElementPtr
+Element::find_first(const Yb::String &path)
+{
+    Strings parts;
+    StrUtils::split_str(path, _T("/"), parts);
+    YB_ASSERT(parts.size() > 0);
+    ElementPtr cur_node = find_child(parts[0]);
+    for (size_t i = 1; i < parts.size(); ++i)
+    {
+        cur_node = cur_node->find_child(parts[i]);
+    }
+    return cur_node;
 }
 
 ElementsPtr
 Element::find_all(const Yb::String &path)
 {
-    ElementsPtr elems(new Elements);
-    for (size_t i = 0; i < children_.size(); ++i)
-        if (path == children_[i]->name_)
-            elems->push_back(children_[i]);
-    return elems;
+    // TODO: 
+    return find_children(path);
 }
 
 void
@@ -254,6 +277,26 @@ YBUTIL_DECL ElementPtr parse(std::istream &inp)
             out.put(c);
     }
     return parse(out.str());
+}
+
+YBUTIL_DECL ElementPtr parse_file(const Yb::String &file_name)
+{
+#if defined(YB_USE_WX) || defined(YB_USE_QT)
+    // TODO: pass the file name to the parser
+    std::ifstream inp(NARROW(file_name).c_str());
+    if (!inp.good())
+        throw ParseError(_T("Can't open file: ") + file_name);
+    return parse(inp);
+#else
+    xmlDocPtr doc = xmlParseFile(NARROW(file_name).c_str());
+    if (!doc)
+        throw ParseError(_T("xmlParseFile failed"));
+    xmlXIncludeProcess(doc);  // try to run XInclude processing
+    xmlNodePtr node = xmlDocGetRootElement(doc);
+    ElementPtr p = convert_node(node);
+    xmlFreeDoc(doc);
+    return p;
+#endif
 }
 
 YBUTIL_DECL ElementPtr mark_json(ElementPtr node, const Yb::String &json_type)

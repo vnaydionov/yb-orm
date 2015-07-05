@@ -51,6 +51,8 @@ public:
     void set_text(const Yb::String &s);
     bool has_attr(const Yb::String &name) const;
     const Yb::String get_attr(const Yb::String &name) const;
+    ElementPtr find_child(const Yb::String &name);
+    ElementsPtr find_children(const Yb::String &name);
     ElementPtr find_first(const Yb::String &path);
     ElementsPtr find_all(const Yb::String &path);
     void serialize(Yb::XmlWriter::Document &doc) const;
@@ -93,6 +95,8 @@ YBUTIL_DECL ElementPtr new_element(const Yb::String &name, const Yb::String &s =
 YBUTIL_DECL ElementPtr parse(const std::string &content);
 
 YBUTIL_DECL ElementPtr parse(std::istream &inp);
+
+YBUTIL_DECL ElementPtr parse_file(const Yb::String &file_name);
 
 YBUTIL_DECL ElementPtr new_json_array(const Yb::String &name = _T("array"));
 
