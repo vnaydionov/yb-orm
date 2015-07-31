@@ -9,25 +9,28 @@ using namespace Yb;
 using namespace Yb::StrUtils;
 
 HttpServerBase::HttpServerBase(int port, ILogger *root_logger,
-        const String &content_type, const String &bad_resp)
+        const String &content_type, const std::string &bad_resp)
     : port_(port)
     , content_type_(content_type)
     , bad_resp_(bad_resp)
     , log_(root_logger->new_logger("http_serv").release())
 {}
 
+HttpHeaders
+HttpServerBase::make_response(int code, const Yb::String &desc,
+        const std::string &body, const Yb::String &cont_type)
+{
+    HttpHeaders response(10, code, desc);
+    response.set_response_body(body, cont_type);
+    return response;
+}
+
 bool
 HttpServerBase::send_response(TcpSocket &cl_sock, ILogger &logger,
-        int code, const string &desc, const string &body,
-        const String &cont_type)
+        const HttpHeaders &response)
 {
     try {
-        ostringstream out;
-        out << "HTTP/1.0 " << code << " " << desc
-            << "\nContent-Type: " << NARROW(cont_type)
-            << "\nContent-Length: " << body.size()
-            << "\n\n" << body;
-        cl_sock.write(out.str());
+        cl_sock.write(response.serialize());
         cl_sock.close(true);
         return true;
     }
@@ -40,76 +43,105 @@ HttpServerBase::send_response(TcpSocket &cl_sock, ILogger &logger,
 void
 HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
 {
+    server->process_client_request(cl_s);
+}
+
+void
+HttpServerBase::process_client_request(SOCKET cl_s)
+{
     TcpSocket cl_sock(cl_s);
-    ILogger::Ptr logger = server->log_->new_logger("worker");
-    string bad_resp = NARROW(server->bad_resp_);
-    String cont_type_resp = server->content_type_;
+    ILogger::Ptr logger = log_->new_logger("worker");
+    string &bad_resp = bad_resp_;
+    String cont_type_resp = content_type_;
     // read and process request
     try {
         // read request header
         string buf = cl_sock.readline();
         logger->debug(buf);
-        int cont_len = -1;
-        String cont_type;
-        while (1) { // skip to request's body
+        // parse request line
+        Strings head_parts;
+        split_str_by_chars(WIDEN(buf), _T(" \t\r\n"), head_parts);
+        if (head_parts.size() != 3)
+            throw HttpParserError("process_client_request", "head_parts.size() != 3");
+        HttpHeaders request_obj(head_parts[0],
+                                head_parts[1],
+                                HttpHeaders::parse_version(head_parts[2]));
+        // read all of the headers
+        String header_name, header_value;
+        while (1) {
             string s = cl_sock.readline();
             if (!s.size())
                 throw HttpParserError("process", "short read");
             if (s == "\r\n" || s == "\n")
                 break;
-            logger->debug(s);
             String s2 = WIDEN(s);
-            if (starts_with(str_to_upper(s2), _T("CONTENT-LENGTH: "))) {
-                try {
-                    Strings parts;
-                    split_str_by_chars(s2, _T(" "), parts, 2);
-                    from_string(parts[1], cont_len);
+            if (!is_space(s2[0])) {
+                Strings parts;
+                split_str_by_chars(s2, _T(":"), parts, 2);
+                if (parts.size() != 2)
+                    throw HttpParserError("process", "Header format is wrong");
+                if (!str_empty(header_name))
+                {
+                    request_obj.set_header(header_name,
+                                           trim_trailing_space(header_value));
+                    logger->debug(NARROW(header_name + _T(": ") +
+                                         trim_trailing_space(header_value)));
                 }
-                catch (const std::exception &ex) {
-                    logger->warning(
-                        string("couldn't parse CONTENT-LENGTH: ") + ex.what());
-                }
+                header_name = trim_trailing_space(parts[0]);
+                header_value = parts[1];
             }
-            if (starts_with(str_to_upper(s2), _T("CONTENT-TYPE: "))) {
-                try {
-                    Strings parts;
-                    split_str_by_chars(s2, _T(": "), parts, 2);
-                    cont_type = trim_trailing_space(parts[1]);
-                }
-                catch (const std::exception &ex) {
-                    logger->warning(
-                        string("couldn't parse CONTENT-TYPE: ") + ex.what());
-                }
+            else {
+                header_value += s2;
             }
         }
-        // parse request
-        StringDict req = parse_http(WIDEN(buf));
-        req[_T("&content-type")] = cont_type;
-        String method = req.get(_T("&method"));
-        if (method != _T("GET") && method != _T("POST")) {
+        if (!str_empty(header_name))
+        {
+            request_obj.set_header(header_name,
+                                   trim_trailing_space(header_value));
+            logger->debug(NARROW(header_name + _T(": ") +
+                                 trim_trailing_space(header_value)));
+        }
+        // parse content length and type
+        int cont_len = -1;
+        try {
+            from_string(request_obj.get_header(_T("Content-Length")), cont_len);
+        }
+        catch (const std::exception &ex) {
+            logger->warning(
+                string("couldn't parse Content-Length: ") + ex.what());
+        }
+        String cont_type;
+        try {
+            cont_type = request_obj.get_header(_T("Content-Type"));
+        }
+        catch (const std::exception &ex) {
+            logger->warning(
+                string("couldn't parse Content-Type: ") + ex.what());
+        }
+        // read request body
+        if (cont_len > 0)
+            request_obj.set_request_body(cl_sock.read(cont_len),
+                                 str_to_lower(cont_type) ==
+                                 _T("application/x-www-form-urlencoded"));
+        if (request_obj.get_method() != _T("GET") &&
+            request_obj.get_method() != _T("POST"))
+        {
             logger->error("unsupported method \""
-                    + NARROW(method) + "\"");
+                          + NARROW(request_obj.get_method()) + "\"");
             send_response(cl_sock, *logger,
-                    400, "Bad request", bad_resp, cont_type_resp);
+                          make_response(400, _T("Bad request"), bad_resp, cont_type_resp));
         }
         else {
-            if (method == _T("POST") && cont_len > 0) {
-                String post_data = WIDEN(cl_sock.read(cont_len));
-                if (cont_type == _T("application/x-www-form-urlencoded"))
-                    req.update(parse_params(post_data));
-                else
-                    req[_T("&post-data")] = post_data;
-            }
-            String uri = req.get(_T("&uri"));
-            if (!server->has_uri(uri)) {
-                logger->error("URI " + NARROW(uri) + " not found!");
+            if (!has_handler_for_path(request_obj.get_path()))
+            {
+                logger->error("Path " + NARROW(request_obj.get_path()) + " not found!");
                 send_response(cl_sock, *logger,
-                        404, "Not found", bad_resp, cont_type_resp);
+                              make_response(404, _T("Not found"), bad_resp, cont_type_resp));
             }
             else {
                 // handle the request
-                send_response(cl_sock, *logger, 200, "OK",
-                        server->call_uri(uri, req), cont_type_resp);
+                send_response(cl_sock, *logger,
+                              call_handler(request_obj));
             }
         }
     }
@@ -117,7 +149,7 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
         logger->error(string("socket error: ") + ex.what());
         try {
             send_response(cl_sock, *logger,
-                    400, "Short read", bad_resp, cont_type_resp);
+                          make_response(400, _T("Short read"), bad_resp, cont_type_resp));
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());
@@ -127,7 +159,7 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
         logger->error(string("parser error: ") + ex.what());
         try {
             send_response(cl_sock, *logger,
-                    400, "Bad request", bad_resp, cont_type_resp);
+                          make_response(400, _T("Bad request"), bad_resp, cont_type_resp));
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());
@@ -137,7 +169,7 @@ HttpServerBase::process(HttpServerBase *server, SOCKET cl_s)
         logger->error(string("exception: ") + ex.what());
         try {
             send_response(cl_sock, *logger,
-                    500, "Internal server error", bad_resp, cont_type_resp);
+                          make_response(500, _T("Internal server error"), bad_resp, cont_type_resp));
         }
         catch (const std::exception &ex2) {
             logger->error(string("unable to send: ") + ex2.what());
@@ -199,7 +231,8 @@ HttpServerBase::serve()
     }
 }
 
-StringDict parse_params(const String &msg)
+StringDict
+HttpHeaders::parse_params(const String &msg)
 {
     StringDict params;
     Strings param_parts;
@@ -222,23 +255,52 @@ StringDict parse_params(const String &msg)
     return params;
 }
 
-StringDict parse_http(const String &msg)
+const Yb::String my_url_encode(const string &s, bool path_mode=false)
 {
-    Strings head_parts;
-    split_str_by_chars(msg, _T(" \t\r\n"), head_parts);
-    if (head_parts.size() != 3)
-        throw HttpParserError("parse_http", "head_parts.size() != 3");
-    Strings uri_parts;
-    split_str_by_chars(head_parts[1], _T("?"), uri_parts, 2);
-    if (uri_parts.size() < 1)
-        throw HttpParserError("parse_http", "uri_parts.size() < 1");
-    StringDict params;
-    if (uri_parts.size() == 2)
-        params = parse_params(uri_parts[1]);
-    params[_T("&method")] = head_parts[0];
-    params[_T("&version")] = head_parts[2];
-    params[_T("&uri")] = uri_parts[0];
-    return params;
+    Yb::String result;
+    const char *replace;
+    if (path_mode)
+        replace = "!*'();@&=+$,?%#[]";
+    else
+        replace = "!*'();:@&=+$,/?%#[]{}\"";
+    char buf[20];
+    for (size_t i = 0; i < s.size(); ++i) {
+        unsigned char c = s[i];
+        if (c <= 32 || c >= 127 || strchr(replace, c)) {
+            sprintf(buf, "%%%02X", c);
+            result += WIDEN(buf);
+        }
+        else
+            result += Yb::Char(c);
+    }
+    return result;
+}
+
+Yb::String
+HttpHeaders::serialize_params(const Yb::StringDict &d)
+{
+    String result;
+    Yb::StringDict::const_iterator it = d.begin(), end = d.end();
+    for (; it != end; ++it) {
+        if (str_length(result))
+            result += _T("&");
+        result += my_url_encode(NARROW(it->first));
+        result += _T("=");
+        result += my_url_encode(NARROW(it->second));
+    }
+    return result;
+}
+
+const String
+HttpHeaders::normalize_header_name(const String &name)
+{
+    String s = str_to_lower(trim_trailing_space(name));
+    for (int i = 0; i < (int)str_length(s); ++i)
+    {
+        if (!i || char_code(s[i - 1]) == '-')
+            s[i] = to_upper(s[i]);
+    }
+    return s;
 }
 
 // vim:ts=4:sts=4:sw=4:et:

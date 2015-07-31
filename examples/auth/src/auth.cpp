@@ -11,11 +11,10 @@
 #include <QCoreApplication>
 #endif
 #include <iostream>
-#include <util/string_utils.h>
-#include <util/element_tree.h>
 #include "md5.h"
 #include "app_class.h"
 #include "micro_http.h"
+#include "xml_method.h"
 #if 0
 #include "domain/User.h"
 #include "domain/LoginSession.h"
@@ -27,9 +26,6 @@ YB_DEFINE(LoginSession)
 #endif
 
 using namespace std;
-
-#define BAD_RESP "<status>NOT</status>"
-#define OK_RESP "<status>OK</status>"
 
 Yb::LongInt
 get_random()
@@ -83,11 +79,12 @@ get_checked_session_by_token(Yb::Session &session,
     return ls.id;
 }
 
-std::string
-check(const Yb::StringDict &params)
+Yb::ElementTree::ElementPtr
+check(Yb::Session &session, Yb::ILogger &logger,
+        const Yb::StringDict &params)
 {
-    return get_checked_session_by_token(*theApp::instance().new_session(),
-            params) == -1? BAD_RESP: OK_RESP;
+    return get_checked_session_by_token(session, params) == -1?
+        NOT_RESP: OK_RESP;
 }
 
 #ifdef _MSC_VER
@@ -111,27 +108,26 @@ md5_hash(const Yb::String &str0)
     return WIDEN(rez);
 }
 
-std::string
-registration(const Yb::StringDict &params)
+Yb::ElementTree::ElementPtr
+registration(Yb::Session &session, Yb::ILogger &logger,
+        const Yb::StringDict &params)
 {
-    auto_ptr<Yb::Session> session = theApp::instance().new_session();
-    Yb::LongInt total_count = Yb::query<User>(*session).count();
+    Yb::LongInt total_count = Yb::query<User>(session).count();
     if (total_count) {
         // when user table is empty it is allowed to create the first user
         // w/o password check, otherwise we should check permissions
-        if (-1 == get_checked_session_by_token(*session, params, 1))
-            return BAD_RESP;
+        if (-1 == get_checked_session_by_token(session, params, 1))
+            return NOT_RESP;
     }
-    if (Yb::query<User>(*session)
+    if (Yb::query<User>(session)
             .filter_by(User::c.login == params[_T("login")]).count())
-        return BAD_RESP;
+        return NOT_RESP;
 
-    User user(*session);
+    User user(session);
     user.login = params[_T("login")];
     user.name = params[_T("name")];
     user.pass = md5_hash(params[_T("pass")]);
     user.status = params.get_as<int>(Yb::String(_T("status")));
-    session->commit();
     return OK_RESP;
 }
 
@@ -148,18 +144,17 @@ get_checked_user_by_creds(Yb::Session &session, const Yb::StringDict &params)
     return q->id;
 }
 
-std::string
-login(const Yb::StringDict &params)
+Yb::ElementTree::ElementPtr
+login(Yb::Session &session, Yb::ILogger &logger,
+        const Yb::StringDict &params)
 {
-    auto_ptr<Yb::Session> session = theApp::instance().new_session();
-    Yb::LongInt uid = get_checked_user_by_creds(*session, params);
+    Yb::LongInt uid = get_checked_user_by_creds(session, params);
     if (-1 == uid)
-        return BAD_RESP;
-
-    User::Holder user(*session, uid);
+        return NOT_RESP;
+    User::Holder user(session, uid);
     while (user->login_sessions.begin() != user->login_sessions.end())
         user->login_sessions.begin()->delete_object();
-    LoginSession login_session(*session);
+    LoginSession login_session(session);
     login_session.user = user;
     Yb::LongInt token = get_random();
     login_session.token = Yb::to_string(token);
@@ -167,31 +162,29 @@ login(const Yb::StringDict &params)
     login_session.app_name = _T("auth");
     Yb::ElementTree::ElementPtr root = Yb::ElementTree::new_element(
             _T("token"), login_session.token);
-    session->commit();
-    return root->serialize();
+    return root;
 }
 
-std::string
-session_info(const Yb::StringDict &params)
+Yb::ElementTree::ElementPtr
+session_info(Yb::Session &session, Yb::ILogger &logger,
+        const Yb::StringDict &params)
 {
-    auto_ptr<Yb::Session> session = theApp::instance().new_session();
-    Yb::LongInt sid = get_checked_session_by_token(*session, params);
+    Yb::LongInt sid = get_checked_session_by_token(session, params);
     if (-1 == sid)
-        return BAD_RESP;
-    LoginSession ls(*session, sid);
-    return ls.xmlize(1)->serialize();
+        return NOT_RESP;
+    LoginSession ls(session, sid);
+    return ls.xmlize(1);
 }
 
-std::string
-logout(const Yb::StringDict &params)
+Yb::ElementTree::ElementPtr
+logout(Yb::Session &session, Yb::ILogger &logger,
+        const Yb::StringDict &params)
 {
-    auto_ptr<Yb::Session> session = theApp::instance().new_session();
-    Yb::LongInt sid = get_checked_session_by_token(*session, params);
+    Yb::LongInt sid = get_checked_session_by_token(session, params);
     if (-1 == sid)
-        return BAD_RESP;
-    LoginSession ls(*session, sid);
+        return NOT_RESP;
+    LoginSession ls(session, sid);
     ls.delete_object();
-    session->commit();
     return OK_RESP;
 }
 
@@ -217,18 +210,22 @@ public:
         return 1;
     }
     try {
+        XmlHttpWrapper handlers[] = {
+            WRAP(session_info),
+            WRAP(registration),
+            WRAP(check),
+            WRAP(login),
+            WRAP(logout),
+        };
+        int n_handlers = sizeof(handlers)/sizeof(handlers[0]);
         int port = 9090; // TODO: read from config
-        typedef std::string (*Handler)(const Yb::StringDict &);
-        typedef HttpServer<Handler> AuthHttpServer;
-        AuthHttpServer::HandlerMap handlers;
-        handlers[_T("/session_info")] = session_info;
-        handlers[_T("/registration")] = registration;
-        handlers[_T("/check")] = check;
-        handlers[_T("/login")] = login;
-        handlers[_T("/logout")] = logout;
-        AuthHttpServer server(
-                port, handlers, &theApp::instance(),
-                _T("text/xml"), _T("<status>NOT</status>"));
+        typedef HttpServer<XmlHttpWrapper> AuthHttpServer;
+        typename AuthHttpServer::HandlerMap handler_map;
+        for (int i = 0; i < n_handlers; ++i)
+            handler_map[_T("/") + handlers[i].name()] = handlers[i];
+        AuthHttpServer server(port,
+                handler_map, &theApp::instance(),
+                _T("text/xml"), "<status>NOT</status>");
         server.serve();
     }
     catch (const std::exception &ex) {
