@@ -252,7 +252,6 @@ class YBORM_DECL SqlConnection: NonCopyable
     bool activity_, echo_, conv_params_, bad_, explicit_trans_started_;
     time_t free_since_;
     ILogger::Ptr log_;
-    void debug(const String &s) { if (log_.get()) log_->debug(NARROW(s)); }
     void mark_bad(const std::exception &e);
 public:
     SqlConnection(const String &driver_name,
@@ -276,6 +275,7 @@ public:
             log_.reset(parent->new_logger("sql").release());
     }
     std::auto_ptr<SqlCursor> new_cursor();
+    void debug(const String &s) { if (log_.get()) log_->debug(NARROW(s)); }
     bool bad() const { return bad_; }
     bool activity() const { return activity_; }
     bool explicit_trans_started() const { return explicit_trans_started_; }

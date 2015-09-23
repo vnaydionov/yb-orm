@@ -44,6 +44,7 @@ public:
     void add_source(const SqlSource &source);
     SqlConnectionPtr get(const String &id, int timeout = YB_POOL_WAIT_TIME);
     void put(SqlConnectionPtr handle, bool close_now = false, bool new_conn = false);
+    bool reconnect(SqlConnectionPtr &conn);
 
 private:
     std::map<String, SqlSource> sources_;

@@ -19,6 +19,17 @@ EngineSource::~EngineSource()
 {}
 
 SqlResultSet
+EngineBase::exec_select(const String &sql, const Values &params)
+{
+    touch();
+    auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
+    cursor->prepare(sql);
+    SqlResultSet rs = cursor->exec(params);
+    rs.own(cursor);
+    return rs;
+}
+
+SqlResultSet
 EngineBase::select_iter(const Expression &select_expr)
 {
     SqlGeneratorOptions options(NO_QUOTES,
@@ -28,11 +39,17 @@ EngineBase::select_iter(const Expression &select_expr)
             (Yb::SqlPagerModel)get_dialect()->pager_model());
     SqlGeneratorContext ctx;
     String sql = select_expr.generate_sql(options, &ctx);
-    auto_ptr<SqlCursor> cursor = get_conn()->new_cursor();
-    cursor->prepare(sql);
-    SqlResultSet rs = cursor->exec(ctx.params_);
-    rs.own(cursor);
-    return rs;
+    if (get_conn()->activity())
+        return exec_select(sql, ctx.params_);
+    MilliSec t0 = get_cur_time_millisec();
+    try {
+        return exec_select(sql, ctx.params_);
+    }
+    catch (const DBError &) {
+        if (get_cur_time_millisec() - t0 > 500 || !reconnect())
+            throw;
+        return exec_select(sql, ctx.params_);
+    }
 }
 
 RowsPtr
@@ -201,18 +218,21 @@ EngineBase::get_next_value(const String &seq_name)
 void
 EngineBase::commit()
 {
+    //logger()->debug("engine: commit");
     get_conn()->commit();
 }
 
 void
 EngineBase::rollback()
 {
+    //logger()->debug("engine: rollback");
     get_conn()->rollback();
 }
 
 void
 EngineBase::touch()
 {
+    //logger()->debug("engine: touch");
     get_conn()->begin_trans_if_necessary();
 }
 
@@ -387,6 +407,14 @@ EngineCloned::~EngineCloned()
 
 int EngineCloned::get_mode() { return mode_; }
 SqlConnection *EngineCloned::get_conn() { return conn_; }
+
+bool EngineCloned::reconnect()
+{
+    if (pool_)
+        return pool_->reconnect(conn_);
+    return false;
+}
+
 SqlDialect *EngineCloned::get_dialect() { return dialect_; }
 ILogger *EngineCloned::logger() { return logger_; }
 
@@ -475,6 +503,13 @@ SqlConnection *Engine::get_conn()
         return conn_ptr_;
     conn_ptr_ = get_from_pool();
     return conn_ptr_;
+}
+
+bool Engine::reconnect()
+{
+    if (conn_ptr_ && pool_.get())
+        return pool_->reconnect(conn_ptr_);
+    return false;
 }
 
 SqlDialect *Engine::get_dialect() { return dialect_; }

@@ -27,10 +27,12 @@ public:
 
     virtual ~EngineBase();
     virtual SqlConnection *get_conn() = 0;
+    virtual bool reconnect() = 0;
     virtual SqlDialect *get_dialect() = 0;
     virtual ILogger *logger() = 0;
     virtual int get_mode() = 0;
 
+    SqlResultSet exec_select(const String &sql, const Values &params);
     SqlResultSet select_iter(const Expression &select_expr);
     RowsPtr select(
         const Expression &what,
@@ -89,6 +91,7 @@ public:
     ~EngineCloned();
     int get_mode();
     SqlConnection *get_conn();
+    bool reconnect();
     SqlDialect *get_dialect();
     ILogger *logger();
     void set_echo(bool echo);
@@ -120,6 +123,7 @@ public:
 
     int get_mode();
     SqlConnection *get_conn();
+    bool reconnect();
     SqlDialect *get_dialect();
     ILogger *logger();
     std::auto_ptr<EngineCloned> clone();

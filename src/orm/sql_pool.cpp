@@ -300,6 +300,20 @@ SqlPool::put(SqlConnectionPtr handle, bool close_now, bool new_conn)
     }
 }
 
+bool
+SqlPool::reconnect(SqlConnectionPtr &conn)
+{
+    const SqlSource src = conn->get_source();
+    const String &id = src.id();
+    put(conn, true); // close now
+    LOG(ll_DEBUG, _T("reopening connection") + format_stats(id));
+    ScopedLock lock(pool_mux_);
+    conn = new SqlConnection(src);
+    ++counts_[id];
+    LOG(ll_INFO, _T("reopened connection") + get_stats(id));
+    return true;
+}
+
 SqlConnectionVar::SqlConnectionVar(const SqlPoolDescr &d)
     : pool_(d.get_pool())
     , handle_(pool_.get(d.get_source_id(), d.get_timeout()))
