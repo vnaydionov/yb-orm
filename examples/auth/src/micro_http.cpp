@@ -119,10 +119,13 @@ HttpServerBase::process_client_request(SOCKET cl_s)
                 string("couldn't parse Content-Type: ") + ex.what());
         }
         // read request body
-        if (cont_len > 0)
-            request_obj.set_request_body(cl_sock.read(cont_len),
-                                 str_to_lower(cont_type) ==
-                                 _T("application/x-www-form-urlencoded"));
+        if (cont_len > 0) {
+            const String prefix = _T("application/x-www-form-urlencoded");
+            bool parse_body = str_to_lower(
+                    str_substr(cont_type, 0, str_length(prefix)))
+                == _T("application/x-www-form-urlencoded");
+            request_obj.set_request_body(cl_sock.read(cont_len), parse_body);
+        }
         if (request_obj.get_method() != _T("GET") &&
             request_obj.get_method() != _T("POST"))
         {

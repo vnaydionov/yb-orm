@@ -85,14 +85,16 @@ public:
     }
 
     void set_response_body(const std::string &body,
-                  const Yb::String &content_type,
+                  const Yb::String &content_type=_T(""),
                   bool set_content_length=true)
     {
         body_ = body;
-        set_header(_T("Content-Type"), content_type);
-        if (set_content_length)
-            set_header(_T("Content-Length"),
-                       Yb::to_string(body.size()));
+        if (!Yb::str_empty(content_type)) {
+            set_header(_T("Content-Type"), content_type);
+            if (set_content_length)
+                set_header(_T("Content-Length"),
+                           Yb::to_string(body.size()));
+        }
     }
 
     const std::string &get_body() const { return body_; }
