@@ -1,3 +1,11 @@
+libyborm (0.4.7-fix4) unstable; urgency=low
+
+  * Logger: get/set/check the log level
+  * ElementTree: easy access attributes with @ prefix
+  * Update micro_http server and TcpSocket wrapper class
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Fri, 25 Sep 2015 19:21:12 +0300
+
 libyborm (0.4.7-fix3) unstable; urgency=low
 
   * important: start a transaction on first select if explicit transaction
