@@ -68,12 +68,23 @@ TcpSocket::get_last_error()
 }
 
 void
-TcpSocket::bind(int port)
+TcpSocket::create_if_needed()
 {
+    if (!ok()) {
+        buf_pos_ = 0;
+        buf_.clear();
+        s_ = create();
+    }
+}
+
+void
+TcpSocket::bind(const string &ip_addr, int port)
+{
+    create_if_needed();
     struct sockaddr_in addr;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(ip_addr.c_str());
+    addr.sin_port = htons(port);
     SockOpt yes = 1;
     setsockopt(s_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
     if (::bind(s_, (struct sockaddr *)&addr, sizeof(addr)) == -1)
@@ -91,7 +102,7 @@ TcpSocket::listen()
 #endif // _MSC_VER
 
 SOCKET
-TcpSocket::accept(string *ip_addr, int *ip_port)
+TcpSocket::accept(string *ip_addr, int *port)
 {
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
@@ -100,23 +111,35 @@ TcpSocket::accept(string *ip_addr, int *ip_port)
     typedef int socklen_t;
 #endif
     socklen_t addr_len = sizeof(addr), *p_addr_len = NULL;
-    if (ip_addr || ip_port) {
+    if (ip_addr || port) {
         p_addr = (struct sockaddr *)&addr;
         p_addr_len = &addr_len;
     }
     SOCKET s2 = ::accept(s_, p_addr, p_addr_len);
     if (INVALID_SOCKET == s2)
         throw SocketEx("accept", get_last_error());
-    if (ip_port)
-        *ip_port = ntohs(*(unsigned short *)&addr.sin_port);
+    if (port)
+        *port = ntohs(addr.sin_port);
     if (ip_addr) {
-        unsigned ip = ntohl(*(unsigned *)&addr.sin_addr);
-        char buf[40];
+        unsigned ip = ntohl(addr.sin_addr.s_addr);
+        char buf[100];
         sprintf(buf, "%d.%d.%d.%d",
                 ip >> 24, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255);
         *ip_addr = string(buf);
     }
     return s2;
+}
+
+void
+TcpSocket::connect(const string &ip_addr, int port)
+{
+    create_if_needed();
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(ip_addr.c_str());
+    addr.sin_port = htons(port);
+    if (INVALID_SOCKET == ::connect(s_, (struct sockaddr *)&addr, sizeof(addr)))
+        throw SocketEx("connect", get_last_error());
 }
 
 bool
@@ -203,6 +226,8 @@ TcpSocket::write(const string &msg)
 void
 TcpSocket::close(bool shut_down)
 {
+    if (!ok())
+        return;
     if (shut_down)
         ::shutdown(s_, 2);
 #ifdef YBUTIL_WINDOWS
@@ -211,6 +236,8 @@ TcpSocket::close(bool shut_down)
     ::close(s_);
 #endif
     s_ = INVALID_SOCKET;
+    buf_pos_ = 0;
+    buf_.clear();
 }
 
 // vim:ts=4:sts=4:sw=4:et:

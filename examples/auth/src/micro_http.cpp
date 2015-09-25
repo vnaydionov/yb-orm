@@ -8,9 +8,11 @@ using namespace std;
 using namespace Yb;
 using namespace Yb::StrUtils;
 
-HttpServerBase::HttpServerBase(int port, ILogger *root_logger,
+HttpServerBase::HttpServerBase(const std::string &ip_addr, int port,
+        ILogger *root_logger,
         const String &content_type, const std::string &bad_resp)
-    : port_(port)
+    : ip_addr_(ip_addr)
+    , port_(port)
     , content_type_(content_type)
     , bad_resp_(bad_resp)
     , log_(root_logger->new_logger("http_serv").release())
@@ -199,8 +201,7 @@ HttpServerBase::serve()
 {
     TcpSocket::init_socket_lib();
     log_->info("start server on port " + to_stdstring(port_));
-    sock_ = TcpSocket(TcpSocket::create());
-    sock_.bind(port_);
+    sock_.bind(ip_addr_, port_);
     sock_.listen();
     typedef SharedPtr<WorkerThread>::Type WorkerThreadPtr;
     typedef std::vector<WorkerThreadPtr> Workers;

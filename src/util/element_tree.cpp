@@ -83,6 +83,10 @@ Element::get_attr(const Yb::String &name) const
 ElementPtr
 Element::find_child(const Yb::String &name)
 {
+    if (!str_empty(name) && char_code(name[0]) == '@')
+        return ElementPtr(
+            new Element(_T("_attr"),
+                        get_attr(str_substr(name, 1))));
     for (size_t i = 0; i < children_.size(); ++i)
         if (name == children_[i]->name_ || _T("*") == name)
             return children_[i];

@@ -196,13 +196,17 @@ private:
 class HttpServerBase
 {
 public:
-    HttpServerBase(int port, Yb::ILogger *root_logger,
+    HttpServerBase(const std::string &ip_addr, int port,
+            Yb::ILogger *root_logger,
             const Yb::String &content_type, const std::string &bad_resp);
     void serve();
+
 protected:
     virtual bool has_handler_for_path(const Yb::String &path) = 0;
     virtual const HttpHeaders call_handler(const HttpHeaders &request) = 0;
+
 private:
+    std::string ip_addr_;
     int port_;
     Yb::String content_type_;
     std::string bad_resp_;
@@ -226,11 +230,11 @@ class HttpServer: public HttpServerBase
 {
 public:
     typedef Yb::Dict<Yb::String, Handler> HandlerMap;
-    HttpServer(int port, const HandlerMap &handlers,
-            Yb::ILogger *root_logger,
+    HttpServer(const std::string &ip_addr, int port,
+            const HandlerMap &handlers, Yb::ILogger *root_logger,
             const Yb::String &content_type = _T("text/xml"),
             const std::string &bad_resp = "<status>NOT</status>"):
-        HttpServerBase(port, root_logger, content_type, bad_resp),
+        HttpServerBase(ip_addr, port, root_logger, content_type, bad_resp),
         handlers_(handlers)
     {}
 protected:
