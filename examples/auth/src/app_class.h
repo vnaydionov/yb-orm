@@ -24,7 +24,12 @@ public:
     virtual ~App();
     Yb::Engine *get_engine();
     std::auto_ptr<Yb::Session> new_session();
+
+    // implement ILogger
     Yb::ILogger::Ptr new_logger(const std::string &name);
+    Yb::ILogger::Ptr get_logger(const std::string &name);
+    int get_level();
+    void set_level(int level);
     void log(int level, const std::string &msg);
     const std::string get_name() const;
 };

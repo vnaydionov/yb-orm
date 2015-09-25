@@ -116,12 +116,13 @@ YBUTIL_DECL struct tm *localtime_safe(const time_t *clock, struct tm *result)
 
 int LogRecord::check_level(int level)
 {
-    if (level <= ll_NONE || level > ll_DEBUG)
+    if (level <= ll_NONE || level >= ll_ALL)
         throw InvalidLogLevel();
     return level;
 }
 
-LogRecord::LogRecord(int level, const std::string &component, const std::string &msg)
+LogRecord::LogRecord(int level, const std::string &component,
+                     const std::string &msg)
     : t_(get_cur_time_millisec())
     , pid_(get_process_id())
     , tid_(get_thread_id())
@@ -133,7 +134,7 @@ LogRecord::LogRecord(int level, const std::string &component, const std::string 
 const char *LogRecord::get_level_name() const
 {
     static const char *log_level_name[] = {
-        "CRIT", "ERRO", "WARN", "INFO", "DEBG"
+        "CRIT", "ERRO", "WARN", "INFO", "DEBG", "TRAC"
     };
     return log_level_name[check_level(level_) - 1];
 }
@@ -142,48 +143,6 @@ ILogAppender::~ILogAppender()
 {}
 
 ILogger::~ILogger()
-{}
-
-bool LogTargetRule::match_component(const std::string &component) const
-{
-    bool res;
-    if (include_children)
-        res = component.substr(0, this->component.size()) == this->component;
-    else
-        res = component == this->component;
-    return negate_component ? !res : res;
-}
-
-bool LogTargetRule::match_level(int level) const
-{
-    switch (level_match_mode) {
-    case 0:
-        return level == this->level;
-    case 1:
-        return level != this->level;
-    case 2:
-        return level <= this->level;
-    }
-    return false;
-}
-
-bool LogTargetRule::match(const LogRecord &rec) const
-{
-    return match_component(rec.get_component())
-        && match_level(rec.get_level());
-}
-
-bool LogTargetRules::match(const LogRecord &rec) const
-{
-    Rules::const_iterator it = target_rules.begin(),
-        end = target_rules.end();
-    for (; it != end; ++it)
-        if (it->match(rec))
-            return true;
-    return false;
-}
-
-ILogRulesConfig::~ILogRulesConfig()
 {}
 
 Logger::Logger(ILogAppender *appender, const std::string &name)
@@ -199,12 +158,35 @@ ILogger::Ptr Logger::new_logger(const std::string &name)
     if (!name_.empty())
         new_name = name_ + "." + new_name;
     ILogger::Ptr p(new Logger(appender_, new_name));
+    if (p->get_level() == ll_ALL) {
+        int parent_level = get_level();
+        if (parent_level != ll_ALL)
+            p->set_level(parent_level);
+    }
     return p;
+}
+
+ILogger::Ptr Logger::get_logger(const std::string &name)
+{
+    if (!valid_name(name, true))
+        throw InvalidLoggerName();
+    ILogger::Ptr p(new Logger(appender_, name));
+    return p;
+}
+
+int Logger::get_level()
+{
+    return appender_->get_level(name_);
+}
+
+void Logger::set_level(int level)
+{
+    appender_->set_level(name_, level);
 }
 
 void Logger::log(int level, const std::string &msg)
 {
-    if (level <= ll_NONE || level > ll_DEBUG)
+    if (level <= ll_NONE || level > ll_TRACE)
         throw InvalidLogLevel();
     LogRecord rec(level, get_name(), msg);
     appender_->append(rec);
@@ -215,14 +197,15 @@ const std::string Logger::get_name() const
     return name_.empty()? std::string("main"): name_;
 }
 
-bool Logger::valid_name(const std::string &name)
+bool Logger::valid_name(const std::string &name, bool allow_dots)
 {
     if (name.empty())
         return false;
     for (size_t i = 0; i < name.size(); ++i) {
         char c = name[i];
         if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-            (c >= '0' && c <= '9') || c == '_' || c == '-'))
+              (c >= '0' && c <= '9') || (c == '_') || (c == '-') ||
+              (c == '.' && allow_dots)))
         {
             return false;
         }
@@ -230,7 +213,8 @@ bool Logger::valid_name(const std::string &name)
     return true;
 }
 
-void LogAppender::output(std::ostream &s, const LogRecord &rec, const char *time_str)
+void LogAppender::output(std::ostream &s, const LogRecord &rec,
+                         const char *time_str)
 {
     s << time_str << " "
         << rec.get_pid() << "/" << rec.get_tid() << " "
@@ -288,10 +272,35 @@ LogAppender::~LogAppender()
 void LogAppender::append(const LogRecord &rec)
 {
     ScopedLock lk(queue_mutex_);
-    queue_.push_back(rec);
-    time_t now = time(NULL);
-    if (should_flush(now))
-        do_flush(now);
+    int target_level = ll_ALL;
+    LogLevelMap::iterator it = log_levels_.find(rec.get_component());
+    if (log_levels_.end() != it)
+        target_level = it->second;
+    if (rec.get_level() <= target_level) {
+        queue_.push_back(rec);
+        time_t now = time(NULL);
+        if (should_flush(now))
+            do_flush(now);
+    }
+}
+
+int LogAppender::get_level(const std::string &name)
+{
+    ScopedLock lk(queue_mutex_);
+    LogLevelMap::iterator it = log_levels_.find(name);
+    if (log_levels_.end() == it)
+        return ll_ALL;
+    return it->second;
+}
+
+void LogAppender::set_level(const std::string &name, int level)
+{
+    ScopedLock lk(queue_mutex_);
+    LogLevelMap::iterator it = log_levels_.find(name);
+    if (log_levels_.end() == it)
+        log_levels_[name] = level;
+    else
+        it->second = level;
 }
 
 void LogAppender::flush()

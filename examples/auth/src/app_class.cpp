@@ -70,6 +70,27 @@ Yb::ILogger::Ptr App::new_logger(const string &name)
     return log_->new_logger(name);
 }
 
+Yb::ILogger::Ptr App::get_logger(const std::string &name)
+{
+    if (!log_.get())
+        throw runtime_error("log not opened");
+    return log_->get_logger(name);
+}
+
+int App::get_level()
+{
+    if (!log_.get())
+        throw runtime_error("log not opened");
+    return log_->get_level();
+}
+
+void App::set_level(int level)
+{
+    if (!log_.get())
+        throw runtime_error("log not opened");
+    log_->set_level(level);
+}
+
 void App::log(int level, const string &msg)
 {
     if (log_.get())

@@ -29,19 +29,22 @@ public:
 
 typedef LongInt MilliSec;
 
+YBUTIL_DECL unsigned long get_process_id();
+YBUTIL_DECL unsigned long get_thread_id();
+YBUTIL_DECL MilliSec get_cur_time_millisec();
+YBUTIL_DECL struct tm *localtime_safe(const time_t *clock, struct tm *result);
+
+
 enum {
     ll_NONE = 0,
     ll_CRITICAL,
     ll_ERROR,
     ll_WARNING,
     ll_INFO,
-    ll_DEBUG
+    ll_DEBUG,
+    ll_TRACE,
+    ll_ALL
 };
-
-YBUTIL_DECL unsigned long get_process_id();
-YBUTIL_DECL unsigned long get_thread_id();
-YBUTIL_DECL MilliSec get_cur_time_millisec();
-YBUTIL_DECL struct tm *localtime_safe(const time_t *clock, struct tm *result);
 
 class YBUTIL_DECL LogRecord
 {
@@ -71,6 +74,8 @@ class YBUTIL_DECL ILogAppender
 {
 public:
     virtual void append(const LogRecord &rec) = 0;
+    virtual int get_level(const std::string &name) = 0;
+    virtual void set_level(const std::string &name, int level) = 0;
     virtual ~ILogAppender();
 };
 
@@ -79,6 +84,9 @@ class YBUTIL_DECL ILogger
 public:
     typedef std::auto_ptr<ILogger> Ptr;
     virtual ILogger::Ptr new_logger(const std::string &name) = 0;
+    virtual ILogger::Ptr get_logger(const std::string &name) = 0;
+    virtual int get_level() = 0;
+    virtual void set_level(int level) = 0;
     virtual void log(int level, const std::string &msg) = 0;
     virtual const std::string get_name() const = 0;
     virtual ~ILogger();
@@ -89,60 +97,6 @@ public:
     void critical (const std::string &msg) { log(ll_CRITICAL, msg); }
 };
 
-/*
- * A log target implements ILogAppender.
- * Each target has unique name and its own config.
- * Also there is a standard implementation of ILogAppender,
- *  which takes care of routing. The router walks through
- *  list of rounting rules for each target; if it finds
- *  a matching rule then LogRecord is sent to the target.
- * Routing rules:
- * - each target has list of rules for matching against LogRecords,
- *   distinct rules in a list are ORed;
- * - each rule has component part and level part, the rule is
- *   matched OK if both parts are matched;
- * - component part can be either a component name ('xx.yy.zz')
- *   or a name mask ending with an asterisk ('xx.yy.*'),
- *   also component part can be negated ('!aa.bb.*')
- * - level part consists of a level and match_mode
- *   ('=DEBUG', '!CRITICAL', '<=INFO'), if level part is empty
- *   the rule can match any level.
- * - whole rule set for couple of targets may look like this:
- *    'dblog(dbpool.*:INFO mycomp.sql:) syslog(*:<=INFO)'
- *    or something equivalent in e.g. XML..
- */
-struct YBUTIL_DECL LogTargetRule
-{
-    std::string component;
-    bool include_children;
-    bool negate_component;
-
-    int level;
-    int level_match_mode;  // 0 ==, 1 !=, 2 <=
-
-    bool match_component(const std::string &component) const;
-    bool match_level(int level) const;
-    bool match(const LogRecord &rec) const;
-};
-
-struct YBUTIL_DECL LogTargetRules
-{
-    typedef std::vector<LogTargetRule> Rules;
-    Rules target_rules;
-
-    bool match(const LogRecord &rec) const;
-};
-
-typedef std::map<std::string, LogTargetRules> LogRules;
-
-class YBUTIL_DECL ILogRulesConfig
-{
-public:
-    virtual LogRules &get(LogRules &rules) = 0;
-    virtual ~ILogRulesConfig();
-};
-
-
 class YBUTIL_DECL Logger: public ILogger
 {
     ILogAppender *appender_;
@@ -150,9 +104,12 @@ class YBUTIL_DECL Logger: public ILogger
 public:
     Logger(ILogAppender *appender, const std::string &name = "");
     ILogger::Ptr new_logger(const std::string &name);
+    ILogger::Ptr get_logger(const std::string &name);
+    int get_level();
+    void set_level(int level);
     void log(int level, const std::string &msg);
     const std::string get_name() const;
-    static bool valid_name(const std::string &name);
+    static bool valid_name(const std::string &name, bool allow_dots=false);
 };
 
 class YBUTIL_DECL LogAppender: public ILogAppender
@@ -163,6 +120,8 @@ class YBUTIL_DECL LogAppender: public ILogAppender
     Mutex queue_mutex_;
     time_t last_flush_;
     const int flush_interval_;
+    typedef std::map<std::string, int> LogLevelMap;
+    LogLevelMap log_levels_;
 
     static void output(std::ostream &s, const LogRecord &rec, const char *time_str);
     void do_flush(time_t now);
@@ -171,6 +130,8 @@ public:
     LogAppender(std::ostream &s, int flush_interval = 0);
     ~LogAppender();
     void append(const LogRecord &rec);
+    int get_level(const std::string &name);
+    void set_level(const std::string &name, int level);
     void flush();
 };
 
