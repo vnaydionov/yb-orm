@@ -9,13 +9,14 @@ using namespace Yb;
 using namespace Yb::StrUtils;
 
 HttpServerBase::HttpServerBase(const std::string &ip_addr, int port,
-        ILogger *root_logger,
+        int back_log, ILogger *root_logger,
         const String &content_type, const std::string &bad_resp)
     : ip_addr_(ip_addr)
     , port_(port)
+    , back_log_(back_log)
     , content_type_(content_type)
     , bad_resp_(bad_resp)
-    , log_(root_logger->new_logger("http_serv").release())
+    , log_(root_logger->new_logger("micro_http").release())
 {}
 
 HttpHeaders
@@ -202,10 +203,11 @@ HttpServerBase::serve()
     TcpSocket::init_socket_lib();
     log_->info("start server on port " + to_stdstring(port_));
     sock_.bind(ip_addr_, port_);
-    sock_.listen();
+    sock_.listen(back_log_);
     typedef SharedPtr<WorkerThread>::Type WorkerThreadPtr;
     typedef std::vector<WorkerThreadPtr> Workers;
     Workers workers;
+    time_t prev_clean_ts = time(NULL);
     while (1) {
         // accept request
         try {
@@ -217,17 +219,31 @@ HttpServerBase::serve()
                         this, cl_sock, HttpServerBase::process));
             workers.push_back(worker);
             worker->start();
-            Workers workers_dead, workers_alive;
-            for (Workers::iterator i = workers.begin(); i != workers.end(); ++i)
-                if ((*i)->finished())
-                    workers_dead.push_back(*i);
-                else
-                    workers_alive.push_back(*i);
-            for (Workers::iterator i = workers_dead.begin(); i != workers_dead.end(); ++i) {
-                (*i)->terminate();
-                (*i)->wait();
+            if (time(NULL) - prev_clean_ts >= 5) {   // sec.
+                log_->info("clean up workers");
+                Workers workers_dead, workers_alive;
+                workers_dead.reserve(workers.size() + 1);
+                workers_alive.reserve(workers.size() + 1);
+                for (Workers::iterator i = workers.begin();
+                     i != workers.end(); ++i)
+                {
+                    if ((*i)->finished())
+                        workers_dead.push_back(*i);
+                    else
+                        workers_alive.push_back(*i);
+                }
+                for (Workers::iterator i = workers_dead.begin();
+                     i != workers_dead.end(); ++i)
+                {
+                    (*i)->terminate();
+                    (*i)->wait();
+                }
+                log_->info("workers: "
+                           "processing=" + to_string(workers_alive.size()) +
+                           ", done=" + to_string(workers_dead.size()));
+                workers.swap(workers_alive);
+                prev_clean_ts = time(NULL);
             }
-            workers.swap(workers_alive);
         }
         catch (const std::exception &ex) {
             log_->error(string("exception: ") + ex.what());

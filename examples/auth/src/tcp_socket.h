@@ -56,7 +56,7 @@ public:
 
     bool ok() const { return INVALID_SOCKET != s_; }
     void bind(const std::string &ip_addr, int port);
-    void listen();
+    void listen(int back_log = 3);
     SOCKET accept(std::string *ip_addr = NULL, int *port = NULL);
     void connect(const std::string &ip_addr, int port);
     const std::string readline();

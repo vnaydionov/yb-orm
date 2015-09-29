@@ -92,9 +92,9 @@ TcpSocket::bind(const string &ip_addr, int port)
 }
 
 void
-TcpSocket::listen()
+TcpSocket::listen(int back_log)
 {
-    ::listen(s_, 3);
+    ::listen(s_, back_log);
 }
 
 #ifdef _MSC_VER

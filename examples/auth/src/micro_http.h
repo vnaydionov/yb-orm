@@ -196,7 +196,7 @@ private:
 class HttpServerBase
 {
 public:
-    HttpServerBase(const std::string &ip_addr, int port,
+    HttpServerBase(const std::string &ip_addr, int port, int back_log,
             Yb::ILogger *root_logger,
             const Yb::String &content_type, const std::string &bad_resp);
     void serve();
@@ -208,6 +208,7 @@ protected:
 private:
     std::string ip_addr_;
     int port_;
+    int back_log_;
     Yb::String content_type_;
     std::string bad_resp_;
     Yb::ILogger::Ptr log_;
@@ -230,11 +231,12 @@ class HttpServer: public HttpServerBase
 {
 public:
     typedef Yb::Dict<Yb::String, Handler> HandlerMap;
-    HttpServer(const std::string &ip_addr, int port,
+    HttpServer(const std::string &ip_addr, int port, int back_log,
             const HandlerMap &handlers, Yb::ILogger *root_logger,
             const Yb::String &content_type = _T("text/xml"),
             const std::string &bad_resp = "<status>NOT</status>"):
-        HttpServerBase(ip_addr, port, root_logger, content_type, bad_resp),
+        HttpServerBase(ip_addr, port, back_log, root_logger,
+                       content_type, bad_resp),
         handlers_(handlers)
     {}
 protected:
