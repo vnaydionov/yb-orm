@@ -223,7 +223,7 @@ public:
         typename AuthHttpServer::HandlerMap handler_map;
         for (int i = 0; i < n_handlers; ++i)
             handler_map[_T("/") + handlers[i].name()] = handlers[i];
-        AuthHttpServer server("0.0.0.0", port,
+        AuthHttpServer server("0.0.0.0", port, 3,
                 handler_map, &theApp::instance(),
                 _T("text/xml"), "<status>NOT</status>");
         server.serve();
