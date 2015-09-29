@@ -65,82 +65,27 @@ SqlPool::monitor_thread()
     block_sigpipe();
     LOG(ll_INFO, _T("monitor thread started"));
     while (sleep_not_stop()) {
-        //LOG(ll_DEBUG, _T("monitor wake"));
-        String del_source_id;
-        SqlConnectionPtr del_handle = NULL;
-        int del_count = 0, del_pool_sz = 0;
-        // process all 'open' requests
-        while (1) {
-            //LOG(ll_DEBUG, _T("looking for connections_for_open_"));
-            String id;
-            {
-                ScopedLock lock(stop_mux_);
-                if (!connections_for_open_.empty()) {
-                    id = connections_for_open_.front();
-                    connections_for_open_.pop_front();
-                }
-            }
-            if (str_empty(id))
-                break;
-            std::map<String, SqlSource>::iterator src = sources_.find(id);
-            if (sources_.end() == src) {
-                LOG(ll_ERROR, _T("unknown source") + format_stats(id));
-                continue;
-            }
-            try {
-                LOG(ll_DEBUG, _T("opening new connection") + format_stats(id));
-                SqlConnectionPtr handle = new SqlConnection(src->second);
-                put(handle, false, true);
-            }
-            catch (const std::exception &e) {
-                LOG(ll_ERROR, _T("connection error") + format_stats(id)
-                        + _T(" ") + WIDEN(e.what()));
-                ScopedLock lock(pool_mux_);
-                open_errors_[id].push_back(e);
-                pool_cond_.notify_one();
-            }
-        }
-        // process all 'forced close' requests
-        while (1) {
-            //LOG(ll_DEBUG, _T("looking for connections_for_delete_"));
-            del_handle = NULL;
-            {
-                ScopedLock lock(stop_mux_);
-                if (!connections_for_delete_.empty()) {
-                    del_handle = connections_for_delete_.front();
-                    connections_for_delete_.pop_front();
-                }
-            }
-            if (!del_handle)
-                break;
-            delete del_handle;
-            LOG(ll_INFO, _T("forced close connection"));
-        }
         // processing 'idle close'
-        {
-            ScopedLock lock(pool_mux_);
-            std::map<String, Pool>::iterator i = pools_.begin(), iend = pools_.end();
-            for (bool quit = false; !quit && i != iend; ++i) {
-                Pool::iterator j = i->second.begin(), jend = i->second.end();
-                for (; j != jend; ++j) {
-                    if (time(NULL) - (*j)->free_since_ >= idle_time_) {
-                        quit = true;
-                        del_source_id = i->first;
-                        del_handle = *j;
-                        del_count = counts_[del_source_id];
-                        i->second.erase(j);
-                        del_pool_sz = i->second.size();
-                        break;
-                    }
+        ScopedLock lock(pool_mux_);
+        std::map<String, Pool>::iterator i = pools_.begin(), iend = pools_.end();
+        for (bool quit = false; !quit && i != iend; ++i) {
+            Pool::iterator j = i->second.begin(), jend = i->second.end();
+            for (; j != jend; ++j) {
+                if (time(NULL) - (*j)->free_since_ >= idle_time_) {
+                    quit = true;
+                    String del_source_id = i->first;
+                    SqlConnectionPtr del_handle = *j;
+                    int del_count = counts_[del_source_id];
+                    i->second.erase(j);
+                    int del_pool_sz = i->second.size();
+                    LOG(ll_DEBUG, _T("closing idle connection")
+                            + format_stats(del_source_id));
+                    delete del_handle;
+                    LOG(ll_INFO, _T("closed idle connection")
+                            + format_stats(del_source_id, del_count, del_pool_sz));
+                    break;
                 }
             }
-        }
-        if (del_handle) {
-            LOG(ll_DEBUG, _T("closing idle connection")
-                    + format_stats(del_source_id));
-            delete del_handle;
-            LOG(ll_INFO, _T("closed idle connection")
-                    + format_stats(del_source_id, del_count, del_pool_sz));
         }
     }
     return NULL;
@@ -163,7 +108,7 @@ SqlPool::stop_monitor_thread()
 {
     ScopedLock lock(stop_mux_);
     stop_monitor_flag_ = true;
-    stop_cond_.notify_all();
+    stop_cond_.notify_one();
 }
 
 bool
@@ -171,9 +116,7 @@ SqlPool::sleep_not_stop(void)
 {
     ScopedLock lock(stop_mux_);
     while (!stop_monitor_flag_) {
-        if (!stop_cond_.wait(lock, monitor_sleep_ * 1000) ||
-                !connections_for_open_.empty() ||
-                !connections_for_delete_.empty())
+        if (!stop_cond_.wait(lock, monitor_sleep_ * 1000))
             return true;
     }
     return false;
@@ -181,7 +124,7 @@ SqlPool::sleep_not_stop(void)
 
 SqlPool::SqlPool(int pool_max_size, int idle_time,
                  int monitor_sleep, ILogger *logger)
-    : pool_cond_(pool_mux_), stop_cond_(stop_mux_)
+    : stop_cond_(stop_mux_)
     , pool_max_size_(pool_max_size)
     , idle_time_(idle_time)
     , monitor_sleep_(monitor_sleep)
@@ -211,58 +154,28 @@ SqlPool::add_source(const SqlSource &source)
 }
 
 SqlPool::SqlConnectionPtr
-SqlPool::get(const String &id, int timeout)
+SqlPool::get(const String &source_id, int timeout)
 {
-    //LOG(ll_DEBUG, _T("SqlPool::get()"));
-    std::map<String, SqlSource>::iterator src = sources_.find(id);
-    if (sources_.end() == src)
-        throw PoolError(_T("Unknown source ID: ") + id);
-    String stats;
-    {
-        ScopedLock lock(pool_mux_);
-        stats = get_stats(id); // can do this only when pool_mux_ is locked
-    }
-    if (!pools_[id].size() && !open_errors_[id].size()) {
-        if (counts_[id] >= pool_max_size_) {
-            if (timeout > 0)
-                LOG(ll_INFO, _T("waiting for connection ")
-                        + to_string(timeout) + _T(" sec") + stats);
-            else
-                LOG(ll_INFO, _T("waiting for connection forever") + stats);
-        }
-        else {
-            timeout = 5; // new connection timeout
-            LOG(ll_DEBUG, _T("waiting for new connection ")
-                    + to_string(timeout) + _T(" sec") + stats);
-            ScopedLock lock(stop_mux_);
-            connections_for_open_.push_back(id);
-            stop_cond_.notify_all();
-        }
-    }
     ScopedLock lock(pool_mux_);
-    while (!pools_[id].size() && !open_errors_[id].size()) {
-        if (timeout > 0) {
-            if (!pool_cond_.wait(lock, timeout * 1000))
-                return NULL;
-        }
-        else
-            pool_cond_.wait(lock);
+    std::map<String, SqlSource>::iterator source_it = sources_.find(source_id);
+    if (sources_.end() == source_it)
+        throw PoolError(_T("Unknown source ID: ") + source_id);
+    if (pools_[source_id].size()) {
+        SqlConnectionPtr handle = pools_[source_id].front();
+        ++counts_[source_id];
+        pools_[source_id].pop_front();
+        LOG(ll_INFO, _T("got connection") + get_stats(source_id));
+        return handle;
     }
-    if (open_errors_[id].size()) {
-        std::exception e = open_errors_[id].front();
-        open_errors_[id].pop_front();
-        throw e;
-    }
-    SqlConnectionPtr handle = NULL;
-    handle = pools_[id].front();
-    ++counts_[id];
-    pools_[id].pop_front();
-    LOG(ll_INFO, _T("got connection") + get_stats(id));
+    LOG(ll_DEBUG, _T("opening connection") + format_stats(source_id));
+    SqlConnectionPtr handle = new SqlConnection(source_it->second);
+    ++counts_[source_id];
+    LOG(ll_INFO, _T("opened connection") + get_stats(source_id));
     return handle;
 }
 
 void
-SqlPool::put(SqlConnectionPtr handle, bool close_now, bool new_conn)
+SqlPool::put(SqlConnectionPtr handle, bool close_now)
 {
     if (!handle)
         return;
@@ -272,45 +185,32 @@ SqlPool::put(SqlConnectionPtr handle, bool close_now, bool new_conn)
         handle->clear();
     if (handle->bad())
         close_now = true;
-    SqlConnectionPtr del_handle = NULL;
-    int del_count = 0, del_pool_sz = 0;
-    String id = handle->get_source().id();
-    {
-        ScopedLock lock(pool_mux_);
-        if (!new_conn)
-            --counts_[id];
-        if (!close_now) {
-            handle->free_since_ = time(NULL);
-            pools_[id].push_back(handle);
-            LOG(ll_INFO, (new_conn? _T("opened new connection"):
-                    _T("put connection")) + get_stats(id));
-            pool_cond_.notify_one();
-        }
-        else {
-            del_handle = handle;
-            del_count = counts_[id];
-            del_pool_sz = pools_[id].size();
-        }
+    const String source_id = handle->get_source().id();
+    ScopedLock lock(pool_mux_);
+    --counts_[source_id];
+    if (!close_now) {
+        handle->free_since_ = time(NULL);
+        pools_[source_id].push_back(handle);
+        LOG(ll_INFO, _T("put connection") + get_stats(source_id));
     }
-    if (del_handle) {
-        LOG(ll_DEBUG, _T("forced closing connection") + format_stats(id));
-        ScopedLock lock(stop_mux_);
-        connections_for_delete_.push_back(del_handle);
-        stop_cond_.notify_all();
+    else {
+        LOG(ll_DEBUG, _T("forced closing connection") + format_stats(source_id));
+        delete handle;
+        LOG(ll_INFO, _T("forced closed connection") + get_stats(source_id));
     }
 }
 
 bool
 SqlPool::reconnect(SqlConnectionPtr &conn)
 {
-    const SqlSource src = conn->get_source();
-    const String &id = src.id();
+    const SqlSource source = conn->get_source();
+    const String &source_id = source.id();
     put(conn, true); // close now
-    LOG(ll_DEBUG, _T("reopening connection") + format_stats(id));
+    LOG(ll_DEBUG, _T("reopening connection") + format_stats(source_id));
     ScopedLock lock(pool_mux_);
-    conn = new SqlConnection(src);
-    ++counts_[id];
-    LOG(ll_INFO, _T("reopened connection") + get_stats(id));
+    conn = new SqlConnection(source);
+    ++counts_[source_id];
+    LOG(ll_INFO, _T("reopened connection") + get_stats(source_id));
     return true;
 }
 
