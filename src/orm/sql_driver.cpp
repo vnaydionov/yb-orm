@@ -426,7 +426,7 @@ SqlCursor::exec_direct(const String &sql)
 {
     try {
         if (echo_)
-            debug(_T("exec_direct: ") + sql);
+            debug(_T("exec_direct: ") + sql, ll_INFO);
         connection_.activity_ = true;
         backend_->exec_direct(sql);
     }
@@ -446,7 +446,7 @@ SqlCursor::prepare(const String &sql)
         if (conv_params_ && connection_.driver_->numbered_params())
             fixed_sql = SqlDriver::convert_to_numbered_params(sql);
         if (echo_)
-            debug(_T("prepare: ") + fixed_sql);
+            debug(_T("prepare: ") + fixed_sql, ll_INFO);
         connection_.activity_ = true;
         backend_->prepare(fixed_sql);
     }
@@ -467,7 +467,7 @@ SqlCursor::bind_params(const TypeCodes &types)
                     type_names += _T(", ");
                 type_names += Value::get_type_name(types[i]);
             }
-            debug(_T("bind: (") + type_names + _T(")"));
+            debug(_T("bind: (") + type_names + _T(")"), ll_TRACE);
         }
         backend_->bind_params(types);
     }
@@ -558,7 +558,8 @@ SqlConnection::mark_bad(const std::exception &e)
         size_t pos = s.find('\n');
         if (pos != std::string::npos)
             s = s.substr(0, pos);
-        debug(_T("mark connection bad, because of ") + String(WIDEN(s)));
+        debug(_T("mark connection bad, because of ") + String(WIDEN(s)),
+              ll_WARNING);
         bad_ = true;
     }
 }
@@ -651,7 +652,7 @@ SqlConnection::~SqlConnection()
         }
     }
     if (err)
-        debug(_T("error while closing connection"));
+        debug(_T("error while closing connection"), ll_ERROR);
 }
 
 std::auto_ptr<SqlCursor>
@@ -679,7 +680,7 @@ void
 SqlConnection::begin_trans()
 {
     try {
-        debug(_T("begin transaction"));
+        debug(_T("begin transaction"), ll_INFO);
         backend_->begin_trans();
         explicit_trans_started_ = true;
     }
@@ -695,7 +696,7 @@ SqlConnection::commit()
     try {
         if (!explicit_transaction_control() || explicit_trans_started_) {
             if (echo_)
-                debug(_T("commit"));
+                debug(_T("commit"), ll_INFO);
             backend_->commit();
         }
         activity_ = false;
@@ -713,7 +714,7 @@ SqlConnection::rollback()
     try {
         if (!explicit_transaction_control() || explicit_trans_started_) {
             if (echo_)
-                debug(_T("rollback"));
+                debug(_T("rollback"), ll_INFO);
             backend_->rollback();
         }
         activity_ = false;
@@ -800,7 +801,8 @@ SqlConnection::grant_insert_id(const String &table_name, bool on, bool ignore_er
                 exec_direct(sql);
             }
             catch (const std::exception &e) {
-                debug(String(_T("exception is ignored: ")) + WIDEN(e.what()));
+                debug(String(_T("exception is ignored: ")) + WIDEN(e.what()),
+                      ll_WARNING);
             }
         }
         else

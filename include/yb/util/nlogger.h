@@ -90,6 +90,7 @@ public:
     virtual void log(int level, const std::string &msg) = 0;
     virtual const std::string get_name() const = 0;
     virtual ~ILogger();
+    void trace    (const std::string &msg) { log(ll_TRACE,    msg); }
     void debug    (const std::string &msg) { log(ll_DEBUG,    msg); }
     void info     (const std::string &msg) { log(ll_INFO,     msg); }
     void warning  (const std::string &msg) { log(ll_WARNING,  msg); }

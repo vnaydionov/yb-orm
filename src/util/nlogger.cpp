@@ -134,7 +134,7 @@ LogRecord::LogRecord(int level, const std::string &component,
 const char *LogRecord::get_level_name() const
 {
     static const char *log_level_name[] = {
-        "CRIT", "ERRO", "WARN", "INFO", "DEBG", "TRAC"
+        "CRI", "ERR", "WRN", "INF", "DBG", "TRC"
     };
     return log_level_name[check_level(level_) - 1];
 }
@@ -217,7 +217,7 @@ void LogAppender::output(std::ostream &s, const LogRecord &rec,
                          const char *time_str)
 {
     s << time_str << " "
-        << rec.get_pid() << "/" << rec.get_tid() << " "
+        << "P" << rec.get_pid() << " T" << rec.get_tid() << " "
         << rec.get_level_name() << " "
         << rec.get_component() << ": "
         << rec.get_msg();
@@ -244,7 +244,7 @@ void LogAppender::do_flush(time_t now)
             strftime(time_str, sizeof(time_str),
                 "%y-%m-%d %H:%M:%S", &split_time);
         }
-        sprintf(time_str + 17, ".%03d", (int)(it->get_t() % 1000));
+        sprintf(time_str + 17, ",%03d", (int)(it->get_t() % 1000));
         output(s, *it, time_str);
     }
     queue_.clear();
@@ -296,11 +296,24 @@ int LogAppender::get_level(const std::string &name)
 void LogAppender::set_level(const std::string &name, int level)
 {
     ScopedLock lk(queue_mutex_);
-    LogLevelMap::iterator it = log_levels_.find(name);
-    if (log_levels_.end() == it)
-        log_levels_[name] = level;
-    else
-        it->second = level;
+    if (name.size() >= 2 && name.substr(name.size() - 2) == ".*")
+    {
+        std::string prefix = name.substr(0, name.size() - 1);
+        LogLevelMap::iterator it = log_levels_.begin(),
+                              it_end = log_levels_.end();
+        for (; it != it_end; ++it)
+            if (it->first.substr(0, prefix.size()) == prefix)
+                it->second = level;
+        std::string prefix0 = name.substr(0, name.size() - 2);
+        log_levels_[prefix0] = level;
+    }
+    else {
+        LogLevelMap::iterator it = log_levels_.find(name);
+        if (log_levels_.end() == it)
+            log_levels_[name] = level;
+        else
+            it->second = level;
+    }
 }
 
 void LogAppender::flush()
