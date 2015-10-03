@@ -1,3 +1,12 @@
+libyborm (0.4.7-fix5) unstable; urgency=low
+
+  * Improve performance of operations with keys: optimized for int IDs
+  * micro_http: Support setting back log size on a listening socket
+  * Adjust logger format
+  * Simplify logic of SqlPool
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Sat, 03 Oct 2015 19:10:24 +0300
+
 libyborm (0.4.7-fix4) unstable; urgency=low
 
   * Logger: get/set/check the log level
