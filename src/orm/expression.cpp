@@ -883,12 +883,19 @@ const Expression
 FilterBackendByPK::build_expr(const Key &key)
 {
     Expression expr;
-    ValueMap::const_iterator i = key.second.begin(),
-        iend = key.second.end();
-    for (; i != iend; ++i)
+    if (key.id_name) {
         expr = expr && BinaryOpExpr(
-                ColumnExpr(key.first, i->first),
-                _T("="), ConstExpr(i->second));
+                ColumnExpr(*key.table, *key.id_name),
+                _T("="), ConstExpr(key.id_value));
+    }
+    else {
+        ValueMap::const_iterator i = key.fields.begin(),
+                                 iend = key.fields.end();
+        for (; i != iend; ++i)
+            expr = expr && BinaryOpExpr(
+                    ColumnExpr(*key.table, *i->first),
+                    _T("="), ConstExpr(i->second));
+    }
     return expr;
 }
 

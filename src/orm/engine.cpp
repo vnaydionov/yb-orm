@@ -163,8 +163,11 @@ EngineBase::delete_from(const Table &table, const Keys &keys)
     Values params(type_codes.size());
     Keys::const_iterator k = keys.begin(), kend = keys.end();
     for (; k != kend; ++k) {
-        for (size_t i = 0; i < k->second.size(); ++i)
-            params[i] = k->second[i].second;
+        if (k->id_name)
+            params[0] = k->id_value;
+        else
+            for (size_t i = 0; i < k->fields.size(); ++i)
+                params[i] = k->fields[i].second;
         cursor->exec(params);
     }
 }

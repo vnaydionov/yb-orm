@@ -546,10 +546,56 @@ Value::get_type_name(int type)
     return WIDEN(type_names[type]);
 }
 
+YBUTIL_DECL int
+key_cmp(const Key &x, const Key &y)
+{
+    int r;
+    r = (int)!!x.table - (int)!!y.table;
+    if (r || !x.table)
+        return r;
+    r = CharBuf<Char>::x_strcmp(str_data(*x.table),
+                                str_data(*y.table));
+    if (r)
+        return r;
+    r = (int)!!x.id_name - (int)!!y.id_name;
+    if (r)
+        return r;
+    if (x.id_name) {
+        r = CharBuf<Char>::x_strcmp(str_data(*x.id_name),
+                                    str_data(*y.id_name));
+        if (r)
+            return r;
+        r = (int)!x.id_is_null - (int)!y.id_is_null;
+        if (r || x.id_is_null)
+            return r;
+        LongInt lr = x.id_value - y.id_value;
+        if (lr)
+            return lr < 0? -1: 1;
+        return 0;
+    }
+    r = (int)x.fields.size() - (int)y.fields.size();
+    if (r)
+        return r < 0? -1: 1;
+    for (size_t i = 0; i < x.fields.size(); ++i) {
+        r = CharBuf<Char>::x_strcmp(str_data(*x.fields[i].first),
+                                    str_data(*y.fields[i].first));
+        if (r)
+            return r;
+        r = x.fields[i].second.cmp(y.fields[i].second);
+        if (r)
+            return r;
+    }
+    return 0;
+}
+
 YBUTIL_DECL bool
 empty_key(const Key &key)
 {
-    ValueMap::const_iterator i = key.second.begin(), iend = key.second.end();
+    if (!key.table)
+        return true;
+    if (key.id_name)
+        return key.id_is_null;
+    ValueMap::const_iterator i = key.fields.begin(), iend = key.fields.end();
     if (i == iend)
         return true;
     for (; i != iend; ++i)
@@ -558,6 +604,44 @@ empty_key(const Key &key)
                     str_empty(i->second.read_as_string())))
             return true;
     return false;
+}
+
+YBUTIL_DECL const String
+key2str(const Key &key)
+{
+    if (!key.table)
+        return _T("Key()");
+    String r;
+    r.reserve(80);
+    if (key.id_name) {
+        r += _T("Key('");
+        r += *key.table;
+        r += _T("', {'");
+        r += *key.id_name;
+        r += _T("': ");
+        if (key.id_is_null)
+            r += _T("NULL");
+        else
+            r += to_string(key.id_value);
+        r += _T("})");
+    }
+    else {
+        r += _T("Key('");
+        r += *key.table;
+        r += _T("', {");
+        ValueMap::const_iterator i = key.fields.begin(),
+                                 iend = key.fields.end();
+        for (bool first = true; i != iend; ++i, first = false) {
+            if (!first)
+                r += _T(", ");
+            r += _T("'");
+            r += *i->first;
+            r += _T("': ");
+            r += i->second.sql_str();
+        }
+        r += _T("})");
+    }
+    return r;
 }
 
 } // namespace Yb

@@ -29,9 +29,24 @@ struct CharBuf {
 
     static int x_strlen(const C *s)
     {
+        if (!s)
+            return 0;
         const C *s0 = s;
         for (; Traits::char_code(*s); ++s);
         return s - s0;
+    }
+
+    static int x_strcmp(const C *s, const C *t)
+    {
+        if (s == t)
+            return 0;
+        if (!s)
+            return -1;
+        if (!t)
+            return 1;
+        for (; Traits::char_code(*s) == Traits::char_code(*t)
+                && Traits::char_code(*s); ++s, ++t);
+        return Traits::char_code(*s) - Traits::char_code(*t);
     }
 
     template <class S>

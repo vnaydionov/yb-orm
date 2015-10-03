@@ -36,6 +36,7 @@ class TestValue : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_value_bad_cast_Decimal, ValueBadCast);
     CPPUNIT_TEST_EXCEPTION(test_value_bad_cast_date_time, ValueBadCast);
     CPPUNIT_TEST(testEmptyKey);
+    CPPUNIT_TEST(testKey2Str);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -267,18 +268,44 @@ public:
 
     void testEmptyKey()
     {
-        Key k1(_T("TBL1"), ValueMap());
+        String tbl_name = _T("TBL1"), col_a = _T("A"), col_b = _T("B");
+        Key k1(&tbl_name);
         CPPUNIT_ASSERT(empty_key(k1));
-        k1.second.push_back(make_pair(_T("A"), Value()));
+        k1.reset(&tbl_name, &col_a, 10, true);
         CPPUNIT_ASSERT(empty_key(k1));
-        k1.second.push_back(make_pair(_T("B"), Value()));
-        CPPUNIT_ASSERT(empty_key(k1));
-        k1.second[0].second = Value(10);
-        CPPUNIT_ASSERT(empty_key(k1));
-        k1.second[1].second = Value(String());
-        CPPUNIT_ASSERT(empty_key(k1));
-        k1.second[1].second = Value(String(_T("X")));
+        k1.reset(&tbl_name, &col_a, 0, false);
         CPPUNIT_ASSERT(!empty_key(k1));
+        k1.reset(&tbl_name, NULL, 10, false);
+        CPPUNIT_ASSERT(empty_key(k1));
+        k1.fields.push_back(make_pair(&col_a, Value()));
+        CPPUNIT_ASSERT(empty_key(k1));
+        k1.fields.push_back(make_pair(&col_b, Value()));
+        CPPUNIT_ASSERT(empty_key(k1));
+        k1.fields[0].second = Value(10);
+        CPPUNIT_ASSERT(empty_key(k1));
+        k1.fields[1].second = Value(String());
+        CPPUNIT_ASSERT(empty_key(k1));
+        k1.fields[1].second = Value(String(_T("X")));
+        CPPUNIT_ASSERT(!empty_key(k1));
+    }
+
+    void testKey2Str()
+    {
+        String tbl_name = _T("TBL1"), col_a = _T("A"), col_b = _T("B");
+        CPPUNIT_ASSERT_EQUAL(string("Key()"), NARROW(key2str(Key())));
+        Key k1(&tbl_name);
+        CPPUNIT_ASSERT_EQUAL(string("Key('TBL1', {})"), NARROW(key2str(k1)));
+        Key k2(&tbl_name, &col_a, 10, false);
+        CPPUNIT_ASSERT_EQUAL(string("Key('TBL1', {'A': 10})"), NARROW(key2str(k2)));
+        Key k3(&tbl_name, &col_a, 10, true);
+        CPPUNIT_ASSERT_EQUAL(string("Key('TBL1', {'A': NULL})"), NARROW(key2str(k3)));
+        Key k4(&tbl_name);
+        k4.fields.push_back(std::make_pair(&col_b, Value(_T("XY"))));
+        k4.fields.push_back(std::make_pair(&col_a, Value(20)));
+        CPPUNIT_ASSERT_EQUAL(string("Key('TBL1', {'B': 'XY', 'A': 20})"), NARROW(key2str(k4)));
+        Key k5(&tbl_name);
+        k5.fields.push_back(std::make_pair(&col_a, Value(10)));
+        CPPUNIT_ASSERT_EQUAL(string("Key('TBL1', {'A': 10})"), NARROW(key2str(k5)));
     }
 };
 

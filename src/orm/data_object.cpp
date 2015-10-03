@@ -101,19 +101,6 @@ DataObjectResultSet::DataObjectResultSet(const DataObjectResultSet &obj)
     YB_ASSERT(!obj.it_.get());
 }
 
-YBORM_DECL const String key2str(const Key &key)
-{
-    std::ostringstream out;
-    out << "Key('" << NARROW(key.first) << "', {";
-    ValueMap::const_iterator i = key.second.begin(),
-        iend = key.second.end();
-    for (; i != iend; ++i)
-        out << "'" << NARROW(i->first) << "': "
-            << NARROW(i->second.sql_str()) << ", ";
-    out << "}";
-    return WIDEN(out.str());
-}
-
 void Session::clone_engine(EngineSource *src_engine)
 {
     if (src_engine) {
@@ -187,7 +174,7 @@ void Session::clear()
 DataObject *Session::add_to_identity_map(DataObject *obj, bool return_found)
 {
     if (obj->assigned_key()) {
-        const String &key = obj->key_str();
+        const Key &key = obj->key();
         IdentityMap::iterator i = identity_map_.find(key);
         if (i != identity_map_.end()) {
             if (return_found)
@@ -227,7 +214,7 @@ DataObjectPtr Session::save_or_update(DataObjectPtr obj0)
 void Session::detach(DataObjectPtr obj)
 {
     if (obj->assigned_key()) {
-        const String &key = obj->key_str();
+        const Key &key = obj->key();
         IdentityMap::iterator i = identity_map_.find(key);
         if (i != identity_map_.end())
             identity_map_.erase(i);
@@ -282,21 +269,26 @@ DataObjectResultSet Session::load_collection(
 
 DataObject::Ptr Session::get_lazy(const Key &key)
 {
-    String key_str = key2str(key);
-    IdentityMap::iterator i = identity_map_.find(key_str);
+    IdentityMap::iterator i = identity_map_.find(key);
     if (i != identity_map_.end())
         return DataObject::Ptr(i->second);
     bool empty = empty_key(key);
     if (empty)
         return DataObject::Ptr(NULL);
     DataObjectPtr new_obj =
-        DataObject::create_new(schema_[key.first], DataObject::Ghost);
-    ValueMap::const_iterator j = key.second.begin(), jend = key.second.end();
-    for (; j != jend; ++j)
-        new_obj->set(j->first, j->second);
+        DataObject::create_new(schema_[*key.table], DataObject::Ghost);
+    if (key.id_name) {
+        if (!key.id_is_null)
+            new_obj->set(*key.id_name, key.id_value);
+    }
+    else {
+        ValueMap::const_iterator j = key.fields.begin(), jend = key.fields.end();
+        for (; j != jend; ++j)
+            new_obj->set(*j->first, j->second);
+    }
     objects_.insert(new_obj);
     new_obj->set_session(this);
-    identity_map_[key_str] = shptr_get(new_obj);
+    identity_map_[key] = shptr_get(new_obj);
     return new_obj;
 }
 
@@ -521,7 +513,7 @@ void Session::flush()
         Objects::iterator i = obj_copy.begin(), iend = obj_copy.end();
         for (; i != iend; ++i)
             if ((*i)->status() == DataObject::Deleted) {
-                IdentityMap::iterator k = identity_map_.find((*i)->key_str());
+                IdentityMap::iterator k = identity_map_.find((*i)->key());
                 if (k != identity_map_.end())
                     identity_map_.erase(k);
                 objects_.erase(objects_.find(*i));
@@ -595,26 +587,18 @@ void DataObject::set(int i, const Value &v)
 void DataObject::update_key()
 {
     assigned_key_ = table_.mk_key(values_, key_);
-    key_str_ = key2str(key_);
 }
 
 const Key &DataObject::key()
 {
-    if (str_empty(key_.first))
+    if (!key_.table)
         update_key();
     return key_;
 }
 
-const String &DataObject::key_str()
-{
-    if (str_empty(key_.first))
-        update_key();
-    return key_str_;
-}
-
 bool DataObject::assigned_key()
 {
-    if (str_empty(key_.first))
+    if (!key_.table)
         update_key();
     return assigned_key_;
 }
@@ -675,10 +659,14 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
     ro->add_slave(slave);
     slave->calc_depth(master->depth() + 1, master);
     if (master->assigned_key()) {
-        Key pkey = master->key();
+        const Key &pkey = master->key();
         const Strings &fkey_parts = r.fk_fields();
-        for (size_t i = 0; i < fkey_parts.size(); ++i)
-            slave->set(fkey_parts[i], pkey.second[i].second);
+        if (pkey.id_name)
+            slave->set(fkey_parts[0], pkey.id_value);
+        else {
+            for (size_t i = 0; i < fkey_parts.size(); ++i)
+                slave->set(fkey_parts[i], pkey.fields[i].second);
+        }
     }
     else if (slave->status() == DataObject::Sync &&
         (master->status() == DataObject::New ||
@@ -701,17 +689,27 @@ void DataObject::link(DataObject *master, DataObject::Ptr slave,
 
 Key DataObject::fk_value_for(const Relation &r)
 {
-    const Table &master_tbl = r.table(0),
-        &slave_tbl = table_;
+    const Table &master_tbl = r.table(0), &slave_tbl = table_;
     const Strings &parts = r.fk_fields();
     Key fkey;
-    fkey.second.reserve(master_tbl.pk_fields().size());
-    fkey.first = master_tbl.name();
+    if (master_tbl.pk_fields().size() == 1) {
+        const String &pk_name = master_tbl.pk_fields()[0];
+        int col_type = master_tbl.column(pk_name).type();
+        if (col_type == Value::INTEGER || col_type == Value::LONGINT) {
+            const String &fk_name = parts[0];
+            const Value &x = get(fk_name);
+            fkey.reset(&master_tbl.name(), &pk_name,
+                       x.is_null()? 0: x.as_longint(), x.is_null());
+            return fkey;
+        }
+    }
+    fkey.reset(&master_tbl.name());
+    fkey.fields.reserve(master_tbl.pk_fields().size());
     Strings::const_iterator i = parts.begin(), iend = parts.end(),
         j = master_tbl.pk_fields().begin(),
         jend = master_tbl.pk_fields().end();
     for (; i != iend && j != jend; ++i, ++j)
-        fkey.second.push_back(std::make_pair(*j, get(*i)));
+        fkey.fields.push_back(std::make_pair(&*j, get(*i)));
     return fkey;
 }
 
@@ -979,13 +977,24 @@ const Key RelationObject::gen_fkey() const
         &slave_tbl = relation_info_.table(1);
     const Strings &parts = relation_info_.fk_fields();
     Key fkey;
-    fkey.second.reserve(master_tbl.pk_fields().size());
-    fkey.first = slave_tbl.name();
+    if (master_tbl.pk_fields().size() == 1) {
+        const String &pk_name = master_tbl.pk_fields()[0];
+        int col_type = master_tbl.column(pk_name).type();
+        if (col_type == Value::INTEGER || col_type == Value::LONGINT) {
+            const Value &x = master_object_->get(pk_name);
+            const String &fk_name = parts[0];
+            fkey.reset(&slave_tbl.name(), &fk_name,
+                       x.is_null()? 0: x.as_longint(), x.is_null());
+            return fkey;
+        }
+    }
+    fkey.reset(&slave_tbl.name());
+    fkey.fields.reserve(master_tbl.pk_fields().size());
     Strings::const_iterator i = parts.begin(), iend = parts.end(),
         j = master_tbl.pk_fields().begin(),
         jend = master_tbl.pk_fields().end();
     for (; i != iend && j != jend; ++i, ++j)
-        fkey.second.push_back(std::make_pair(*i, master_object_->get(*j)));
+        fkey.fields.push_back(std::make_pair(&*i, master_object_->get(*j)));
     return fkey;
 }
 

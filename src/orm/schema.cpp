@@ -218,7 +218,16 @@ Table::find_fk_for(const Relation &rel, Strings &fkey_parts) const
 void
 Table::mk_sample_key(TypeCodes &type_codes, Key &sample_key) const
 {
-    sample_key.first = name();
+    if (pk_fields().size() == 1) {
+        const String &pk_name = pk_fields()[0];
+        int col_type = column(pk_name).type();
+        if (col_type == Value::INTEGER || col_type == Value::LONGINT) {
+            type_codes.push_back(col_type);
+            sample_key.reset(&name(), &pk_name, 0, false);
+            return;
+        }
+    }
+    sample_key.reset(&name());
     ValueMap key_values;
     key_values.reserve(pk_fields().size());
     Strings::const_iterator i = pk_fields().begin(), iend = pk_fields().end();
@@ -227,42 +236,64 @@ Table::mk_sample_key(TypeCodes &type_codes, Key &sample_key) const
         Value x(_T("0"));
         x.fix_type(col_type);
         type_codes.push_back(col_type);
-        key_values.push_back(make_pair(*i, x));
+        key_values.push_back(make_pair(&*i, x));
     }
-    sample_key.second.swap(key_values);
+    sample_key.fields.swap(key_values);
 }
 
 bool
 Table::mk_key(const Values &row_values, Key &key) const
 {
-    key.first = name();
+    if (pk_fields().size() == 1) {
+        const String &pk_name = pk_fields()[0];
+        int col_type = column(pk_name).type();
+        if (col_type == Value::INTEGER || col_type == Value::LONGINT) {
+            const Value &x = row_values[idx_by_name(pk_name)];
+            key.reset(&name(), &pk_name,
+                      x.is_null()? 0: x.as_longint(), x.is_null());
+            return !x.is_null();
+        }
+    }
+    key.reset(&name());
     bool assigned_key = true;
     ValueMap key_values;
     key_values.reserve(pk_fields().size());
     Strings::const_iterator i = pk_fields().begin(), iend = pk_fields().end();
     for (; i != iend; ++i) {
-        key_values.push_back(make_pair(*i, row_values[idx_by_name(*i)]));
-        if (key_values[key_values.size() - 1].second.is_null())
+        const Value &x = row_values[idx_by_name(*i)];
+        key_values.push_back(make_pair(&*i, x));
+        if (x.is_null())
             assigned_key = false;
     }
-    key.second.swap(key_values);
+    key.fields.swap(key_values);
     return assigned_key;
 }
 
 bool
 Table::mk_key(const Row &row_values, Key &key) const
 {
-    key.first = name();
+    if (pk_fields().size() == 1) {
+        const String &pk_name = pk_fields()[0];
+        int col_type = column(pk_name).type();
+        if (col_type == Value::INTEGER || col_type == Value::LONGINT) {
+            const Value &x = row_values[idx_by_name(pk_name)].second;
+            key.reset(&name(), &pk_name,
+                      x.is_null()? 0: x.as_longint(), x.is_null());
+            return !x.is_null();
+        }
+    }
+    key.reset(&name());
     bool assigned_key = true;
     ValueMap key_values;
     key_values.reserve(pk_fields().size());
     Strings::const_iterator i = pk_fields().begin(), iend = pk_fields().end();
     for (; i != iend; ++i) {
-        key_values.push_back(make_pair(*i, row_values[idx_by_name(*i)].second));
-        if (key_values[key_values.size() - 1].second.is_null())
+        const Value &x = row_values[idx_by_name(*i)].second;
+        key_values.push_back(make_pair(&*i, x));
+        if (x.is_null())
             assigned_key = false;
     }
-    key.second.swap(key_values);
+    key.fields.swap(key_values);
     return assigned_key;
 }
 
@@ -277,11 +308,7 @@ Table::mk_key(const Row &row_values) const
 const Key
 Table::mk_key(LongInt id) const
 {
-    Key key;
-    key.first = name();
-    String pk_name = get_surrogate_pk();
-    key.second.push_back(make_pair(pk_name, Value(id)));
-    return key;
+    return Key(&name(), &get_surrogate_pk(), id);
 }
 
 /*

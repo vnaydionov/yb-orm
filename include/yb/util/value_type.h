@@ -177,11 +177,51 @@ inline bool operator<=(const Value &x, const Value &y) { return x.cmp(y) <= 0; }
 typedef std::vector<Value> Values;
 typedef const Values *RowDataPtr;
 typedef std::vector<RowDataPtr> RowsData;
-typedef std::vector<std::pair<String, Value> > ValueMap;
-typedef std::pair<String, ValueMap> Key;
+typedef std::vector<std::pair<const String *, Value> > ValueMap;
+
+struct Key {
+    const String *table;
+    const String *id_name;
+    LongInt id_value;
+    bool id_is_null;
+    ValueMap fields;
+    Key(const String *_table = NULL, const String *_id_name = NULL,
+            LongInt _id_value = 0, bool _id_is_null = false)
+        : table(_table), id_name(_id_name)
+        , id_value(_id_value), id_is_null(_id_is_null)
+    {}
+    void reset(const String *_table, const String *_id_name = NULL,
+               LongInt _id_value = 0, bool _id_is_null = false)
+    {
+        table = _table;
+        id_name = _id_name;
+        id_value = _id_value;
+        id_is_null = _id_is_null;
+        if (fields.size())
+            fields.clear();
+    }
+    void swap(Key &k)
+    {
+        std::swap(table, k.table);
+        std::swap(id_name, k.id_name);
+        std::swap(id_value, k.id_value);
+        std::swap(id_is_null, k.id_is_null);
+        std::swap(fields, k.fields);
+    }
+};
+
 typedef std::vector<Key> Keys;
 
+YBUTIL_DECL int key_cmp(const Key &x, const Key &y);
+inline bool operator == (const Key &x, const Key &y) { return !key_cmp(x, y); }
+inline bool operator != (const Key &x, const Key &y) { return !(x == y); }
+inline bool operator < (const Key &x, const Key &y) { return key_cmp(x, y) < 0; }
+inline bool operator > (const Key &x, const Key &y) { return y < x; }
+inline bool operator <= (const Key &x, const Key &y) { return !(y < x); }
+inline bool operator >= (const Key &x, const Key &y) { return !(x < y); }
+
 YBUTIL_DECL bool empty_key(const Key &key);
+YBUTIL_DECL const String key2str(const Key &key);
 
 //! @name Casting from variant typed to certain type
 //! @{
@@ -224,6 +264,9 @@ namespace std {
 
 template<>
 inline void swap(::Yb::Value &x, ::Yb::Value &y) { x.swap(y); }
+
+template<>
+inline void swap(::Yb::Key &x, ::Yb::Key &y) { x.swap(y); }
 
 } // namespace std
 

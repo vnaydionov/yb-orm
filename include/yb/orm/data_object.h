@@ -107,8 +107,6 @@ public:
     DataObjectResultSet(const DataObjectResultSet &obj);
 };
 
-YBORM_DECL const String key2str(const Key &key);
-
 //! Session handles persisted DataObjects
 /** Session class rules all over the mapped objects that should be
  * persisted in the database.  Session has associated Schema object
@@ -120,7 +118,7 @@ class YBORM_DECL Session: public NonCopyable
     friend class ::TestDataObjectSaveLoad;
     friend class ::TestDomainObject;
     typedef std::set<DataObjectPtr> Objects;
-    typedef std::map<String, DataObject *> IdentityMap;
+    typedef std::map<Key, DataObject *> IdentityMap;
 
     ILogger::Ptr logger_, engine_logger_;
     Objects objects_;
@@ -215,7 +213,6 @@ private:
     MasterRelations master_relations_;
     Session *session_;
     Key key_;
-    String key_str_;
     bool assigned_key_;
     int depth_;
 
@@ -272,7 +269,6 @@ public:
         set(table_.idx_by_name(name), v);
     }
     const Key &key();
-    const String &key_str();
     Key fk_value_for(const Relation &r);
     const Values &raw_values() const { return values_; }
     bool assigned_key();

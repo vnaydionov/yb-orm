@@ -16,6 +16,7 @@ class TestDataObject : public CppUnit::TestFixture
     CPPUNIT_TEST_EXCEPTION(test_init_ro, ReadOnlyColumn);
     CPPUNIT_TEST_EXCEPTION(test_init_long_string, StringTooLong);
     CPPUNIT_TEST(test_data_object_key);
+    CPPUNIT_TEST(test_data_object_key_id);
     CPPUNIT_TEST(test_data_object_save_no_id);
     CPPUNIT_TEST(test_data_object_save_id);
     CPPUNIT_TEST_EXCEPTION(test_data_object_already_saved,
@@ -60,6 +61,10 @@ public:
         u->add_column(Column(_T("Q"), Value::DECIMAL));
         u->set_seq_name(_T("S_B_Z"));
         r_.add_table(u);
+        Table::Ptr v(new Table(_T("C"), _T(""), _T("C")));
+        v->add_column(Column(_T("U"), Value::STRING, 3, Column::PK));
+        v->add_column(Column(_T("V"), Value::DATETIME, 0, 0));
+        r_.add_table(v);
         {
             Relation::AttrMap attr_a, attr_b;
             attr_a[_T("property")] = _T("SlaveBs");
@@ -101,15 +106,32 @@ public:
 
     void test_data_object_key()
     {
-        DataObject::Ptr d = DataObject::create_new(r_.table(_T("A")));
+        DataObject::Ptr d = DataObject::create_new(r_.table(_T("C")));
+        String tbl_c = _T("C"), col_u = _T("U");
         ValueMap values;
-        values.push_back(make_pair(_T("X"), Value()));
-        CPPUNIT_ASSERT(Key(_T("A"), values) == d->key());
+        values.push_back(make_pair(&col_u, Value()));
+        Key k(&tbl_c);
+        k.fields = values;
+        CPPUNIT_ASSERT(k == d->key());
+        CPPUNIT_ASSERT(!d->assigned_key());
+        d->set(_T("U"), Value(_T("XXX")));
+        CPPUNIT_ASSERT(d->assigned_key());
+        values[0].second = Value(_T("XXX"));
+        k.fields = values;
+        CPPUNIT_ASSERT(k == d->key());
+    }
+
+    void test_data_object_key_id()
+    {
+        DataObject::Ptr d = DataObject::create_new(r_.table(_T("A")));
+        String tbl_a = _T("A"), col_x = _T("X");
+        Key k(&tbl_a, &col_x, 0, true);
+        CPPUNIT_ASSERT(k == d->key());
         CPPUNIT_ASSERT(!d->assigned_key());
         d->set(_T("X"), Value(10));
         CPPUNIT_ASSERT(d->assigned_key());
-        values[0].second = Value(10);
-        CPPUNIT_ASSERT(Key(_T("A"), values) == d->key());
+        k.reset(&tbl_a, &col_x, 10, false);
+        CPPUNIT_ASSERT(k == d->key());
     }
 
     void test_data_object_save_no_id()
@@ -129,18 +151,16 @@ public:
     void test_data_object_save_id()
     {
         DataObject::Ptr d = DataObject::create_new(r_.table(_T("A")));
+        String tbl_a = _T("A"), col_x = _T("X");
         d->set(_T("X"), 10);
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)d->status());
         CPPUNIT_ASSERT_EQUAL((Session *)NULL, d->session());
         Session session(r_);
         session.save(d);
         CPPUNIT_ASSERT_EQUAL(&session, d->session());
-        ValueMap values;
-        values.push_back(make_pair(_T("X"), Value(10)));
-        DataObject::Ptr e = session.get_lazy(Key(_T("A"), values));
+        DataObject::Ptr e = session.get_lazy(Key(&tbl_a, &col_x, 10));
         CPPUNIT_ASSERT_EQUAL(shptr_get(d), shptr_get(e));
-        values[0].second = Value(11);
-        e = session.get_lazy(Key(_T("A"), values));
+        e = session.get_lazy(Key(&tbl_a, &col_x, 11));
         CPPUNIT_ASSERT(shptr_get(d) != shptr_get(e));
         CPPUNIT_ASSERT_EQUAL((int)DataObject::Ghost, (int)e->status());
         session.detach(d);
@@ -329,12 +349,17 @@ public:
 
     void test_filter_by_key()
     {
-        ValueMap values;
-        values.push_back(make_pair(_T("X"), Value(10)));
+        String tbl_a = _T("A"), col_x = _T("X"),
+               tbl_c = _T("C"), col_u = _T("U");
         Session session(r_);
-        DataObject::Ptr d = session.get_lazy(Key(_T("A"), values));
+        DataObject::Ptr d = session.get_lazy(Key(&tbl_a, &col_x, 10));
         KeyFilter kf(d->key());
         CPPUNIT_ASSERT_EQUAL(string("A.X = 10"), NARROW(kf.get_sql()));
+        Key k2(&tbl_c);
+        k2.fields.push_back(std::make_pair(&col_u, Value(_T("YYY"))));
+        DataObject::Ptr e = session.get_lazy(k2);
+        KeyFilter kf2(e->key());
+        CPPUNIT_ASSERT_EQUAL(string("C.U = 'YYY'"), NARROW(kf2.get_sql()));
     }
 
     /*
