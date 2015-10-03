@@ -239,8 +239,8 @@ HttpServerBase::serve()
                     (*i)->wait();
                 }
                 log_->info("workers: "
-                           "processing=" + to_string(workers_alive.size()) +
-                           ", done=" + to_string(workers_dead.size()));
+                           "processing=" + NARROW(to_string(workers_alive.size())) +
+                           ", done=" + NARROW(to_string(workers_dead.size())));
                 workers.swap(workers_alive);
                 prev_clean_ts = time(NULL);
             }
