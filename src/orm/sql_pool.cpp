@@ -123,12 +123,13 @@ SqlPool::sleep_not_stop(void)
 }
 
 SqlPool::SqlPool(int pool_max_size, int idle_time,
-                 int monitor_sleep, ILogger *logger)
+                 int monitor_sleep, ILogger *logger, bool interlocked_open)
     : stop_cond_(stop_mux_)
     , pool_max_size_(pool_max_size)
     , idle_time_(idle_time)
     , monitor_sleep_(monitor_sleep)
     , stop_monitor_flag_(false)
+    , interlocked_open_(interlocked_open)
     , monitor_(this)
 {
     if (logger) {
@@ -156,21 +157,34 @@ SqlPool::add_source(const SqlSource &source)
 SqlPool::SqlConnectionPtr
 SqlPool::get(const String &source_id, int timeout)
 {
-    ScopedLock lock(pool_mux_);
-    std::map<String, SqlSource>::iterator source_it = sources_.find(source_id);
-    if (sources_.end() == source_it)
-        throw PoolError(_T("Unknown source ID: ") + source_id);
-    if (pools_[source_id].size()) {
-        SqlConnectionPtr handle = pools_[source_id].front();
-        ++counts_[source_id];
-        pools_[source_id].pop_front();
-        LOG(ll_INFO, _T("got connection") + get_stats(source_id));
-        return handle;
+    SqlSource src;
+    {
+        ScopedLock lock(pool_mux_);
+        std::map<String, SqlSource>::iterator source_it = sources_.find(source_id);
+        if (sources_.end() == source_it)
+            throw PoolError(_T("Unknown source ID: ") + source_id);
+        if (pools_[source_id].size()) {
+            SqlConnectionPtr handle = pools_[source_id].front();
+            ++counts_[source_id];
+            pools_[source_id].pop_front();
+            LOG(ll_INFO, _T("got connection") + get_stats(source_id));
+            return handle;
+        }
+        src = source_it->second;
     }
     LOG(ll_DEBUG, _T("opening connection") + format_stats(source_id));
-    SqlConnectionPtr handle = new SqlConnection(source_it->second);
-    ++counts_[source_id];
+    SqlConnectionPtr handle;
+    if (interlocked_open_) {
+        ScopedLock lock(open_mux_);
+        handle = new SqlConnection(src);
+    }
+    else
+        handle = new SqlConnection(src);
     LOG(ll_INFO, _T("opened connection") + get_stats(source_id));
+    {
+        ScopedLock lock(pool_mux_);
+        ++counts_[source_id];
+    }
     return handle;
 }
 

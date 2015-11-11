@@ -121,7 +121,6 @@ void
 SQLiteConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 {
     close();
-    ScopedLock lock(drv_->conn_mux_);
     own_handle_ = true;
     sqlite3_open(NARROW(source.db()).c_str(), &conn_);
     if (SQLITE_OK != sqlite3_errcode(conn_)) {
@@ -134,7 +133,6 @@ void
 SQLiteConnectionBackend::use_raw(SqlDialect *dialect, void *raw_connection)
 {
     close();
-    ScopedLock lock(drv_->conn_mux_);
     conn_ = (SQLiteDatabase *)raw_connection;
 }
 
@@ -154,7 +152,6 @@ SQLiteConnectionBackend::new_cursor()
 
 void SQLiteConnectionBackend::close()
 {
-    ScopedLock lock(drv_->conn_mux_);
     if (own_handle_) {
         if (conn_)
             sqlite3_close(conn_);

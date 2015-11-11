@@ -108,11 +108,15 @@ void
 QtSqlConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 {
     close();
-    ScopedLock lock(drv_->conn_mux_);
+    int seq;
+    {
+        ScopedLock lock(drv_->conn_mux_);
+        seq = drv_->seq_;
+        ++drv_->seq_;
+    }
     own_handle_ = true;
     conn_name_ = dialect->get_name() + _T("_") + source.db()
-        + _T("_") + to_string(drv_->seq_);
-    ++drv_->seq_;
+        + _T("_") + to_string(seq);
     String driver = source.driver();
     bool eat_slash = false;
     if (driver == _T("QTSQL"))
@@ -160,7 +164,6 @@ void
 QtSqlConnectionBackend::use_raw(SqlDialect *dialect, void *raw_connection)
 {
     close();
-    ScopedLock lock(drv_->conn_mux_);
     conn_ = (QSqlDatabase *)raw_connection;
 }
 

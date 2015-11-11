@@ -170,7 +170,6 @@ void
 OdbcConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 {
     close();
-    ScopedLock lock(drv_->conn_mux_);
     conn_.reset(new tiodbc::connection());
     if (!conn_->connect(source.db(), source.user(), source.passwd(),
                 source.get_as<int>(String(_T("timeout")), 10),
@@ -182,7 +181,6 @@ void
 OdbcConnectionBackend::use_raw(SqlDialect *dialect, void *raw_connection)
 {
     close();
-    ScopedLock lock(drv_->conn_mux_);
     conn_.reset(new tiodbc::connection());
     conn_->use_raw(raw_connection);
 }
@@ -204,7 +202,6 @@ OdbcConnectionBackend::new_cursor()
 void
 OdbcConnectionBackend::close()
 {
-    ScopedLock lock(drv_->conn_mux_);
     conn_.reset(NULL);
 }
 

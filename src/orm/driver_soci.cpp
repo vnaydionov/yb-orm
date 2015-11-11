@@ -285,7 +285,6 @@ void
 SOCIConnectionBackend::open(SqlDialect *dialect, const SqlSource &source)
 {
     close();
-    ScopedLock lock(drv_->conn_mux_);
     own_handle_ = true;
     try {
         String driver = source.driver();
@@ -306,7 +305,6 @@ void
 SOCIConnectionBackend::use_raw(SqlDialect *dialect, void *raw_connection)
 {
     close();
-    ScopedLock lock(drv_->conn_mux_);
     conn_ = (soci::session *)raw_connection;
 }
 
@@ -326,7 +324,6 @@ SOCIConnectionBackend::new_cursor()
 
 void SOCIConnectionBackend::close()
 {
-    ScopedLock lock(drv_->conn_mux_);
     try {
         if (own_handle_) {
             if (conn_)

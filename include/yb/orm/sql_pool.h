@@ -31,7 +31,7 @@ public:
     void on_run();
 };
 
-class YBORM_DECL SqlPool
+class YBORM_DECL SqlPool: NonCopyable
 {
     friend class PoolMonThread;
 public:
@@ -39,7 +39,8 @@ public:
     SqlPool(int pool_max_size = YB_POOL_MAX_SIZE,
             int idle_time = YB_POOL_IDLE_TIME,
             int monitor_sleep = YB_POOL_MONITOR_SLEEP,
-            ILogger *logger = NULL);
+            ILogger *logger = NULL,
+            bool interlocked_open = true);
     ~SqlPool();
     void add_source(const SqlSource &source);
     SqlConnectionPtr get(const String &id, int timeout = YB_POOL_WAIT_TIME);
@@ -51,10 +52,10 @@ private:
     std::map<String, int> counts_;
     typedef std::deque<SqlConnectionPtr> Pool;
     std::map<String, Pool> pools_;
-    Mutex pool_mux_, stop_mux_;
+    Mutex pool_mux_, stop_mux_, open_mux_;
     Condition stop_cond_;
     int pool_max_size_, idle_time_, monitor_sleep_;
-    bool stop_monitor_flag_;
+    bool stop_monitor_flag_, interlocked_open_;
     PoolMonThread monitor_;
     ILogger::Ptr logger_;
 
