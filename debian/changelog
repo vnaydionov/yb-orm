@@ -1,3 +1,10 @@
+libyborm (0.4.7-fix7) unstable; urgency=low
+
+  * Move the interlocked connection opening logic from drivers to SqlPool,
+    make it optional 
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Wed, 11 Nov 2015 12:37:46 +0300
+
 libyborm (0.4.7-fix6) unstable; urgency=low
 
   * #24: do not use placement new/direct destructor calls: gcc5.2.1 bug? 
