@@ -1,3 +1,9 @@
+libyborm (0.4.7-fix6) unstable; urgency=low
+
+  * #24: do not use placement new/direct destructor calls: gcc5.2.1 bug? 
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Mon, 09 Nov 2015 12:15:35 +0300
+
 libyborm (0.4.7-fix5) unstable; urgency=low
 
   * Improve performance of operations with keys: optimized for int IDs
