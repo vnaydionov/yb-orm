@@ -9,6 +9,7 @@ include_directories (
     ${PROJECT_SOURCE_DIR}/include/private)
 
 set (SOURCES_CPP
+    alias.cpp
     code_gen.cpp
     data_object.cpp
     domain_factory.cpp

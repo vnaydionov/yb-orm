@@ -2,6 +2,7 @@
 ybormincludedir=$(includedir)/yb/orm
 
 yborminclude_HEADERS = \
+	alias.h \
 	code_gen.h \
 	data_object.h \
 	domain_factory.h \

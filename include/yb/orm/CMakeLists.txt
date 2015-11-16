@@ -1,5 +1,6 @@
 
 install (FILES
+    alias.h
     code_gen.h
     data_object.h
     domain_factory.h

@@ -35,6 +35,7 @@ SOCI_DRV_CPP =
 endif
 
 CPP_FILES = \
+	alias.cpp \
 	code_gen.cpp \
 	data_object.cpp \
 	domain_factory.cpp \
