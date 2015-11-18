@@ -58,9 +58,10 @@ EngineBase::select(const Expression &what,
         const Expression &group_by, const Expression &having,
         const Expression &order_by, int max_rows, bool for_update)
 {
-    SqlResultSet rs = select_iter(SelectExpr(what).from_(from).
+    Expression select = SelectExpr(what).from_(from).
             where_(where).group_by_(group_by).having_(having).
-            order_by_(order_by).for_update(for_update));
+            order_by_(order_by).for_update(for_update).add_aliases();
+    SqlResultSet rs = select_iter(select);
     RowsPtr rows(new Rows);
     copy_no_more_than_n(rs.begin(), rs.end(), max_rows,
             back_inserter(*rows));

@@ -1,6 +1,7 @@
 #include "orm/alias.h"
 #include <algorithm>
 #include <stdexcept>
+#include <memory>
 #include <stdio.h>
 
 namespace Yb {
@@ -15,9 +16,14 @@ const std::string mk_alias(const std::string &tbl,
     r.append(tbl);
     r.append(1, '_');
     r.append(col);
+    for (std::string::iterator i = r.begin(), end = r.end();
+            i != end; ++i)
+    {
+        *i = lower(*i);
+    }
     if (r.size() > max_len) {
         char buf[25];
-        sprintf(buf, "%u", cnt);
+        sprintf(buf, "%u", (unsigned )cnt);
         size_t cnt_len = strlen(buf);
         r[max_len - cnt_len - 1] = '_';
         strcpy(&r[max_len - cnt_len], buf);
@@ -45,26 +51,35 @@ bool is_camel(const std::string &s) {
 }
 
 void split_words(const std::string &s, string_vector &out) {
+    bool camel = is_camel(s);
     std::string w;
     std::string::const_iterator i = s.begin(), end = s.end();
     for (; i != end; ++i) {
         if ('_' == *i || '-' == *i || ' ' == *i || '$' == *i) {
-            if (w.size() > 1)
+            if (w.size() > 0)
                 out.push_back(w);
             w.clear();
         }
-        else if ('A' <= *i && *i <= 'Z') {
-            if (w.size() > 1)
+        else if (camel && 'A' <= *i && *i <= 'Z') {
+            if (w.size() > 0)
                 out.push_back(w);
             w.clear();
             w.push_back(lower(*i));
         }
         else {
-            w.push_back(*i);
+            w.push_back(lower(*i));
         }
     }
-    if (w.size() > 1)
+    if (w.size() > 0)
         out.push_back(w);
+    if (out.size() > 1) {
+        for (size_t j = 0; j < out.size();) {
+            if (out[j].size() == 1)
+                out.erase(out.begin() + j);
+            else
+                ++j;
+        }
+    }
 }
 
 const std::string shorten(const std::string &s) {
@@ -82,17 +97,144 @@ const std::string shorten(const std::string &s) {
     return r;
 }
 
+static std::auto_ptr<string_set> sql_kwords;
+
+static void init_sql_kwords() {
+    if (!sql_kwords.get()) {
+        std::auto_ptr<string_set> kw(new string_set);
+        kw->insert("add");
+        kw->insert("all");
+        kw->insert("alter");
+        kw->insert("and");
+        kw->insert("as");
+        kw->insert("asc");
+        kw->insert("auto_increment");
+        kw->insert("avg");
+        kw->insert("bigint");
+        kw->insert("binary");
+        kw->insert("blob");
+        kw->insert("bool");
+        kw->insert("boolean");
+        kw->insert("by");
+        kw->insert("byte");
+        kw->insert("char");
+        kw->insert("check");
+        kw->insert("clob");
+        kw->insert("column");
+        kw->insert("constraint");
+        kw->insert("count");
+        kw->insert("create");
+        kw->insert("cursor");
+        kw->insert("date");
+        kw->insert("datetime");
+        kw->insert("decimal");
+        kw->insert("default");
+        kw->insert("delete");
+        kw->insert("desc");
+        kw->insert("disable");
+        kw->insert("distinct");
+        kw->insert("double");
+        kw->insert("drop");
+        kw->insert("enable");
+        kw->insert("end");
+        kw->insert("exists");
+        kw->insert("explain");
+        kw->insert("float");
+        kw->insert("for");
+        kw->insert("foreign");
+        kw->insert("from");
+        kw->insert("full");
+        kw->insert("function");
+        kw->insert("go");
+        kw->insert("grant");
+        kw->insert("group");
+        kw->insert("having");
+        kw->insert("in");
+        kw->insert("index");
+        kw->insert("inner");
+        kw->insert("insert");
+        kw->insert("int");
+        kw->insert("integer");
+        kw->insert("into");
+        kw->insert("join");
+        kw->insert("key");
+        kw->insert("left");
+        kw->insert("like");
+        kw->insert("limit");
+        kw->insert("lob");
+        kw->insert("long");
+        kw->insert("loop");
+        kw->insert("max");
+        kw->insert("min");
+        kw->insert("modify");
+        kw->insert("not");
+        kw->insert("null");
+        kw->insert("number");
+        kw->insert("numeric");
+        kw->insert("nvarchar");
+        kw->insert("nvarchar2");
+        kw->insert("of");
+        kw->insert("off");
+        kw->insert("offset");
+        kw->insert("on");
+        kw->insert("or");
+        kw->insert("order");
+        kw->insert("outer");
+        kw->insert("over");
+        kw->insert("plan");
+        kw->insert("precision");
+        kw->insert("primary");
+        kw->insert("procedure");
+        kw->insert("raw");
+        kw->insert("references");
+        kw->insert("revoke");
+        kw->insert("round");
+        kw->insert("row");
+        kw->insert("select");
+        kw->insert("sequence");
+        kw->insert("set");
+        kw->insert("show");
+        kw->insert("signed");
+        kw->insert("smallint");
+        kw->insert("sum");
+        kw->insert("table");
+        kw->insert("time");
+        kw->insert("timestamp");
+        kw->insert("tinyint");
+        kw->insert("to");
+        kw->insert("trigger");
+        kw->insert("unique");
+        kw->insert("unsigned");
+        kw->insert("update");
+        kw->insert("using");
+        kw->insert("values");
+        kw->insert("varbinary");
+        kw->insert("varchar");
+        kw->insert("varchar2");
+        kw->insert("view");
+        kw->insert("where");
+        if (!sql_kwords.get())
+            sql_kwords.reset(kw.release());
+    }
+}
+
 void get_conflicts(const string_map &aliases, string_set &out) {
+    init_sql_kwords();
     string_map values;
     string_map::const_iterator i = aliases.begin(), end = aliases.end();
     for (; i != end; ++i) {
-        string_map::iterator j = values.find(i->second);
-        if (j != values.end()) {
-            out.insert(j->second);
+        if (sql_kwords->find(i->second) != sql_kwords->end()) {
             out.insert(i->first);
         }
         else {
-            values[i->second] = i->first;
+            string_map::iterator j = values.find(i->second);
+            if (j != values.end()) {
+                out.insert(j->second);
+                out.insert(i->first);
+            }
+            else {
+                values[i->second] = i->first;
+            }
         }
     }
 }
@@ -121,7 +263,7 @@ void fallback_table_aliases(const string_set &confl_tbls,
     string_set::const_iterator it = confl_tbls.begin(), end = confl_tbls.end();
     for (size_t i = 0; it != end; ++it, ++i) {
         char buf[25];
-        sprintf(buf, "%u", i + 1);
+        sprintf(buf, "%u", (unsigned )(i + 1));
         out[*it] += std::string(buf);
     }
 }

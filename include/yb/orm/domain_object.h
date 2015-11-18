@@ -675,7 +675,7 @@ public:
         YB_ASSERT(joins_.size());
         YB_ASSERT(select_from_ != NULL);
 
-        Expression join_expr(select_from_->name());
+        Expression join_expr = ColumnExpr(select_from_->name());
         tables.push_back(select_from_->name());
         JoinList::iterator it = joins_.begin(), end = joins_.end();
         for (; it != end; ++it) {
@@ -683,7 +683,7 @@ public:
             if (!it->second.is_empty()) {
                 // if there's a join condition - use it
                 join_expr = JoinExpr(join_expr,
-                        Expression(it->first->name()), it->second);
+                        ColumnExpr(it->first->name()), it->second);
             }
             else
             {
@@ -714,7 +714,7 @@ public:
                 }
                 YB_ASSERT(rel != NULL);
                 join_expr = JoinExpr(join_expr,
-                        Expression(it->first->name()),
+                        ColumnExpr(it->first->name()),
                         rel->join_condition());
             }
             tables.push_back(it->first->name());
@@ -753,12 +753,14 @@ public:
     SelectExpr get_select(Strings &tables) {
         if (!joins_.size()) {
             QF::list_tables(tables);
+            Expression from_where = session_->schema().join_expr(tables);
             return make_select(session_->schema(),
-                    session_->schema().join_expr(tables),
+                    from_where,
                     filter_, order_, for_update_, limit_, offset_);
         }
+        Expression from_where = make_join(tables);
         return make_select(session_->schema(),
-                make_join(tables),
+                from_where,
                 filter_, order_, for_update_, limit_, offset_);
     }
 

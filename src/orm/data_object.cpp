@@ -228,7 +228,7 @@ void Session::detach(DataObjectPtr obj)
 
 void Session::load_collection(DataObjectList &out,
                               const Expression &from,
-                              const Filter &filter,
+                              const Expression &filter,
                               const Expression &order_by,
                               bool for_update_flag)
 {
@@ -241,7 +241,7 @@ void Session::load_collection(DataObjectList &out,
 
 DataObjectResultSet Session::load_collection(
         const Expression &from,
-        const Filter &filter,
+        const Expression &filter,
         const Expression &order_by,
         bool for_update_flag)
 {
@@ -251,13 +251,13 @@ DataObjectResultSet Session::load_collection(
     Strings::const_iterator i = tables.begin(), iend = tables.end();
     for (; i != iend; ++i) {
         const Table &table = schema_.table(*i);
-        Columns::const_iterator j = table.begin(), jend = table.end();
-        for (; j != jend; ++j)
-            cols << ColumnExpr(*i, j->name());
+        for (size_t j = 0; j < table.size(); ++j)
+            cols << ColumnExpr(table.name(), table[j].name());
     }
-    return load_collection(tables,
-            SelectExpr(cols).from_(from).where_(filter)
-                .order_by_(order_by).for_update(for_update_flag));
+    Expression select = SelectExpr(cols).from_(from)
+        .where_(filter).order_by_(order_by)
+        .for_update(for_update_flag).add_aliases();
+    return load_collection(tables, select);
 }
 
 DataObjectResultSet Session::load_collection(
@@ -612,7 +612,7 @@ void DataObject::load()
         cols << ColumnExpr(table_.name(), it->name());
     KeyFilter f(key());
     RowsPtr result = session_->engine()->select
-        (cols, Expression(table_.name()), f);
+        (cols, ColumnExpr(table_.name()), f);
     if (result->size() != 1)
         throw ObjectNotFoundByKey(table_.name() + _T("(")
                                   + f.get_sql() + _T(")"));
@@ -836,7 +836,7 @@ void DataObject::delete_object(DeletionMode mode, int depth)
         out << "delete_object mode=" << mode << " depth=" << depth
             << " status=" << status_ << "\n";
         dump_tree(out);
-        session_->debug(WIDEN(out.str()));
+        session_->trace(WIDEN(out.str()));
     }
     if (mode != DelUnchecked) {
         delete_master_relations(DelDryRun, depth + 1);
@@ -1009,7 +1009,7 @@ size_t RelationObject::count_slaves()
     KeyFilter f(gen_fkey());
     Expression cols(_T("COUNT(*) RCNT"));
     RowsPtr result = session.engine()->
-        select(cols, Expression(slave_tbl.name()), f);
+        select(cols, ColumnExpr(slave_tbl.name()), f);
     if (result->size() != 1)
         throw ObjectNotFoundByKey(_T("COUNT(*) FOR ") + slave_tbl.name()
                 + _T("(") + f.get_sql() + _T(")"));
@@ -1029,12 +1029,13 @@ void RelationObject::lazy_load_slaves()
     for (; j != jend; ++j)
         cols << ColumnExpr(slave_tbl.name(), j->name());
     SelectExpr select_expr = SelectExpr(cols)
-        .from_(Expression(slave_tbl.name()))
+        .from_(ColumnExpr(slave_tbl.name()))
         .where_(KeyFilter(gen_fkey()));
     if (relation_info_.has_attr(1, _T("order-by")) &&
             !str_empty(relation_info_.attr(1, _T("order-by"))))
         select_expr.order_by_(
                 Expression(relation_info_.attr(1, _T("order-by"))));
+    select_expr.add_aliases();
     SqlResultSet rs = session.engine()->select_iter(select_expr);
     SqlResultSet::iterator k = rs.begin(), kend = rs.end();
     for (; k != kend; ++k) {

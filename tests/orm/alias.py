@@ -1,6 +1,8 @@
 
 def mk_alias(tbl, col, max_len, cnt):
     '''
+    >>> mk_alias('T_CLIENT', 'NAME', 14, 1)
+    't_client_name'
     >>> mk_alias('t_client', 'name', 14, 1)
     't_client_name'
     >>> mk_alias('t_client', 'name', 13, 1)
@@ -14,7 +16,7 @@ def mk_alias(tbl, col, max_len, cnt):
     >>> mk_alias('t_client', 'xname', 13, 123)
     't_client__123'
     '''
-    return tbl + '_' + col if len(tbl) + 1 + len(col) <= max_len else (tbl + '_' + col)[:max_len - len(str(cnt)) - 1] + '_' + str(cnt)
+    return (tbl + '_' + col if len(tbl) + 1 + len(col) <= max_len else (tbl + '_' + col)[:max_len - len(str(cnt)) - 1] + '_' + str(cnt)).lower()
 
 def is_camel(s):
     '''
@@ -52,8 +54,9 @@ def split_words(s):
     >>> split_words('_ab_ra___cada_bra_')
     ['ab', 'ra', 'cada', 'bra']
     '''
+    camel = is_camel(s)
     return [w for w in
-            ''.join(c if not (c >= 'A' and c <= 'Z') else '_' + c for c in s).strip('_').lower().split('_')
+            ''.join(c if not camel or not (c >= 'A' and c <= 'Z') else '_' + c for c in s).strip('_').lower().split('_')
             if w]
 
 def main_words(tbl):
@@ -62,8 +65,13 @@ def main_words(tbl):
     ['ab', 'ra', 'cada', 'bra']
     >>> main_words('a_bRaCadaBra')
     ['ra', 'cada', 'bra']
+    >>> main_words('_a_')
+    ['a']
+    >>> main_words('T_ORM_TEST')
+    ['orm', 'test']
     '''
-    return [w for w in split_words(tbl) if len(w) > 1]
+    words = split_words(tbl)
+    return [w for w in words if len(w) > 1 or len(words) == 1]
 
 def is_vowel(c):
     '''
@@ -136,16 +144,132 @@ def alias(tbl, col, max_len, cnt):
             '_'.join(shorten(w) for w in main_words(col)),
             max_len, cnt)
 
+sql_kwords = frozenset([
+    "add",
+    "all",
+    "alter",
+    "and",
+    "as",
+    "asc",
+    "auto_increment",
+    "avg",
+    "bigint",
+    "binary",
+    "blob",
+    "bool",
+    "boolean",
+    "by",
+    "byte",
+    "char",
+    "check",
+    "clob",
+    "column",
+    "constraint",
+    "count",
+    "create",
+    "cursor",
+    "date",
+    "datetime",
+    "decimal",
+    "default",
+    "delete",
+    "desc",
+    "disable",
+    "distinct",
+    "double",
+    "drop",
+    "enable",
+    "end",
+    "exists",
+    "explain",
+    "float",
+    "for",
+    "foreign",
+    "from",
+    "full",
+    "function",
+    "go",
+    "grant",
+    "group",
+    "having",
+    "in",
+    "index",
+    "inner",
+    "insert",
+    "int",
+    "integer",
+    "into",
+    "join",
+    "key",
+    "left",
+    "like",
+    "limit",
+    "lob",
+    "long",
+    "loop",
+    "max",
+    "min",
+    "modify",
+    "not",
+    "null",
+    "number",
+    "numeric",
+    "nvarchar",
+    "nvarchar2",
+    "of",
+    "off",
+    "offset",
+    "on",
+    "or",
+    "order",
+    "outer",
+    "over",
+    "plan",
+    "precision",
+    "primary",
+    "procedure",
+    "raw",
+    "references",
+    "revoke",
+    "round",
+    "row",
+    "select",
+    "sequence",
+    "set",
+    "show",
+    "signed",
+    "smallint",
+    "sum",
+    "table",
+    "time",
+    "timestamp",
+    "tinyint",
+    "to",
+    "trigger",
+    "unique",
+    "unsigned",
+    "update",
+    "using",
+    "values",
+    "varbinary",
+    "varchar",
+    "varchar2",
+    "view",
+    "where",
+])
+
 def get_conflicts(aliases):
     '''
-    >>> sorted(get_conflicts({'invoice': 'i', 'act': 'a', 'account': 'a', 'contract': 'c', 'consume': 'c', 'person': 'p'}))
-    ['account', 'act', 'consume', 'contract']
+    >>> sorted(get_conflicts({'invoice': 'i', 'act': 'a', 'account': 'a',\
+                              'contract': 'c', 'consume': 'c', 'person': 'p',\
+                              'be_yellow': 'by', 'operation_name': 'on'}))
+    ['account', 'act', 'be_yellow', 'consume', 'contract', 'operation_name']
     '''
-    return sum(
+    return list(set(sum(
         [tbls for tbls in
          [[k for k, v in aliases.items() if v == a]
           for a in set(aliases.values())]
-         if len(tbls) > 1], [])
+         if len(tbls) > 1], []) + [k for k, v in aliases.items() if v in sql_kwords]))
 
 def mk_table_aliases(tbl_words, word_pos):
     '''
@@ -249,7 +373,7 @@ def col_aliases(p, max_len):
     t_aliases = table_aliases(tbls)
     return [mk_alias(t_aliases[tbl], col, max_len, i + 1)
             for (i, (tbl, col)) in enumerate(p)]
-    
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()

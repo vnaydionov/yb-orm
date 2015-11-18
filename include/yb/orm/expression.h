@@ -9,7 +9,8 @@
 #include "util/utility.h"
 #include "util/exception.h"
 #include "util/value_type.h"
-#include "orm_config.h"
+#include "orm/orm_config.h"
+#include "orm/alias.h"
 
 namespace Yb {
 
@@ -100,6 +101,7 @@ class YBORM_DECL ColumnExprBackend: public ExpressionBackend
 {
     Expression expr_;
     String tbl_name_, col_name_, alias_;
+    bool desc_;
 public:
     ColumnExprBackend(const Expression &expr, const String &alias);
     ColumnExprBackend(const String &tbl_name, const String &col_name,
@@ -107,16 +109,25 @@ public:
     const String generate_sql(
             const SqlGeneratorOptions &options,
             SqlGeneratorContext *ctx) const;
+    const String &tbl_name() const { return tbl_name_; }
+    const String &col_name() const { return col_name_; }
     const String &alias() const { return alias_; }
+    bool desc() const { return desc_; }
+    void set_alias(const String &alias) { alias_ = alias; }
+    void set_tbl_name(const String &tbl_name) { tbl_name_ = tbl_name; }
+    void set_col_name(const String &col_name) { col_name_ = col_name; }
+    void set_desc(bool desc) { desc_ = desc; }
 };
 
 class YBORM_DECL ColumnExpr: public Expression
 {
 public:
     ColumnExpr(const Expression &expr, const String &alias = _T(""));
-    ColumnExpr(const String &tbl_name, const String &col_name,
+    ColumnExpr(const String &tbl_name, const String &col_name = _T(""),
             const String &alias = _T(""));
     const String &alias() const;
+    void set_alias(const String &alias);
+    void desc(bool d = true);
 };
 
 class YBORM_DECL ConstExprBackend: public ExpressionBackend
@@ -151,6 +162,7 @@ public:
     bool prefix() const { return prefix_; }
     const String &op() const { return op_; }
     const Expression &expr() const { return expr_; }
+    Expression &expr() { return expr_; }
 };
 
 class YBORM_DECL UnaryOpExpr: public Expression
@@ -160,6 +172,7 @@ public:
     bool prefix() const;
     const String &op() const;
     const Expression &expr() const;
+    Expression &expr();
 };
 
 class YBORM_DECL BinaryOpExprBackend: public ExpressionBackend
@@ -175,6 +188,8 @@ public:
     const String &op() const { return op_; }
     const Expression &expr1() const { return expr1_; }
     const Expression &expr2() const { return expr2_; }
+    Expression &expr1() { return expr1_; }
+    Expression &expr2() { return expr2_; }
 };
 
 class YBORM_DECL BinaryOpExpr: public Expression
@@ -185,6 +200,8 @@ public:
     const String &op() const;
     const Expression &expr1() const;
     const Expression &expr2() const;
+    Expression &expr1();
+    Expression &expr2();
 };
 
 class YBORM_DECL JoinExprBackend: public ExpressionBackend
@@ -199,7 +216,10 @@ public:
             SqlGeneratorContext *ctx) const;
     const Expression &expr1() const { return expr1_; }
     const Expression &expr2() const { return expr2_; }
+    Expression &expr1() { return expr1_; }
+    Expression &expr2() { return expr2_; }
     const Expression &cond() const { return cond_; }
+    Expression &cond() { return cond_; }
 };
 
 class YBORM_DECL JoinExpr: public Expression
@@ -209,7 +229,10 @@ public:
             const Expression &expr2, const Expression &cond);
     const Expression &expr1() const;
     const Expression &expr2() const;
+    Expression &expr1();
+    Expression &expr2();
     const Expression &cond() const;
+    Expression &cond();
 };
 
 class YBORM_DECL ExpressionListBackend: public ExpressionBackend
@@ -223,6 +246,10 @@ public:
             SqlGeneratorContext *ctx) const;
     int size() const { return items_.size(); }
     const Expression &item(int n) const {
+        YB_ASSERT(n >= 0 && (size_t)n < items_.size());
+        return items_[n];
+    }
+    Expression &item(int n) {
         YB_ASSERT(n >= 0 && (size_t)n < items_.size());
         return items_[n];
     }
@@ -288,6 +315,8 @@ public:
     int size() const;
     const Expression &item(int n) const;
     const Expression &operator [] (int n) const { return item(n); }
+    Expression &item(int n);
+    Expression &operator [] (int n) { return item(n); }
 };
 
 class YBORM_DECL SelectExprBackend: public ExpressionBackend
@@ -315,6 +344,7 @@ public:
         pager_limit_ = limit;
         pager_offset_ = offset;
     }
+    void add_aliases();
     const Expression &select_expr() const { return select_expr_; }
     const Expression &from_expr() const { return from_expr_; }
     const Expression &where_expr() const { return where_expr_; }
@@ -343,6 +373,7 @@ public:
     SelectExpr &with_lockmode(const String &lock_mode);
     SelectExpr &for_update(bool flag = true);
     SelectExpr &pager(int limit, int offset);
+    SelectExpr &add_aliases();
     const Expression &select_expr() const;
     const Expression &from_expr() const;
     const Expression &where_expr() const;
@@ -439,6 +470,8 @@ public:
             const SqlGeneratorOptions &options,
             SqlGeneratorContext *ctx) const;
     const Key &key() const { return key_; }
+    const Expression &expr() const { return expr_; }
+    Expression &expr() { return expr_; }
 };
 
 class YBORM_DECL KeyFilter: public Expression
@@ -446,6 +479,8 @@ class YBORM_DECL KeyFilter: public Expression
 public:
     KeyFilter(const Key &key);
     const Key &key() const;
+    const Expression &expr() const;
+    Expression &expr();
 };
 
 typedef Expression Filter;
@@ -453,6 +488,13 @@ typedef Expression Filter;
 class Schema;
 
 YBORM_DECL void find_all_tables(const Expression &expr, Strings &tables);
+
+YBORM_DECL void set_table_aliases(Expression &expr, const string_map &aliases);
+YBORM_DECL void set_table_aliases_on_cond(
+        Expression &expr, const string_map &aliases);
+YBORM_DECL void set_table_aliases_on_cols(
+        Expression &expr, const string_map &aliases, bool add_col_aliases);
+
 YBORM_DECL SelectExpr make_select(const Schema &schema, const Expression &from_where,
         const Expression &filter, const Expression &order_by,
         bool for_update_flag = false, int limit = 0, int offset = 0);

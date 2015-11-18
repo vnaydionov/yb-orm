@@ -144,6 +144,7 @@ sql_alias(const String &s, const String &alias)
 ColumnExprBackend::ColumnExprBackend(const Expression &expr, const String &alias)
     : expr_(expr)
     , alias_(alias)
+    , desc_(false)
 {}
 
 ColumnExprBackend::ColumnExprBackend(const String &tbl_name, const String &col_name,
@@ -151,6 +152,7 @@ ColumnExprBackend::ColumnExprBackend(const String &tbl_name, const String &col_n
     : tbl_name_(tbl_name)
     , col_name_(col_name)
     , alias_(alias)
+    , desc_(false)
 {}
 
 const String
@@ -161,10 +163,12 @@ ColumnExprBackend::generate_sql(
     String r;
     if (!str_empty(col_name_))
         r = sql_prefix(col_name_, tbl_name_);
+    else if (!str_empty(tbl_name_))
+        r = tbl_name_;
     else
-        r += sql_parentheses_as_needed(
+        r = sql_parentheses_as_needed(
                 expr_.generate_sql(options, ctx));
-    return sql_alias(r, alias_);
+    return sql_alias(r, alias_) + (desc_? _T(" DESC"): _T(""));
 }
 
 ColumnExpr::ColumnExpr(const Expression &expr, const String &alias)
@@ -179,6 +183,16 @@ ColumnExpr::ColumnExpr(const String &tbl_name, const String &col_name,
 const String &
 ColumnExpr::alias() const {
     return dynamic_cast<ColumnExprBackend *>(backend_.get())->alias();
+}
+
+void
+ColumnExpr::set_alias(const String &alias) {
+    return dynamic_cast<ColumnExprBackend *>(backend_.get())->set_alias(alias);
+}
+
+void
+ColumnExpr::desc(bool d) {
+    return dynamic_cast<ColumnExprBackend *>(backend_.get())->set_desc(d);
 }
 
 ConstExprBackend::ConstExprBackend(const Value &x): value_(x) {}
@@ -259,6 +273,11 @@ UnaryOpExpr::expr() const {
     return dynamic_cast<UnaryOpExprBackend *>(backend_.get())->expr();
 }
 
+Expression &
+UnaryOpExpr::expr() {
+    return dynamic_cast<UnaryOpExprBackend *>(backend_.get())->expr();
+}
+
 BinaryOpExprBackend::BinaryOpExprBackend(const Expression &expr1,
         const String &op, const Expression &expr2)
     : expr1_(expr1)
@@ -306,16 +325,37 @@ BinaryOpExpr::expr2() const {
     return dynamic_cast<BinaryOpExprBackend *>(backend_.get())->expr2();
 }
 
+Expression &
+BinaryOpExpr::expr1() {
+    return dynamic_cast<BinaryOpExprBackend *>(backend_.get())->expr1();
+}
+
+Expression &
+BinaryOpExpr::expr2() {
+    return dynamic_cast<BinaryOpExprBackend *>(backend_.get())->expr2();
+}
+
 const String
 JoinExprBackend::generate_sql(
         const SqlGeneratorOptions &options,
         SqlGeneratorContext *ctx) const
 {
-    String sql = sql_parentheses_as_needed(
-            expr1_.generate_sql(options, ctx));
+    String sql;
+    if (expr1_.backend() &&
+            (dynamic_cast<JoinExprBackend *>(expr1_.backend()) ||
+             dynamic_cast<ColumnExprBackend *>(expr1_.backend())))
+        sql += expr1_.generate_sql(options, ctx);
+    else
+        sql += sql_parentheses_as_needed(
+                expr1_.generate_sql(options, ctx));
     sql += _T(" JOIN ");
-    sql += sql_parentheses_as_needed(
-            expr2_.generate_sql(options, ctx));
+    if (expr2_.backend() &&
+            (dynamic_cast<JoinExprBackend *>(expr2_.backend()) ||
+             dynamic_cast<ColumnExprBackend *>(expr2_.backend())))
+        sql += expr2_.generate_sql(options, ctx);
+    else
+        sql += sql_parentheses_as_needed(
+                expr2_.generate_sql(options, ctx));
     sql += _T(" ON ");
     sql += sql_parentheses_as_needed(
             cond_.generate_sql(options, ctx));
@@ -337,8 +377,23 @@ JoinExpr::expr2() const {
     return dynamic_cast<JoinExprBackend *>(backend_.get())->expr2();
 }
 
+Expression &
+JoinExpr::expr1() {
+    return dynamic_cast<JoinExprBackend *>(backend_.get())->expr1();
+}
+
+Expression &
+JoinExpr::expr2() {
+    return dynamic_cast<JoinExprBackend *>(backend_.get())->expr2();
+}
+
 const Expression &
 JoinExpr::cond() const {
+    return dynamic_cast<JoinExprBackend *>(backend_.get())->cond();
+}
+
+Expression &
+JoinExpr::cond() {
     return dynamic_cast<JoinExprBackend *>(backend_.get())->cond();
 }
 
@@ -351,8 +406,13 @@ ExpressionListBackend::generate_sql(
     for (size_t i = 0; i < items_.size(); ++i) {
         if (!str_empty(sql))
             sql += _T(", ");
-        sql += sql_parentheses_as_needed(
-                items_[i].generate_sql(options, ctx));
+        if (items_[i].backend() &&
+                dynamic_cast<ColumnExprBackend *> (
+                    items_[i].backend()))
+            sql += items_[i].generate_sql(options, ctx);
+        else
+            sql += sql_parentheses_as_needed(
+                    items_[i].generate_sql(options, ctx));
     }
     return sql;
 }
@@ -395,6 +455,11 @@ ExpressionList::size() const {
 
 const Expression &
 ExpressionList::item(int n) const {
+    return dynamic_cast<ExpressionListBackend *>(backend_.get())->item(n);
+}
+
+Expression &
+ExpressionList::item(int n) {
     return dynamic_cast<ExpressionListBackend *>(backend_.get())->item(n);
 }
 
@@ -468,6 +533,25 @@ SelectExprBackend::generate_sql(
     return sql;
 }
 
+void
+SelectExprBackend::add_aliases()
+{
+    Strings tables;
+    find_all_tables(from_expr_, tables);
+    string_set tbls_set;
+    Strings::const_iterator i = tables.begin(), iend = tables.end();
+    for (; i != iend; ++i)
+        tbls_set.insert(NARROW(*i));
+    string_map aliases;
+    table_aliases(tbls_set, aliases);
+    set_table_aliases_on_cols(select_expr_, aliases, true);
+    set_table_aliases(from_expr_, aliases);
+    set_table_aliases_on_cond(where_expr_, aliases);
+    set_table_aliases_on_cols(group_by_expr_, aliases, false);
+    set_table_aliases_on_cond(having_expr_, aliases);
+    set_table_aliases_on_cols(order_by_expr_, aliases, false);
+}
+
 SelectExpr::SelectExpr(const Expression &select_expr)
     : Expression(ExprBEPtr(new SelectExprBackend(select_expr)))
 {}
@@ -522,6 +606,12 @@ SelectExpr::for_update(bool flag) {
 SelectExpr &
 SelectExpr::pager(int limit, int offset) {
     dynamic_cast<SelectExprBackend *>(backend_.get())->pager(limit, offset);
+    return *this;
+}
+
+SelectExpr &
+SelectExpr::add_aliases() {
+    dynamic_cast<SelectExprBackend *>(backend_.get())->add_aliases();
     return *this;
 }
 
@@ -922,6 +1012,18 @@ KeyFilter::key() const
     return dynamic_cast<FilterBackendByPK *>(backend_.get())->key();
 }
 
+const Expression &
+KeyFilter::expr() const
+{
+    return dynamic_cast<FilterBackendByPK *>(backend_.get())->expr();
+}
+
+Expression &
+KeyFilter::expr()
+{
+    return dynamic_cast<FilterBackendByPK *>(backend_.get())->expr();
+}
+
 YBORM_DECL void
 find_all_tables(const Expression &expr, Strings &tables)
 {
@@ -941,12 +1043,131 @@ find_all_tables(const Expression &expr, Strings &tables)
             find_all_tables(join_expr->expr2(), tables);
             return;
         }
+        ColumnExprBackend *tbl_expr =
+            dynamic_cast<ColumnExprBackend *> (expr.backend());
+        if (tbl_expr) {
+            tables.push_back(tbl_expr->tbl_name());
+            return;
+        }
     }
     String sql = expr.get_sql();
     if (is_number_or_object_name(sql))
         tables.push_back(sql);
     else
         throw ORMError(_T("Not a table expression"));
+}
+
+YBORM_DECL void
+set_table_aliases(Expression &expr, const string_map &aliases)
+{
+    if (!expr.backend())
+        return;
+    ExpressionListBackend *list_expr =
+        dynamic_cast<ExpressionListBackend *> (expr.backend());
+    if (list_expr) {
+        int n = list_expr->size();
+        for (int i = 0; i < n; ++i)
+            set_table_aliases(list_expr->item(i), aliases);
+        return;
+    }
+    JoinExprBackend *join_expr =
+        dynamic_cast<JoinExprBackend *> (expr.backend());
+    if (join_expr) {
+        set_table_aliases(join_expr->expr1(), aliases);
+        set_table_aliases(join_expr->expr2(), aliases);
+        set_table_aliases_on_cond(join_expr->cond(), aliases);
+        return;
+    }
+    ColumnExprBackend *tbl_expr =
+        dynamic_cast<ColumnExprBackend *> (expr.backend());
+    if (!tbl_expr)
+        throw ORMError(_T("Not a table expression"));
+    string_map::const_iterator it = aliases.find(
+            NARROW(tbl_expr->tbl_name()));
+    if (it == aliases.end())
+        throw ORMError(_T("Not alias found for table: ")
+                       + tbl_expr->tbl_name());
+    tbl_expr->set_alias(WIDEN(it->second));
+}
+
+YBORM_DECL void
+set_table_aliases_on_cond(Expression &expr, const string_map &aliases)
+{
+    if (!expr.backend())
+        return;
+    BinaryOpExprBackend *bin_expr =
+        dynamic_cast<BinaryOpExprBackend *> (expr.backend());
+    if (bin_expr) {
+        set_table_aliases_on_cond(bin_expr->expr1(), aliases);
+        set_table_aliases_on_cond(bin_expr->expr2(), aliases);
+    }
+    else {
+        ColumnExprBackend *col_expr =
+            dynamic_cast<ColumnExprBackend *> (expr.backend());
+        if (col_expr) {
+            string_map::const_iterator it = aliases.find(
+                    NARROW(col_expr->tbl_name()));
+            if (it != aliases.end())
+                col_expr->set_tbl_name(WIDEN(it->second));
+        }
+        else {
+            FilterBackendByPK *key_expr =
+                dynamic_cast<FilterBackendByPK *> (expr.backend());
+            if (key_expr) {
+                set_table_aliases_on_cond(key_expr->expr(), aliases);
+            }
+            else {
+                UnaryOpExprBackend *un_expr =
+                    dynamic_cast<UnaryOpExprBackend *> (expr.backend());
+                if (un_expr) {
+                    set_table_aliases_on_cond(un_expr->expr(), aliases);
+                }
+            }
+        }
+    }
+}
+
+static void
+set_alias_on_col(ColumnExprBackend *col, const string_map &aliases,
+                 bool add_col_aliases, int j)
+{
+    const size_t max_len = 30;  // imposed by Oracle
+    if (col) {
+        string_map::const_iterator it = aliases.find(
+                NARROW(col->tbl_name()));
+        if (it != aliases.end()) {
+            if (add_col_aliases) {
+                col->set_alias(WIDEN(mk_alias(it->second,
+                                              NARROW(col->col_name()),
+                                              max_len, j)));
+            }
+            col->set_tbl_name(WIDEN(it->second));
+        }
+    }
+}
+
+YBORM_DECL void
+set_table_aliases_on_cols(Expression &expr, const string_map &aliases,
+        bool add_col_aliases)
+{
+    if (!expr.backend())
+        return;
+    ColumnExprBackend *col =
+        dynamic_cast<ColumnExprBackend *> (expr.backend());
+    set_alias_on_col(col, aliases, add_col_aliases, 1);
+    if (!col) {
+        ExpressionListBackend *col_list = 
+            dynamic_cast<ExpressionListBackend *>(expr.backend());
+        if (col_list) {
+            for (size_t j = 0; j < col_list->size(); ++j) {
+                if (!col_list->item(j).backend())
+                    continue;
+                ColumnExprBackend *col =
+                    dynamic_cast<ColumnExprBackend *>(col_list->item(j).backend());
+                set_alias_on_col(col, aliases, add_col_aliases, j + 1);
+            }
+        }
+    }
 }
 
 YBORM_DECL SelectExpr
@@ -959,7 +1180,7 @@ make_select(const Schema &schema, const Expression &from_where,
     ExpressionList cols;
     Strings::const_iterator i = tables.begin(), iend = tables.end();
     for (; i != iend; ++i) {
-        const Table &table = schema[*i];
+        const Table &table = schema.table(*i);
         for (size_t j = 0; j < table.size(); ++j)
             cols << ColumnExpr(table.name(), table[j].name());
     }
@@ -968,7 +1189,7 @@ make_select(const Schema &schema, const Expression &from_where,
         .for_update(for_update_flag);
     if (limit)
         q.pager(limit, offset);
-    return q;
+    return q.add_aliases();
 }
 
 } // namespace Yb

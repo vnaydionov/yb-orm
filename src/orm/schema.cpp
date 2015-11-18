@@ -678,7 +678,7 @@ Schema::make_join_expr(const Expression &expr1, const String &tbl1,
         return expr1;
     const String &tbl2 = *it;
     return make_join_expr(
-            JoinExpr(expr1, Expression(tbl2),
+            JoinExpr(expr1, ColumnExpr(tbl2),
                 find_single_relation_between_tables(tbl1, tbl2).join_condition()),
             tbl2, ++it, end);
 }
@@ -690,7 +690,7 @@ Schema::join_expr(const Strings &tables) const
         return Expression();
     Strings::const_iterator it = tables.begin();
     const String &tbl1 = *it;
-    return make_join_expr(Expression(tbl1), tbl1, ++it, tables.end());
+    return make_join_expr(ColumnExpr(tbl1), tbl1, ++it, tables.end());
 }
 
 void

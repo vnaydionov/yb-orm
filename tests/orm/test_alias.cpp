@@ -5,6 +5,7 @@
 using namespace Yb;
 
 TEST_CASE( "build up alias with limited length", "[mk_alias]" ) {
+    REQUIRE( mk_alias("T_CLIENT", "NAME", 14, 1) == "t_client_name" );
     REQUIRE( mk_alias("t_client", "name", 14, 1) == "t_client_name" );
     REQUIRE( mk_alias("t_client", "name", 13, 1) == "t_client_name" );
     REQUIRE( mk_alias("t_client", "name", 12, 1) == "t_client_n_1" );
@@ -43,6 +44,15 @@ TEST_CASE( "split an ID into words", "[split_words]" ) {
     words.clear();
     split_words("_ab_ra___cada_bra_", words);
     REQUIRE( words == words0 );
+    words.clear();
+    split_words("_a_", words);
+    REQUIRE( words.size() == 1 );
+    REQUIRE( words[0] == "a" );
+    words.clear();
+    split_words("T_ORM_TEST", words);
+    REQUIRE( words.size() == 2 );
+    REQUIRE( words[0] == "orm" );
+    REQUIRE( words[1] == "test" );
 }
 
 TEST_CASE( "check if it is a vowel (lowercase)", "[is_vowel]" ) {
@@ -78,8 +88,10 @@ TEST_CASE( "find conflicting aliases", "[get_conflicts]" ) {
     string_vector ctables0, ctables;
     ctables0.push_back("account");
     ctables0.push_back("act");
+    ctables0.push_back("be_yellow");
     ctables0.push_back("consume");
     ctables0.push_back("contract");
+    ctables0.push_back("operation_name");
     string_map aliases;
     aliases["invoice"] = "i";
     aliases["act"] = "a";
@@ -87,6 +99,8 @@ TEST_CASE( "find conflicting aliases", "[get_conflicts]" ) {
     aliases["consume"] = "c";
     aliases["contract"] = "c";
     aliases["person"] = "p";
+    aliases["operation_name"] = "on";
+    aliases["be_yellow"] = "by";
     string_set out;
     get_conflicts(aliases, out);
     std::copy(out.begin(), out.end(), std::back_inserter(ctables));

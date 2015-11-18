@@ -507,7 +507,7 @@ public:
         engine.get_conn()->grant_insert_id(_T("T_ORM_TEST"), false, true);
         CPPUNIT_ASSERT_EQUAL(true, engine.activity());
         RowsPtr ptr = engine.select(Expression(_T("*")),
-                Expression(t.name()),
+                ColumnExpr(t.name()),
                 t.column(_T("ID")) == id);
         CPPUNIT_ASSERT_EQUAL(1, (int)ptr->size());
         CPPUNIT_ASSERT_EQUAL(string("inserted"),
