@@ -213,6 +213,7 @@ private:
     std::string bad_resp_;
     Yb::ILogger::Ptr log_;
     TcpSocket sock_;
+    time_t prev_clean_ts;
 
     static void process(HttpServerBase *server, SOCKET cl_s);
     void process_client_request(SOCKET cl_s);

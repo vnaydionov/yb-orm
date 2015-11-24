@@ -8,6 +8,22 @@ using namespace std;
 using namespace Yb;
 using namespace Yb::StrUtils;
 
+typedef void (*WorkerFunc)(HttpServerBase *, SOCKET);
+
+class WorkerThread: public Thread {
+    HttpServerBase *serv_;
+    SOCKET s_;
+    WorkerFunc worker_;
+    void on_run() { worker_(serv_, s_); }
+public:
+    WorkerThread(HttpServerBase *serv, SOCKET s, WorkerFunc worker)
+        : serv_(serv), s_(s), worker_(worker)
+    {}
+};
+
+typedef SharedPtr<WorkerThread>::Type WorkerThreadPtr;
+typedef std::vector<WorkerThreadPtr> Workers;
+
 HttpServerBase::HttpServerBase(const std::string &ip_addr, int port,
         int back_log, ILogger *root_logger,
         const String &content_type, const std::string &bad_resp)
@@ -17,6 +33,7 @@ HttpServerBase::HttpServerBase(const std::string &ip_addr, int port,
     , content_type_(content_type)
     , bad_resp_(bad_resp)
     , log_(root_logger->new_logger("micro_http").release())
+    , prev_clean_ts(time(NULL))
 {}
 
 HttpHeaders
@@ -184,18 +201,37 @@ HttpServerBase::process_client_request(SOCKET cl_s)
     cl_sock.close(true);
 }
 
-typedef void (*WorkerFunc)(HttpServerBase *, SOCKET);
+static void
+cleanup_workers(bool force,
+        time_t &prev_clean_ts, Workers &workers, Yb::ILogger *log_)
+{
+    if (force || time(NULL) - prev_clean_ts >= 5) {   // sec.
+        log_->info("clean up workers");
+        Workers workers_dead, workers_alive;
+        workers_dead.reserve(workers.size() + 1);
+        workers_alive.reserve(workers.size() + 1);
+        for (Workers::iterator i = workers.begin();
+             i != workers.end(); ++i)
+        {
+            if ((*i)->finished())
+                workers_dead.push_back(*i);
+            else
+                workers_alive.push_back(*i);
+        }
+        for (Workers::iterator i = workers_dead.begin();
+             i != workers_dead.end(); ++i)
+        {
+            (*i)->terminate();
+            (*i)->wait();
+        }
+        log_->info("workers: "
+                   "processing=" + NARROW(to_string(workers_alive.size())) +
+                   ", done=" + NARROW(to_string(workers_dead.size())));
+        workers.swap(workers_alive);
+        prev_clean_ts = time(NULL);
+    }
+}
 
-class WorkerThread: public Thread {
-    HttpServerBase *serv_;
-    SOCKET s_;
-    WorkerFunc worker_;
-    void on_run() { worker_(serv_, s_); }
-public:
-    WorkerThread(HttpServerBase *serv, SOCKET s, WorkerFunc worker)
-        : serv_(serv), s_(s), worker_(worker)
-    {}
-};
 
 void
 HttpServerBase::serve()
@@ -204,49 +240,36 @@ HttpServerBase::serve()
     log_->info("start server on port " + to_stdstring(port_));
     sock_.bind(ip_addr_, port_);
     sock_.listen(back_log_);
-    typedef SharedPtr<WorkerThread>::Type WorkerThreadPtr;
-    typedef std::vector<WorkerThreadPtr> Workers;
     Workers workers;
-    time_t prev_clean_ts = time(NULL);
     while (1) {
         // accept request
+        bool force_clean = false;
+        SOCKET cl_sock = INVALID_SOCKET;
         try {
+            log_->debug("waiting for incoming connect...");
             string ip_addr;
             int ip_port;
-            SOCKET cl_sock = sock_.accept(&ip_addr, &ip_port);
+            cl_sock = sock_.accept(&ip_addr, &ip_port);
             log_->info("accepted from " + ip_addr + ":" + to_stdstring(ip_port));
             WorkerThreadPtr worker(new WorkerThread(
                         this, cl_sock, HttpServerBase::process));
             workers.push_back(worker);
             worker->start();
-            if (time(NULL) - prev_clean_ts >= 5) {   // sec.
-                log_->info("clean up workers");
-                Workers workers_dead, workers_alive;
-                workers_dead.reserve(workers.size() + 1);
-                workers_alive.reserve(workers.size() + 1);
-                for (Workers::iterator i = workers.begin();
-                     i != workers.end(); ++i)
-                {
-                    if ((*i)->finished())
-                        workers_dead.push_back(*i);
-                    else
-                        workers_alive.push_back(*i);
-                }
-                for (Workers::iterator i = workers_dead.begin();
-                     i != workers_dead.end(); ++i)
-                {
-                    (*i)->terminate();
-                    (*i)->wait();
-                }
-                log_->info("workers: "
-                           "processing=" + NARROW(to_string(workers_alive.size())) +
-                           ", done=" + NARROW(to_string(workers_dead.size())));
-                workers.swap(workers_alive);
-                prev_clean_ts = time(NULL);
-            }
         }
         catch (const std::exception &ex) {
             log_->error(string("exception: ") + ex.what());
+            if (cl_sock != INVALID_SOCKET) {
+                log_->info("closing failed socket");
+                TcpSocket s(cl_sock);
+            }
+            force_clean = true;
+        }
+        try {
+            cleanup_workers(force_clean,
+                    prev_clean_ts, workers, log_.get());
+        }
+        catch (const std::exception &ex) {
+            log_->error(string("cleanup exception: ") + ex.what());
         }
     }
 }
