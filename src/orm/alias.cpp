@@ -1,3 +1,10 @@
+// -*- Mode: C++; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: nil; -*-
+#define YBORM_SOURCE
+
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "orm/alias.h"
 #include <algorithm>
 #include <stdexcept>
@@ -6,7 +13,7 @@
 
 namespace Yb {
 
-const std::string mk_alias(const std::string &tbl,
+YBORM_DECL const std::string mk_alias(const std::string &tbl,
                            const std::string &col,
                            size_t max_len,
                            size_t cnt)
@@ -32,7 +39,7 @@ const std::string mk_alias(const std::string &tbl,
     return r;
 }
 
-bool is_camel(const std::string &s) {
+YBORM_DECL bool is_camel(const std::string &s) {
     std::string::const_iterator i = s.begin(), end = s.end();
     bool small_seen = false, cap_seen = false;
     for (; i != end; ++i) {
@@ -50,7 +57,7 @@ bool is_camel(const std::string &s) {
     return false;
 }
 
-void split_words(const std::string &s, string_vector &out) {
+YBORM_DECL void split_words(const std::string &s, string_vector &out) {
     bool camel = is_camel(s);
     std::string w;
     std::string::const_iterator i = s.begin(), end = s.end();
@@ -82,10 +89,10 @@ void split_words(const std::string &s, string_vector &out) {
     }
 }
 
-const std::string shorten(const std::string &s) {
+YBORM_DECL const std::string shorten(const std::string &s) {
     std::string r;
     r.reserve(s.size());
-    std::string::const_iterator i = s.begin(), end = s.end();
+    const char *i = s.data(), *end = i + s.size();
     char p = 0, c = lower(*i);
     for (; i != end; ++i) {
         char n = lower(*(i + 1));
@@ -218,7 +225,7 @@ static void init_sql_kwords() {
     }
 }
 
-void get_conflicts(const string_map &aliases, string_set &out) {
+YBORM_DECL void get_conflicts(const string_map &aliases, string_set &out) {
     init_sql_kwords();
     string_map values;
     string_map::const_iterator i = aliases.begin(), end = aliases.end();
@@ -239,7 +246,7 @@ void get_conflicts(const string_map &aliases, string_set &out) {
     }
 }
 
-void mk_table_aliases(const str2strvec_map &tbl_words,
+YBORM_DECL void mk_table_aliases(const str2strvec_map &tbl_words,
         const str2intvec_map &word_pos, string_map &out) {
     str2strvec_map::const_iterator i = tbl_words.begin(),
         end = tbl_words.end();
@@ -256,7 +263,7 @@ void mk_table_aliases(const str2strvec_map &tbl_words,
     }
 }
 
-void fallback_table_aliases(const string_set &confl_tbls,
+YBORM_DECL void fallback_table_aliases(const string_set &confl_tbls,
         const str2strvec_map &tbl_words,
         const str2intvec_map &word_pos, string_map &out) {
     mk_table_aliases(tbl_words, word_pos, out);
@@ -268,7 +275,7 @@ void fallback_table_aliases(const string_set &confl_tbls,
     }
 }
 
-void inc_word_pos(const string_set &confl_tbls,
+YBORM_DECL void inc_word_pos(const string_set &confl_tbls,
         const str2strvec_map &tbl_words,
         str2intvec_map &word_pos) {
     string_set::const_iterator it = confl_tbls.begin(), end = confl_tbls.end();
@@ -283,7 +290,7 @@ void inc_word_pos(const string_set &confl_tbls,
         if (wpos->second.size() != twords->second.size())
             throw std::runtime_error("inconsistent wpos and twords.");
         for (size_t j = 0; j < wpos->second.size(); ++j) {
-            if (wpos->second[j] < twords->second[j].size()) {
+            if (wpos->second[j] < (int)twords->second[j].size()) {
                 wpos->second[j] += 1;
                 break;
             }
@@ -291,7 +298,7 @@ void inc_word_pos(const string_set &confl_tbls,
     }
 }
 
-void table_aliases(const string_set &tbls_set, string_map &out)
+YBORM_DECL void table_aliases(const string_set &tbls_set, string_map &out)
 {
     str2strvec_map tbl_words;
     str2intvec_map word_pos;
@@ -325,7 +332,7 @@ void table_aliases(const string_set &tbls_set, string_map &out)
     out.swap(aliases);
 }
 
-void col_aliases(const strpair_vector &p, size_t max_len, 
+YBORM_DECL void col_aliases(const strpair_vector &p, size_t max_len, 
         string_vector &out) {
     string_set tbls;
     strpair_vector::const_iterator i = p.begin(), iend = p.end();
@@ -341,3 +348,4 @@ void col_aliases(const strpair_vector &p, size_t max_len,
 }
 
 } // end of namespace Yb
+// vim:ts=4:sts=4:sw=4:et:

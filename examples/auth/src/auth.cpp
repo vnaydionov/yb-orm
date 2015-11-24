@@ -220,7 +220,7 @@ public:
         int n_handlers = sizeof(handlers)/sizeof(handlers[0]);
         int port = 9090; // TODO: read from config
         typedef HttpServer<XmlHttpWrapper> AuthHttpServer;
-        typename AuthHttpServer::HandlerMap handler_map;
+        AuthHttpServer::HandlerMap handler_map;
         for (int i = 0; i < n_handlers; ++i)
             handler_map[_T("/") + handlers[i].name()] = handlers[i];
         AuthHttpServer server("0.0.0.0", port, 3,
