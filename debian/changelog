@@ -1,3 +1,10 @@
+libyborm (0.4.7-fix9) unstable; urgency=low
+
+  * #25: fixes for msvc
+  * Fix resource exhaustion handling in main loop of micro_http listener.
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Tue, 24 Nov 2015 14:18:16 +0300
+
 libyborm (0.4.7-fix8) unstable; urgency=low
 
   * #25: apply aliases for generated SELECT statements
