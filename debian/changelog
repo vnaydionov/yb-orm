@@ -1,3 +1,10 @@
+libyborm (0.4.7-fix8) unstable; urgency=low
+
+  * #25: apply aliases for generated SELECT statements
+  * #25: generate short mnemonic aliases for tables
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Wed, 18 Nov 2015 20:42:26 +0300
+
 libyborm (0.4.7-fix7) unstable; urgency=low
 
   * Move the interlocked connection opening logic from drivers to SqlPool,
