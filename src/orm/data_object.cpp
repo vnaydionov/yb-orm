@@ -188,7 +188,7 @@ DataObject *Session::add_to_identity_map(DataObject *obj, bool return_found)
 
 void Session::save(DataObjectPtr obj0)
 {
-    DataObject *obj = add_to_identity_map(shptr_get(obj0), false);
+    DataObject *obj = add_to_identity_map(shptr_get(obj0), true);
     if (obj == shptr_get(obj0)) {
         objects_.insert(obj0);
         obj->set_session(this);

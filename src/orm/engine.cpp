@@ -222,21 +222,24 @@ EngineBase::get_next_value(const String &seq_name)
 void
 EngineBase::commit()
 {
-    //logger()->debug("engine: commit");
+    //if (logger())
+    //    logger()->debug("engine: commit");
     get_conn()->commit();
 }
 
 void
 EngineBase::rollback()
 {
-    //logger()->debug("engine: rollback");
+    //if (logger())
+    //    logger()->debug("engine: rollback");
     get_conn()->rollback();
 }
 
 void
 EngineBase::touch()
 {
-    //logger()->debug("engine: touch");
+    //if (logger())
+    //    logger()->debug("engine: touch");
     get_conn()->begin_trans_if_necessary();
 }
 
@@ -252,7 +255,8 @@ EngineBase::create_schema(const Schema &schema, bool ignore_errors)
                 cursor->exec_direct(sql);
             }
             catch (const DBError &e) {
-                logger()->warning(std::string("ignored DB error: ") + e.what());
+                if (logger())
+                    logger()->warning(std::string("ignored DB error: ") + e.what());
             }
         }
         else
@@ -280,7 +284,8 @@ EngineBase::drop_schema(const Schema &schema, bool ignore_errors)
                         cursor->exec_direct(sql);
                     }
                     catch (const DBError &e) {
-                        logger()->warning(std::string("ignored DB error: ") + e.what());
+                        if (logger())
+                            logger()->warning(std::string("ignored DB error: ") + e.what());
                     }
                 }
                 else
@@ -298,7 +303,8 @@ EngineBase::drop_schema(const Schema &schema, bool ignore_errors)
                         cursor->exec_direct(sql);
                     }
                     catch (const DBError &e) {
-                        logger()->warning(std::string("ignored DB error: ") + e.what());
+                        if (logger())
+                            logger()->warning(std::string("ignored DB error: ") + e.what());
                     }
                 }
                 else

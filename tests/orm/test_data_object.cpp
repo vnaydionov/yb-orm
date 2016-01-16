@@ -19,8 +19,8 @@ class TestDataObject : public CppUnit::TestFixture
     CPPUNIT_TEST(test_data_object_key_id);
     CPPUNIT_TEST(test_data_object_save_no_id);
     CPPUNIT_TEST(test_data_object_save_id);
-    CPPUNIT_TEST_EXCEPTION(test_data_object_already_saved,
-                           DataObjectAlreadyInSession);
+    //CPPUNIT_TEST_EXCEPTION(test_data_object_already_saved,
+    //                       DataObjectAlreadyInSession);
     CPPUNIT_TEST(test_save_or_update);
     CPPUNIT_TEST_EXCEPTION(test_data_object_cant_change_key_if_saved,
                            ReadOnlyColumn);
@@ -168,6 +168,7 @@ public:
         CPPUNIT_ASSERT_EQUAL((int)DataObject::New, (int)d->status());
     }
 
+#if 0
     void test_data_object_already_saved()
     {
         DataObject::Ptr d = DataObject::create_new(r_.table(_T("A")));
@@ -176,6 +177,7 @@ public:
         session.save(d);
         session.save(d);
     }
+#endif
 
     void test_save_or_update()
     {
