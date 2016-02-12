@@ -544,8 +544,8 @@ Schema::find_relation(const String &class1,
     for (; it != end; ++it) {
         const Relation *t = shptr_get(it->second);
         if (str_empty(class2) ||
-            t->side(1) == class2 && t->side(0) == class1 ||
-            t->side(0) == class2 && t->side(1) == class1)
+            (t->side(1) == class2 && t->side(0) == class1) ||
+            (t->side(0) == class2 && t->side(1) == class1))
         {
             if (!r) {
                 if (str_empty(relation_name) ||

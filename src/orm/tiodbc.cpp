@@ -429,7 +429,11 @@ namespace tiodbc
 			// A bigger buffer is needed
 			SQLINTEGER sz_buff = sz_needed + 1;
 			SQLTCHAR_buf buff(sz_buff);
-			SQLGetData(stmt_h, col_num, SQL_C_TCHAR, buff.data, sz_buff, &sz_needed);
+			rc = SQLGetData(stmt_h, col_num, SQL_C_TCHAR, buff.data, sz_buff, &sz_needed);
+			if (!TIODBC_SUCCESS_CODE(rc)) {
+				is_null_flag = 1;
+				return _tstring();
+			}
 			str_buf = sqltchar2ybstring(buff.data, "");
 			return str_buf;
 		}
@@ -535,7 +539,10 @@ namespace tiodbc
 		, par_num(_par_num)
 		, bound_sz(-1)
 		, _int_string(NULL)
-	{}
+		, _int_SLOIP(SQL_NULL_DATA)
+	{
+		_int_buffer[0] = 0;
+	}
 
 	// Destructor
 	param_impl::~param_impl()

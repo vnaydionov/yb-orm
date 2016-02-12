@@ -151,6 +151,7 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
             else if (_T("COLUMN_DEFAULT") == str_to_upper(j->first))
             {
                 if (!j->second.is_null())
+                {
                     if (str_to_upper(j->second.as_string()) == _T("NEXTVAL('T_ORM_TEST_ID_SEQ'::REGCLASS)"))
                     {
                         x.default_value = String();
@@ -167,6 +168,7 @@ PostgresDialect::get_columns(SqlConnection &conn, const String &table)
                     {
                         x.default_value = str_to_upper(j->second.as_string());
                     }
+                }
             }
             else if (_T("CHARACTER_MAXIMUM_LENGTH") == str_to_upper(j->first))
             {

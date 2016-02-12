@@ -10,6 +10,25 @@ using namespace std;
 
 namespace Yb {
 
+template <class B__>
+struct checked_dynamic_casting
+{
+    template <class A__>
+    static inline B__ do_cast(A__ p)
+    {
+        B__ r = dynamic_cast<B__>(p);
+        YB_ASSERT(r != NULL);
+        return r;
+    }
+};
+
+template <class B__, class A__>
+inline B__ checked_dynamic_cast(A__ p)
+{
+    return checked_dynamic_casting<B__>::do_cast(p);
+}
+
+
 ExpressionBackend::~ExpressionBackend() {}
 
 Expression::Expression()
@@ -182,17 +201,17 @@ ColumnExpr::ColumnExpr(const String &tbl_name, const String &col_name,
 
 const String &
 ColumnExpr::alias() const {
-    return dynamic_cast<ColumnExprBackend *>(backend_.get())->alias();
+    return checked_dynamic_cast<ColumnExprBackend *>(backend_.get())->alias();
 }
 
 void
 ColumnExpr::set_alias(const String &alias) {
-    return dynamic_cast<ColumnExprBackend *>(backend_.get())->set_alias(alias);
+    return checked_dynamic_cast<ColumnExprBackend *>(backend_.get())->set_alias(alias);
 }
 
 void
 ColumnExpr::desc(bool d) {
-    return dynamic_cast<ColumnExprBackend *>(backend_.get())->set_desc(d);
+    return checked_dynamic_cast<ColumnExprBackend *>(backend_.get())->set_desc(d);
 }
 
 ConstExprBackend::ConstExprBackend(const Value &x): value_(x) {}
@@ -232,7 +251,7 @@ ConstExpr::ConstExpr(const Value &x)
 
 const Value &
 ConstExpr::const_value() const {
-    return dynamic_cast<ConstExprBackend *>(backend_.get())->const_value();
+    return checked_dynamic_cast<ConstExprBackend *>(backend_.get())->const_value();
 }
 
 UnaryOpExprBackend::UnaryOpExprBackend(
@@ -260,22 +279,22 @@ UnaryOpExpr::UnaryOpExpr(bool prefix, const String &op, const Expression &expr)
 
 bool
 UnaryOpExpr::prefix() const {
-    return dynamic_cast<UnaryOpExprBackend *>(backend_.get())->prefix();
+    return checked_dynamic_cast<UnaryOpExprBackend *>(backend_.get())->prefix();
 }
 
 const String &
 UnaryOpExpr::op() const {
-    return dynamic_cast<UnaryOpExprBackend *>(backend_.get())->op();
+    return checked_dynamic_cast<UnaryOpExprBackend *>(backend_.get())->op();
 }
 
 const Expression &
 UnaryOpExpr::expr() const {
-    return dynamic_cast<UnaryOpExprBackend *>(backend_.get())->expr();
+    return checked_dynamic_cast<UnaryOpExprBackend *>(backend_.get())->expr();
 }
 
 Expression &
 UnaryOpExpr::expr() {
-    return dynamic_cast<UnaryOpExprBackend *>(backend_.get())->expr();
+    return checked_dynamic_cast<UnaryOpExprBackend *>(backend_.get())->expr();
 }
 
 BinaryOpExprBackend::BinaryOpExprBackend(const Expression &expr1,
@@ -312,27 +331,27 @@ BinaryOpExpr::BinaryOpExpr(const Expression &expr1,
 
 const String &
 BinaryOpExpr::op() const {
-    return dynamic_cast<BinaryOpExprBackend *>(backend_.get())->op();
+    return checked_dynamic_cast<BinaryOpExprBackend *>(backend_.get())->op();
 }
 
 const Expression &
 BinaryOpExpr::expr1() const {
-    return dynamic_cast<BinaryOpExprBackend *>(backend_.get())->expr1();
+    return checked_dynamic_cast<BinaryOpExprBackend *>(backend_.get())->expr1();
 }
 
 const Expression &
 BinaryOpExpr::expr2() const {
-    return dynamic_cast<BinaryOpExprBackend *>(backend_.get())->expr2();
+    return checked_dynamic_cast<BinaryOpExprBackend *>(backend_.get())->expr2();
 }
 
 Expression &
 BinaryOpExpr::expr1() {
-    return dynamic_cast<BinaryOpExprBackend *>(backend_.get())->expr1();
+    return checked_dynamic_cast<BinaryOpExprBackend *>(backend_.get())->expr1();
 }
 
 Expression &
 BinaryOpExpr::expr2() {
-    return dynamic_cast<BinaryOpExprBackend *>(backend_.get())->expr2();
+    return checked_dynamic_cast<BinaryOpExprBackend *>(backend_.get())->expr2();
 }
 
 const String
@@ -369,32 +388,32 @@ JoinExpr::JoinExpr(const Expression &expr1,
 
 const Expression &
 JoinExpr::expr1() const {
-    return dynamic_cast<JoinExprBackend *>(backend_.get())->expr1();
+    return checked_dynamic_cast<JoinExprBackend *>(backend_.get())->expr1();
 }
 
 const Expression &
 JoinExpr::expr2() const {
-    return dynamic_cast<JoinExprBackend *>(backend_.get())->expr2();
+    return checked_dynamic_cast<JoinExprBackend *>(backend_.get())->expr2();
 }
 
 Expression &
 JoinExpr::expr1() {
-    return dynamic_cast<JoinExprBackend *>(backend_.get())->expr1();
+    return checked_dynamic_cast<JoinExprBackend *>(backend_.get())->expr1();
 }
 
 Expression &
 JoinExpr::expr2() {
-    return dynamic_cast<JoinExprBackend *>(backend_.get())->expr2();
+    return checked_dynamic_cast<JoinExprBackend *>(backend_.get())->expr2();
 }
 
 const Expression &
 JoinExpr::cond() const {
-    return dynamic_cast<JoinExprBackend *>(backend_.get())->cond();
+    return checked_dynamic_cast<JoinExprBackend *>(backend_.get())->cond();
 }
 
 Expression &
 JoinExpr::cond() {
-    return dynamic_cast<JoinExprBackend *>(backend_.get())->cond();
+    return checked_dynamic_cast<JoinExprBackend *>(backend_.get())->cond();
 }
 
 const String
@@ -445,22 +464,22 @@ ExpressionList::ExpressionList(const Expression &expr1, const Expression &expr2,
 
 void
 ExpressionList::append(const Expression &expr) {
-    dynamic_cast<ExpressionListBackend *>(backend_.get())->append(expr);
+    checked_dynamic_cast<ExpressionListBackend *>(backend_.get())->append(expr);
 }
 
 int
 ExpressionList::size() const {
-    return dynamic_cast<ExpressionListBackend *>(backend_.get())->size();
+    return checked_dynamic_cast<ExpressionListBackend *>(backend_.get())->size();
 }
 
 const Expression &
 ExpressionList::item(int n) const {
-    return dynamic_cast<ExpressionListBackend *>(backend_.get())->item(n);
+    return checked_dynamic_cast<ExpressionListBackend *>(backend_.get())->item(n);
 }
 
 Expression &
 ExpressionList::item(int n) {
-    return dynamic_cast<ExpressionListBackend *>(backend_.get())->item(n);
+    return checked_dynamic_cast<ExpressionListBackend *>(backend_.get())->item(n);
 }
 
 const String
@@ -558,43 +577,43 @@ SelectExpr::SelectExpr(const Expression &select_expr)
 
 SelectExpr &
 SelectExpr::from_(const Expression &from_expr) {
-    dynamic_cast<SelectExprBackend *>(backend_.get())->from_(from_expr);
+    checked_dynamic_cast<SelectExprBackend *>(backend_.get())->from_(from_expr);
     return *this;
 }
 
 SelectExpr &
 SelectExpr::where_(const Expression &where_expr) {
-    dynamic_cast<SelectExprBackend *>(backend_.get())->where_(where_expr);
+    checked_dynamic_cast<SelectExprBackend *>(backend_.get())->where_(where_expr);
     return *this;
 }
 
 SelectExpr &
 SelectExpr::group_by_(const Expression &group_by_expr) {
-    dynamic_cast<SelectExprBackend *>(backend_.get())->group_by_(group_by_expr);
+    checked_dynamic_cast<SelectExprBackend *>(backend_.get())->group_by_(group_by_expr);
     return *this;
 }
 
 SelectExpr &
 SelectExpr::having_(const Expression &having_expr) {
-    dynamic_cast<SelectExprBackend *>(backend_.get())->having_(having_expr);
+    checked_dynamic_cast<SelectExprBackend *>(backend_.get())->having_(having_expr);
     return *this;
 }
 
 SelectExpr &
 SelectExpr::order_by_(const Expression &order_by_expr) {
-    dynamic_cast<SelectExprBackend *>(backend_.get())->order_by_(order_by_expr);
+    checked_dynamic_cast<SelectExprBackend *>(backend_.get())->order_by_(order_by_expr);
     return *this;
 }
 
 SelectExpr &
 SelectExpr::distinct(bool flag) {
-    dynamic_cast<SelectExprBackend *>(backend_.get())->distinct(flag);
+    checked_dynamic_cast<SelectExprBackend *>(backend_.get())->distinct(flag);
     return *this;
 }
 
 SelectExpr &
 SelectExpr::with_lockmode(const String &lock_mode) {
-    dynamic_cast<SelectExprBackend *>(backend_.get())->with_lockmode(lock_mode);
+    checked_dynamic_cast<SelectExprBackend *>(backend_.get())->with_lockmode(lock_mode);
     return *this;
 }
 
@@ -605,54 +624,54 @@ SelectExpr::for_update(bool flag) {
 
 SelectExpr &
 SelectExpr::pager(int limit, int offset) {
-    dynamic_cast<SelectExprBackend *>(backend_.get())->pager(limit, offset);
+    checked_dynamic_cast<SelectExprBackend *>(backend_.get())->pager(limit, offset);
     return *this;
 }
 
 SelectExpr &
 SelectExpr::add_aliases() {
-    dynamic_cast<SelectExprBackend *>(backend_.get())->add_aliases();
+    checked_dynamic_cast<SelectExprBackend *>(backend_.get())->add_aliases();
     return *this;
 }
 
 const Expression &
 SelectExpr::select_expr() const {
-    return dynamic_cast<SelectExprBackend *>(backend_.get())->select_expr();
+    return checked_dynamic_cast<SelectExprBackend *>(backend_.get())->select_expr();
 }
 
 const Expression &
 SelectExpr::from_expr() const {
-    return dynamic_cast<SelectExprBackend *>(backend_.get())->from_expr();
+    return checked_dynamic_cast<SelectExprBackend *>(backend_.get())->from_expr();
 }
 
 const Expression &
 SelectExpr::where_expr() const {
-    return dynamic_cast<SelectExprBackend *>(backend_.get())->where_expr();
+    return checked_dynamic_cast<SelectExprBackend *>(backend_.get())->where_expr();
 }
 
 const Expression &
 SelectExpr::group_by_expr() const {
-    return dynamic_cast<SelectExprBackend *>(backend_.get())->group_by_expr();
+    return checked_dynamic_cast<SelectExprBackend *>(backend_.get())->group_by_expr();
 }
 
 const Expression &
 SelectExpr::having_expr() const {
-    return dynamic_cast<SelectExprBackend *>(backend_.get())->having_expr();
+    return checked_dynamic_cast<SelectExprBackend *>(backend_.get())->having_expr();
 }
 
 const Expression &
 SelectExpr::order_by_expr() const {
-    return dynamic_cast<SelectExprBackend *>(backend_.get())->order_by_expr();
+    return checked_dynamic_cast<SelectExprBackend *>(backend_.get())->order_by_expr();
 }
 
 bool
 SelectExpr::distinct_flag() const {
-    return dynamic_cast<SelectExprBackend *>(backend_.get())->distinct_flag();
+    return checked_dynamic_cast<SelectExprBackend *>(backend_.get())->distinct_flag();
 }
 
 const String &
 SelectExpr::lock_mode() const {
-    return dynamic_cast<SelectExprBackend *>(backend_.get())->lock_mode();
+    return checked_dynamic_cast<SelectExprBackend *>(backend_.get())->lock_mode();
 }
 
 bool
@@ -662,12 +681,12 @@ SelectExpr::for_update_flag() const {
 
 int
 SelectExpr::pager_limit() const {
-    return dynamic_cast<SelectExprBackend *>(backend_.get())->pager_limit();
+    return checked_dynamic_cast<SelectExprBackend *>(backend_.get())->pager_limit();
 }
 
 int
 SelectExpr::pager_offset() const {
-    return dynamic_cast<SelectExprBackend *>(backend_.get())->pager_offset();
+    return checked_dynamic_cast<SelectExprBackend *>(backend_.get())->pager_offset();
 }
 
 YBORM_DECL const Expression
@@ -1009,19 +1028,19 @@ KeyFilter::KeyFilter(const Key &key)
 const Key &
 KeyFilter::key() const
 {
-    return dynamic_cast<FilterBackendByPK *>(backend_.get())->key();
+    return checked_dynamic_cast<FilterBackendByPK *>(backend_.get())->key();
 }
 
 const Expression &
 KeyFilter::expr() const
 {
-    return dynamic_cast<FilterBackendByPK *>(backend_.get())->expr();
+    return checked_dynamic_cast<FilterBackendByPK *>(backend_.get())->expr();
 }
 
 Expression &
 KeyFilter::expr()
 {
-    return dynamic_cast<FilterBackendByPK *>(backend_.get())->expr();
+    return checked_dynamic_cast<FilterBackendByPK *>(backend_.get())->expr();
 }
 
 YBORM_DECL void
@@ -1163,7 +1182,7 @@ set_table_aliases_on_cols(Expression &expr, const string_map &aliases,
                 if (!col_list->item(j).backend())
                     continue;
                 ColumnExprBackend *col =
-                    dynamic_cast<ColumnExprBackend *>(col_list->item(j).backend());
+                    checked_dynamic_cast<ColumnExprBackend *>(col_list->item(j).backend());
                 set_alias_on_col(col, aliases, add_col_aliases, j + 1);
             }
         }

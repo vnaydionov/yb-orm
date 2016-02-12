@@ -150,7 +150,10 @@ YBORM_DECL bool create_backup(const char *fname)
         fclose(t);
         string new_fname = fname;
         new_fname += ".bak";
-        remove(new_fname.c_str());
+        if (remove(new_fname.c_str()) == -1) {
+            throw CodeGenError(_T("Can't remove old backup file: ") +
+                    WIDEN(new_fname));
+        }
         if (rename(fname, new_fname.c_str()) == -1) {
             throw CodeGenError(_T("Can't create backup file: ") +
                     WIDEN(new_fname));

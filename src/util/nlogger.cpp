@@ -136,7 +136,12 @@ const char *LogRecord::get_level_name() const
     static const char *log_level_name[] = {
         "CRI", "ERR", "WRN", "INF", "DBG", "TRC"
     };
-    return log_level_name[check_level(level_) - 1];
+    try {
+        return log_level_name[check_level(level_) - 1];
+    }
+    catch (const InvalidLogLevel &) {
+        return "XXX";
+    }
 }
 
 ILogAppender::~ILogAppender()

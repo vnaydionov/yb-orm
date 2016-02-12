@@ -276,7 +276,7 @@ YBUTIL_DECL ElementPtr parse(std::istream &inp)
 {
     std::ostringstream out;
     while (inp.good()) {
-        char c = inp.get();
+        int c = inp.get();
         if (inp.good())
             out.put(c);
     }

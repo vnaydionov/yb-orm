@@ -129,7 +129,7 @@ public:
             .from_(Expression(_T("T")))
             .order_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
             .pager(5, 10)
-            .generate_sql(options, &ctx);false,
+            .generate_sql(options, &ctx);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T ORDER BY A, B LIMIT 5 OFFSET 10"), NARROW(sql));
     }
 
@@ -142,7 +142,7 @@ public:
             .from_(Expression(_T("T")))
             .order_by_(ExpressionList(Expression(_T("A")), Expression(_T("B"))))
             .pager(5, 10)
-            .generate_sql(options, &ctx);false,
+            .generate_sql(options, &ctx);
         CPPUNIT_ASSERT_EQUAL(string("SELECT A, B FROM T ORDER BY A, B LIMIT :1 OFFSET :2"), NARROW(sql));
     }
 

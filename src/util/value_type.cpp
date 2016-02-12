@@ -140,6 +140,7 @@ Value::Value(const LongInt &x)
 
 Value::Value(const double &x)
     : type_(FLOAT)
+    , data_(0)
 {
     get_as<double>(&data_) = x;
 }
