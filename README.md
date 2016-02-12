@@ -1,4 +1,9 @@
 
+<a href="https://scan.coverity.com/projects/vnaydionov-yb-orm">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/7781/badge.svg"/>
+</a>
+
 # ABOUT
 
 YB.ORM tool is developed to simplify for C++ developers creation of applications that work with relational databases. An Object-Relational Mapper (ORM) works by mapping database tables to classes and table records to objects in some programming language. This approach may be not optimal for each and every database application, but it proved to be reasonable in applications that require complex logic and transaction handling. The goals of YB.ORM project are: provide a convenient API for C++ developers, retain high performance of C++, keep the source code easily portable across different platforms, support most major relational DataBase Management Systems (DBMS). 
