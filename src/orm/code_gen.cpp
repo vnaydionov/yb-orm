@@ -143,16 +143,26 @@ YBORM_DECL void expand_tabs_to_stream(const string &in, ostream &out)
     }
 }
 
-YBORM_DECL bool create_backup(const char *fname)
+static inline bool file_exists(const std::string &fname)
 {
-    FILE *t = fopen(fname, "r");
+    FILE *t = fopen(fname.c_str(), "r");
     if (t) {
         fclose(t);
+        return true;
+    }
+    return false;
+}
+
+YBORM_DECL bool create_backup(const char *fname)
+{
+    if (file_exists(fname)) {
         string new_fname = fname;
         new_fname += ".bak";
-        if (remove(new_fname.c_str()) == -1) {
-            throw CodeGenError(_T("Can't remove old backup file: ") +
-                    WIDEN(new_fname));
+        if (file_exists(new_fname)) {
+            if (remove(new_fname.c_str()) == -1) {
+                throw CodeGenError(_T("Can't remove old backup file: ") +
+                        WIDEN(new_fname));
+            }
         }
         if (rename(fname, new_fname.c_str()) == -1) {
             throw CodeGenError(_T("Can't create backup file: ") +
