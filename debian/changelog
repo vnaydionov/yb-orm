@@ -1,3 +1,16 @@
+libyborm (0.4.8-rc4) unstable; urgency=low
+
+  * Fix problem with removing of non existent backup file 
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Mon, 15 Feb 2016 12:28:44 +0300
+
+libyborm (0.4.8-rc3) unstable; urgency=low
+
+  * #28: fixing defects found by Coverity Scan
+  * #26: do not throw on saving a DataObject twice; check if logger is present in EngineBase
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Fri, 12 Feb 2016 13:56:34 +0300
+
 libyborm (0.4.7-fix9) unstable; urgency=low
 
   * #25: fixes for msvc
