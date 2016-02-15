@@ -65,8 +65,8 @@ inline const std::string dict2str(const Yb::StringDict &params)
     return out.str();
 }
 
-typedef const HttpHeaders (*PlainHttpHandler)(
-        Yb::ILogger &logger, const HttpHeaders &request);
+typedef const HttpMessage (*PlainHttpHandler)(
+        Yb::ILogger &logger, const HttpMessage &request);
 
 typedef Yb::ElementTree::ElementPtr (*XmlHttpHandler)(
         Yb::Session &session, Yb::ILogger &logger,
@@ -94,7 +94,7 @@ public:
 
     const Yb::String &name() const { return name_; }
 
-    const HttpHeaders operator() (const HttpHeaders &request)
+    const HttpMessage operator() (const HttpMessage &request)
     {
         Yb::ILogger::Ptr logger(theApp::instance().new_logger(NARROW(name_)));
         TimerGuard t(*logger);
@@ -106,26 +106,26 @@ public:
                     theApp::instance().new_session());
             Yb::ElementTree::ElementPtr res = f_(*session, *logger, params);
             session->commit();
-            HttpHeaders response(10, 200, _T("OK"));
+            HttpMessage response(10, 200, _T("OK"));
             response.set_response_body(dump_result(*logger, res), _T("text/xml"));
             t.set_ok();
             return response;
         }
         catch (const ApiResult &ex) {
             t.set_ok();
-            HttpHeaders response(10, 200, _T("OK"));
+            HttpMessage response(10, 200, _T("OK"));
             response.set_response_body(dump_result(*logger, ex.result()), _T("text/xml"));
             return response;
         }
         catch (const std::exception &ex) {
             logger->error(std::string("exception: ") + ex.what());
-            HttpHeaders response(10, 500, _T("Internal error"));
+            HttpMessage response(10, 500, _T("Internal error"));
             response.set_response_body(dump_result(*logger, mk_resp(default_status_)), _T("text/xml"));
             return response;
         }
         catch (...) {
             logger->error("unknown exception");
-            HttpHeaders response(10, 500, _T("Internal error"));
+            HttpMessage response(10, 500, _T("Internal error"));
             response.set_response_body(dump_result(*logger, mk_resp(default_status_)), _T("text/xml"));
             return response;
         }

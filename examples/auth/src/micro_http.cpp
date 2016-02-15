@@ -1,4 +1,5 @@
 #include "micro_http.h"
+#include <stdio.h>
 #include <sstream>
 #include <util/thread.h>
 #include <util/utility.h>
@@ -36,18 +37,18 @@ HttpServerBase::HttpServerBase(const std::string &ip_addr, int port,
     , prev_clean_ts(time(NULL))
 {}
 
-HttpHeaders
+HttpMessage
 HttpServerBase::make_response(int code, const Yb::String &desc,
         const std::string &body, const Yb::String &cont_type)
 {
-    HttpHeaders response(10, code, desc);
+    HttpMessage response(10, code, desc);
     response.set_response_body(body, cont_type);
     return response;
 }
 
 bool
 HttpServerBase::send_response(TcpSocket &cl_sock, ILogger &logger,
-        const HttpHeaders &response)
+        const HttpMessage &response)
 {
     try {
         cl_sock.write(response.serialize());
@@ -83,9 +84,9 @@ HttpServerBase::process_client_request(SOCKET cl_s)
         split_str_by_chars(WIDEN(buf), _T(" \t\r\n"), head_parts);
         if (head_parts.size() != 3)
             throw HttpParserError("process_client_request", "head_parts.size() != 3");
-        HttpHeaders request_obj(head_parts[0],
+        HttpMessage request_obj(head_parts[0],
                                 head_parts[1],
-                                HttpHeaders::parse_version(head_parts[2]));
+                                HttpMessage::parse_version(head_parts[2]));
         // read all of the headers
         String header_name, header_value;
         while (1) {
@@ -127,16 +128,18 @@ HttpServerBase::process_client_request(SOCKET cl_s)
             from_string(request_obj.get_header(_T("Content-Length")), cont_len);
         }
         catch (const std::exception &ex) {
-            logger->warning(
-                string("couldn't parse Content-Length: ") + ex.what());
+            if (request_obj.get_method() != _T("GET"))
+                logger->warning(
+                    string("couldn't parse Content-Length: ") + ex.what());
         }
         String cont_type;
         try {
             cont_type = request_obj.get_header(_T("Content-Type"));
         }
         catch (const std::exception &ex) {
-            logger->warning(
-                string("couldn't parse Content-Type: ") + ex.what());
+            if (request_obj.get_method() != _T("GET"))
+                logger->warning(
+                    string("couldn't parse Content-Type: ") + ex.what());
         }
         // read request body
         if (cont_len > 0) {
@@ -275,7 +278,7 @@ HttpServerBase::serve()
 }
 
 StringDict
-HttpHeaders::parse_params(const String &msg)
+HttpMessage::parse_params(const String &msg)
 {
     StringDict params;
     Strings param_parts;
@@ -320,7 +323,7 @@ const Yb::String my_url_encode(const string &s, bool path_mode=false)
 }
 
 Yb::String
-HttpHeaders::serialize_params(const Yb::StringDict &d)
+HttpMessage::serialize_params(const Yb::StringDict &d)
 {
     String result;
     Yb::StringDict::const_iterator it = d.begin(), end = d.end();
@@ -335,7 +338,7 @@ HttpHeaders::serialize_params(const Yb::StringDict &d)
 }
 
 const String
-HttpHeaders::normalize_header_name(const String &name)
+HttpMessage::normalize_header_name(const String &name)
 {
     String s = str_to_lower(trim_trailing_space(name));
     for (int i = 0; i < (int)str_length(s); ++i)

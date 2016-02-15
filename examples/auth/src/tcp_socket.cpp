@@ -82,11 +82,13 @@ TcpSocket::bind(const string &ip_addr, int port)
 {
     create_if_needed();
     struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(ip_addr.c_str());
     addr.sin_port = htons(port);
     SockOpt yes = 1;
-    setsockopt(s_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+    if (::setsockopt(s_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) != 0)
+        throw SocketEx("setsockopt(SO_REUSEADDR)", get_last_error());
     if (::bind(s_, (struct sockaddr *)&addr, sizeof(addr)) == -1)
         throw SocketEx("bind", get_last_error());
 }
@@ -135,6 +137,7 @@ TcpSocket::connect(const string &ip_addr, int port)
 {
     create_if_needed();
     struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(ip_addr.c_str());
     addr.sin_port = htons(port);
