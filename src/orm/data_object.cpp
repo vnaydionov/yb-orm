@@ -246,17 +246,8 @@ DataObjectResultSet Session::load_collection(
         bool for_update_flag)
 {
     Strings tables;
-    find_all_tables(from, tables);
-    ExpressionList cols;
-    Strings::const_iterator i = tables.begin(), iend = tables.end();
-    for (; i != iend; ++i) {
-        const Table &table = schema_.table(*i);
-        for (size_t j = 0; j < table.size(); ++j)
-            cols << ColumnExpr(table.name(), table[j].name());
-    }
-    Expression select = SelectExpr(cols).from_(from)
-        .where_(filter).order_by_(order_by)
-        .for_update(for_update_flag).add_aliases();
+    SelectExpr select = make_select(
+        schema_, from, filter, order_by, for_update_flag, 0, 0, &tables);
     return load_collection(tables, select);
 }
 

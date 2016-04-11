@@ -1178,7 +1178,7 @@ set_table_aliases_on_cols(Expression &expr, const string_map &aliases,
         ExpressionListBackend *col_list = 
             dynamic_cast<ExpressionListBackend *>(expr.backend());
         if (col_list) {
-            for (size_t j = 0; j < col_list->size(); ++j) {
+            for (int j = 0; j < col_list->size(); ++j) {
                 if (!col_list->item(j).backend())
                     continue;
                 ColumnExprBackend *col =
@@ -1192,7 +1192,8 @@ set_table_aliases_on_cols(Expression &expr, const string_map &aliases,
 YBORM_DECL SelectExpr
 make_select(const Schema &schema, const Expression &from_where,
         const Expression &filter, const Expression &order_by,
-        bool for_update_flag, int limit, int offset)
+        bool for_update_flag, int limit, int offset,
+        Strings *out_tables)
 {
     Strings tables;
     find_all_tables(from_where, tables);
@@ -1208,6 +1209,8 @@ make_select(const Schema &schema, const Expression &from_where,
         .for_update(for_update_flag);
     if (limit)
         q.pager(limit, offset);
+    if (out_tables)
+        std::swap(tables, *out_tables);
     return q.add_aliases();
 }
 

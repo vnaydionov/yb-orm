@@ -165,7 +165,7 @@ public: \
     { \
         class_name__::ListPtr lst(new class_name__::List()); \
         Yb::DataObjectList rows; \
-        session.load_collection(rows, Yb::Expression(_T(table_name__)), filter, order_by); \
+        session.load_collection(rows, Yb::ColumnExpr(_T(table_name__)), filter, order_by); \
         if (rows.size()) { \
             Yb::DataObjectList::iterator it = rows.begin(), end = rows.end(); \
             for (; it != end; ++it) \

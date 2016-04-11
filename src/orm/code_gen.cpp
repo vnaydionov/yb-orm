@@ -48,13 +48,13 @@ const char *kwords[] = { "and", "and_eq", "asm", "auto", "bitand", "bitor",
 string fix_name(const string &name0)
 {
     string name = name0;
-    for (int i = 0; i < name.size(); ++i) {
+    for (size_t i = 0; i < name.size(); ++i) {
         if (name[i] == '$')
             name[i] = 's';
         if (name[i] == '#')
             name[i] = 'n';
     }
-    for (int i = 0; kwords[i]; ++i)
+    for (size_t i = 0; kwords[i]; ++i)
         if (!name.compare(kwords[i]))
             return name + "_";
     return name;
@@ -882,7 +882,7 @@ void CppCodeGenerator::write_cpp_file(ostream &out)
         << "\t" << class_name_ << "::ListPtr lst(new "
         << class_name_ << "::List());\n"
         << "\tYb::DataObjectList rows;\n"
-        << "\tsession.load_collection(rows, Yb::Expression(_T(\"" << table_name_ << "\")), filter, order_by);\n"
+        << "\tsession.load_collection(rows, Yb::ColumnExpr(_T(\"" << table_name_ << "\")), filter, order_by);\n"
         << "\tif (rows.size()) {\n"
         << "\t\tYb::DataObjectList::iterator it = rows.begin(), end = rows.end();\n"
         << "\t\tfor (; it != end; ++it)\n"

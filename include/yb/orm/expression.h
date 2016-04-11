@@ -497,7 +497,8 @@ YBORM_DECL void set_table_aliases_on_cols(
 
 YBORM_DECL SelectExpr make_select(const Schema &schema, const Expression &from_where,
         const Expression &filter, const Expression &order_by,
-        bool for_update_flag = false, int limit = 0, int offset = 0);
+        bool for_update_flag = false, int limit = 0, int offset = 0,
+        Strings *out_tables = NULL);
 
 } // namespace Yb
 
