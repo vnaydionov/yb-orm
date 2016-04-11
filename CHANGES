@@ -1,3 +1,34 @@
+0.4.8
+    * Fix broken DomainObj::find(); Fix warnings
+    * Fix broken method Property::is_null(); More checks not to dereference NULL pointer
+    * Fix possible buffer underrun
+    * Sync micro_http with card-proxy
+    * Fix problem with removing of non existent backup file 
+    * #28: fixing defects found by Coverity Scan
+    * #26: do not throw on saving a DataObject twice;
+    * check if logger is present in EngineBase
+    * #25: fixes for msvc
+    * Fix resource exhaustion handling in main loop of micro_http listener.
+    * #25: apply aliases for generated SELECT statements
+    * #25: generate short mnemonic aliases for tables
+    * Move the interlocked connection opening logic from drivers to SqlPool,
+      make it optional 
+    * #24: do not use placement new/direct destructor calls: gcc5.2.1 bug? 
+    * Improve performance of operations with keys: optimized for int IDs
+    * micro_http: Support setting back log size on a listening socket
+    * Adjust logger format
+    * Simplify logic of SqlPool
+    * Logger: get/set/check the log level
+    * ElementTree: easy access attributes with @ prefix
+    * Update micro_http server and TcpSocket wrapper class
+    * important: start a transaction on first select if explicit transaction
+      is required;
+    * pool: reopen a DB connection when got a DB error and no activity seen yet
+      on the connection;
+    * micro_http: added HttpHeaders class implementation in Auth example;
+    * micro_http: analyze Content-Type more correctly;
+    * micro_http: allow to set response body with no additional headers.
+    * Fix XInclude processing for LibXML2
 
 0.4.7
     * New SQL dialect supported: MSSQL. Tested on Linux (TDS)
