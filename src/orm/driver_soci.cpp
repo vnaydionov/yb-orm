@@ -33,7 +33,7 @@ SOCICursorBackend::close()
             is_select_ = false;
             bound_first_ = false;
             executed_ = false;
-            sql_ = String(_T(""));
+            sql_ = _T("");
         }
     }
     catch (const soci::soci_error &e) {

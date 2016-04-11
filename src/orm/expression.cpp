@@ -84,7 +84,7 @@ Expression::in_(const Expression &b) const
 YBORM_DECL bool
 is_number_or_object_name(const String &s) {
     for (size_t i = 0; i < str_length(s); ++i) {
-        int c = char_code(s[i]);
+        int c = char_code(s[(int)i]);
         if (!((c >= 'a' && c <= 'z') ||
                 (c >= 'A' && c <= 'Z') ||
                 (c >= '0' && c <= '9') ||
@@ -102,7 +102,7 @@ is_string_constant(const String &s) {
         return false;
     bool seen_quot = false;
     for (size_t i = 1; i < str_length(s) - 1; ++i) {
-        int c = char_code(s[i]);
+        int c = char_code(s[(int)i]);
         if (c == '\'')
             seen_quot = !seen_quot;
         else if (seen_quot)
@@ -119,7 +119,7 @@ is_in_parentheses(const String &s) {
     int level = 0;
     bool seen_quot = false;
     for (size_t i = 1; i < str_length(s) - 1; ++i) {
-        int c = char_code(s[i]);
+        int c = char_code(s[(int)i]);
         if (c == '\'')
             seen_quot = !seen_quot;
         else if (!seen_quot) {

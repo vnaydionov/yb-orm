@@ -40,20 +40,20 @@ guess_class_name(const String &table_name)
     {
         end -= 4;
     }
-    str_append(result, to_upper(table_name[start]));
+    str_append(result, to_upper(table_name[(int)start]));
     for (size_t i = start + 1; i < end; ++i)
     {
-        if (table_name[i] == _T('_'))
+        if (table_name[(int)i] == _T('_'))
         {
             ++i;
             if (i < end)
             {
-                str_append(result, to_upper(table_name[i]));
+                str_append(result, to_upper(table_name[(int)i]));
             }
         }
         else
         {
-            str_append(result, to_lower(table_name[i]));
+            str_append(result, to_lower(table_name[(int)i]));
         }
     }
     return result;
@@ -74,7 +74,7 @@ guess_property(const String &column_name)
     }
     for(size_t i = start; i < end; ++i)
     {
-        str_append(result, to_lower(column_name[i]));
+        str_append(result, to_lower(column_name[(int)i]));
     }
     return result;
 }
