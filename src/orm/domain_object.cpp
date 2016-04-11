@@ -121,8 +121,12 @@ DomainObject::DomainObject(const Table &table,
 
 DataObject::Ptr DomainObject::get_data_object(bool check) const
 {
-    if (owner_)
-        return DataObject::get_master(owner_->get_data_object(check), prop_name_);
+    if (owner_) {
+        DataObject::Ptr r(DataObject::get_master(owner_->get_data_object(check), prop_name_));
+        if (!r.get() && check)
+            throw NoDataObject();
+        return r;
+    }
     if (check)
         check_ptr();
     return d_;

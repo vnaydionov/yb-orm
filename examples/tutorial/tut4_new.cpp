@@ -80,6 +80,7 @@ int main()
             Session session(Yb::theSchema(), &engine);
             ProductGroup::Holder pg1(session, root);
             cout << pg1->parent->id.is_null() << endl;
+            cout << pg1->parent->is_empty() << endl;
             pg1->delete_object();
 
             session.commit();

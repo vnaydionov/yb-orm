@@ -344,7 +344,14 @@ public:
     bool is_null()
     {
         YB_ASSERT(pobj_ != NULL);
-        return pobj_->get(col_num_).is_null();
+        try
+        {
+            return pobj_->get(col_num_).is_null();
+        }
+        catch (const Yb::NoDataObject &)
+        {
+            return true;
+        }
     }
 };
 
