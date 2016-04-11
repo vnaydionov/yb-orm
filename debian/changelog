@@ -1,3 +1,12 @@
+libyborm (0.4.8-rc5) unstable; urgency=low
+
+  * Fix broken DomainObj::find(); Fix warnings
+  * Fix broken method Property::is_null(); More checks not to dereference NULL pointer
+  * Fix possible buffer underrun
+  * Sync micro_http with card-proxy
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Mon, 11 Apr 2016 15:17:23 +0300
+
 libyborm (0.4.8-rc4) unstable; urgency=low
 
   * Fix problem with removing of non existent backup file 

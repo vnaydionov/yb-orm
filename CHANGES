@@ -29,6 +29,10 @@
     * micro_http: analyze Content-Type more correctly;
     * micro_http: allow to set response body with no additional headers.
     * Fix XInclude processing for LibXML2
+    * fix broken object construction for explicit joins;
+    * rename class ObjectList -> DataObjectList
+    * added test for explicit joins
+    * do not thow from destructor even if a connection fails to rollback
 
 0.4.7
     * New SQL dialect supported: MSSQL. Tested on Linux (TDS)
