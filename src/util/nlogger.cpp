@@ -221,12 +221,13 @@ bool Logger::valid_name(const std::string &name, bool allow_dots)
 void LogAppender::output(std::ostream &s, const LogRecord &rec,
                          const char *time_str)
 {
+    const std::string &msg = rec.get_msg();
     s << time_str << " "
         << "P" << rec.get_pid() << " T" << rec.get_tid() << " "
         << rec.get_level_name() << " "
         << rec.get_component() << ": "
-        << rec.get_msg();
-    if (rec.get_msg()[rec.get_msg().size() - 1] != '\n')
+        << msg;
+    if (!msg.size() || msg[msg.size() - 1] != '\n')
         s << '\n';
 }
 
