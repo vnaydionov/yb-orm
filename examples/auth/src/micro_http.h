@@ -1,6 +1,7 @@
 #ifndef _AUTH__MICRO_HTTP_H_
 #define _AUTH__MICRO_HTTP_H_
 
+#include <boost/lexical_cast.hpp>
 #include <util/data_types.h>
 #include <util/string_utils.h>
 #include <util/nlogger.h>
