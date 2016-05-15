@@ -1,0 +1,42 @@
+diff -Nuar yborm-0.4.8.orig/CMakeLists.txt yborm-0.4.8/CMakeLists.txt
+--- yborm-0.4.8.orig/CMakeLists.txt	2016-04-11 15:16:17.000000000 +0200
++++ yborm-0.4.8/CMakeLists.txt	2016-05-15 10:29:00.862452617 +0200
+@@ -8,6 +8,14 @@
+ option (USE_QT "Build YB.ORM against Qt" OFF)
+ option (SQLITE3_SRC "Path to SQLite3 amalgamation sources")
+ 
++if (NOT DEFINED YBORM_LIBDIR)
++    if (CMAKE_SIZEOF_VOID_P EQUAL 4)
++        set (YBORM_LIBDIR "lib")
++    else ()
++        set (YBORM_LIBDIR "lib64")
++    endif ()
++endif ()
++
+ if (UNIX)
+     find_path (BOOST_INCLUDEDIR boost/lexical_cast.hpp /usr/include)
+ else ()
+diff -Nuar yborm-0.4.8.orig/src/orm/CMakeLists.txt yborm-0.4.8/src/orm/CMakeLists.txt
+--- yborm-0.4.8.orig/src/orm/CMakeLists.txt	2016-04-11 15:16:17.000000000 +0200
++++ yborm-0.4.8/src/orm/CMakeLists.txt	2016-05-15 10:30:55.699844577 +0200
+@@ -57,7 +57,7 @@
+     ${SQLITE3_LIBS} ${SOCI_LIBS} ${QT_LIBRARIES})
+ 
+ if (UNIX)
+-    install (TARGETS yborm DESTINATION lib)
++    install (TARGETS yborm DESTINATION ${YBORM_LIBDIR})
+ else ()
+     install (TARGETS yborm
+                 RUNTIME DESTINATION bin COMPONENT libraries
+diff -Nuar yborm-0.4.8.orig/src/util/CMakeLists.txt yborm-0.4.8/src/util/CMakeLists.txt
+--- yborm-0.4.8.orig/src/util/CMakeLists.txt	2016-04-11 15:16:17.000000000 +0200
++++ yborm-0.4.8/src/util/CMakeLists.txt	2016-05-15 10:30:30.707355092 +0200
+@@ -24,7 +24,7 @@
+     ${LIBXML2_LIBS} ${YB_BOOST_LIBS} ${QT_LIBRARIES})
+ 
+ if (UNIX)
+-    install (TARGETS ybutil DESTINATION lib)
++    install (TARGETS ybutil DESTINATION ${YBORM_LIBDIR})
+ else ()
+     install (TARGETS ybutil
+                 RUNTIME DESTINATION bin COMPONENT libraries
