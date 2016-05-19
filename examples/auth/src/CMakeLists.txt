@@ -9,7 +9,7 @@ include_directories (
     ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable (auth
-    auth.cpp tcp_socket.cpp micro_http.cpp app_class.cpp md5.c
+    auth.cpp tcp_socket.cpp http_message.cpp micro_http.cpp app_class.cpp md5.c
     ${CMAKE_CURRENT_BINARY_DIR}/domain/User.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/domain/LoginSession.cpp)
 

@@ -202,7 +202,7 @@ public:
 #endif
     Yb::ILogger::Ptr log;
     try {
-        theApp::instance().init("auth.log", "auth_db");
+        theApp::instance().init("auth.log", "DEBUG", _T("auth_db"));
         log.reset(theApp::instance().new_logger("main").release());
     }
     catch (const std::exception &ex) {

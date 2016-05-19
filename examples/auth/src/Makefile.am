@@ -18,6 +18,7 @@ bin_SCRIPTS=auth.sh
 auth_SOURCES=\
 	auth.cpp \
 	tcp_socket.cpp \
+	http_message.cpp \
 	micro_http.cpp \
 	app_class.cpp \
 	md5.c

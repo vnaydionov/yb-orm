@@ -1,6 +1,4 @@
 #include "micro_http.h"
-#include <stdio.h>
-#include <sstream>
 #include <util/thread.h>
 #include <util/utility.h>
 #include <util/string_utils.h>
@@ -37,18 +35,18 @@ HttpServerBase::HttpServerBase(const std::string &ip_addr, int port,
     , prev_clean_ts(time(NULL))
 {}
 
-HttpMessage
+HttpResponse
 HttpServerBase::make_response(int code, const Yb::String &desc,
         const std::string &body, const Yb::String &cont_type)
 {
-    HttpMessage response(10, code, desc);
+    HttpResponse response(HTTP_1_0, code, desc);
     response.set_response_body(body, cont_type);
     return response;
 }
 
 bool
 HttpServerBase::send_response(TcpSocket &cl_sock, ILogger &logger,
-        const HttpMessage &response)
+                              const HttpResponse &response)
 {
     try {
         cl_sock.write(response.serialize());
@@ -78,13 +76,13 @@ HttpServerBase::process_client_request(SOCKET cl_s)
     try {
         // read request header
         string buf = cl_sock.readline();
-        logger->debug(buf);
+        logger->debug(NARROW(trim_trailing_space(WIDEN(buf))));
         // parse request line
         Strings head_parts;
         split_str_by_chars(WIDEN(buf), _T(" \t\r\n"), head_parts);
         if (head_parts.size() != 3)
             throw HttpParserError("process_client_request", "head_parts.size() != 3");
-        HttpMessage request_obj(head_parts[0],
+        HttpRequest request_obj(head_parts[0],
                                 head_parts[1],
                                 HttpMessage::parse_version(head_parts[2]));
         // read all of the headers
@@ -128,7 +126,7 @@ HttpServerBase::process_client_request(SOCKET cl_s)
             from_string(request_obj.get_header(_T("Content-Length")), cont_len);
         }
         catch (const std::exception &ex) {
-            if (request_obj.get_method() != _T("GET"))
+            if (request_obj.method() != _T("GET"))
                 logger->warning(
                     string("couldn't parse Content-Length: ") + ex.what());
         }
@@ -137,7 +135,7 @@ HttpServerBase::process_client_request(SOCKET cl_s)
             cont_type = request_obj.get_header(_T("Content-Type"));
         }
         catch (const std::exception &ex) {
-            if (request_obj.get_method() != _T("GET"))
+            if (request_obj.method() != _T("GET"))
                 logger->warning(
                     string("couldn't parse Content-Type: ") + ex.what());
         }
@@ -145,22 +143,23 @@ HttpServerBase::process_client_request(SOCKET cl_s)
         if (cont_len > 0) {
             const String prefix = _T("application/x-www-form-urlencoded");
             bool parse_body = str_to_lower(
-                    str_substr(cont_type, 0, str_length(prefix)))
-                == _T("application/x-www-form-urlencoded");
-            request_obj.set_request_body(cl_sock.read(cont_len), parse_body);
+                    str_substr(cont_type, 0, str_length(prefix))) == prefix;
+            request_obj.set_body(cl_sock.read(cont_len));
+            if (parse_body)
+                request_obj.urlparse_body();
         }
-        if (request_obj.get_method() != _T("GET") &&
-            request_obj.get_method() != _T("POST"))
+        if (request_obj.method() != _T("GET") &&
+            request_obj.method() != _T("POST"))
         {
             logger->error("unsupported method \""
-                          + NARROW(request_obj.get_method()) + "\"");
+                          + NARROW(request_obj.method()) + "\"");
             send_response(cl_sock, *logger,
                           make_response(400, _T("Bad request"), bad_resp, cont_type_resp));
         }
         else {
-            if (!has_handler_for_path(request_obj.get_path()))
+            if (!has_handler_for_path(request_obj.path()))
             {
-                logger->error("Path " + NARROW(request_obj.get_path()) + " not found!");
+                logger->error("Path " + NARROW(request_obj.path()) + " not found!");
                 send_response(cl_sock, *logger,
                               make_response(404, _T("Not found"), bad_resp, cont_type_resp));
             }
@@ -275,78 +274,6 @@ HttpServerBase::serve()
             log_->error(string("cleanup exception: ") + ex.what());
         }
     }
-}
-
-StringDict
-HttpMessage::parse_params(const String &msg)
-{
-    StringDict params;
-    Strings param_parts;
-    split_str_by_chars(msg, _T("&"), param_parts);
-    for (size_t i = 0; i < param_parts.size(); ++i) {
-        Strings value_parts;
-        split_str_by_chars(param_parts[i], _T("="), value_parts, 2);
-        if (value_parts.size() < 1)
-            throw HttpParserError("parse_params", "value_parts.size() < 1");
-        String n = value_parts[0];
-        String v;
-        if (value_parts.size() == 2)
-            v = WIDEN(url_decode(value_parts[1]));
-        StringDict::iterator it = params.find(n);
-        if (it == params.end())
-            params[n] = v;
-        else
-            params[n] += v;
-    }
-    return params;
-}
-
-const Yb::String my_url_encode(const string &s, bool path_mode=false)
-{
-    Yb::String result;
-    const char *replace;
-    if (path_mode)
-        replace = "!*'();@&=+$,?%#[]";
-    else
-        replace = "!*'();:@&=+$,/?%#[]{}\"";
-    char buf[20];
-    for (size_t i = 0; i < s.size(); ++i) {
-        unsigned char c = s[i];
-        if (c <= 32 || c >= 127 || strchr(replace, c)) {
-            sprintf(buf, "%%%02X", c);
-            result += WIDEN(buf);
-        }
-        else
-            result += Yb::Char(c);
-    }
-    return result;
-}
-
-Yb::String
-HttpMessage::serialize_params(const Yb::StringDict &d)
-{
-    String result;
-    Yb::StringDict::const_iterator it = d.begin(), end = d.end();
-    for (; it != end; ++it) {
-        if (str_length(result))
-            result += _T("&");
-        result += my_url_encode(NARROW(it->first));
-        result += _T("=");
-        result += my_url_encode(NARROW(it->second));
-    }
-    return result;
-}
-
-const String
-HttpMessage::normalize_header_name(const String &name)
-{
-    String s = str_to_lower(trim_trailing_space(name));
-    for (int i = 0; i < (int)str_length(s); ++i)
-    {
-        if (!i || char_code(s[i - 1]) == '-')
-            s[i] = to_upper(s[i]);
-    }
-    return s;
 }
 
 // vim:ts=4:sts=4:sw=4:et:
