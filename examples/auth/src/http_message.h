@@ -92,6 +92,16 @@ public:
 
     const Yb::StringDict &headers() const { return headers_; }
 
+    const Yb::String &get_content_type() const {
+        return get_header(_T("Content-Type"));
+    }
+
+    int get_content_length() const {
+        int len;
+        Yb::from_string(get_header(_T("Content-Length")), len);
+        return len;
+    }
+
     const std::string serialize_headers() const
     {
         std::ostringstream out;
@@ -108,6 +118,8 @@ public:
 
     static const Yb::String normalize_header_name(const Yb::String &name);
 
+    static void parse_header_line(const Yb::String &line,
+            Yb::String &header_name, Yb::String &header_value);
 private:
     int proto_ver_;  // HTTP_1_0 HTTP_1_1 ..
     Yb::StringDict headers_;
@@ -141,6 +153,7 @@ public:
 
     static const Yb::String serialize_params(const Yb::StringDict &d);
 
+    static const HttpRequest parse_request_line(const Yb::String &line);
 private:
     Yb::String method_;
     Yb::String uri_;
@@ -163,16 +176,6 @@ public:
     int resp_code() const { return resp_code_; }
 
     const Yb::String &resp_desc() const { return resp_desc_; }
-
-    const Yb::String &get_content_type() const {
-        return get_header(_T("Content-Type"));
-    }
-
-    int get_content_length() const {
-        int len;
-        Yb::from_string(get_header(_T("Content-Length")), len);
-        return len;
-    }
 
 private:
     int resp_code_;  // 200 404 ...

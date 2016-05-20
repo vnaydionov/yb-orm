@@ -47,6 +47,18 @@ HttpMessage::normalize_header_name(const Yb::String &name)
     return s;
 }
 
+void
+HttpMessage::parse_header_line(const Yb::String &line,
+        Yb::String &header_name, Yb::String &header_value)
+{
+    Yb::Strings parts;
+    split_str_by_chars(line, _T(":"), parts, 2);
+    if (parts.size() != 2)
+        throw HttpParserError("parse_header_line", "Header format is wrong");
+    std::swap(header_name, parts[0]);
+    std::swap(header_value, parts[1]);
+}
+
 HttpRequest::HttpRequest(const Yb::String &method, const Yb::String &uri, int proto_ver)
     : HttpMessage(proto_ver)
     , method_(Yb::StrUtils::str_to_upper(method))
@@ -136,6 +148,19 @@ HttpRequest::serialize_params(const Yb::StringDict &d)
         result += HttpRequest::url_encode(NARROW(it->second));
     }
     return result;
+}
+
+const HttpRequest
+HttpRequest::parse_request_line(const Yb::String &line)
+{
+    Yb::Strings head_parts;
+    split_str_by_chars(line, _T(" \t\r\n"), head_parts);
+    if (head_parts.size() != 3)
+        throw HttpParserError("parse_request_line", "head_parts.size() != 3");
+    HttpRequest request_obj(head_parts[0],
+                            head_parts[1],
+                            HttpMessage::parse_version(head_parts[2]));
+    return request_obj;
 }
 
 HttpResponse::HttpResponse(int proto_ver, int resp_code, const Yb::String &resp_desc)

@@ -75,77 +75,61 @@ HttpServerBase::process_client_request(SOCKET cl_s)
     // read and process request
     try {
         // read request header
-        string buf = cl_sock.readline();
-        logger->debug(NARROW(trim_trailing_space(WIDEN(buf))));
-        // parse request line
-        Strings head_parts;
-        split_str_by_chars(WIDEN(buf), _T(" \t\r\n"), head_parts);
-        if (head_parts.size() != 3)
-            throw HttpParserError("process_client_request", "head_parts.size() != 3");
-        HttpRequest request_obj(head_parts[0],
-                                head_parts[1],
-                                HttpMessage::parse_version(head_parts[2]));
+        String req_line = WIDEN(cl_sock.readline());
+        logger->debug(NARROW(trim_trailing_space(req_line)));
+        HttpRequest request_obj = HttpRequest::parse_request_line(req_line);
         // read all of the headers
         String header_name, header_value;
         while (1) {
-            string s = cl_sock.readline();
-            if (!s.size())
+            String s = WIDEN(cl_sock.readline());
+            if (str_empty(s))
                 throw HttpParserError("process", "short read");
-            if (s == "\r\n" || s == "\n")
+            if (s == _T("\r\n") || s == _T("\n"))
                 break;
-            String s2 = WIDEN(s);
-            if (!is_space(s2[0])) {
-                Strings parts;
-                split_str_by_chars(s2, _T(":"), parts, 2);
-                if (parts.size() != 2)
-                    throw HttpParserError("process", "Header format is wrong");
+            if (!is_space(s[0])) {
+                String new_header_name, new_header_value;
+                HttpMessage::parse_header_line(
+                            s, new_header_name, new_header_value);
                 if (!str_empty(header_name))
                 {
-                    request_obj.set_header(header_name,
-                                           trim_trailing_space(header_value));
-                    logger->debug(NARROW(header_name + _T(": ") +
-                                         trim_trailing_space(header_value)));
+                    header_value = trim_trailing_space(header_value);
+                    request_obj.set_header(header_name, header_value);
+                    logger->debug(NARROW(header_name + _T(": ") + header_value));
                 }
-                header_name = trim_trailing_space(parts[0]);
-                header_value = parts[1];
+                header_name = new_header_name;
+                header_value = new_header_value;
             }
             else {
-                header_value += s2;
+                header_value += s;
             }
         }
         if (!str_empty(header_name))
         {
-            request_obj.set_header(header_name,
-                                   trim_trailing_space(header_value));
-            logger->debug(NARROW(header_name + _T(": ") +
-                                 trim_trailing_space(header_value)));
+            header_value = trim_trailing_space(header_value);
+            request_obj.set_header(header_name, header_value);
+            logger->debug(NARROW(header_name + _T(": ") + header_value));
         }
         // parse content length and type
-        int cont_len = -1;
-        try {
-            from_string(request_obj.get_header(_T("Content-Length")), cont_len);
-        }
-        catch (const std::exception &ex) {
-            if (request_obj.method() != _T("GET"))
-                logger->warning(
-                    string("couldn't parse Content-Length: ") + ex.what());
-        }
+        int cont_len = 0;
         String cont_type;
-        try {
-            cont_type = request_obj.get_header(_T("Content-Type"));
-        }
-        catch (const std::exception &ex) {
-            if (request_obj.method() != _T("GET"))
-                logger->warning(
-                    string("couldn't parse Content-Type: ") + ex.what());
+        if (request_obj.method() != _T("GET")) {
+            try {
+                cont_type = request_obj.get_content_type();
+            }
+            catch (const std::exception &) {
+                logger->warning("couldn't parse Content-Type header");
+            }
+            try {
+                cont_len = request_obj.get_content_length();
+            }
+            catch (const std::exception &) {
+                logger->warning("couldn't parse Content-Length header");
+            }
         }
         // read request body
         if (cont_len > 0) {
-            const String prefix = _T("application/x-www-form-urlencoded");
-            bool parse_body = str_to_lower(
-                    str_substr(cont_type, 0, str_length(prefix))) == prefix;
             request_obj.set_body(cl_sock.read(cont_len));
-            if (parse_body)
+            if (starts_with(cont_type, _T("application/x-www-form-urlencoded")))
                 request_obj.urlparse_body();
         }
         if (request_obj.method() != _T("GET") &&
@@ -165,8 +149,7 @@ HttpServerBase::process_client_request(SOCKET cl_s)
             }
             else {
                 // handle the request
-                send_response(cl_sock, *logger,
-                              call_handler(request_obj));
+                send_response(cl_sock, *logger, call_handler(request_obj));
             }
         }
     }
