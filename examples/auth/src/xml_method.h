@@ -10,29 +10,29 @@
 class TimerGuard
 {
     Yb::ILogger &logger_;
-    std::string method_;
+    Yb::String method_;
     Yb::MilliSec t0_;
     bool except_;
 public:
-    TimerGuard(Yb::ILogger &logger, const std::string &method = "unknown")
+    TimerGuard(Yb::ILogger &logger, const Yb::String &method = _T("unknown"))
         : logger_(logger)
         , method_(method)
         , t0_(Yb::get_cur_time_millisec())
         , except_(true)
     {}
     void set_ok() { except_ = false; }
-    void set_method(const std::string &method) { method_ = method; }
+    void set_method(const Yb::String &method) { method_ = method; }
     Yb::MilliSec time_spent() const
     {
         return Yb::get_cur_time_millisec() - t0_;
     }
     ~TimerGuard() {
-        std::ostringstream out;
-        out << "Method " << method_ << " ended";
+        Yb::String out = _T("Method ") + method_ + _T(" ended");
         if (except_)
-            out << " with an exception";
-        out << ". Execution time=" << time_spent() / 1000.0;
-        logger_.info(out.str());
+            out += _T(" with an exception");
+        out += _T(". Execution time=")
+            + Yb::to_string(time_spent() / 1000.0);
+        logger_.info(out);
     }
 };
 
@@ -50,10 +50,10 @@ class ApiResult: public std::runtime_error
 {
     Yb::ElementTree::ElementPtr p_;
     int http_code_;
-    std::string http_desc_;
+    Yb::String http_desc_;
 public:
     explicit ApiResult(Yb::ElementTree::ElementPtr p,
-                       int http_code = 200, const std::string &http_desc = "OK")
+                       int http_code = 200, const Yb::String &http_desc = _T("OK"))
         : runtime_error("api result")
         , p_(p)
         , http_code_(http_code)
@@ -62,22 +62,22 @@ public:
     virtual ~ApiResult() throw () {}
     Yb::ElementTree::ElementPtr result() const { return p_; }
     int http_code() const { return http_code_; }
-    const std::string &http_desc() const { return http_desc_; }
+    const Yb::String &http_desc() const { return http_desc_; }
 };
 
-inline const std::string dict2str(const Yb::StringDict &params)
+inline const Yb::String dict2str(const Yb::StringDict &params)
 {
     using namespace Yb::StrUtils;
-    std::ostringstream out;
-    out << "{";
+    Yb::String out;
+    out += _T("{");
     Yb::StringDict::const_iterator it = params.begin(), end = params.end();
     for (bool first = true; it != end; ++it, first = false) {
         if (!first)
-            out << ", ";
-        out << NARROW(it->first) << ": " << NARROW(dquote(c_string_escape(it->second)));
+            out += _T(", ");
+        out += it->first + _T(": ") + dquote(c_string_escape(it->second));
     }
-    out << "}";
-    return out.str();
+    out += _T("}");
+    return out;
 }
 
 typedef const HttpResponse (*PlainHttpHandler)(
@@ -94,21 +94,21 @@ class XmlHttpWrapper
     XmlHttpHandler f_;
     Yb::SharedPtr<Yb::ILogger>::Type logger_;
 
-    std::string dump_result(Yb::ElementTree::ElementPtr res)
+    const std::string dump_result(Yb::ElementTree::ElementPtr res)
     {
         std::string res_str = res->serialize();
-        logger_->info("result: " + res_str);
+        logger_->info(_T("result: ") + WIDEN(res_str));
         return res_str;
     }
 
     const HttpResponse try_call(TimerGuard &t,
                                 const HttpRequest &request, int n)
     {
-        logger_->info("Method " + NARROW(name_) +
-                      std::string(n? " re": " ") + "started.");
+        logger_->info(_T("Method ") + name_ +
+                      Yb::String(n? _T(" re"): _T(" ")) + _T("started."));
         const Yb::StringDict &params = request.params();
-        logger_->debug("Method " + NARROW(name_) +
-                       ": params: " + dict2str(params));
+        logger_->debug(_T("Method ") + name_ +
+                       _T(": params: ") + dict2str(params));
         // call xml wrapped
         std::auto_ptr<Yb::Session> session;
         if (theApp::instance().uses_db())
@@ -141,38 +141,39 @@ public:
     const HttpResponse operator() (const HttpRequest &request)
     {
         logger_.reset(theApp::instance().new_logger(
-                    "invoker_xml").release());
+                    _T("invoker_xml")).release());
         const Yb::String cont_type = _T("application/xml");
-        TimerGuard t(*logger_, NARROW(name_));
+        TimerGuard t(*logger_, name_);
         try {
             try {
                 return try_call(t, request, 0);
             }
             catch (const Yb::DBError &ex) {
-                logger_->error(std::string("db exception: ") + ex.what());
+                logger_->error(_T("db exception: ") + ex.wtf());
                 return try_call(t, request, 1);
             }
         }
         catch (const HttpHeaderNotFound &ex) {
-            logger_->error("Missing header: " + ex.header_name());
+            logger_->error(_T("Missing header: ") + ex.header_name());
             HttpResponse response(HTTP_1_0, 400, _T("Bad Request"));
             response.set_response_body(dump_result(mk_resp(_T("missing_header"))), cont_type);
             return response;
         }
         catch (const ApiResult &ex) {
-            t.set_ok();
+            if (ex.http_code() == 200)
+                t.set_ok();
             HttpResponse response(HTTP_1_0, 200, _T("OK"));
             response.set_response_body(dump_result(ex.result()), cont_type);
             return response;
         }
         catch (const std::exception &ex) {
-            logger_->error(std::string("exception: ") + ex.what());
+            logger_->error(Yb::String(_T("exception: ")) + WIDEN(ex.what()));
             HttpResponse response(HTTP_1_0, 500, _T("Internal error"));
             response.set_response_body(dump_result(mk_resp(default_status_)), cont_type);
             return response;
         }
         catch (...) {
-            logger_->error("unknown exception");
+            logger_->error(_T("unknown exception"));
             HttpResponse response(HTTP_1_0, 500, _T("Internal error"));
             response.set_response_body(dump_result(mk_resp(default_status_)), cont_type);
             return response;

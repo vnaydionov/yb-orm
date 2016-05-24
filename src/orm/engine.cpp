@@ -256,7 +256,8 @@ EngineBase::create_schema(const Schema &schema, bool ignore_errors)
             }
             catch (const DBError &e) {
                 if (logger())
-                    logger()->warning(std::string("ignored DB error: ") + e.what());
+                    logger()->warning(Yb::String(_T("ignored DB error: "))
+                            + WIDEN(e.what()));
             }
         }
         else
@@ -285,7 +286,7 @@ EngineBase::drop_schema(const Schema &schema, bool ignore_errors)
                     }
                     catch (const DBError &e) {
                         if (logger())
-                            logger()->warning(std::string("ignored DB error: ") + e.what());
+                            logger()->warning(Yb::String(_T("ignored DB error: ")) + WIDEN(e.what()));
                     }
                 }
                 else
@@ -304,7 +305,7 @@ EngineBase::drop_schema(const Schema &schema, bool ignore_errors)
                     }
                     catch (const DBError &e) {
                         if (logger())
-                            logger()->warning(std::string("ignored DB error: ") + e.what());
+                            logger()->warning(Yb::String(_T("ignored DB error: ")) + WIDEN(e.what()));
                     }
                 }
                 else

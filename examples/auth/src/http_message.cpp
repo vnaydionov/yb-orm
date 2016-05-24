@@ -18,8 +18,24 @@ HttpMessage::HttpMessage(int proto_ver)
     : proto_ver_(proto_ver)
 {
     if (proto_ver != HTTP_1_1 && proto_ver != HTTP_1_0)
-        throw HttpParserError("HttpMessage", "Invalid protocol version: " +
-                              NARROW(Yb::to_string(proto_ver)));
+        throw HttpParserError(_T("HttpMessage"), _T("Invalid protocol version: ") + 
+                              Yb::to_string(proto_ver));
+}
+
+const Yb::String
+HttpMessage::serialize_headers() const
+{
+    Yb::String out;
+    Yb::str_reserve(out, 1000);
+    Yb::StringDict::const_iterator it = headers_.begin(), end = headers_.end();
+    for (; it != end; ++it)
+    {
+        out += it->first;
+        out += _T(": ");
+        out += it->second;
+        out += _T('\n');
+    }
+    return out;
 }
 
 int
@@ -28,8 +44,7 @@ HttpMessage::parse_version(const Yb::String &proto_str)
     Yb::String v = str_to_upper(proto_str);
     if (v != _T("HTTP/1.0") && v != _T("HTTP/1.1"))
     {
-        throw HttpParserError("parse_version", "Unrecognized HTTP version: " +
-                              NARROW(v));
+        throw HttpParserError(_T("parse_version"), _T("Unrecognized HTTP version: ") + v);
     }
     return (Yb::char_code(v[5]) - '0') * 10 +
            (Yb::char_code(v[7]) - '0');
@@ -54,7 +69,7 @@ HttpMessage::parse_header_line(const Yb::String &line,
     Yb::Strings parts;
     split_str_by_chars(line, _T(":"), parts, 2);
     if (parts.size() != 2)
-        throw HttpParserError("parse_header_line", "Header format is wrong");
+        throw HttpParserError(_T("parse_header_line"), _T("Header format is wrong"));
     std::swap(header_name, parts[0]);
     std::swap(header_value, parts[1]);
 }
@@ -65,13 +80,13 @@ HttpRequest::HttpRequest(const Yb::String &method, const Yb::String &uri, int pr
     , uri_(uri)
 {
     if (!Yb::str_length(method))
-        throw HttpParserError("HttpRequest", "Empty HTTP method");
+        throw HttpParserError(_T("HttpRequest"), _T("Empty HTTP method"));
     if (!Yb::str_length(uri))
-        throw HttpParserError("HttpRequest", "Empty URI");
+        throw HttpParserError(_T("HttpRequest"), _T("Empty URI"));
     Yb::Strings uri_parts;
     Yb::StrUtils::split_str_by_chars(uri, _T("?"), uri_parts, 2);
     if (uri_parts.size() < 1)
-        throw HttpParserError("HttpMessage", "uri_parts.size() < 1");
+        throw HttpParserError(_T("HttpMessage"), _T("uri_parts.size() < 1"));
     path_ = uri_parts[0];
     if (uri_parts.size() > 1)
         params_ = parse_params(uri_parts[1]);
@@ -81,10 +96,10 @@ const std::string
 HttpRequest::serialize() const
 {
     std::ostringstream out;
-    out << NARROW(method_) << " "
-        << NARROW(uri_) << " "
-        << NARROW(get_proto_str()) << "\n"
-        << serialize_headers() << "\n" << body();
+    out << NARROW(method_) << ' '
+        << NARROW(uri_) << ' '
+        << NARROW(get_proto_str()) << '\n'
+        << NARROW(serialize_headers()) << '\n' << body();
     return out.str();
 }
 
@@ -98,7 +113,7 @@ HttpRequest::parse_params(const Yb::String &msg)
         Yb::Strings value_parts;
         split_str_by_chars(param_parts[i], _T("="), value_parts, 2);
         if (value_parts.size() < 1)
-            throw HttpParserError("parse_params", "value_parts.size() < 1");
+            throw HttpParserError(_T("parse_params"), _T("value_parts.size() < 1"));
         Yb::String n = value_parts[0];
         Yb::String v;
         if (value_parts.size() == 2)
@@ -116,6 +131,7 @@ const Yb::String
 HttpRequest::url_encode(const std::string &s, bool path_mode)
 {
     Yb::String result;
+    Yb::str_reserve(result, s.size() * 2);
     const char *replace;
     if (path_mode)
         replace = "!*'();@&=+$,?%#[]";
@@ -155,7 +171,7 @@ HttpRequest::parse_request_line(const Yb::String &line)
     Yb::Strings head_parts;
     split_str_by_chars(line, _T(" \t\r\n"), head_parts);
     if (head_parts.size() != 3)
-        throw HttpParserError("parse_request_line", "head_parts.size() != 3");
+        throw HttpParserError(_T("parse_request_line"), _T("head_parts.size() != 3"));
     HttpRequest request_obj(head_parts[0],
                             head_parts[1],
                             HttpMessage::parse_version(head_parts[2]));
@@ -168,20 +184,20 @@ HttpResponse::HttpResponse(int proto_ver, int resp_code, const Yb::String &resp_
     , resp_desc_(resp_desc)
 {
     if (resp_code < 100 || resp_code >= 600)
-        throw HttpParserError("HttpResponse", "Invalid response code: " +
-                              NARROW(Yb::to_string(resp_code)));
+        throw HttpParserError(_T("HttpResponse"), _T("Invalid response code: ") +
+                              Yb::to_string(resp_code));
     if (!Yb::str_length(resp_desc))
-        throw HttpParserError("HttpResponse", "Empty HTTP resp_desc");
+        throw HttpParserError(_T("HttpResponse"), _T("Empty HTTP resp_desc"));
 }
 
 const std::string
 HttpResponse::serialize() const
 {
     std::ostringstream out;
-    out << NARROW(get_proto_str()) << " "
-        << resp_code_ << " "
-        << NARROW(resp_desc_) << "\n"
-        << serialize_headers() << "\n" << body();
+    out << NARROW(get_proto_str()) << ' '
+        << resp_code_ << ' '
+        << NARROW(resp_desc_) << '\n'
+        << NARROW(serialize_headers()) << '\n' << body();
     return out.str();
 }
 
@@ -194,7 +210,8 @@ HttpResponse::set_response_body(const std::string &body,
     if (!Yb::str_empty(content_type))
         set_header(_T("Content-Type"), content_type);
     if (body.size() && set_content_length)
-        set_header(_T("Content-Length"), Yb::to_string(body.size()));
+        set_header(_T("Content-Length"),
+                   Yb::to_string(body.size()));
 }
 
 // vim:ts=4:sts=4:sw=4:et:

@@ -18,6 +18,10 @@ const String BaseError::format_base(const String &msg)
 
 BaseError::BaseError(const String &msg)
     : std::logic_error(NARROW(format_base(msg)))
+    , ext_msg_(WIDEN(what()))
+{}
+
+BaseError::~BaseError() throw()
 {}
 
 const String AssertError::format_assert(const char *file, int line,

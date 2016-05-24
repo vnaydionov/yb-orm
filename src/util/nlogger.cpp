@@ -121,8 +121,30 @@ int LogRecord::check_level(int level)
     return level;
 }
 
-LogRecord::LogRecord(int level, const std::string &component,
-                     const std::string &msg)
+const Yb::String &LogRecord::get_level_name(int level)
+{
+    static Yb::String *log_level_names = NULL;
+    if (!log_level_names) {
+        Yb::String *names = new Yb::String[7];
+        names[0] = _T("CRI");
+        names[1] = _T("ERR");
+        names[2] = _T("WRN");
+        names[3] = _T("INF");
+        names[4] = _T("DBG");
+        names[5] = _T("TRC");
+        names[6] = _T("XXX");
+        log_level_names = names;
+    }
+    try {
+        return log_level_names[check_level(level) - 1];
+    }
+    catch (const InvalidLogLevel &) {
+        return log_level_names[6];
+    }
+}
+
+LogRecord::LogRecord(int level, const Yb::String &component,
+                     const Yb::String &msg)
     : t_(get_cur_time_millisec())
     , pid_(get_process_id())
     , tid_(get_thread_id())
@@ -131,37 +153,24 @@ LogRecord::LogRecord(int level, const std::string &component,
     , msg_(msg)
 {}
 
-const char *LogRecord::get_level_name() const
-{
-    static const char *log_level_name[] = {
-        "CRI", "ERR", "WRN", "INF", "DBG", "TRC"
-    };
-    try {
-        return log_level_name[check_level(level_) - 1];
-    }
-    catch (const InvalidLogLevel &) {
-        return "XXX";
-    }
-}
-
 ILogAppender::~ILogAppender()
 {}
 
 ILogger::~ILogger()
 {}
 
-Logger::Logger(ILogAppender *appender, const std::string &name)
+Logger::Logger(ILogAppender *appender, const Yb::String &name)
     : appender_(appender)
     , name_(name)
 {}
 
-ILogger::Ptr Logger::new_logger(const std::string &name)
+ILogger::Ptr Logger::new_logger(const Yb::String &name)
 {
     if (!valid_name(name))
         throw InvalidLoggerName();
-    std::string new_name = name;
-    if (!name_.empty())
-        new_name = name_ + "." + new_name;
+    Yb::String new_name = name;
+    if (!str_empty(name_))
+        new_name = name_ + _T(".") + new_name;
     ILogger::Ptr p(new Logger(appender_, new_name));
     if (p->get_level() == ll_ALL) {
         int parent_level = get_level();
@@ -171,7 +180,7 @@ ILogger::Ptr Logger::new_logger(const std::string &name)
     return p;
 }
 
-ILogger::Ptr Logger::get_logger(const std::string &name)
+ILogger::Ptr Logger::get_logger(const Yb::String &name)
 {
     if (!valid_name(name, true))
         throw InvalidLoggerName();
@@ -189,7 +198,7 @@ void Logger::set_level(int level)
     appender_->set_level(name_, level);
 }
 
-void Logger::log(int level, const std::string &msg)
+void Logger::log(int level, const Yb::String &msg)
 {
     if (level <= ll_NONE || level > ll_TRACE)
         throw InvalidLogLevel();
@@ -197,17 +206,17 @@ void Logger::log(int level, const std::string &msg)
     appender_->append(rec);
 }
 
-const std::string Logger::get_name() const
+const Yb::String Logger::get_name() const
 {
-    return name_.empty()? std::string("main"): name_;
+    return str_empty(name_)? Yb::String(_T("main")): name_;
 }
 
-bool Logger::valid_name(const std::string &name, bool allow_dots)
+bool Logger::valid_name(const Yb::String &name, bool allow_dots)
 {
-    if (name.empty())
+    if (str_empty(name))
         return false;
-    for (size_t i = 0; i < name.size(); ++i) {
-        char c = name[i];
+    for (size_t i = 0; i < str_length(name); ++i) {
+        int c = char_code(name[(int)i]);
         if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
               (c >= '0' && c <= '9') || (c == '_') || (c == '-') ||
               (c == '.' && allow_dots)))
@@ -221,13 +230,13 @@ bool Logger::valid_name(const std::string &name, bool allow_dots)
 void LogAppender::output(std::ostream &s, const LogRecord &rec,
                          const char *time_str)
 {
-    const std::string &msg = rec.get_msg();
+    const Yb::String &msg = rec.msg();
     s << time_str << " "
-        << "P" << rec.get_pid() << " T" << rec.get_tid() << " "
-        << rec.get_level_name() << " "
-        << rec.get_component() << ": "
-        << msg;
-    if (!msg.size() || msg[msg.size() - 1] != '\n')
+        << "P" << rec.pid() << " T" << rec.tid() << " "
+        << NARROW(rec.level_name()) << " "
+        << NARROW(rec.component()) << ": "
+        << NARROW(msg);
+    if (str_empty(msg) || char_code(msg[(int)str_length(msg) - 1]) != '\n')
         s << '\n';
 }
 
@@ -279,10 +288,10 @@ void LogAppender::append(const LogRecord &rec)
 {
     ScopedLock lk(queue_mutex_);
     int target_level = ll_ALL;
-    LogLevelMap::iterator it = log_levels_.find(rec.get_component());
+    LogLevelMap::iterator it = log_levels_.find(rec.component());
     if (log_levels_.end() != it)
         target_level = it->second;
-    if (rec.get_level() <= target_level) {
+    if (rec.level() <= target_level) {
         queue_.push_back(rec);
         time_t now = time(NULL);
         if (should_flush(now))
@@ -290,7 +299,7 @@ void LogAppender::append(const LogRecord &rec)
     }
 }
 
-int LogAppender::get_level(const std::string &name)
+int LogAppender::get_level(const Yb::String &name)
 {
     ScopedLock lk(queue_mutex_);
     LogLevelMap::iterator it = log_levels_.find(name);
@@ -299,18 +308,20 @@ int LogAppender::get_level(const std::string &name)
     return it->second;
 }
 
-void LogAppender::set_level(const std::string &name, int level)
+void LogAppender::set_level(const Yb::String &name, int level)
 {
     ScopedLock lk(queue_mutex_);
-    if (name.size() >= 2 && name.substr(name.size() - 2) == ".*")
+    size_t name_len = str_length(name);
+    if (name_len >= 2 && str_substr(name, name_len - 2) == _T(".*"))
     {
-        std::string prefix = name.substr(0, name.size() - 1);
+        size_t prefix_len = name_len - 1;
+        Yb::String prefix = str_substr(name, 0, prefix_len);
         LogLevelMap::iterator it = log_levels_.begin(),
                               it_end = log_levels_.end();
         for (; it != it_end; ++it)
-            if (it->first.substr(0, prefix.size()) == prefix)
+            if (str_substr(it->first, 0, prefix_len) == prefix)
                 it->second = level;
-        std::string prefix0 = name.substr(0, name.size() - 2);
+        Yb::String prefix0 = str_substr(name, 0, name_len - 2);
         log_levels_[prefix0] = level;
     }
     else {

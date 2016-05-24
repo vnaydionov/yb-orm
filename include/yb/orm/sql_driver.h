@@ -232,7 +232,7 @@ class YBORM_DECL SqlCursor: NonCopyable
     void debug(const String &s, int level = ll_DEBUG)
     {
         if (log_)
-            log_->log(level, NARROW(s));
+            log_->log(level, s);
     }
     SqlCursor(SqlConnection &connection);
 public:
@@ -276,13 +276,13 @@ public:
     void init_logger(ILogger *parent) {
         log_.reset(NULL);
         if (parent)
-            log_.reset(parent->new_logger("sql").release());
+            log_.reset(parent->new_logger(_T("sql")).release());
     }
     std::auto_ptr<SqlCursor> new_cursor();
     void debug(const String &s, int level = ll_DEBUG)
     {
         if (log_.get())
-            log_->log(level, NARROW(s));
+            log_->log(level, s);
     }
     bool bad() const { return bad_; }
     bool activity() const { return activity_; }

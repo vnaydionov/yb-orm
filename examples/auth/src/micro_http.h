@@ -9,9 +9,9 @@
 class HttpServerBase
 {
 public:
-    HttpServerBase(const std::string &ip_addr, int port, int back_log,
+    HttpServerBase(const Yb::String &ip_addr, int port, int back_log,
             Yb::ILogger *root_logger,
-            const Yb::String &content_type, const std::string &bad_resp);
+            const Yb::String &content_type, const Yb::String &bad_resp);
     void serve();
 
 protected:
@@ -19,11 +19,11 @@ protected:
     virtual const HttpResponse call_handler(const HttpRequest &request) = 0;
 
 private:
-    std::string ip_addr_;
+    Yb::String ip_addr_;
     int port_;
     int back_log_;
     Yb::String content_type_;
-    std::string bad_resp_;
+    Yb::String bad_resp_;
     Yb::ILogger::Ptr log_;
     TcpSocket sock_;
     time_t prev_clean_ts;
@@ -31,7 +31,7 @@ private:
     static void process(HttpServerBase *server, SOCKET cl_s);
     void process_client_request(SOCKET cl_s);
     static HttpResponse make_response(int code, const Yb::String &desc,
-                                      const std::string &body,
+                                      const Yb::String &body,
                                       const Yb::String &cont_type);
     static bool send_response(TcpSocket &cl_sock, Yb::ILogger &logger,
                               const HttpResponse &response);
@@ -45,10 +45,10 @@ class HttpServer: public HttpServerBase
 {
 public:
     typedef Yb::Dict<Yb::String, Handler> HandlerMap;
-    HttpServer(const std::string &ip_addr, int port, int back_log,
+    HttpServer(const Yb::String &ip_addr, int port, int back_log,
             const HandlerMap &handlers, Yb::ILogger *root_logger,
             const Yb::String &content_type = _T("text/xml"),
-            const std::string &bad_resp = "<status>NOT</status>"):
+            const Yb::String &bad_resp = _T("<status>NOT</status>")):
         HttpServerBase(ip_addr, port, back_log, root_logger,
                        content_type, bad_resp),
         handlers_(handlers)

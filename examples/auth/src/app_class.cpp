@@ -2,13 +2,14 @@
 #include <fstream>
 #include <stdexcept>
 #include <util/string_utils.h>
+#include <util/exception.h>
 #include <orm/domain_object.h>
 #if !defined(YBUTIL_WINDOWS)
 #include <syslog.h>
 #endif
 
 using namespace std;
-typedef std::runtime_error RunTimeError;
+using Yb::RunTimeError;
 
 FileLogAppender::FileLogAppender(std::ostream &out)
     : LogAppender(out)
@@ -25,7 +26,7 @@ const std::string get_process_name()
     const std::string file_name = "/proc/self/cmdline";
     std::ifstream inp(file_name.c_str());
     if (!inp)
-        throw RunTimeError("can't open file: " + file_name);
+        throw RunTimeError(_T("can't open file: ") + WIDEN(file_name));
     std::string cmdline;
     std::copy(std::istream_iterator<char>(inp),
               std::istream_iterator<char>(),
@@ -86,11 +87,11 @@ SyslogAppender::~SyslogAppender()
 
 void SyslogAppender::really_append(const Yb::LogRecord &rec)
 {
-    int priority = log_level_to_syslog(rec.get_level());
+    int priority = log_level_to_syslog(rec.level());
     std::ostringstream msg;
-    msg << "T" << rec.get_tid() << " "
-        << rec.get_component() << ": "
-        << rec.get_msg();
+    msg << "T" << rec.tid() << " "
+        << NARROW(rec.component()) << ": "
+        << NARROW(rec.msg());
     ::syslog(priority, fmt_string_escape(msg.str()).c_str());
 }
 
@@ -98,15 +99,15 @@ void SyslogAppender::append(const Yb::LogRecord &rec)
 {
     Yb::ScopedLock lk(appender_mutex_);
     int target_level = Yb::ll_ALL;
-    LogLevelMap::iterator it = log_levels_.find(rec.get_component());
+    LogLevelMap::iterator it = log_levels_.find(rec.component());
     if (log_levels_.end() != it)
         target_level = it->second;
-    if (rec.get_level() <= target_level) {
+    if (rec.level() <= target_level) {
         really_append(rec);
     }
 }
 
-int SyslogAppender::get_level(const std::string &name)
+int SyslogAppender::get_level(const Yb::String &name)
 {
     Yb::ScopedLock lk(appender_mutex_);
     LogLevelMap::iterator it = log_levels_.find(name);
@@ -115,18 +116,21 @@ int SyslogAppender::get_level(const std::string &name)
     return it->second;
 }
 
-void SyslogAppender::set_level(const std::string &name, int level)
+void SyslogAppender::set_level(const Yb::String &name, int level)
 {
+    using Yb::str_length;
+    using Yb::str_substr;
     Yb::ScopedLock lk(appender_mutex_);
-    if (name.size() >= 2 && name.substr(name.size() - 2) == ".*")
+    size_t name_len = str_length(name);
+    if (name_len == 2 && str_substr(name, name_len - 2) == _T(".*"))
     {
-        std::string prefix = name.substr(0, name.size() - 1);
+        Yb::String prefix = str_substr(name, 0, name_len - 1);
         LogLevelMap::iterator it = log_levels_.begin(),
                               it_end = log_levels_.end();
         for (; it != it_end; ++it)
-            if (it->first.substr(0, prefix.size()) == prefix)
+            if (str_substr(it->first, 0, name_len - 1) == prefix)
                 it->second = level;
-        std::string prefix0 = name.substr(0, name.size() - 2);
+        Yb::String prefix0 = str_substr(name, 0, name_len - 2);
         log_levels_[prefix0] = level;
     }
     else {
@@ -139,54 +143,53 @@ void SyslogAppender::set_level(const std::string &name, int level)
 }
 #endif // !defined(YBUTIL_WINDOWS)
 
-int decode_log_level(const string &log_level0)
+int decode_log_level(const Yb::String &log_level0)
 {
     using Yb::StrUtils::str_to_lower;
-    const string log_level = NARROW(str_to_lower(WIDEN(log_level0)));
-    if (log_level.empty())
+    const Yb::String log_level = str_to_lower(log_level0);
+    if (Yb::str_empty(log_level))
         return Yb::ll_DEBUG;
-    if (log_level == "critical" || log_level == "cri" || log_level == "crit")
+    if (log_level == _T("critical") || log_level == _T("cri") || log_level == _T("crit"))
         return Yb::ll_CRITICAL;
-    if (log_level == "error"    || log_level == "err" || log_level == "erro")
+    if (log_level == _T("error")    || log_level == _T("err") || log_level == _T("erro"))
         return Yb::ll_ERROR;
-    if (log_level == "warning"  || log_level == "wrn" || log_level == "warn")
+    if (log_level == _T("warning")  || log_level == _T("wrn") || log_level == _T("warn"))
         return Yb::ll_WARNING;
-    if (log_level == "info"     || log_level == "inf")
+    if (log_level == _T("info")     || log_level == _T("inf"))
         return Yb::ll_INFO;
-    if (log_level == "debug"    || log_level == "dbg" || log_level == "debg")
+    if (log_level == _T("debug")    || log_level == _T("dbg") || log_level == _T("debg"))
         return Yb::ll_DEBUG;
-    if (log_level == "trace"    || log_level == "trc" || log_level == "trac")
+    if (log_level == _T("trace")    || log_level == _T("trc") || log_level == _T("trac"))
         return Yb::ll_TRACE;
-    throw RunTimeError("invalid log level: " + log_level);
+    throw RunTimeError(_T("invalid log level: ") + log_level);
 }
 
-const string encode_log_level(int level)
+const Yb::String encode_log_level(int level)
 {
-    Yb::LogRecord r(level, "__xxx__", "yyy");
-    return string(r.get_level_name());
+    return Yb::LogRecord::get_level_name(level);
 }
 
-void App::init_log(const string &log_name, const string &log_level)
+void App::init_log(const Yb::String &log_name, const Yb::String &log_level)
 {
     if (!log_.get()) {
 #if !defined(YBUTIL_WINDOWS)
         using Yb::StrUtils::str_to_lower;
-        if (_T("syslog") == str_to_lower(WIDEN(log_name))) {
+        if (_T("syslog") == str_to_lower(log_name)) {
             appender_.reset(new SyslogAppender());
         }
         else {
 #endif // !defined(YBUTIL_WINDOWS)
-            file_stream_.reset(new ofstream(log_name.data(), ios::app));
+            file_stream_.reset(new ofstream(NARROW(log_name).c_str(), ios::app));
             if (file_stream_->fail())
-                throw RunTimeError("can't open logfile: " + log_name);
+                throw RunTimeError(_T("can't open logfile: ") + log_name);
             appender_.reset(new FileLogAppender(*file_stream_));
 #if !defined(YBUTIL_WINDOWS)
         }
 #endif // !defined(YBUTIL_WINDOWS)
         log_.reset(new Yb::Logger(appender_.get()));
-        info("Application started.");
-        info("Setting level " + encode_log_level(decode_log_level(log_level))
-                + " for root logger");
+        info(_T("Application started."));
+        info(_T("Setting level ") + encode_log_level(decode_log_level(log_level))
+                + _T(" for root logger"));
         log_->set_level(decode_log_level(log_level));
     }
 }
@@ -199,7 +202,7 @@ const Yb::String App::get_db_url()
 void App::init_engine(const Yb::String &db_name)
 {
     if (!engine_.get()) {
-        Yb::ILogger::Ptr yb_logger(new_logger("yb").release());
+        Yb::ILogger::Ptr yb_logger(new_logger(_T("yb")).release());
         Yb::init_schema();
         auto_ptr<Yb::SqlPool> pool(
                 new Yb::SqlPool(
@@ -229,7 +232,7 @@ void App::init_engine(const Yb::String &db_name)
     }
 }
 
-void App::init(const string &log_name, const string &log_level, const Yb::String &db_name)
+void App::init(const Yb::String &log_name, const Yb::String &log_level, const Yb::String &db_name)
 {
     init_log(log_name, log_level);
     if (!Yb::str_empty(db_name)) {
@@ -242,7 +245,7 @@ App::~App()
 {
     engine_.reset(NULL);
     if (log_.get()) {
-        info("log finished");
+        info(_T("log finished"));
         FileLogAppender *appender = dynamic_cast<FileLogAppender *> (
                 appender_.get());
         if (appender)
@@ -258,7 +261,7 @@ App::~App()
 Yb::Engine &App::get_engine()
 {
     if (!engine_.get())
-        throw RunTimeError("engine not created");
+        throw RunTimeError(_T("engine not created"));
     return *engine_.get();
 }
 
@@ -268,44 +271,44 @@ auto_ptr<Yb::Session> App::new_session()
             new Yb::Session(Yb::theSchema(), &get_engine()));
 }
 
-Yb::ILogger::Ptr App::new_logger(const string &name)
+Yb::ILogger::Ptr App::new_logger(const Yb::String &name)
 {
     if (!log_.get())
-        throw RunTimeError("log not opened");
+        throw RunTimeError(_T("log not opened"));
     return log_->new_logger(name);
 }
 
-Yb::ILogger::Ptr App::get_logger(const std::string &name)
+Yb::ILogger::Ptr App::get_logger(const Yb::String &name)
 {
     if (!log_.get())
-        throw RunTimeError("log not opened");
+        throw RunTimeError(_T("log not opened"));
     return log_->get_logger(name);
 }
 
 int App::get_level()
 {
     if (!log_.get())
-        throw RunTimeError("log not opened");
+        throw RunTimeError(_T("log not opened"));
     return log_->get_level();
 }
 
 void App::set_level(int level)
 {
     if (!log_.get())
-        throw RunTimeError("log not opened");
+        throw RunTimeError(_T("log not opened"));
     log_->set_level(level);
 }
 
-void App::log(int level, const string &msg)
+void App::log(int level, const Yb::String &msg)
 {
     if (log_.get())
         log_->log(level, msg);
 }
 
-const string App::get_name() const
+const Yb::String App::get_name() const
 {
     if (!log_.get())
-        return string();
+        return Yb::String();
     return log_->get_name();
 }
 

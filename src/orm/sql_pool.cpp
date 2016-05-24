@@ -11,8 +11,7 @@
 #pragma warning(disable:4355)
 #endif // _MSC_VER
 
-#define LOG(l, x) do { if (logger_.get()) { std::ostringstream __log; \
-    __log << NARROW(x); logger_->log(l, __log.str()); } } while(0)
+#define LOG(l, x) do { if (logger_.get()) { logger_->log((l), (x)); } } while(0)
 
 namespace Yb {
 
@@ -133,7 +132,7 @@ SqlPool::SqlPool(int pool_max_size, int idle_time,
     , monitor_(this)
 {
     if (logger) {
-        ILogger::Ptr pool_logger = logger->new_logger("pool");
+        ILogger::Ptr pool_logger = logger->new_logger(_T("pool"));
         logger_.reset(pool_logger.release());
     }
     monitor_.start();

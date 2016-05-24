@@ -9,23 +9,23 @@ enum {
 };
 
 
-class HttpParserError: public std::runtime_error
+class HttpParserError: public Yb::RunTimeError
 {
 public:
-    HttpParserError(const std::string &ctx, const std::string &msg)
-        : std::runtime_error(ctx + ": " + msg)
+    HttpParserError(const Yb::String &ctx, const Yb::String &msg)
+        : Yb::RunTimeError(ctx + _T(": ") + msg)
     {}
 };
 
 class HttpHeaderNotFound: public HttpParserError
 {
-    std::string header_name_;
+    Yb::String header_name_;
 public:
-    HttpHeaderNotFound(const std::string &header_name)
-        : HttpParserError("get_header", "Header not found: " + header_name)
+    HttpHeaderNotFound(const Yb::String &header_name)
+        : HttpParserError(_T("get_header"), _T("Header not found: ") + header_name)
         , header_name_(header_name)
     {}
-    const std::string &header_name() const { return header_name_; }
+    const Yb::String &header_name() const { return header_name_; }
     virtual ~HttpHeaderNotFound() throw();
 };
 
@@ -77,7 +77,7 @@ public:
         Yb::StringDict::const_iterator it = headers_.find(
             normalize_header_name(header));
         if (headers_.end() == it)
-            throw HttpHeaderNotFound(NARROW(header));
+            throw HttpHeaderNotFound(header);
         return it->second;
     }
 
@@ -102,17 +102,7 @@ public:
         return len;
     }
 
-    const std::string serialize_headers() const
-    {
-        std::ostringstream out;
-        Yb::StringDict::const_iterator it = headers_.begin(), end = headers_.end();
-        for (; it != end; ++it)
-        {
-            out << NARROW(it->first) << ": " << NARROW(it->second) << "\n";
-        }
-        return out.str();
-    }
-
+    const Yb::String serialize_headers() const;
 
     static int parse_version(const Yb::String &proto_str);
 

@@ -119,6 +119,7 @@ inline const String str_n(int n, Char c) { return wxString(c, (size_t)n); }
 inline const String str_from_chars(const Char *s) { return wxString(s); }
 inline size_t str_length(const String &s) { return s.Len(); }
 inline bool str_empty(const String &s) { return s.IsEmpty(); }
+inline void str_reserve(String &s, size_t capacity) { s.reserve(capacity); }
 inline const Char *str_data(const String &s) { return s.GetData(); }
 inline int str_find(const String &s, const String &sub, int start = 0)
 {
@@ -154,6 +155,7 @@ inline const String str_from_chars(const Char *s)
 }
 inline size_t str_length(const String &s) { return s.length(); }
 inline bool str_empty(const String &s) { return s.isEmpty(); }
+inline void str_reserve(String &s, size_t capacity) { s.reserve(capacity); }
 inline const Char *str_data(const String &s) { return s.data(); }
 inline int str_find(const String &s, const String &sub, int start = 0)
 {
@@ -188,6 +190,7 @@ inline const String str_n(int n, Char c) { return String((size_t)n, c); }
 inline const String str_from_chars(const Char *s) { return String(s); }
 inline size_t str_length(const String &s) { return s.size(); }
 inline bool str_empty(const String &s) { return s.empty(); }
+inline void str_reserve(String &s, size_t capacity) { s.reserve(capacity); }
 inline const Char *str_data(const String &s) { return s.c_str(); }
 inline int str_find(const String &s, const String &sub, int start = 0)
 {

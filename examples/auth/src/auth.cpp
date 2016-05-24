@@ -202,8 +202,8 @@ public:
 #endif
     Yb::ILogger::Ptr log;
     try {
-        theApp::instance().init("auth.log", "DEBUG", _T("auth_db"));
-        log.reset(theApp::instance().new_logger("main").release());
+        theApp::instance().init(_T("auth.log"), _T("DEBUG"), _T("auth_db"));
+        log.reset(theApp::instance().new_logger(_T("main")).release());
     }
     catch (const std::exception &ex) {
         std::cerr << "exception: " << ex.what() << "\n";
@@ -223,13 +223,13 @@ public:
         AuthHttpServer::HandlerMap handler_map;
         for (int i = 0; i < n_handlers; ++i)
             handler_map[_T("/") + handlers[i].name()] = handlers[i];
-        AuthHttpServer server("0.0.0.0", port, 3,
+        AuthHttpServer server(_T("0.0.0.0"), port, 3,
                 handler_map, &theApp::instance(),
-                _T("text/xml"), "<status>NOT</status>");
+                _T("text/xml"), _T("<status>NOT</status>"));
         server.serve();
     }
     catch (const std::exception &ex) {
-        log->error(string("exception: ") + ex.what());
+        log->error(Yb::String(_T("exception: ")) + WIDEN(ex.what()));
         return 1;
     }
     return 0;

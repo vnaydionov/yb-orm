@@ -11,8 +11,11 @@ namespace Yb {
 class YBUTIL_DECL BaseError: public std::logic_error
 {
     static const String format_base(const String &msg);
+    String ext_msg_;
 public:
     BaseError(const String &msg);
+    virtual ~BaseError() throw();
+    const String &wtf() const { return ext_msg_; }
 };
 
 class YBUTIL_DECL AssertError: public BaseError

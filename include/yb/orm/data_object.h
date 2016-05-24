@@ -136,8 +136,8 @@ class YBORM_DECL Session: public NonCopyable
     void clone_engine(EngineSource *src_engine);
 public:
     void set_logger(ILogger::Ptr logger);
-    void debug(const String &s) { if (logger_.get()) logger_->debug(NARROW(s)); }
-    void trace(const String &s) { if (logger_.get()) logger_->trace(NARROW(s)); }
+    void debug(const String &s) { if (logger_.get()) logger_->debug(s); }
+    void trace(const String &s) { if (logger_.get()) logger_->trace(s); }
     Session(const Schema &schema, EngineSource *engine = NULL);
     Session(const Schema &schema, const String &connection_url);
     Session(const Schema &schema, const String &driver_name,

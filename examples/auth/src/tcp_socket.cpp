@@ -17,9 +17,9 @@ TcpSocket::init_socket_lib()
         WORD versionRequested = MAKEWORD(1, 1);
         int err = WSAStartup(versionRequested, &wsaData);
         if (err != 0) {
-            throw SocketEx("init_socket_lib",
-                    "WSAStartup failed with error: " +
-                    Yb::to_stdstring(err));
+            throw SocketEx(_T("init_socket_lib"),
+                    _T("WSAStartup failed with error: ") +
+                    Yb::to_string(err));
         }
         did_it = true;
     }
@@ -31,11 +31,11 @@ TcpSocket::create()
 {
     SOCKET s = ::socket(AF_INET, SOCK_STREAM, 0);
     if (INVALID_SOCKET == s)
-        throw SocketEx("create", get_last_error());
+        throw SocketEx(_T("create"), get_last_error());
     return s;
 }
 
-string
+Yb::String
 TcpSocket::get_last_error()
 {
     char buf[1024];
@@ -64,7 +64,7 @@ TcpSocket::get_last_error()
 #endif
 #endif
     buf[buf_sz - 1] = 0;
-    return string(buf);
+    return WIDEN(string(buf));
 }
 
 void
@@ -78,19 +78,19 @@ TcpSocket::create_if_needed()
 }
 
 void
-TcpSocket::bind(const string &ip_addr, int port)
+TcpSocket::bind(const Yb::String &ip_addr, int port)
 {
     create_if_needed();
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr(ip_addr.c_str());
+    addr.sin_addr.s_addr = inet_addr(NARROW(ip_addr).c_str());
     addr.sin_port = htons(port);
     SockOpt yes = 1;
     if (::setsockopt(s_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) != 0)
-        throw SocketEx("setsockopt(SO_REUSEADDR)", get_last_error());
+        throw SocketEx(_T("setsockopt(SO_REUSEADDR)"), get_last_error());
     if (::bind(s_, (struct sockaddr *)&addr, sizeof(addr)) == -1)
-        throw SocketEx("bind", get_last_error());
+        throw SocketEx(_T("bind"), get_last_error());
 }
 
 void
@@ -104,7 +104,7 @@ TcpSocket::listen(int back_log)
 #endif // _MSC_VER
 
 SOCKET
-TcpSocket::accept(string *ip_addr, int *port)
+TcpSocket::accept(Yb::String *ip_addr, int *port)
 {
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
@@ -119,7 +119,7 @@ TcpSocket::accept(string *ip_addr, int *port)
     }
     SOCKET s2 = ::accept(s_, p_addr, p_addr_len);
     if (INVALID_SOCKET == s2)
-        throw SocketEx("accept", get_last_error());
+        throw SocketEx(_T("accept"), get_last_error());
     if (port)
         *port = ntohs(addr.sin_port);
     if (ip_addr) {
@@ -127,22 +127,22 @@ TcpSocket::accept(string *ip_addr, int *port)
         char buf[100];
         sprintf(buf, "%d.%d.%d.%d",
                 ip >> 24, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255);
-        *ip_addr = string(buf);
+        *ip_addr = WIDEN(string(buf));
     }
     return s2;
 }
 
 void
-TcpSocket::connect(const string &ip_addr, int port)
+TcpSocket::connect(const Yb::String &ip_addr, int port)
 {
     create_if_needed();
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr(ip_addr.c_str());
+    addr.sin_addr.s_addr = inet_addr(NARROW(ip_addr).c_str());
     addr.sin_port = htons(port);
     if (INVALID_SOCKET == ::connect(s_, (struct sockaddr *)&addr, sizeof(addr)))
-        throw SocketEx("connect", get_last_error());
+        throw SocketEx(_T("connect"), get_last_error());
 }
 
 bool
@@ -162,16 +162,16 @@ TcpSocket::read_chunk()
     t.tv_usec = (timeout_ % 1000) * 1000;
     int res = ::select(s_ + 1, &rfds, NULL, &efds, &t);
     if (!res)
-        throw SocketEx("select", "timeout");
+        throw SocketEx(_T("select"), _T("timeout"));
     if (res != 1 && res != 2)
-        throw SocketEx("select", get_last_error());
+        throw SocketEx(_T("select"), get_last_error());
     if (FD_ISSET(s_, &efds))
-        throw SocketEx("select", "socket exception");
+        throw SocketEx(_T("select"), _T("socket exception"));
     int max_chunk = 2500;
     buf_.resize(max_chunk);
     res = ::recv(s_, &buf_[0], max_chunk, 0);
     if (res < 0 || res > max_chunk)
-        throw SocketEx("read", get_last_error());
+        throw SocketEx(_T("read"), get_last_error());
     buf_.resize(res);
     return buf_pos_ < buf_.size();
 }
@@ -210,7 +210,7 @@ TcpSocket::read(size_t n)
         }
         if (pos < n) {
             if (!read_chunk())
-                throw SocketEx("read", "short read");
+                throw SocketEx(_T("read"), _T("short read"));
         }
     }
     return r;
@@ -221,9 +221,9 @@ TcpSocket::write(const string &msg)
 {
     int count = ::send(s_, msg.c_str(), msg.size(), 0);
     if (-1 == count)
-        throw SocketEx("write", get_last_error());
+        throw SocketEx(_T("write"), get_last_error());
     if (static_cast<size_t>(count) < msg.size())
-        throw SocketEx("write", "short write");
+        throw SocketEx(_T("write"), _T("short write"));
 }
 
 void

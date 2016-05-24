@@ -106,7 +106,7 @@ void Session::clone_engine(EngineSource *src_engine)
     if (src_engine) {
         engine_.reset(src_engine->clone().release());
         if (engine_->logger())
-            logger_.reset(engine_->logger()->new_logger("orm").release());
+            logger_.reset(engine_->logger()->new_logger(_T("orm")).release());
     }
 }
 
@@ -115,7 +115,7 @@ void Session::set_logger(ILogger::Ptr logger)
     engine_logger_.reset(logger.release());
     engine_->set_echo(true);
     engine_->set_logger(engine_logger_.get());
-    logger_.reset(engine_logger_->new_logger("orm").release());
+    logger_.reset(engine_logger_->new_logger(_T("orm")).release());
 }
 
 Session::Session(const Schema &schema, EngineSource *engine)

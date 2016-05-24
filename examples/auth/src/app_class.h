@@ -25,7 +25,7 @@ class SyslogAppender: public Yb::ILogAppender
     static char process_name[100];
 
     Yb::Mutex appender_mutex_;
-    typedef std::map<std::string, int> LogLevelMap;
+    typedef std::map<Yb::String, int> LogLevelMap;
     LogLevelMap log_levels_;
 
     static int log_level_to_syslog(int log_level);
@@ -35,13 +35,13 @@ public:
     SyslogAppender();
     ~SyslogAppender();
     void append(const Yb::LogRecord &rec);
-    int get_level(const std::string &name);
-    void set_level(const std::string &name, int level);
+    int get_level(const Yb::String &name);
+    void set_level(const Yb::String &name, int level);
 };
 #endif // #if !defined(YBUTIL_WINDOWS)
 
-int decode_log_level(const std::string &log_level);
-const std::string encode_log_level(int level);
+int decode_log_level(const Yb::String &log_level);
+const Yb::String encode_log_level(int level);
 
 class App: public Yb::ILogger
 {
@@ -51,15 +51,15 @@ class App: public Yb::ILogger
     bool use_db_;
     std::auto_ptr<Yb::Engine> engine_;
 
-    void init_log(const std::string &log_name,
-                  const std::string &log_level);
+    void init_log(const Yb::String &log_name,
+                  const Yb::String &log_level);
     void init_engine(const Yb::String &db_name);
     const Yb::String get_db_url();
 
 public:
     App(): use_db_(false) {}
-    void init(const std::string &log_name = "log.txt",
-              const std::string &log_level = "DEBUG",
+    void init(const Yb::String &log_name = _T("log.txt"),
+              const Yb::String &log_level = _T("DEBUG"),
               const Yb::String &db_name = _T(""));
     virtual ~App();
     Yb::Engine &get_engine();
@@ -67,12 +67,12 @@ public:
     std::auto_ptr<Yb::Session> new_session();
 
     // implement ILogger
-    Yb::ILogger::Ptr new_logger(const std::string &name);
-    Yb::ILogger::Ptr get_logger(const std::string &name);
+    Yb::ILogger::Ptr new_logger(const Yb::String &name);
+    Yb::ILogger::Ptr get_logger(const Yb::String &name);
     int get_level();
     void set_level(int level);
-    void log(int level, const std::string &msg);
-    const std::string get_name() const;
+    void log(int level, const Yb::String &msg);
+    const Yb::String get_name() const;
 };
 
 typedef Yb::SingletonHolder<App> theApp;

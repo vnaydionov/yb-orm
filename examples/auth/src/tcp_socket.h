@@ -2,6 +2,8 @@
 #define _AUTH__TCP_SOCKET_H_
 
 #include <util/util_config.h>
+#include <util/string_type.h>
+#include <util/exception.h>
 
 #ifdef YBUTIL_WINDOWS
 #include <windows.h>
@@ -23,9 +25,9 @@ typedef int SockOpt;
 #include <string>
 #include <stdexcept>
 
-class SocketEx: public std::runtime_error {
-public: SocketEx(const std::string &ctx, const std::string &msg)
-    : std::runtime_error(ctx + ": " + msg) {}
+class SocketEx: public Yb::RunTimeError {
+public: SocketEx(const Yb::String &ctx, const Yb::String &msg)
+    : Yb::RunTimeError(ctx + _T(": ") + msg) {}
 };
 
 class TcpSocket {
@@ -42,7 +44,7 @@ class TcpSocket {
 public:
     static void init_socket_lib();
     static SOCKET create();
-    static std::string get_last_error();
+    static Yb::String get_last_error();
 
     explicit TcpSocket(SOCKET s = INVALID_SOCKET, int timeout = 30000)
         : s_(s)
@@ -55,10 +57,10 @@ public:
     }
 
     bool ok() const { return INVALID_SOCKET != s_; }
-    void bind(const std::string &ip_addr, int port);
+    void bind(const Yb::String &ip_addr, int port);
     void listen(int back_log = 3);
-    SOCKET accept(std::string *ip_addr = NULL, int *port = NULL);
-    void connect(const std::string &ip_addr, int port);
+    SOCKET accept(Yb::String *ip_addr = NULL, int *port = NULL);
+    void connect(const Yb::String &ip_addr, int port);
     const std::string readline();
     const std::string read(size_t n);
     void write(const std::string &msg);

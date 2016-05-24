@@ -403,7 +403,7 @@ static void init_log()
 static void setup_log(Engine &e)
 {
     init_log();
-    e.set_logger(root_logger->new_logger("engine"));
+    e.set_logger(root_logger->new_logger(_T("engine")));
     e.set_echo(true);
 }
 

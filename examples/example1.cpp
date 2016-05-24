@@ -12,7 +12,7 @@ int main()
         Yb::Logger root_logger(&appender);
         Yb::Engine engine;
         engine.set_echo(true);
-        engine.set_logger(root_logger.new_logger("yb"));
+        engine.set_logger(root_logger.new_logger(_T("yb")));
         Yb::Session session(Yb::init_schema(), &engine);
         Domain::Client::Holder client(session);
         string name, email;
