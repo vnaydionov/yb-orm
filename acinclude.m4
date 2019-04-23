@@ -385,6 +385,12 @@ AC_DEFUN([YB_PATH_CPPUNIT],
     fi
 
     AC_PATH_PROG(CPPUNIT_CONFIG, cppunit-config, no)
+    if test "$CPPUNIT_CONFIG" = "no" ; then
+        PKG_CONF_LIST=`pkg-config --list-all | grep ^cppunit`
+        if test "$PKG_CONF_LIST" != "" ; then
+            CPPUNIT_CONFIG="pkg-config cppunit"
+        fi
+    fi
     cppunit_version_min=$1
 
     AC_MSG_CHECKING(for Cppunit - version >= $cppunit_version_min)
