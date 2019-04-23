@@ -8,6 +8,15 @@
 using namespace std;
 
 void
+sleep_msec(int msec)
+{
+    struct timeval t;
+    t.tv_sec = msec / 1000;
+    t.tv_usec = (msec % 1000) * 1000;
+    ::select(0, NULL, NULL, NULL, &t);
+}
+
+void
 TcpSocket::init_socket_lib()
 {
 #ifdef YBUTIL_WINDOWS
@@ -125,8 +134,9 @@ TcpSocket::accept(string *ip_addr, int *port)
     if (ip_addr) {
         unsigned ip = ntohl(addr.sin_addr.s_addr);
         char buf[100];
-        sprintf(buf, "%d.%d.%d.%d",
-                ip >> 24, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255);
+        snprintf(buf, sizeof(buf), "%d.%d.%d.%d",
+                 ip >> 24, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255);
+        buf[sizeof(buf) - 1] = 0;
         *ip_addr = string(buf);
     }
     return s2;

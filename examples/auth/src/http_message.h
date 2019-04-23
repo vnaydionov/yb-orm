@@ -4,6 +4,7 @@
 #include <util/data_types.h>
 
 enum {
+    HTTP_X = 0,
     HTTP_1_0 = 10,
     HTTP_1_1 = 11,
 };
@@ -29,6 +30,8 @@ public:
     virtual ~HttpHeaderNotFound() throw();
 };
 
+
+typedef std::vector<std::pair<Yb::String, Yb::String> > StringPairVector;
 
 class HttpMessage
 {
@@ -120,7 +123,7 @@ public:
 
     static void parse_header_line(const Yb::String &line,
             Yb::String &header_name, Yb::String &header_value);
-private:
+protected:
     int proto_ver_;  // HTTP_1_0 HTTP_1_1 ..
     Yb::StringDict headers_;
     std::string body_;
@@ -135,7 +138,7 @@ public:
     virtual const std::string serialize() const;
 
     void urlparse_body() {
-        params_.update(parse_params(WIDEN(body())));
+        params_.update(parse_query_string(WIDEN(body())));
     }
 
     const Yb::String &method() const { return method_; }
@@ -147,9 +150,13 @@ public:
     const Yb::StringDict &params() const { return params_; }
 
 
-    static const Yb::StringDict parse_params(const Yb::String &s);
+    static const Yb::StringDict parse_query_string(const Yb::String &s);
 
-    static const Yb::String url_encode(const std::string &s, bool path_mode=false);
+    static const Yb::String url_quote(const std::string &s, bool path_mode=false);
+
+    static const std::string url_unquote(const Yb::String &s);
+
+    static const Yb::String serialize_params(const StringPairVector &v);
 
     static const Yb::String serialize_params(const Yb::StringDict &d);
 
@@ -165,7 +172,7 @@ private:
 class HttpResponse: public HttpMessage
 {
 public:
-    HttpResponse(int proto_ver, int resp_code, const Yb::String &resp_desc);
+    HttpResponse(int proto_ver, int http_status, const Yb::String &reason);
 
     virtual const std::string serialize() const;
 
@@ -173,13 +180,24 @@ public:
                            const Yb::String &content_type,
                            bool set_content_length=true);
 
-    int resp_code() const { return resp_code_; }
+    static const std::pair<int, Yb::String>
+        parse_status(const Yb::String &line);
 
-    const Yb::String &resp_desc() const { return resp_desc_; }
+    void put_header_line(const std::string &line);
+    void put_body_piece(const std::string &line);
+
+    void set_status(int http_status, const Yb::String &reason) {
+        http_status_ = http_status;
+        reason_ = reason;
+    }
+
+    int http_status() const { return http_status_; }
+
+    const Yb::String &reason() const { return reason_; }
 
 private:
-    int resp_code_;  // 200 404 ...
-    Yb::String resp_desc_;
+    int http_status_;  // 200 404 ...
+    Yb::String reason_;
 };
 
 #endif // _AUTH__HTTP_MESSAGE_H_

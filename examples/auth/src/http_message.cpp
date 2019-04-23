@@ -9,6 +9,7 @@ using Yb::StrUtils::to_upper;
 using Yb::StrUtils::str_to_upper;
 using Yb::StrUtils::str_to_lower;
 using Yb::StrUtils::trim_trailing_space;
+using Yb::StrUtils::starts_with;
 
 HttpHeaderNotFound::~HttpHeaderNotFound() throw()
 {
@@ -17,7 +18,8 @@ HttpHeaderNotFound::~HttpHeaderNotFound() throw()
 HttpMessage::HttpMessage(int proto_ver)
     : proto_ver_(proto_ver)
 {
-    if (proto_ver != HTTP_1_1 && proto_ver != HTTP_1_0)
+    if (proto_ver != HTTP_1_1 && proto_ver != HTTP_1_0
+            && proto_ver != HTTP_X)
         throw HttpParserError("HttpMessage", "Invalid protocol version: " +
                               NARROW(Yb::to_string(proto_ver)));
 }
@@ -55,8 +57,8 @@ HttpMessage::parse_header_line(const Yb::String &line,
     split_str_by_chars(line, _T(":"), parts, 2);
     if (parts.size() != 2)
         throw HttpParserError("parse_header_line", "Header format is wrong");
-    std::swap(header_name, parts[0]);
-    std::swap(header_value, parts[1]);
+    header_name = trim_trailing_space(parts[0]);
+    header_value = trim_trailing_space(parts[1]);
 }
 
 HttpRequest::HttpRequest(const Yb::String &method, const Yb::String &uri, int proto_ver)
@@ -74,7 +76,7 @@ HttpRequest::HttpRequest(const Yb::String &method, const Yb::String &uri, int pr
         throw HttpParserError("HttpMessage", "uri_parts.size() < 1");
     path_ = uri_parts[0];
     if (uri_parts.size() > 1)
-        params_ = parse_params(uri_parts[1]);
+        params_ = parse_query_string(uri_parts[1]);
 }
 
 const std::string
@@ -89,7 +91,7 @@ HttpRequest::serialize() const
 }
 
 const Yb::StringDict
-HttpRequest::parse_params(const Yb::String &msg)
+HttpRequest::parse_query_string(const Yb::String &msg)
 {
     Yb::StringDict params;
     Yb::Strings param_parts;
@@ -98,11 +100,11 @@ HttpRequest::parse_params(const Yb::String &msg)
         Yb::Strings value_parts;
         split_str_by_chars(param_parts[i], _T("="), value_parts, 2);
         if (value_parts.size() < 1)
-            throw HttpParserError("parse_params", "value_parts.size() < 1");
+            throw HttpParserError("parse_query_string", "value_parts.size() < 1");
         Yb::String n = value_parts[0];
         Yb::String v;
         if (value_parts.size() == 2)
-            v = WIDEN(url_decode(value_parts[1]));
+            v = WIDEN(HttpRequest::url_unquote(value_parts[1]));
         Yb::StringDict::iterator it = params.find(n);
         if (it == params.end())
             params[n] = v;
@@ -113,23 +115,45 @@ HttpRequest::parse_params(const Yb::String &msg)
 }
 
 const Yb::String
-HttpRequest::url_encode(const std::string &s, bool path_mode)
+HttpRequest::url_quote(const std::string &s, bool path_mode)
 {
     Yb::String result;
-    const char *replace;
+    const char *reserved;
     if (path_mode)
-        replace = "!*'();@&=+$,?%#[]";
+        reserved = "!*'();@&=+$,?%#[]";
     else
-        replace = "!*'();:@&=+$,/?%#[]{}\"";
+        reserved = "!*'();:@&=+$,/?%#[]{}\"";
     char buf[20];
     for (size_t i = 0; i < s.size(); ++i) {
         unsigned char c = s[i];
-        if (c <= 32 || c >= 127 || strchr(replace, c)) {
-            sprintf(buf, "%%%02X", c);
+        if (c <= 32 || c >= 127 || c == '%' || strchr(reserved, c)) {
+            snprintf(buf, sizeof(buf), "%%%02X", c);
+            buf[sizeof(buf) - 1] = 0;
             result += WIDEN(buf);
         }
         else
             result += Yb::Char(c);
+    }
+    return result;
+}
+
+const std::string
+HttpRequest::url_unquote(const Yb::String &s)
+{
+    return url_decode(s);
+}
+
+const Yb::String
+HttpRequest::serialize_params(const StringPairVector &v)
+{
+    Yb::String result;
+    StringPairVector::const_iterator it = v.begin(), end = v.end();
+    for (; it != end; ++it) {
+        if (Yb::str_length(result))
+            result += _T("&");
+        result += HttpRequest::url_quote(NARROW(it->first));
+        result += _T("=");
+        result += HttpRequest::url_quote(NARROW(it->second));
     }
     return result;
 }
@@ -142,9 +166,9 @@ HttpRequest::serialize_params(const Yb::StringDict &d)
     for (; it != end; ++it) {
         if (Yb::str_length(result))
             result += _T("&");
-        result += HttpRequest::url_encode(NARROW(it->first));
+        result += HttpRequest::url_quote(NARROW(it->first));
         result += _T("=");
-        result += HttpRequest::url_encode(NARROW(it->second));
+        result += HttpRequest::url_quote(NARROW(it->second));
     }
     return result;
 }
@@ -162,16 +186,16 @@ HttpRequest::parse_request_line(const Yb::String &line)
     return request_obj;
 }
 
-HttpResponse::HttpResponse(int proto_ver, int resp_code, const Yb::String &resp_desc)
+HttpResponse::HttpResponse(int proto_ver, int http_status, const Yb::String &reason)
     : HttpMessage(proto_ver)
-    , resp_code_(resp_code)
-    , resp_desc_(resp_desc)
+    , http_status_(http_status)
+    , reason_(reason)
 {
-    if (resp_code < 100 || resp_code >= 600)
+    if (proto_ver_ != HTTP_X && (http_status < 100 || http_status >= 600))
         throw HttpParserError("HttpResponse", "Invalid response code: " +
-                              NARROW(Yb::to_string(resp_code)));
-    if (!Yb::str_length(resp_desc))
-        throw HttpParserError("HttpResponse", "Empty HTTP resp_desc");
+                              NARROW(Yb::to_string(http_status)));
+    if (proto_ver_ != HTTP_X && !Yb::str_length(reason))
+        throw HttpParserError("HttpResponse", "Empty HTTP reason");
 }
 
 const std::string
@@ -179,8 +203,8 @@ HttpResponse::serialize() const
 {
     std::ostringstream out;
     out << NARROW(get_proto_str()) << " "
-        << resp_code_ << " "
-        << NARROW(resp_desc_) << "\n"
+        << http_status_ << " "
+        << NARROW(reason_) << "\n"
         << serialize_headers() << "\n" << body();
     return out.str();
 }
@@ -195,6 +219,51 @@ HttpResponse::set_response_body(const std::string &body,
         set_header(_T("Content-Type"), content_type);
     if (body.size() && set_content_length)
         set_header(_T("Content-Length"), Yb::to_string(body.size()));
+}
+
+const std::pair<int, Yb::String>
+HttpResponse::parse_status(const Yb::String &line)
+{
+    std::vector<Yb::String> parts;
+    split_str_by_chars(trim_trailing_space(line), _T(" "), parts, 3);
+    if (parts.size() == 3
+            && starts_with(str_to_upper(parts[0]), _T("HTTP/")))
+    {
+        int http_code;
+        Yb::from_string(parts[1], http_code);
+        Yb::String reason_phrase = trim_trailing_space(parts[2]);
+        return std::make_pair(http_code, reason_phrase);
+    }
+    return std::make_pair(0, Yb::String());
+}
+
+void
+HttpResponse::put_header_line(const std::string &line)
+{
+    std::pair<int, Yb::String> st = parse_status(WIDEN(line));
+    if (st.first) {
+        proto_ver_ = HTTP_1_1;
+        http_status_ = st.first;
+        reason_ = st.second;
+        headers_ = Yb::StringDict();
+        body_ = "";
+    }
+    else {
+        Yb::String header, value;
+        try {
+            parse_header_line(WIDEN(line), header, value);
+        }
+        catch (const std::exception &)
+        {}
+        if (Yb::str_length(header))
+            set_header(header, value);
+    }
+}
+
+void
+HttpResponse::put_body_piece(const std::string &line)
+{
+    body_ += line;
 }
 
 // vim:ts=4:sts=4:sw=4:et:

@@ -28,6 +28,8 @@ public: SocketEx(const std::string &ctx, const std::string &msg)
     : std::runtime_error(ctx + ": " + msg) {}
 };
 
+void sleep_msec(int msec);
+
 class TcpSocket {
     SOCKET s_;
     int timeout_;  // millisec
