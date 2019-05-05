@@ -1,6 +1,6 @@
 Summary: An Object-Relational Mapper (ORM) for C++
 Name: yborm
-Version: 0.4.8
+Version: 0.4.9
 Release: 1%{?dist}
 Group: System Environment/Libraries
 URL: https://github.com/vnaydionov/yb-orm
@@ -118,6 +118,9 @@ rm -rf $BUILD_ROOT
 
 
 %changelog
+* Sun Apr 21 2019 Viacheslav Naydenov <vaclav@yandex.ru> 0.4.9-1
+- Re-build RPM for Centos 7
+
 * Sun May 15 2016 Viacheslav Naydenov <vaclav@yandex.ru> 0.4.8-1
 - First build an RPM
 
