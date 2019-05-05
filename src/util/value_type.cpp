@@ -202,7 +202,7 @@ Value::~Value()
 }
 
 template <class Int__>
-static inline void xor_swap(Int__ &a, Int__ &b)
+static inline void xor_swap(Int__ &a, Int__ &b) SWAP_NOEXCEPT
 {
     a ^= b;
     b ^= a;
@@ -210,7 +210,7 @@ static inline void xor_swap(Int__ &a, Int__ &b)
 }
 
 void
-Value::swap(Value &other)
+Value::swap(Value &other) SWAP_NOEXCEPT
 {
     if (this == &other)
         return;

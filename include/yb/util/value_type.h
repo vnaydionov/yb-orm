@@ -17,6 +17,14 @@
 #include <tuple>
 #endif
 
+#ifndef SWAP_NOEXCEPT
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1900)
+#define SWAP_NOEXCEPT noexcept
+#else
+#define SWAP_NOEXCEPT
+#endif
+#endif
+
 namespace Yb {
 
 class YBUTIL_DECL ValueIsNull: public ValueError
@@ -60,7 +68,7 @@ public:
     Value(const Value &other);
     Value &operator=(const Value &other);
     ~Value();
-    void swap(Value &other);
+    void swap(Value &other) SWAP_NOEXCEPT;
     void fix_type(int type);
 
     int as_integer() const;
@@ -198,7 +206,7 @@ struct Key {
         if (fields.size())
             fields.clear();
     }
-    void swap(Key &k)
+    void swap(Key &k) SWAP_NOEXCEPT
     {
         std::swap(table, k.table);
         std::swap(id_name, k.id_name);
@@ -260,11 +268,9 @@ stdtuple_values(const T &t, Values &values)
 
 namespace std {
 
-template<>
-inline void swap(::Yb::Value &x, ::Yb::Value &y) { x.swap(y); }
+inline void swap(::Yb::Value &x, ::Yb::Value &y) SWAP_NOEXCEPT { x.swap(y); }
 
-template<>
-inline void swap(::Yb::Key &x, ::Yb::Key &y) { x.swap(y); }
+inline void swap(::Yb::Key &x, ::Yb::Key &y) SWAP_NOEXCEPT { x.swap(y); }
 
 } // namespace std
 
