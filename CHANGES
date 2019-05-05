@@ -1,3 +1,15 @@
+0.4.9
+    * Support for building with msvc 2019
+    * Support for mingw gcc 8.1.0
+    * Support noexcept for clang 6.0
+    * micro_http: use pool of worker threads
+    * Support building on Ubuntu 18.04
+    * Update Catch to v1.12.0
+    * Switch back to sprintf for compatibility
+    * Auth: Refactor micro_http a little
+    * Auth: refactor HttpMessage; add Syslog support
+    * Wrote a .spec file for building RPM
+
 0.4.8
     * Fix broken DomainObj::find(); Fix warnings
     * Fix broken method Property::is_null(); More checks not to dereference NULL pointer

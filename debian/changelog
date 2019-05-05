@@ -1,3 +1,18 @@
+libyborm (0.4.9) unstable; urgency=low
+
+  * Support for building with msvc 2019
+  * Support for mingw gcc 8.1.0
+  * Support noexcept for clang 6.0
+  * micro_http: use pool of worker threads
+  * Support building on Ubuntu 18.04
+  * Update Catch to v1.12.0
+  * Switch back to sprintf for compatibility
+  * Auth: Refactor micro_http a little
+  * Auth: refactor HttpMessage; add Syslog support
+  * Wrote a .spec file for building RPM
+
+ -- Vaclav Naydionov (linux rulez) <vaclav@yandex.ru>  Sun, 05 May 2019 22:16:53 +0300
+
 libyborm (0.4.8-rc5) unstable; urgency=low
 
   * Fix broken DomainObj::find(); Fix warnings
